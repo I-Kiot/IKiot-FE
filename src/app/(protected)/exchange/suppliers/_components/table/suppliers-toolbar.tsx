@@ -1,0 +1,84 @@
+// [Table – Toolbar Supplier]
+'use client'
+
+import { type Table } from '@tanstack/react-table'
+import { Funnel, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { Supplier } from '@/types/supplier'
+import { COLUMN_LABELS } from '../../_constants/supplier.constants'
+
+type SuppliersToolbarProps = {
+  table: Table<Supplier>
+}
+
+export function SuppliersToolbar({ table }: SuppliersToolbarProps) {
+  const debtFilter = table.getColumn('outstandingDebt')?.getFilterValue() as string
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-52 max-w-sm">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Tìm tên, số điện thoại..."
+            value={(table.getState().globalFilter as string) ?? ''}
+            onChange={(e) => table.setGlobalFilter(String(e.target.value))}
+            className="pl-9 h-9"
+          />
+        </div>
+
+        <Select
+          value={debtFilter || 'all'}
+          onValueChange={(value) =>
+            table.getColumn('outstandingDebt')?.setFilterValue(value === 'all' ? undefined : value)
+          }
+        >
+          <SelectTrigger className="cursor-pointer w-44 h-9 text-sm">
+            <SelectValue placeholder="Công nợ" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả</SelectItem>
+            <SelectItem value="hasDebt">Có công nợ</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="cursor-pointer h-9">
+            <Funnel />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {table
+            .getAllColumns()
+            .filter((col) => col.getCanHide())
+            .map((col) => (
+              <DropdownMenuCheckboxItem
+                key={col.id}
+                className="capitalize"
+                checked={col.getIsVisible()}
+                onCheckedChange={(value) => col.toggleVisibility(!!value)}
+              >
+                {COLUMN_LABELS[col.id] ?? col.id}
+              </DropdownMenuCheckboxItem>
+            ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}

@@ -1,0 +1,40 @@
+import { Suspense } from "react";
+import { SignupForm2 } from "./components/signup-form";
+import { Logo } from "@/components/logo";
+import Link from "next/link";
+import Image from "next/image";
+
+export default function SignUp2Page() {
+  return (
+    <div className="grid min-h-svh lg:grid-cols-2">
+      <div className="flex flex-col gap-4 p-6 md:p-10">
+        <div className="flex justify-center gap-2 md:justify-start">
+          <Link href="/" className="flex items-center gap-2 font-medium">
+            <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
+              <Logo size={24} />
+            </div>
+            iKiot
+          </Link>
+        </div>
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-lg">
+            <Suspense fallback={null}>
+              <SignupForm2 />
+            </Suspense>
+          </div>
+        </div>
+      </div>
+      <div className="bg-muted relative hidden lg:block">
+        <Image
+          src="/login-pic.png"
+          alt="Image"
+          fill
+          className="object-cover dark:brightness-[0.95] dark:invert"
+        />
+        <div className="absolute bottom-20 right-12 z-10 text-white font-extrabold text-6xl tracking-tight drop-shadow-lg select-none">
+          Join iKiot now.
+        </div>
+      </div>
+    </div>
+  );
+}
