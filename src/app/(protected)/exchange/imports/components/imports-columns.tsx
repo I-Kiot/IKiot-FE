@@ -157,7 +157,16 @@ export const importsColumns: ColumnDef<StockMovement>[] = [
     accessorKey: "requestedByName",
     header: "Người tạo",
     cell: ({ row }) => (
-      <span className="text-sm">{row.getValue("requestedByName")}</span>
+      <span className="text-sm">{row.getValue("requestedByName") || "-"}</span>
+    ),
+  },
+  {
+    accessorKey: "requestedByPhone",
+    header: "SĐT người tạo",
+    cell: ({ row }) => (
+      <span className="text-sm tabular-nums text-muted-foreground">
+        {row.getValue("requestedByPhone") || "-"}
+      </span>
     ),
   },
   {

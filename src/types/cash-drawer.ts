@@ -16,9 +16,12 @@ export interface CashDrawerBranchRef {
 
 export interface CashDrawerShiftLog {
   id?: string;
-  staffId: string | CashDrawerUserRef;
+  type?: "START" | "END";
+  staffId: string;
+  staff?: CashDrawerUserRef | null;
   amount: number;
-  nextStaffId?: string | CashDrawerUserRef | null;
+  nextStaffId?: string | null;
+  nextStaff?: CashDrawerUserRef | null;
   note?: string;
   loggedAt: string;
 }
@@ -26,16 +29,20 @@ export interface CashDrawerShiftLog {
 export interface CashDrawerSession {
   id: string;
   tenantId: string;
-  branchId: string | CashDrawerBranchRef;
+  branchId: string;
+  branch?: CashDrawerBranchRef | null;
   businessDate: string;
   status: "OPEN" | "CLOSED";
   openingAmount: number;
-  openedBy: string | CashDrawerUserRef;
-  currentStaffId: string | CashDrawerUserRef;
+  openedById: string;
+  openedBy?: CashDrawerUserRef | null;
+  currentStaffId: string;
+  currentStaff?: CashDrawerUserRef | null;
   shiftLogs: CashDrawerShiftLog[];
   finalLog?: {
     amount: number;
-    managerId: string | CashDrawerUserRef;
+    managerId: string;
+    manager?: CashDrawerUserRef | null;
     note?: string;
   } | null;
   createdAt: string;

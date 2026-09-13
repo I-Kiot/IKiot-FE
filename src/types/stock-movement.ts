@@ -37,6 +37,7 @@ export interface StockMovement {
   toLocationType: LocationType;
   requestedBy: string;
   requestedByName: string;
+  requestedByPhone: string;
   note?: string;
   details: StockMovementDetail[];
   createdAt: string;
@@ -80,9 +81,6 @@ export interface CreateAdjustPayload {
   /** Kho/chi nhánh cần điều chỉnh tồn kho */
   fromLocationId: string;
   fromLocationType: LocationType;
-  /** BE schema yêu cầu toLocationId – truyền cùng giá trị fromLocationId */
-  toLocationId: string;
-  toLocationType: LocationType;
   note?: string;
   details: {
     productItemId: string;

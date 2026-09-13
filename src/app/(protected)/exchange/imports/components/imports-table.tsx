@@ -55,6 +55,7 @@ const COLUMN_LABELS: Record<string, string> = {
   totalItems: "Số mặt hàng",
   totalValue: "Giá trị",
   requestedByName: "Người tạo",
+  requestedByPhone: "SĐT người tạo",
   createdAt: "Ngày tạo",
   status: "Trạng thái",
 };
@@ -73,9 +74,7 @@ export function ImportsTable() {
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    requestedByName: false,
-  });
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
@@ -341,7 +340,6 @@ export function ImportsTable() {
                               mode="import"
                               request={row.original}
                               isExpanded
-                              onClose={() => row.toggleExpanded(false)}
                               importActions={{
                                 handleUpdateDetails,
                                 handleShip,

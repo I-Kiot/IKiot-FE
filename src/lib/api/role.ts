@@ -41,6 +41,50 @@ function mapRole(doc: RoleDoc): Role {
  * Backend trả 150 cặp (resource, action) đã sắp xếp sẵn; một danh sách phẳng 150 dòng
  * checkbox thì không ai chọn nổi, nên giao diện làm việc trên ~30 nhóm.
  */
+/**
+ * Tên nhóm quyền theo đúng chữ trên thanh điều hướng, kèm đường dẫn menu để đối chiếu.
+ *
+ * Nhãn trong danh mục backend (`PermissionCatalog.label`) là tên nghiệp vụ chung
+ * ("Sản phẩm", "Ca thu ngân", "Xuất/nhập kho"...) và lệch với sidebar ("Hàng hóa",
+ * "Két tiền", "Giao dịch"), nên người phân quyền phải đoán quyền nào mở màn hình nào.
+ * Tài nguyên không có trong bảng này giữ nhãn backend.
+ */
+const RESOURCE_NAV_LABELS: Record<string, { label: string; hint: string }> = {
+  reports: { label: 'Tổng quan & Sổ thu chi', hint: 'Quản lý › Tổng quan, Sổ thu chi' },
+  ai_chat: { label: 'Trợ lý AI', hint: 'Quản lý › Trợ lý AI' },
+  users: { label: 'Nhân viên - Danh sách', hint: 'Quản lý › Nhân viên › Danh sách' },
+  staff: { label: 'Nhân viên (tài khoản)', hint: 'Quản lý › Nhân viên' },
+  schedules: { label: 'Nhân viên - Lịch làm', hint: 'Quản lý › Nhân viên › Lịch làm' },
+  leaveRequests: { label: 'Nhân viên - Nghỉ phép', hint: 'Quản lý › Nhân viên › Nghỉ phép' },
+  holidays: { label: 'Nhân viên - Ngày lễ', hint: 'Quản lý › Nhân viên › Ngày lễ' },
+  attendances: { label: 'Nhân viên - Chấm công', hint: 'Quản lý › Nhân viên › Lịch làm (chấm công)' },
+  payroll: { label: 'Nhân viên - Bảng lương', hint: 'Quản lý › Nhân viên › Bảng lương' },
+  paysheets: { label: 'Lương - Bảng lương mẫu', hint: 'Quản lý › Nhân viên › Bảng lương' },
+  payslips: { label: 'Lương - Phiếu lương', hint: 'Quản lý › Nhân viên › Bảng lương' },
+  payrollSettings: { label: 'Lương - Cấu hình', hint: 'Quản lý › Nhân viên › Bảng lương' },
+  products: { label: 'Hàng hóa - Danh sách', hint: 'Quản lý bán hàng › Hàng hóa › Danh sách' },
+  categories: { label: 'Hàng hóa - Danh mục', hint: 'Quản lý bán hàng › Hàng hóa › Danh mục' },
+  brands: { label: 'Hàng hóa - Thương hiệu', hint: 'Quản lý bán hàng › Hàng hóa › Thương hiệu' },
+  inventory: { label: 'Hàng hóa - Tồn kho', hint: 'Quản lý bán hàng › Hàng hóa (cột Tồn kho)' },
+  suppliers: { label: 'Giao dịch - Nhà cung cấp', hint: 'Quản lý bán hàng › Giao dịch › Nhà cung cấp' },
+  stock_movement: {
+    label: 'Giao dịch - Nhập hàng / Chuyển kho / Điều chỉnh',
+    hint: 'Quản lý bán hàng › Giao dịch › Nhập hàng, Chuyển kho, Điều chỉnh tồn kho',
+  },
+  orders: { label: 'Đơn hàng - Hoá đơn', hint: 'Quản lý bán hàng › Đơn hàng › Hoá đơn; Bán hàng' },
+  cash_drawers: { label: 'Két tiền', hint: 'Quản lý bán hàng › Két tiền › Hôm nay, Lịch sử' },
+  cash_flows: { label: 'Sổ thu chi (phiếu thu/chi)', hint: 'Quản lý › Sổ thu chi' },
+  customers: { label: 'Khách hàng', hint: 'CRM › Khách hàng' },
+  promotions: { label: 'Khuyến mãi', hint: 'CRM › Khuyến mãi' },
+  tickets: { label: 'Phản ánh', hint: 'CSKH › Phản ánh' },
+  branches: { label: 'Chi nhánh', hint: 'Bộ chọn chi nhánh (góc trên sidebar); Cài đặt' },
+  warehouses: { label: 'Kho', hint: 'Bộ chọn kho (góc trên sidebar); Cài đặt' },
+  notifications: { label: 'Thông báo', hint: 'Chuông thông báo trên thanh tiêu đề' },
+  profile: { label: 'Hồ sơ cá nhân', hint: 'Cài đặt › Tài khoản' },
+  subscriptions: { label: 'Gói dịch vụ', hint: 'Cài đặt › Thanh toán' },
+  tenants: { label: 'Cửa hàng (doanh nghiệp)', hint: 'Cài đặt › Cửa hàng' },
+}
+
 export function groupCatalog(
   entries: PermissionCatalogEntry[],
 ): PermissionResourceGroup[] {
@@ -50,9 +94,11 @@ export function groupCatalog(
     if (group) {
       group.actions.push(entry.action)
     } else {
+      const nav = RESOURCE_NAV_LABELS[entry.resource]
       groups.set(entry.resource, {
         resource: entry.resource,
-        label: entry.label || entry.resource,
+        label: nav?.label ?? entry.label ?? entry.resource,
+        hint: nav?.hint,
         actions: [entry.action],
       })
     }

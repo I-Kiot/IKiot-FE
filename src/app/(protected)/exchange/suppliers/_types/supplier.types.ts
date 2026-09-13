@@ -6,7 +6,11 @@ export type SuppliersDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'pa
 export const supplierFormSchema = z.object({
   supplierName: z.string().min(1, 'Tên nhà cung cấp là bắt buộc'),
   contactName: z.string().optional(),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(1, 'Số điện thoại là bắt buộc')
+    .regex(/^0\d{9}$/, 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0'),
   email: z
     .string()
     .optional()

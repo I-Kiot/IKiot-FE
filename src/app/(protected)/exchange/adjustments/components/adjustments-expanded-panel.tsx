@@ -77,11 +77,9 @@ type EditRow = {
 export function AdjustmentsExpandedPanel({
   request,
   isExpanded,
-  onClose,
 }: {
   request: StockMovement;
   isExpanded: boolean;
-  onClose?: () => void;
 }) {
   const { detail, loading, refreshDetail } = useStockMovementDetail(
     request,
@@ -240,7 +238,6 @@ export function AdjustmentsExpandedPanel({
         subtitle={locLabel}
         status={detail.status}
         movementType={detail.movementType}
-        onClose={onClose}
       />
 
       <div className="mb-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
@@ -252,7 +249,11 @@ export function AdjustmentsExpandedPanel({
         <InfoItem
           icon={<User className="size-4" />}
           label="Người thực hiện"
-          value={detail.requestedByName || "-"}
+          value={
+            detail.requestedByPhone
+              ? `${detail.requestedByName || "-"} · ${detail.requestedByPhone}`
+              : detail.requestedByName || "-"
+          }
         />
         <InfoItem
           icon={<CalendarDays className="size-4" />}

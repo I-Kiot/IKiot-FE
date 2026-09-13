@@ -1,8 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getMovementStatusConfig } from "@/app/(protected)/exchange/shared/movement-labels";
 import type { MovementStatus, MovementType } from "@/types/stock-movement";
 
@@ -12,7 +10,6 @@ type MovementDetailHeaderProps = {
   subtitle?: string;
   status: MovementStatus;
   movementType?: MovementType;
-  onClose?: () => void;
 };
 
 export function MovementDetailHeader({
@@ -21,7 +18,6 @@ export function MovementDetailHeader({
   subtitle,
   status,
   movementType,
-  onClose,
 }: MovementDetailHeaderProps) {
   const statusConfig = getMovementStatusConfig(status, movementType);
   const code = `#${String(movementId).slice(-6).toUpperCase()}`;
@@ -43,21 +39,6 @@ export function MovementDetailHeader({
           <p className="text-xs text-muted-foreground">{subtitle}</p>
         ) : null}
       </div>
-      {onClose ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 cursor-pointer shrink-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-        >
-          <X className="mr-1 size-4" />
-          Đóng
-        </Button>
-      ) : null}
     </div>
   );
 }

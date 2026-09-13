@@ -158,8 +158,8 @@ export function unwrapStaffPayload(payload: unknown): ApiStaffUser | null {
 export function mapStaffFromApi(user: ApiStaffUser): Staff {
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
-  const branchRef = user.branchId ?? user.branch;
-  const warehouseRef = user.warehouseId ?? user.warehouse;
+  const branchRef = user.branch ?? user.branchId;
+  const warehouseRef = user.warehouse ?? user.warehouseId;
   const id = user.id ?? "";
 
   return {

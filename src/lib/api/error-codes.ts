@@ -69,6 +69,7 @@ export const ERROR_MESSAGES = {
   CURRENT_PASSWORD_INCORRECT: "Mật khẩu hiện tại không đúng",
   CUSTOMER_CODE_TAKEN: "Mã khách hàng đã tồn tại",
   CUSTOMER_NOT_FOUND: "Không tìm thấy khách hàng",
+  CUSTOMER_PHONE_TAKEN: "Số điện thoại này đã thuộc về một khách hàng khác",
   DATE_RANGE_INVALID: "fromDate phải trước hoặc bằng toDate",
   EMAIL_ALREADY_IN_USE: "Email đã được sử dụng",
   FOREIGN_KEY_VIOLATION: "Dữ liệu liên kết không tồn tại hoặc đang được sử dụng",

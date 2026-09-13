@@ -209,8 +209,6 @@ export function AdjustmentsCreateDialog({
         movementType: 'ADJUST',
         fromLocationId: data.locationId,
         fromLocationType: data.locationType,
-        toLocationId: data.locationId,
-        toLocationType: data.locationType,
         note: normalizeOptionalNote(data.note),
         details: data.details.map((d) => ({
           productItemId: d.productItemId,

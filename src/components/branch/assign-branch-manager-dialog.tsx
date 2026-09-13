@@ -78,14 +78,10 @@ export function AssignBranchManagerDialog({
 
   const currentManager = useMemo(() => {
     if (!selectedBranchId) return null;
-    return (
-      allStaff.find(
-        (staff) =>
-          staff.status === "ACTIVE" &&
-          staff.branchId === selectedBranchId,
-      ) ?? null
-    );
-  }, [allStaff, selectedBranchId]);
+    const managerId = branches.find((l) => l.id === selectedBranchId)?.managerId;
+    if (!managerId) return null;
+    return allStaff.find((staff) => staff.id === managerId) ?? null;
+  }, [allStaff, branches, selectedBranchId]);
 
   const staffCandidates = useMemo(() => {
     if (!selectedBranchId) return [];

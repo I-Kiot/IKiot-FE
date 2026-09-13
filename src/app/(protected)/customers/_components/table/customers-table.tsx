@@ -76,6 +76,16 @@ export function CustomersTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
+    // The phone number is drawn under the name rather than in its own column, so the
+    // default global filter (which only reads column values) could never match it.
+    globalFilterFn: (row, _columnId, filterValue: string) => {
+      const needle = String(filterValue ?? '').trim().toLowerCase()
+      if (!needle) return true
+      const c = row.original
+      return [c.name, c.phone, c.customerCode]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(needle))
+    },
     onExpandedChange: setExpanded,
     state: {
       sorting,

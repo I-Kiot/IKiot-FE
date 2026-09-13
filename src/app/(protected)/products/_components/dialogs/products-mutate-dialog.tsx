@@ -138,14 +138,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
   async function onSubmit(data: ProductFormValues) {
     if (!isEdit) {
       let hasErrors = false
-      if (!data.productCode?.trim()) {
-        form.setError('productCode', { message: 'Mã hàng là bắt buộc' })
-        hasErrors = true
-      }
-      if (!data.sku?.trim()) {
-        form.setError('sku', { message: 'SKU là bắt buộc' })
-        hasErrors = true
-      }
+      // Mã hàng / SKU để trống thì BE tự sinh (SP000001...), không bắt buộc nữa.
       if (!data.retailPrice?.trim()) {
         form.setError('retailPrice', { message: 'Giá bán là bắt buộc' })
         hasErrors = true
@@ -439,11 +432,9 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                     name="productCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          Mã hàng <span className="text-destructive">*</span>
-                        </FormLabel>
+                        <FormLabel>Mã hàng</FormLabel>
                         <FormControl>
-                          <Input placeholder="VD: HH-001" {...field} />
+                          <Input placeholder="Để trống để tự sinh (SP000001...)" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -454,11 +445,9 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                     name="sku"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          SKU <span className="text-destructive">*</span>
-                        </FormLabel>
+                        <FormLabel>SKU</FormLabel>
                         <FormControl>
-                          <Input placeholder="VD: SKU-HH001-001" {...field} />
+                          <Input placeholder="Để trống để lấy theo mã hàng" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -336,13 +336,6 @@ export function StaffsMutateDialog({
   const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [paySheetOptions, setPaySheetOptions] = useState<PaySheetOption[]>([]);
   const [paySheetOptionsFailed, setPaySheetOptionsFailed] = useState(false);
-  /** Chi nhánh / kho đã có quản lý ACTIVE - ẩn khi tạo/gán BM/WM. */
-  const [occupiedBranchIds, setOccupiedBranchIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [occupiedWarehouseIds, setOccupiedWarehouseIds] = useState<Set<string>>(
-    () => new Set(),
-  );
   const avatarBlobUrlRef = useRef<string | null>(null);
 
   const form = useForm<CreateFormValues | EditFormValues>({
@@ -352,35 +345,16 @@ export function StaffsMutateDialog({
     reValidateMode: "onSubmit",
   });
 
-  const selectedBranchId = form.watch("branchId");
-  const selectedWarehouseId = form.watch("warehouseId");
   const watchedFirstName = form.watch("firstName");
   const watchedLastName = form.watch("lastName");
   const avatarFullName = `${watchedLastName} ${watchedFirstName}`.trim();
 
-  const visibleBranchOptions = useMemo(() => {
-    return branchOptions.filter((option) => {
-      if (isEdit && currentRow?.branchId === option.value) return true;
-      return !occupiedBranchIds.has(option.value);
-    });
-  }, [
-    branchOptions,
-    occupiedBranchIds,
-    isEdit,
-    currentRow?.branchId,
-  ]);
-
-  const visibleWarehouseOptions = useMemo(() => {
-    return warehouseOptions.filter((option) => {
-      if (isEdit && currentRow?.warehouseId === option.value) return true;
-      return !occupiedWarehouseIds.has(option.value);
-    });
-  }, [
-    warehouseOptions,
-    occupiedWarehouseIds,
-    isEdit,
-    currentRow?.warehouseId,
-  ]);
+  // Every branch and warehouse is selectable. Until 2026-09-12 a location with *any*
+  // active employee was hidden here as "already has a manager" - a leftover of the fixed
+  // BRANCH_MANAGER role. Running a location is `Branch.managerId` now, appointed from the
+  // branch screen, so hiring somebody into a branch says nothing about who manages it.
+  const visibleBranchOptions = branchOptions;
+  const visibleWarehouseOptions = warehouseOptions;
 
   function clearAvatarBlobUrl() {
     if (avatarBlobUrlRef.current) {
@@ -421,44 +395,6 @@ export function StaffsMutateDialog({
     return () => clearAvatarBlobUrl();
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-
-    void Promise.all([
-      // Which locations already have somebody running them. There is no manager *role*
-      // to filter on any more, so this reads every active account and the caller matches
-      // them against Branch.managerId / Warehouse.managerId.
-      staffApi.getList({ status: "ACTIVE", page: 1, limit: 100 }),
-      staffApi.getList({ status: "ACTIVE", page: 1, limit: 100 }),
-    ])
-      .then(([branchManagers, warehouseManagers]) => {
-        if (cancelled) return;
-        setOccupiedBranchIds(
-          new Set(
-            (branchManagers.data ?? [])
-              .map((staff) => staff.branchId)
-              .filter((id): id is string => Boolean(id)),
-          ),
-        );
-        setOccupiedWarehouseIds(
-          new Set(
-            (warehouseManagers.data ?? [])
-              .map((staff) => staff.warehouseId)
-              .filter((id): id is string => Boolean(id)),
-          ),
-        );
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setOccupiedBranchIds(new Set());
-        setOccupiedWarehouseIds(new Set());
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -496,33 +432,6 @@ export function StaffsMutateDialog({
     };
   }, [open, isEdit, currentRow?.paySheetId, currentRow?.paySheetName]);
 
-  // Bỏ chọn CN/kho đã có quản lý (trừ chính NV đang sửa).
-  useEffect(() => {
-    if (!open) return;
-    if (selectedBranchId) {
-      const stillVisible = visibleBranchOptions.some(
-        (option) => option.value === selectedBranchId,
-      );
-      if (!stillVisible) {
-        form.setValue("branchId", "");
-      }
-    }
-    if (selectedWarehouseId) {
-      const stillVisible = visibleWarehouseOptions.some(
-        (option) => option.value === selectedWarehouseId,
-      );
-      if (!stillVisible) {
-        form.setValue("warehouseId", "");
-      }
-    }
-  }, [
-    open,
-    selectedBranchId,
-    selectedWarehouseId,
-    visibleBranchOptions,
-    visibleWarehouseOptions,
-    form,
-  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -856,7 +765,7 @@ export function StaffsMutateDialog({
                           {warehouseOptionsFailed
                             ? "Không tải được danh sách kho."
                             : warehouseOptions.length > 0
-                              ? "Tất cả kho đã có quản lý."
+                              ? "Không có kho nào khả dụng."
                               : "Hiện chưa có kho hàng nào trong hệ thống."}
                         </p>
                       )}

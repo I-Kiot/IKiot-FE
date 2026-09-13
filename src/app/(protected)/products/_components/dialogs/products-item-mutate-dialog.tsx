@@ -140,6 +140,9 @@ export function ProductsItemMutateDialog(props: Props) {
     const { useParentNameForItem, itemProductName, ...rest } = data
     const payload = {
       ...rest,
+      // Để trống: tạo mới thì BE tự sinh, sửa thì giữ nguyên mã hiện có.
+      productCode: data.productCode?.trim() || undefined,
+      sku: data.sku?.trim() || undefined,
       costPrice: parsePriceAmount(data.costPrice),
       retailPrice: parsePriceAmount(data.retailPrice),
       vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
@@ -303,11 +306,9 @@ export function ProductsItemMutateDialog(props: Props) {
                 name="productCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Mã hàng <span className="text-destructive">*</span>
-                    </FormLabel>
+                    <FormLabel>Mã hàng</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: HH-001" {...field} />
+                      <Input placeholder="Để trống để tự sinh (SP000001...)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -318,11 +319,9 @@ export function ProductsItemMutateDialog(props: Props) {
                 name="sku"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      SKU <span className="text-destructive">*</span>
-                    </FormLabel>
+                    <FormLabel>SKU</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: SKU-HH001-001" {...field} />
+                      <Input placeholder="Để trống để lấy theo mã hàng" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

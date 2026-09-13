@@ -1,12 +1,16 @@
 // [Constants – Promotion]
 import type { Promotion, PromotionStatus, DiscountType, ApplicableRuleType } from '@/types/promotion'
 
-export type PromotionDisplayStatus = PromotionStatus | 'EXPIRED'
+export type PromotionDisplayStatus = PromotionStatus | 'SCHEDULED' | 'EXPIRED'
 
 export const STATUS_MAP: Record<PromotionDisplayStatus, { label: string; className: string }> = {
   ACTIVE: {
     label: 'Đang chạy',
     className: 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20',
+  },
+  SCHEDULED: {
+    label: 'Chưa hiệu lực',
+    className: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20',
   },
   INACTIVE: {
     label: 'Đã tắt',
@@ -18,11 +22,15 @@ export const STATUS_MAP: Record<PromotionDisplayStatus, { label: string; classNa
   },
 }
 
-export function getPromotionDisplayStatus(promotion: Promotion): PromotionDisplayStatus {
-  if (promotion.status === 'ACTIVE' && new Date(promotion.endDate) < new Date()) {
-    return 'EXPIRED'
-  }
-  return promotion.status
+/** Trạng thái hiển thị: `status` lưu ở BE chỉ là bật/tắt, còn hiệu lực thực tế tính theo ngày. */
+export function getPromotionDisplayStatus(
+  promotion: Pick<Promotion, 'status' | 'startDate' | 'endDate'>,
+  now: Date = new Date(),
+): PromotionDisplayStatus {
+  if (promotion.status !== 'ACTIVE') return promotion.status
+  if (new Date(promotion.endDate) < now) return 'EXPIRED'
+  if (new Date(promotion.startDate) > now) return 'SCHEDULED'
+  return 'ACTIVE'
 }
 
 export const DISCOUNT_TYPE_MAP: Record<DiscountType, string> = {

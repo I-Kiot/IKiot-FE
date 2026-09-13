@@ -1076,13 +1076,18 @@ export default function SettingsPage() {
       toast.error("Vui lòng điền tên và địa chỉ chi nhánh!");
       return;
     }
+    // `CreateBranchDto` requires at least one phone number; this used to fall back to a
+    // made-up number (and a placeholder email) rather than ask for one.
+    if (!/^0\d{9}$/.test(newBranch.phone.trim())) {
+      toast.error("Vui lòng nhập số điện thoại chi nhánh hợp lệ (10 số)!");
+      return;
+    }
 
     try {
       const created = await branchApi.create({
         name: newBranch.name,
         address: newBranch.address,
-        phoneNumber: [newBranch.phone || "0987654321"],
-        email: "branch@ikiot.vn",
+        phoneNumber: [newBranch.phone.trim()],
       });
 
       if (created) {
@@ -1142,8 +1147,8 @@ export default function SettingsPage() {
       return;
     }
     // `CreateWarehouseDto` requires at least one phone number, the same as a branch.
-    if (!newWarehouse.phoneNumber.trim()) {
-      toast.error("Vui lòng điền số điện thoại kho tổng!");
+    if (!/^0\d{9}$/.test(newWarehouse.phoneNumber.trim())) {
+      toast.error("Vui lòng nhập số điện thoại kho tổng hợp lệ (10 số)!");
       return;
     }
 
@@ -1629,11 +1634,11 @@ export default function SettingsPage() {
                           </div>
                           <div className="space-y-1.5">
                             <Label htmlFor="branch-phone" className="text-xs">
-                              Số điện thoại
+                              Số điện thoại *
                             </Label>
                             <Input
                               id="branch-phone"
-                              placeholder="024.xxxx.xxxx"
+                              placeholder="Ví dụ: 0987654321"
                               value={newBranch.phone}
                               onChange={(e) =>
                                 setNewBranch({
@@ -1641,6 +1646,7 @@ export default function SettingsPage() {
                                   phone: e.target.value,
                                 })
                               }
+                              required
                               className="h-9 text-sm"
                             />
                           </div>

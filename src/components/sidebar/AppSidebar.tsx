@@ -13,11 +13,8 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 
-import { filterHrNavItems } from "@/app/(protected)/staffs/shared/nav-hr-permissions";
-import { filterExchangeNavItems } from "@/app/(protected)/exchange/shared/nav-exchange-permissions";
-import { filterLeafNavItems } from "./constants/nav-leaf-permissions";
 import { useAuthStore } from "@/store/auth-store";
-import { getSidebar } from "./utils/get-sidebar";
+import { getFilteredSidebar } from "./utils/get-sidebar";
 
 const defaultUserData = {
   name: "iKiot",
@@ -32,47 +29,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (!user) {
       return defaultUserData;
     }
-    // email is optional on the backend User (phoneNumber is the required
-    // identifier), so it can't be the last resort here - fall through to it.
+    // Line one is the person's name, line two the phone number they sign in with -
+    // phoneNumber is the required identifier on the backend User, email is optional.
     const name =
       [user.profile?.lastName, user.profile?.firstName]
         .filter(Boolean)
         .join(" ")
         .trim() ||
       user.email ||
-      user.phoneNumber ||
       defaultUserData.name;
     return {
       name,
-      email: user.email || user.phoneNumber || "",
+      email: user.phoneNumber || user.email || "",
       avatar: user.profile?.avatarUrl || "",
     };
   }, [user]);
 
-  // `sidebarRoleConfig` says what the account kind *can* reach; the permission filters say
-  // what this particular role may. A parent whose children are all filtered away is dropped
-  // rather than drawn as a menu that opens onto nothing; a leaf goes through
-  // `filterLeafNavItems`, which keeps the ones no permission has been named for.
-  const navGroups = React.useMemo(() => {
-    return getSidebar(user?.role)
-      .map((group) => ({
-        ...group,
-        items: filterLeafNavItems(group.items, user?.role)
-          .map((item) =>
-            item.items
-              ? {
-                  ...item,
-                  items: filterExchangeNavItems(
-                    filterHrNavItems(item.items, user?.role),
-                    user?.role,
-                  ),
-                }
-              : item,
-          )
-          .filter((item) => !item.items || item.items.length > 0),
-      }))
-      .filter((group) => group.items.length > 0);
-  }, [user?.role]);
+  const navGroups = React.useMemo(
+    () => getFilteredSidebar(user?.role),
+    [user?.role],
+  );
 
   return (
     <Sidebar {...props}>

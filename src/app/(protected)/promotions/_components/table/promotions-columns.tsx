@@ -138,7 +138,8 @@ export const promotionsColumns: ColumnDef<Promotion>[] = [
         </Badge>
       )
     },
-    filterFn: (row, columnId, value: string) => row.getValue(columnId) === value,
+    filterFn: (row, _columnId, value: string) =>
+      getPromotionDisplayStatus(row.original) === value,
   },
   {
     id: 'expand',

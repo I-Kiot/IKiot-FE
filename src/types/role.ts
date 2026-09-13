@@ -67,5 +67,6 @@ export type RoleUpdatePayload = Partial<RoleCreatePayload>
 export interface PermissionResourceGroup {
   resource: string
   label: string
+  hint?: string
   actions: string[]
 }

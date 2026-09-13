@@ -142,8 +142,8 @@ export interface InitialStock {
 
 export interface ProductItemCreatePayload {
   productName: string;
-  productCode: string;
-  sku: string;
+  productCode?: string;
+  sku?: string;
   barcode?: string;
   description?: string;
   retailPrice: number;

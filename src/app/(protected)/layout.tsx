@@ -9,8 +9,7 @@ import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { useNotificationSocket } from "@/hooks/use-notification-socket";
 import { useAuthStore } from "@/store/auth-store";
-import { sidebarRoleConfig } from "@/components/sidebar/constants/sidebar-role";
-import { type UserRole } from "@/components/sidebar/constants/types";
+import { getAllowedSidebarUrls } from "@/components/sidebar/utils/get-sidebar";
 import { UnauthorizedPage } from "@/components/unauthorized";
 
 function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
@@ -44,24 +43,8 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Get allowed URLs based on role config
-  const roleConfig = sidebarRoleConfig[user.role as UserRole] || [];
-  const allowedUrls: string[] = [];
-
-  roleConfig.forEach((group) => {
-    group.items.forEach((item) => {
-      if (item.url && item.url !== "#" && !item.url.startsWith("/#")) {
-        allowedUrls.push(item.url);
-      }
-      if (item.items) {
-        item.items.forEach((subItem) => {
-          if (subItem.url && subItem.url !== "#" && !subItem.url.startsWith("/#")) {
-            allowedUrls.push(subItem.url);
-          }
-        });
-      }
-    });
-  });
+  // Same list the sidebar draws: account-kind config narrowed by this role's permissions.
+  const allowedUrls = getAllowedSidebarUrls(user.role);
 
   // Perform prefix matching check
   const isAllowed = allowedUrls.some(

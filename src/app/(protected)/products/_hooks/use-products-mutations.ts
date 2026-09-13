@@ -40,8 +40,8 @@ export function useProductsMutations() {
         items: [
           {
             productName: itemProductName,
-            productCode: data.productCode!,
-            sku: data.sku!,
+            productCode: data.productCode?.trim() || undefined,
+            sku: data.sku?.trim() || undefined,
             barcode: data.barcode,
             retailPrice: parsePriceAmount(data.retailPrice),
             costPrice: parsePriceAmount(data.costPrice),

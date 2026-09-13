@@ -257,7 +257,6 @@ export function AdjustmentsTable() {
                             <AdjustmentsExpandedPanel
                               request={row.original}
                               isExpanded
-                              onClose={() => row.toggleExpanded(false)}
                             />
                           </div>
                         </TableCell>
