@@ -76,7 +76,7 @@ export function TeamSection() {
             Đội ngũ của chúng tôi
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Chúng tôi gồm những chuyên gia công nghệ và vận hành bán lẻ đầy nhiệt huyết, cam kết đem lại giải pháp tốt nhất cho sự phát triển chuỗi cửa hàng của bạn.
+            Chúng tôi gồm những đội ngũ hỗ trợ kinh nghiệm và đầy nhiệt huyết, cam kết đem lại giải pháp tốt nhất cho sự phát triển chuỗi cửa hàng của bạn.
           </p>
         </div>
 

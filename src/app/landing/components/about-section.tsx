@@ -43,10 +43,10 @@ export function AboutSection() {
             Về iKiot
           </Badge>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-6">
-            Giải pháp chuyên biệt cho chuỗi cửa hàng điện tử & công nghệ
+            Giải pháp chuyên biệt cho chuỗi cửa hàng
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            iKiot mang sứ mệnh đồng hành cùng các nhà bán lẻ công nghệ tối ưu
+            iKiot mang sứ mệnh đồng hành cùng các nhà bán lẻ tối ưu
             hóa quy trình quản trị, bán lẻ đa chi nhánh nhanh chóng và hiệu quả
             hơn nhờ sức mạnh của dữ liệu lớn và trí tuệ nhân tạo.
           </p>

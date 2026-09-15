@@ -25,19 +25,14 @@ export function HeroSection() {
           <div className="mb-8 flex justify-center">
             <Badge variant="outline" className="px-4 py-2 border-foreground">
               <Star className="w-3 h-3 mr-2 fill-current" />
-              iKiot - Giải pháp Quản lý Chuỗi Cửa hàng Điện tử thế hệ mới
+              iKiot - Giải pháp Quản lý Chuỗi Cửa hàng thế hệ mới
               <ArrowRight className="w-3 h-3 ml-2" />
             </Badge>
           </div>
 
           {/* Main Headline */}
           <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-            Thiết lập chuỗi cửa hàng
-            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              {" "}
-              Điện tử & Công nghệ{" "}
-            </span>
-            nhanh gọn, chi phí tối ưu
+            Thiết lập chuỗi cửa hàng nhanh gọn, chi phí tối ưu
           </h1>
 
           {/* Subheading */}

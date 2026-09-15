@@ -93,7 +93,7 @@ export function FeaturesSection() {
           </h2>
           <p className="text-lg text-muted-foreground">
             iKiot tích hợp sẵn các công cụ quản lý bán lẻ mạnh mẽ giúp bạn kiểm
-            soát toàn bộ chuỗi cửa hàng công nghệ chỉ trên một nền tảng duy
+            soát toàn bộ chuỗi cửa hàng chỉ trên một nền tảng duy
             nhất.
           </p>
         </div>
@@ -251,7 +251,7 @@ export function FeaturesSection() {
                       Cập nhật Hot Trend
                     </h4>
                     <p className="text-muted-foreground text-xs mt-1">
-                      AI phát hiện sản phẩm công nghệ nào đang tăng trưởng nóng
+                      AI phát hiện sản phẩm nào đang tăng trưởng nóng
                       để kịp thời nhập hàng.
                     </p>
                   </div>

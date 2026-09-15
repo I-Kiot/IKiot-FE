@@ -48,7 +48,7 @@ export function TestimonialsSection() {
             Khách hàng nói gì về iKiot
           </h2>
           <p className="text-lg text-muted-foreground">
-            Hàng ngàn chủ cửa hàng và chuỗi bán lẻ công nghệ đã tối ưu hóa được
+            Hàng ngàn chủ cửa hàng và chuỗi bán lẻ đã tối ưu hóa được
             quy trình vận hành và tăng trưởng doanh thu vượt trội.
           </p>
         </div>
