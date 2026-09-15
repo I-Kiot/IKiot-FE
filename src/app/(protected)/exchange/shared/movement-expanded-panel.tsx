@@ -94,14 +94,12 @@ export type MovementTransferActions = {
 export function MovementExpandedPanel({
   request,
   isExpanded,
-  onClose,
   mode,
   importActions,
   transferActions,
 }: {
   request: StockMovement;
   isExpanded: boolean;
-  onClose?: () => void;
   mode: "import" | "transfer";
   importActions?: MovementImportActions;
   transferActions?: MovementTransferActions;
@@ -470,7 +468,6 @@ export function MovementExpandedPanel({
         subtitle={headerSubtitle}
         status={detail.status}
         movementType={detail.movementType}
-        onClose={onClose}
       />
 
       {mode === "transfer" ? (
@@ -501,7 +498,11 @@ export function MovementExpandedPanel({
             <InfoItem
               icon={<User className="size-4" />}
               label="Người yêu cầu"
-              value={detail.requestedByName || "-"}
+              value={
+                detail.requestedByPhone
+                  ? `${detail.requestedByName || "-"} · ${detail.requestedByPhone}`
+                  : detail.requestedByName || "-"
+              }
             />
             <InfoItem
               icon={<CalendarDays className="size-4" />}
@@ -531,7 +532,11 @@ export function MovementExpandedPanel({
           <InfoItem
             icon={<User className="size-4" />}
             label="Người tạo"
-            value={detail.requestedByName || "-"}
+            value={
+              detail.requestedByPhone
+                ? `${detail.requestedByName || "-"} · ${detail.requestedByPhone}`
+                : detail.requestedByName || "-"
+            }
           />
           <InfoItem
             icon={<CalendarDays className="size-4" />}

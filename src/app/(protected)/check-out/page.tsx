@@ -39,6 +39,8 @@ interface CartItem {
   unitPrice: number;
   discountAmount: number;
   imageUrl?: string;
+  stock: number;
+  stockAllLocations: number;
 }
 
 interface InvoiceState {
@@ -271,6 +273,8 @@ export default function CheckOutPage() {
         unitPrice: product.retailPrice,
         discountAmount: 0,
         imageUrl: product.imageUrl,
+        stock: product.stock,
+        stockAllLocations: product.stockAllLocations,
       };
       updateActiveInvoice({ items: [...activeInvoice.items, newItem] });
       toast.success(`Đã thêm ${product.name} vào giỏ hàng`);

@@ -22,6 +22,8 @@ interface CartItem {
   unitPrice: number;
   discountAmount: number;
   imageUrl?: string;
+  stock: number;
+  stockAllLocations: number;
 }
 
 interface CartItemsProps {
@@ -51,9 +53,12 @@ export function CartItems({
           <ShoppingCart className="size-8" />
         </div>
         <div className="space-y-1 max-w-sm">
-          <h3 className="text-lg font-bold text-foreground">Giỏ Hàng Đang Trống</h3>
+          <h3 className="text-lg font-bold text-foreground">
+            Giỏ Hàng Đang Trống
+          </h3>
           <p className="text-base text-muted-foreground leading-normal">
-            Vui lòng nhập tên, mã sản phẩm hoặc quét mã vạch ở ô tìm kiếm phía trên để thêm sản phẩm vào đơn hàng.
+            Vui lòng nhập tên, mã sản phẩm hoặc quét mã vạch ở ô tìm kiếm phía
+            trên để thêm sản phẩm vào đơn hàng.
           </p>
         </div>
       </div>
@@ -65,21 +70,35 @@ export function CartItems({
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
-            <TableHead className="w-12 text-center font-bold text-base">STT</TableHead>
+            <TableHead className="w-12 text-center font-bold text-base">
+              STT
+            </TableHead>
             <TableHead className="font-bold text-base">Sản phẩm</TableHead>
-            <TableHead className="w-32 text-center font-bold text-base">Số lượng</TableHead>
-            <TableHead className="w-32 text-right font-bold text-base">Đơn giá</TableHead>
-            <TableHead className="w-28 text-right font-bold text-base">Giảm giá</TableHead>
-            <TableHead className="w-32 text-right font-bold text-base">Thành tiền</TableHead>
+            <TableHead className="w-32 text-center font-bold text-base">
+              Số lượng
+            </TableHead>
+            <TableHead className="w-32 text-right font-bold text-base">
+              Đơn giá
+            </TableHead>
+            <TableHead className="w-28 text-right font-bold text-base">
+              Giảm giá
+            </TableHead>
+            <TableHead className="w-32 text-right font-bold text-base">
+              Thành tiền
+            </TableHead>
             <TableHead className="w-12 text-center"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item, index) => {
-            const rowTotal = item.quantity * (item.unitPrice - item.discountAmount);
+            const rowTotal =
+              item.quantity * (item.unitPrice - item.discountAmount);
 
             return (
-              <TableRow key={item.productItemId} className="group hover:bg-muted/30 transition-colors duration-150">
+              <TableRow
+                key={item.productItemId}
+                className="group hover:bg-muted/30 transition-colors duration-150"
+              >
                 {/* Ordinal Index */}
                 <TableCell className="text-center font-medium font-mono text-muted-foreground text-base">
                   {index + 1}
@@ -88,11 +107,18 @@ export function CartItems({
                 {/* Product details */}
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-bold text-lg text-foreground">{item.name}</span>
+                    <span className="font-bold text-lg text-foreground">
+                      {item.name}
+                    </span>
                     <div className="flex gap-2 text-sm text-muted-foreground font-mono mt-0.5">
                       <span>{item.productCode}</span>
                       <span>|</span>
                       <span>SKU: {item.sku}</span>
+                      <span>|</span>
+                      <span>
+                        Tồn CN: {item.stock ?? 0} / Tổng:{" "}
+                        {item.stockAllLocations ?? 0}
+                      </span>
                     </div>
                   </div>
                 </TableCell>
@@ -105,7 +131,9 @@ export function CartItems({
                       variant="outline"
                       size="icon"
                       className="size-9 shrink-0 cursor-pointer"
-                      onClick={() => onQuantityChange(item.productItemId, item.quantity - 1)}
+                      onClick={() =>
+                        onQuantityChange(item.productItemId, item.quantity - 1)
+                      }
                       disabled={item.quantity <= 1}
                     >
                       <Minus className="size-4" />
@@ -115,7 +143,10 @@ export function CartItems({
                       value={item.quantity}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        onQuantityChange(item.productItemId, isNaN(val) || val < 1 ? 1 : val);
+                        onQuantityChange(
+                          item.productItemId,
+                          isNaN(val) || val < 1 ? 1 : val,
+                        );
                       }}
                       className="w-14 h-9 px-1 text-center font-bold text-base tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
@@ -124,7 +155,9 @@ export function CartItems({
                       variant="outline"
                       size="icon"
                       className="size-9 shrink-0 cursor-pointer"
-                      onClick={() => onQuantityChange(item.productItemId, item.quantity + 1)}
+                      onClick={() =>
+                        onQuantityChange(item.productItemId, item.quantity + 1)
+                      }
                     >
                       <Plus className="size-4" />
                     </Button>
@@ -139,7 +172,10 @@ export function CartItems({
                       value={item.unitPrice}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value);
-                        onUnitPriceChange(item.productItemId, isNaN(val) || val < 0 ? 0 : val);
+                        onUnitPriceChange(
+                          item.productItemId,
+                          isNaN(val) || val < 0 ? 0 : val,
+                        );
                       }}
                       className="w-28 h-9 text-right text-base font-bold tabular-nums px-1.5 focus-visible:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />

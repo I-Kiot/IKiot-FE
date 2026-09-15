@@ -20,7 +20,10 @@ interface Product {
   retailPrice: number;
   costPrice: number;
   vat: number;
+  /** Tồn tại chi nhánh đang bán (hoặc toàn hệ thống khi chưa chọn chi nhánh). */
   stock: number;
+  /** Tổng tồn ở mọi kho/chi nhánh. */
+  stockAllLocations: number;
   status: string;
   imageUrl?: string;
 }
@@ -34,6 +37,20 @@ const formatVND = (value: number) =>
     value,
   );
 
+/** The branch a sale is scoped to: the account's own posting, else the sidebar switcher. */
+function resolveBranchId(): string {
+  const cachedUser = getCachedUser() as { branchId?: string } | null;
+  if (cachedUser?.branchId) return cachedUser.branchId;
+  if (typeof window !== "undefined") {
+    const activeSwitcherItemId = localStorage.getItem("activeSwitcherItemId");
+    const activeSwitcherItemType = localStorage.getItem("activeSwitcherItemType");
+    if (activeSwitcherItemId && activeSwitcherItemType === "branch" && activeSwitcherItemId !== "all-branches") {
+      return activeSwitcherItemId;
+    }
+  }
+  return "";
+}
+
 export function ProductSearch({ onProductSelect }: ProductSearchProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -45,22 +62,13 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
   // Fetch search results from the custom API hook
   const { products, loading } = useCheckoutProducts(query);
   const locationKey = useAuthStore((state) => state.locationKey);
+  // Whether `stock` is one branch's figure (a branch is selected / the account is posted
+  // to one) or already the whole shop's - decides how the stock badge is worded.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const hasBranchScope = useMemo(() => Boolean(resolveBranchId()), [locationKey]);
 
   // Fetch initial active products for quick purchase on mount or location changes
   useEffect(() => {
-    const resolveBranchId = (): string => {
-      const cachedUser = getCachedUser() as any;
-      if (cachedUser?.branchId) return cachedUser.branchId;
-      if (typeof window !== "undefined") {
-        const activeSwitcherItemId = localStorage.getItem("activeSwitcherItemId");
-        const activeSwitcherItemType = localStorage.getItem("activeSwitcherItemType");
-        if (activeSwitcherItemId && activeSwitcherItemType === "branch" && activeSwitcherItemId !== "all-branches") {
-          return activeSwitcherItemId;
-        }
-      }
-      return "";
-    };
-
     const branchId = resolveBranchId();
     const params: any = { limit: 10, status: "ACTIVE" };
     if (branchId) {
@@ -84,6 +92,7 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
             costPrice: item.costPrice,
             vat: item.vat || 0,
             stock: item.stock || 0,
+            stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
             status: product.status,
             imageUrl: (
               item.images?.find((img) => img.isThumbnail) ||
@@ -115,6 +124,7 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
         costPrice: item.costPrice,
         vat: item.vat || 0,
         stock: item.stock || 0,
+        stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
         status: product.status,
         imageUrl: (
           item.images?.find((img) => img.isThumbnail) ||
@@ -299,10 +309,17 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
                         ) : isOutOfStock ? (
                           <span className="text-sm px-2 py-0.5 bg-red-100 text-red-700 rounded font-medium">
                             Hết hàng
+                            {hasBranchScope && product.stockAllLocations > 0 && (
+                              <span className="ml-1 text-xs font-normal">
+                                (tổng: {product.stockAllLocations})
+                              </span>
+                            )}
                           </span>
                         ) : (
                           <span className="text-sm px-2 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 rounded font-medium">
-                            Tồn: {product.stock}
+                            {hasBranchScope
+                              ? `Tồn CN: ${product.stock} / Tổng: ${product.stockAllLocations}`
+                              : `Tồn: ${product.stockAllLocations}`}
                           </span>
                         )}
                       </div>

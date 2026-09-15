@@ -47,6 +47,7 @@ export function PermissionPicker({
       (group) =>
         group.label.toLowerCase().includes(needle) ||
         group.resource.toLowerCase().includes(needle) ||
+        (group.hint?.toLowerCase().includes(needle) ?? false) ||
         group.actions.some((action) =>
           actionLabel(action).toLowerCase().includes(needle),
         ),
@@ -147,6 +148,11 @@ export function PermissionPicker({
                     {chosen}/{keys.length}
                   </span>
                 </label>
+                {group.hint && (
+                  <p className="text-muted-foreground mt-0.5 pl-6 text-xs">
+                    Menu: {group.hint}
+                  </p>
+                )}
 
                 <Separator className="my-2" />
 

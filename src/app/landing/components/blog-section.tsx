@@ -10,17 +10,17 @@ const blogs = [
     id: 1,
     image: 'https://ui.shadcn.com/placeholder.svg',
     category: 'Vận hành bán lẻ',
-    title: 'Cách tối ưu tồn kho cho chuỗi cửa hàng điện tử',
+    title: 'Cách tối ưu tồn kho cho chuỗi cửa hàng',
     description:
-      'Làm thế nào để tránh tình trạng đọng vốn và đứt gãy nguồn cung thiết bị công nghệ giữa các chi nhánh.',
+      'Làm thế nào để tránh tình trạng đọng vốn và đứt gãy nguồn cung hàng hóa giữa các chi nhánh.',
   },
   {
     id: 2,
     image: 'https://ui.shadcn.com/placeholder.svg',
     category: 'Xu hướng công nghệ',
-    title: 'Ứng dụng AI dự báo xu hướng mua sắm thiết bị',
+    title: 'Ứng dụng AI dự báo xu hướng mua sắm hàng hóa',
     description:
-      'Khám phá cách trí tuệ nhân tạo (AI) giúp các nhà bán lẻ điện tử đón đầu các xu hướng hot trend để lập kế hoạch nhập hàng.',
+      'Khám phá cách trí tuệ nhân tạo (AI) giúp các nhà bán lẻ đón đầu các xu hướng hot trend để lập kế hoạch nhập hàng.',
   },
   {
     id: 3,
@@ -43,7 +43,7 @@ export function BlogSection() {
             Cẩm nang quản lý bán lẻ
           </h2>
           <p className="text-lg text-muted-foreground">
-            Cập nhật các xu hướng bán lẻ công nghệ mới nhất, bí quyết vận hành chuỗi cửa hàng và ứng dụng AI tối ưu doanh thu.
+            Cập nhật các xu hướng hàng hóa bán lẻ mới nhất, bí quyết vận hành chuỗi cửa hàng và ứng dụng AI tối ưu doanh thu.
           </p>
         </div>
 
@@ -74,14 +74,14 @@ export function BlogSection() {
                     <h3 className="text-xl font-bold hover:text-primary transition-colors">{blog.title}</h3>
                   </a>
                   <p className="text-muted-foreground">{blog.description}</p>
-                  <a
+                  {/* <a
                     href="#"
                     onClick={e => e.preventDefault()}
                     className="inline-flex items-center gap-2 text-primary hover:underline cursor-pointer"
                   >
                     Đọc thêm
                     <ArrowRight className="size-4" />
-                  </a>
+                  </a> */}
                 </div>
               </CardContent>
             </Card>

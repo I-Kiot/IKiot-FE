@@ -129,7 +129,7 @@ export function LandingFooter() {
               </a>
             </div>
             <p className="text-muted-foreground mb-6 max-lg:text-center max-lg:flex max-lg:justify-center">
-              Hệ thống quản lý chuỗi cửa hàng chuyên bán lẻ điện tử & công nghệ
+              Hệ thống quản lý chuỗi cửa hàng chuyên bán lẻ thế hệ mới
               thông minh hàng đầu Việt Nam. Vận hành nhanh gọn, tối ưu tồn kho
               và dự báo xu hướng bằng AI.
             </p>

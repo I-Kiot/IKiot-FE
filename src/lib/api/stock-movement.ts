@@ -134,6 +134,11 @@ function resolveUserName(value?: ApiRef): string {
   return value.phoneNumber ?? value.email ?? "";
 }
 
+function resolveUserPhone(value?: ApiRef): string {
+  if (!value || typeof value === "string") return "";
+  return value.phoneNumber ?? "";
+}
+
 function normalizeNote(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
@@ -172,6 +177,7 @@ function mapMovement(raw: ApiMovement): StockMovement {
     toLocationType: raw.toLocation?.locationType ?? "warehouse",
     requestedBy: resolveRefId(creator),
     requestedByName: resolveUserName(creator),
+    requestedByPhone: resolveUserPhone(creator),
     note: normalizeNote(raw.note),
     details: (raw.details ?? []).map(mapDetail),
     createdAt: raw.createdAt ?? "",

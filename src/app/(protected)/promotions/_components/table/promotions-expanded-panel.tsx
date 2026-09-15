@@ -2,7 +2,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Power, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -44,7 +44,7 @@ export function PromotionsExpandedPanel({
   isExpanded,
   isLastRow,
 }: PromotionsExpandedPanelProps) {
-  const { setOpen, setCurrentRow } = usePromotions()
+  const { setOpen, setCurrentRow, handleActivate, isLoading } = usePromotions()
   const role = getCachedUser()?.role
   const canEdit = canUpdatePromotion(role)
   const canDelete = canDeletePromotion(role)
@@ -146,7 +146,21 @@ export function PromotionsExpandedPanel({
             <>
               <Separator className="mt-4" />
               <div className="flex items-center justify-between mt-3">
-                {canDelete ? (
+                {promotion.status === 'INACTIVE' && canEdit ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    disabled={isLoading}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handleActivate(promotion.id)
+                    }}
+                  >
+                    <Power className="mr-2 size-4" />
+                    Bật lại
+                  </Button>
+                ) : canDelete && promotion.status === 'ACTIVE' ? (
                   <Button
                     variant="destructive"
                     size="sm"

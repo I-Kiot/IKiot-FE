@@ -48,8 +48,9 @@ export const productItemFormSchema = z.object({
   // Chỉ áp dụng khi tạo mới - BE không cho sửa productName qua PATCH item.
   useParentNameForItem: z.boolean(),
   itemProductName: z.string().optional(),
-  productCode: z.string().min(1, 'Mã hàng là bắt buộc'),
-  sku: z.string().min(1, 'SKU là bắt buộc'),
+  // Để trống thì BE tự sinh mã hàng / SKU.
+  productCode: z.string().optional(),
+  sku: z.string().optional(),
   barcode: z.string().optional(),
   retailPrice: z.string().min(1, 'Giá bán là bắt buộc'),
   costPrice: z.string().min(1, 'Giá vốn là bắt buộc'),

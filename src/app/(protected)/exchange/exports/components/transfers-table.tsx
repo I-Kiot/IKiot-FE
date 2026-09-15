@@ -75,15 +75,14 @@ export function TransfersTable() {
     totalItems: "Số mặt hàng",
     totalQty: "Tổng SL",
     requestedByName: "Người yêu cầu",
+    requestedByPhone: "SĐT người yêu cầu",
     createdAt: "Ngày tạo",
     status: "Trạng thái",
   };
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    requestedByName: false,
-  });
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
@@ -343,7 +342,6 @@ export function TransfersTable() {
                               mode="transfer"
                               request={row.original}
                               isExpanded
-                              onClose={() => row.toggleExpanded(false)}
                               transferActions={{
                                 handleOpen,
                                 handleSubmitFromOpening,

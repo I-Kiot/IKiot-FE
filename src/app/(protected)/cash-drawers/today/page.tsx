@@ -253,6 +253,11 @@ export default function CashDrawersTodayPage() {
       setOpenBranchName("");
       if (data && data.id) {
         router.push(`/cash-drawers/${data.id}`);
+      } else {
+        // Defensive: the server answered without an id, so re-read state instead of
+        // leaving "chưa mở két" on screen until a manual reload.
+        if (branches.length > 0) void loadBranchSessions(branches);
+        if (activeBranchId) void fetchSession(activeBranchId);
       }
     } catch (error: any) {
       console.error(error);
@@ -428,7 +433,7 @@ export default function CashDrawersTodayPage() {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="grid gap-4 ">
+              <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="openingAmount" className="font-semibold">
                     Tiền mở két đầu ngày (VND)
@@ -484,7 +489,7 @@ export default function CashDrawersTodayPage() {
                 </div>
               </div>
 
-              <DialogFooter className="sm:justify-end gap-2">
+              <DialogFooter className="sm:justify-end gap-2 pt-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -585,7 +590,7 @@ export default function CashDrawersTodayPage() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid gap-4 ">
+            <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="openingAmount2" className="font-semibold">
                   Tiền mở két đầu ngày (VND)
@@ -641,7 +646,7 @@ export default function CashDrawersTodayPage() {
               </div>
             </div>
 
-            <DialogFooter className="sm:justify-end gap-2">
+            <DialogFooter className="sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"

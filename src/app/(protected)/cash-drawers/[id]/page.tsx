@@ -41,7 +41,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { CashDrawerSession } from "@/types/cash-drawer";
+import type { CashDrawerSession, CashDrawerUserRef } from "@/types/cash-drawer";
 import type { Staff } from "@/types/staff";
 
 export default function CashDrawerDetailPage() {
@@ -107,10 +107,7 @@ export default function CashDrawerDetailPage() {
     if (prevLocationKeyRef.current === locationKey) return;
 
     const parsed = parseLocationKey(locationKey);
-    const currentSessionBranchId =
-      typeof session.branchId === "string"
-        ? session.branchId
-        : session.branchId?.id;
+    const currentSessionBranchId = session.branchId;
 
     // Switched to Tổng Branch ("all")
     if (locationKey === "all") {
@@ -148,10 +145,7 @@ export default function CashDrawerDetailPage() {
   useEffect(() => {
     if (!isReportOpen || !session) return;
 
-    const branchId =
-      typeof session.branchId === "string"
-        ? session.branchId
-        : session.branchId?.id;
+    const branchId = session.branchId;
     if (!branchId) return;
 
     const fetchStaffs = async () => {
@@ -211,16 +205,17 @@ export default function CashDrawerDetailPage() {
     }).format(new Date(dateStr));
   };
 
-  const getUserFullName = (userRef: any) => {
-    if (!userRef) return "N/A";
-    if (typeof userRef === "string") return "Nhân viên";
-    const profile = userRef.profile;
-    const first = profile?.firstName || "";
-    const last = profile?.lastName || "";
+  // The backend answers every person on a session as `{ id, phoneNumber, profile }`
+  // next to the raw `*Id` column; a bare id (a row older than that change) still gets a label.
+  const getUserFullName = (userRef?: CashDrawerUserRef | null, fallback = "Nhân viên") => {
+    if (!userRef) return fallback;
+    const first = userRef.profile?.firstName || "";
+    const last = userRef.profile?.lastName || "";
     return (
       [last, first].filter(Boolean).join(" ").trim() ||
+      userRef.phoneNumber ||
       userRef.email ||
-      "Nhân viên"
+      fallback
     );
   };
 
@@ -235,7 +230,17 @@ export default function CashDrawerDetailPage() {
 
     setIsSubmitting(true);
     try {
+      // The server wants a START from the holder before their END. The "Nhận ca" button
+      // files it explicitly; if the keeper skipped that step, file it here first so the
+      // end-of-shift report never fails with SHIFT_LOG_START_REQUIRED.
+      if (!hasStartedShift) {
+        await cashDrawerApi.submitShiftLog(id, {
+          type: "START",
+          amount: staffHandoverAmount,
+        });
+      }
       await cashDrawerApi.submitShiftLog(id, {
+        type: "END",
         amount,
         nextStaffId:
           nextStaffId && nextStaffId !== "none_clear" ? nextStaffId : undefined,
@@ -282,21 +287,15 @@ export default function CashDrawerDetailPage() {
 
   // Derived properties
   const isManager = canManageCashDrawer(user?.role);
-  const branchName =
-    session && typeof session.branchId !== "string"
-      ? session.branchId.name
-      : "Chi nhánh";
-  const currentStaffName = session ? getUserFullName(session.currentStaffId) : "";
+  const branchName = session?.branch?.name ?? "Chi nhánh";
+  const currentStaffName = session ? getUserFullName(session.currentStaff) : "";
+  const openedByName = session ? getUserFullName(session.openedBy, "Quản lý") : "";
   const isOpen = session ? session.status === "OPEN" : false;
 
   // Next staff candidates (exclude current keeper)
   const nextStaffCandidates = useMemo(() => {
     if (!session) return [];
-    const keeperId =
-      typeof session.currentStaffId === "string"
-        ? session.currentStaffId
-        : session.currentStaffId?.id;
-    return branchStaffs.filter((s) => s.id !== keeperId);
+    return branchStaffs.filter((s) => s.id !== session.currentStaffId);
   }, [branchStaffs, session]);
 
   // Handover Info for Staff User
@@ -304,11 +303,7 @@ export default function CashDrawerDetailPage() {
     if (!session || !user) return 0;
     if (session.shiftLogs && session.shiftLogs.length > 0) {
       const lastLogIdx = session.shiftLogs.findIndex(
-        (log) =>
-          log.nextStaffId &&
-          (typeof log.nextStaffId === "string"
-            ? log.nextStaffId === user.id
-            : log.nextStaffId.id === user.id)
+        (log) => log.nextStaffId === user.id
       );
       if (lastLogIdx !== -1) {
         return session.shiftLogs[lastLogIdx].amount;
@@ -321,28 +316,20 @@ export default function CashDrawerDetailPage() {
     if (!session || !user) return "N/A";
     if (session.shiftLogs && session.shiftLogs.length > 0) {
       const lastLogIdx = session.shiftLogs.findIndex(
-        (log) =>
-          log.nextStaffId &&
-          (typeof log.nextStaffId === "string"
-            ? log.nextStaffId === user.id
-            : log.nextStaffId.id === user.id)
+        (log) => log.nextStaffId === user.id
       );
       if (lastLogIdx !== -1) {
-        return getUserFullName(session.shiftLogs[lastLogIdx].staffId);
+        return getUserFullName(session.shiftLogs[lastLogIdx].staff);
       }
     }
-    return getUserFullName(session.openedBy);
+    return getUserFullName(session.openedBy, "Quản lý");
   }, [session, user]);
 
   const staffHandoverTime = useMemo(() => {
     if (!session || !user) return "";
     if (session.shiftLogs && session.shiftLogs.length > 0) {
       const lastLogIdx = session.shiftLogs.findIndex(
-        (log) =>
-          log.nextStaffId &&
-          (typeof log.nextStaffId === "string"
-            ? log.nextStaffId === user.id
-            : log.nextStaffId.id === user.id)
+        (log) => log.nextStaffId === user.id
       );
       if (lastLogIdx !== -1) {
         return session.shiftLogs[lastLogIdx].loggedAt;
@@ -353,12 +340,47 @@ export default function CashDrawerDetailPage() {
 
   const isCurrentKeeper = useMemo(() => {
     if (!session || !user) return false;
-    const keeperId =
-      typeof session.currentStaffId === "string"
-        ? session.currentStaffId
-        : session.currentStaffId?.id;
-    return keeperId === user.id;
+    return session.currentStaffId === user.id;
   }, [session, user]);
+
+  // Whether the keeper has filed their START log - the server only accepts an END after it.
+  const hasStartedShift = useMemo(() => {
+    if (!session || !user) return false;
+    const lastLog = session.shiftLogs.at(-1);
+    return lastLog?.type === "START" && lastLog.staffId === user.id;
+  }, [session, user]);
+
+  // The holder's final END (naming nobody to take over) is the handover to the manager:
+  // from here only "chốt két" is possible, so the keeper gets no further shift buttons.
+  const awaitingFinalize = useMemo(() => {
+    if (!session) return false;
+    const lastLog = session.shiftLogs.at(-1);
+    return (
+      lastLog?.type === "END" &&
+      lastLog.staffId === session.currentStaffId &&
+      !lastLog.nextStaffId
+    );
+  }, [session]);
+
+  // "Nhận ca": file the START log with the amount that was handed over.
+  const handleStartShift = async () => {
+    setIsSubmitting(true);
+    try {
+      await cashDrawerApi.submitShiftLog(id, {
+        type: "START",
+        amount: staffHandoverAmount,
+      });
+      toast.success("Đã nhận két, bắt đầu ca làm việc");
+      fetchSession();
+    } catch (error) {
+      console.error(error);
+      const message = (error as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
+      toast.error(message || "Không thể bắt đầu ca");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Determine dynamic breadcrumbs:
   // For branch/staff: Trang chủ > Két tiền
@@ -489,14 +511,13 @@ export default function CashDrawerDetailPage() {
                           {formatTime(session.createdAt)}
                         </span>
                         <span className="text-xs text-muted-foreground font-medium">
-                          Manager mở két
+                          {openedByName} mở két
                         </span>
                       </div>
                       <div className="text-sm font-semibold text-foreground mt-0.5">
                         {formatCurrency(session.openingAmount)} →{" "}
                         {getUserFullName(
-                          session.shiftLogs[0]?.staffId ||
-                            session.currentStaffId
+                          session.shiftLogs[0]?.staff ?? session.currentStaff
                         )}
                       </div>
                     </div>
@@ -512,7 +533,8 @@ export default function CashDrawerDetailPage() {
                             {formatTime(log.loggedAt)}
                           </span>
                           <span className="text-xs text-muted-foreground font-medium">
-                            {getUserFullName(log.staffId)} báo cáo
+                            {getUserFullName(log.staff)}{" "}
+                            {log.type === "START" ? "nhận két" : "báo cáo cuối ca"}
                           </span>
                         </div>
                         <div className="text-sm font-semibold text-foreground mt-0.5 flex flex-wrap items-center gap-1.5">
@@ -520,7 +542,7 @@ export default function CashDrawerDetailPage() {
                           {log.nextStaffId && (
                             <>
                               <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                              <span>{getUserFullName(log.nextStaffId)}</span>
+                              <span>{getUserFullName(log.nextStaff)}</span>
                             </>
                           )}
                         </div>
@@ -543,7 +565,7 @@ export default function CashDrawerDetailPage() {
                             {session.updatedAt ? formatTime(session.updatedAt) : ""}
                           </span>
                           <span className="text-xs text-muted-foreground font-medium">
-                            Manager chốt két
+                            {getUserFullName(session.finalLog.manager, "Quản lý")} chốt két
                           </span>
                         </div>
                         <div className="text-sm font-extrabold text-destructive mt-0.5">
@@ -562,16 +584,37 @@ export default function CashDrawerDetailPage() {
 
               {/* Action Close Cash Drawer */}
               {isOpen && (
-                <div className="pt-6 border-t mt-6 flex items-center gap-3">
+                <div className="pt-6 border-t mt-6 flex flex-wrap items-center gap-3">
                   <Button
                     variant="destructive"
                     className="font-semibold shadow-md shadow-destructive/20 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
                     onClick={handleOpenClose}
+                    disabled={!awaitingFinalize}
+                    title={
+                      awaitingFinalize
+                        ? undefined
+                        : "Nhân viên đang giữ két phải báo cáo cuối ca (không bàn giao) trước khi chốt"
+                    }
                   >
-                    <Lock className="h-4 w-4 me-2" /> CHỐT KÉT ĐẦU CUỐI NGÀY
+                    <Lock className="h-4 w-4 me-2" /> CHỐT KÉT CUỐI NGÀY
                   </Button>
+                  {!awaitingFinalize && (
+                    <span className="text-xs text-muted-foreground">
+                      Chờ {currentStaffName} báo cáo cuối ca trước khi chốt két.
+                    </span>
+                  )}
 
-                  {isCurrentKeeper && (
+                  {isCurrentKeeper && !hasStartedShift && !awaitingFinalize && (
+                    <Button
+                      variant="outline"
+                      className="font-semibold border-primary text-primary hover:bg-primary/5 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
+                      onClick={handleStartShift}
+                      disabled={isSubmitting}
+                    >
+                      <CheckCircle className="h-4 w-4 me-2" /> NHẬN CA (BẮT ĐẦU)
+                    </Button>
+                  )}
+                  {isCurrentKeeper && hasStartedShift && (
                     <Button
                       variant="outline"
                       className="font-semibold border-primary text-primary hover:bg-primary/5 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
@@ -638,15 +681,30 @@ export default function CashDrawerDetailPage() {
               </div>
 
               {/* Action Button: Báo cáo cuối ca */}
-              {isOpen && isCurrentKeeper ? (
-                <div className="pt-6 border-t mt-6">
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto font-semibold shadow-md shadow-primary/20 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
-                    onClick={handleOpenReport}
-                  >
-                    <CheckCircle className="h-4 w-4 me-2" /> BÁO CÁO BÀN GIAO CUỐI CA
-                  </Button>
+              {isOpen && isCurrentKeeper && awaitingFinalize ? (
+                <div className="text-center text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-4 font-medium">
+                  Bạn đã báo cáo cuối ca. Két đang chờ quản lý chốt.
+                </div>
+              ) : isOpen && isCurrentKeeper ? (
+                <div className="pt-6 border-t mt-6 flex flex-col sm:flex-row gap-3">
+                  {!hasStartedShift ? (
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto font-semibold shadow-md shadow-primary/20 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
+                      onClick={handleStartShift}
+                      disabled={isSubmitting}
+                    >
+                      <CheckCircle className="h-4 w-4 me-2" /> NHẬN CA (BẮT ĐẦU)
+                    </Button>
+                  ) : (
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto font-semibold shadow-md shadow-primary/20 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
+                      onClick={handleOpenReport}
+                    >
+                      <CheckCircle className="h-4 w-4 me-2" /> BÁO CÁO BÀN GIAO CUỐI CA
+                    </Button>
+                  )}
                 </div>
               ) : isOpen ? (
                 <div className="text-center text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-4 font-medium">

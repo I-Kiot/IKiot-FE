@@ -53,6 +53,8 @@ export function PromotionsToolbar({ table }: PromotionsToolbarProps) {
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
             <SelectItem value="ACTIVE">Đang chạy</SelectItem>
+            <SelectItem value="SCHEDULED">Chưa hiệu lực</SelectItem>
+            <SelectItem value="EXPIRED">Hết hạn</SelectItem>
             <SelectItem value="INACTIVE">Đã tắt</SelectItem>
           </SelectContent>
         </Select>

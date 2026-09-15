@@ -121,11 +121,9 @@ export function CustomersMutateDialog({
                 name="customerCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Mã khách hàng <span className="text-destructive">*</span>
-                    </FormLabel>
+                    <FormLabel>Mã khách hàng</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: KH-001" {...field} />
+                      <Input placeholder="Để trống để tự sinh (KH000001...)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

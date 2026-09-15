@@ -130,7 +130,9 @@ export function SuppliersMutateDialog({
                 name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Số điện thoại</FormLabel>
+                    <FormLabel>
+                      Số điện thoại <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="VD: 0901234567" {...field} />
                     </FormControl>
