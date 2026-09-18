@@ -24,8 +24,12 @@ type ProductsContextType = {
   setOpen: (str: ProductsDialogType | null) => void
   currentRow: Product | null
   setCurrentRow: React.Dispatch<React.SetStateAction<Product | null>>
-  handleAdd: (data: ProductFormValues) => Promise<boolean>
-  handleEdit: (id: string, data: ProductFormValues) => Promise<boolean>
+  handleAdd: (data: ProductFormValues, onDuplicateCode?: (message: string) => void) => Promise<boolean>
+  handleEdit: (
+    id: string,
+    data: ProductFormValues,
+    onDuplicateCode?: (message: string) => void,
+  ) => Promise<boolean>
   handleDelete: (id: string) => Promise<boolean>
   selectedIds: string[]
   setSelectedIds: (ids: string[]) => void

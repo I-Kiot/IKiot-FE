@@ -123,7 +123,7 @@ export function SuppliersExpandedPanel({
         <div className="flex flex-col gap-0.5">
           <span className="text-xs text-muted-foreground">Hạn mức tín dụng</span>
           <span className="tabular-nums font-medium">
-            {formatVND(supplier.creditLimit)}
+            {formatVND(Number(supplier.creditLimit) || 0)}
           </span>
         </div>
         <div className="flex flex-col gap-0.5">
@@ -136,7 +136,7 @@ export function SuppliersExpandedPanel({
                 : "text-muted-foreground",
             )}
           >
-            {formatVND(supplier.outstandingDebt)}
+            {formatVND(Number(supplier.outstandingDebt) || 0)}
           </span>
           {supplier.creditLimit > 0 && (
             <span className="text-xs text-muted-foreground">

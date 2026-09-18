@@ -90,7 +90,7 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
     accessorKey: 'outstandingDebt',
     header: ({ column }) => <SortableHeader label="Công nợ" column={column} />,
     cell: ({ row }) => {
-      const debt = row.getValue('outstandingDebt') as number
+      const debt = Number(row.getValue('outstandingDebt')) || 0
       return (
         <span
           className={cn(
@@ -99,6 +99,7 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
           )}
         >
           {formatVND(debt)}
+          
         </span>
       )
     },
@@ -112,7 +113,7 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
     accessorKey: 'creditLimit',
     header: ({ column }) => <SortableHeader label="Hạn mức" column={column} />,
     cell: ({ row }) => (
-      <span className="tabular-nums text-sm">{formatVND(row.getValue('creditLimit') as number)}</span>
+      <span className="tabular-nums text-sm">{formatVND(Number(row.getValue('creditLimit')) || 0)}</span>
     ),
   },
   {

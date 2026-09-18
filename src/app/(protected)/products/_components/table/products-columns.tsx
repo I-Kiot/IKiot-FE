@@ -186,11 +186,11 @@ export function getProductsColumns(
                     : "text-emerald-600 dark:text-emerald-400",
               )}
             >
-              {stock}
+              {stock.toLocaleString("vi-VN")}
             </span>
             {isLocationScoped && allLocations !== stock && (
               <span className="text-xs text-muted-foreground tabular-nums">
-                Toàn chuỗi: {allLocations}
+                Toàn chuỗi: {allLocations.toLocaleString("vi-VN")}
               </span>
             )}
           </div>
