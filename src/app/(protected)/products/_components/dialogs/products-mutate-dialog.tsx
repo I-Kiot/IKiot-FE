@@ -154,9 +154,11 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
       if (hasErrors) return
     }
 
+    const onDuplicateCode = (message: string) =>
+      form.setError('productCode', { message })
     const success = isEdit && currentRow
-      ? await handleEdit(currentRow.id, data)
-      : await handleAdd(data)
+      ? await handleEdit(currentRow.id, data, onDuplicateCode)
+      : await handleAdd(data, onDuplicateCode)
     if (success) onOpenChange(false)
   }
 

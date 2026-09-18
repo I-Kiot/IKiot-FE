@@ -27,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { Supplier } from '@/types/supplier'
 import { supplierFormSchema, type SupplierFormValues } from '../../_types/supplier.types'
 import { useSuppliers } from '../../_context/suppliers-provider'
+import { MoneyInput } from '@/app/(protected)/exchange/shared/form-fields'
 
 const EMPTY_VALUES: SupplierFormValues = {
   supplierName: '',
@@ -162,15 +163,10 @@ export function SuppliersMutateDialog({
                   <FormItem>
                     <FormLabel>Hạn mức tín dụng (VND)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="VD: 50000000"
-                        type="number"
-                        min={0}
-                        {...field}
-                        onChange={(e) => {
-                          const val = e.target.valueAsNumber
-                          field.onChange(isNaN(val) ? 0 : val)
-                        }}
+                      <MoneyInput
+                        placeholder="VD: 50.000.000"
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />

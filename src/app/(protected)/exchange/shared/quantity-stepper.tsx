@@ -4,7 +4,6 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { parseNumberInput } from "@/app/(protected)/exchange/shared/qty";
 
 type QuantityStepperProps = {
   value: number;
@@ -52,14 +51,24 @@ export function QuantityStepper({
         type="text"
         inputMode="numeric"
         disabled={disabled}
-        value={Number.isFinite(value) ? String(value) : ""}
+        value={
+          Number.isFinite(value) && value > 0
+            ? value.toLocaleString("vi-VN")
+            : ""
+        }
         className={cn(
           "h-full min-w-0 flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 px-2 text-right tabular-nums",
           inputClassName,
         )}
         onChange={(e) => {
-          const next = parseNumberInput(e.target.value, min);
-          onChange(clamp(next));
+          const digits = e.target.value.replace(/\D/g, "");
+          const next = digits ? Number(digits) : 0;
+          onChange(Math.min(next, max ?? Infinity));
+        }}
+        onBlur={() => {
+          if (!Number.isFinite(value) || value < min) {
+            onChange(clamp(value));
+          }
         }}
       />
       <div className="flex w-7 shrink-0 flex-col border-l">

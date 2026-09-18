@@ -8,6 +8,7 @@ import type { ProductFormValues } from '../_types/product.types'
 import { productApi } from '@/lib/api/product'
 import { parsePriceAmount, getDeleteProductErrorMessage } from '../_constants/product.constants'
 import { useAuthStore } from '@/store/auth-store'
+import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
 
 function extractErrorMessage(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -25,7 +26,10 @@ export function useProductsMutations() {
       .catch(() => toast.error('Tải danh sách hàng hóa thất bại'))
   }, [locationKey])
 
-  async function handleAdd(data: ProductFormValues): Promise<boolean> {
+  async function handleAdd(
+    data: ProductFormValues,
+    onDuplicateCode?: (message: string) => void,
+  ): Promise<boolean> {
     setIsLoading(true)
     try {
       const itemProductName = data.useParentNameForItem
@@ -60,15 +64,22 @@ export function useProductsMutations() {
       ])
       toast.success('Thêm hàng hóa thành công')
       return true
-    } catch {
-      toast.error('Thêm hàng hóa thất bại')
+    } catch (err) {
+      const code = getApiErrorBody(err)?.code
+      const message = messageForCode(code) ?? 'Thêm hàng hóa thất bại'
+      if (code === 'UNIQUE_VIOLATION') onDuplicateCode?.(message)
+      toast.error(message)
       return false
     } finally {
       setIsLoading(false)
     }
   }
 
-  async function handleEdit(id: string, data: ProductFormValues): Promise<boolean> {
+  async function handleEdit(
+    id: string,
+    data: ProductFormValues,
+    onDuplicateCode?: (message: string) => void,
+  ): Promise<boolean> {
     setIsLoading(true)
     try {
       const product = await productApi.update(id, {
@@ -81,8 +92,11 @@ export function useProductsMutations() {
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...product } : p)))
       toast.success('Cập nhật hàng hóa thành công')
       return true
-    } catch {
-      toast.error('Cập nhật hàng hóa thất bại')
+    } catch (err) {
+      const code = getApiErrorBody(err)?.code
+      const message = messageForCode(code) ?? 'Cập nhật hàng hóa thất bại'
+      if (code === 'UNIQUE_VIOLATION') onDuplicateCode?.(message)
+      toast.error(message)
       return false
     } finally {
       setIsLoading(false)
