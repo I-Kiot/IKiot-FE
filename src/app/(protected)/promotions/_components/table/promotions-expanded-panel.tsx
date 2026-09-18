@@ -76,7 +76,7 @@ export function PromotionsExpandedPanel({
           <TabsTrigger value="history" className="cursor-pointer">
             Lịch sử sử dụng
             <Badge variant="secondary" className="ml-1.5 text-xs">
-              {promotion.usedCount}
+              {promotion.usedCount.toLocaleString('vi-VN')}
             </Badge>
           </TabsTrigger>
         </TabsList>
@@ -124,14 +124,16 @@ export function PromotionsExpandedPanel({
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-muted-foreground">Giới hạn lượt dùng</span>
               <span className="tabular-nums">
-                {promotion.usageLimit != null ? promotion.usageLimit : 'Không giới hạn'}
+                {promotion.usageLimit != null
+                  ? promotion.usageLimit.toLocaleString('vi-VN')
+                  : 'Không giới hạn'}
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-muted-foreground">Giới hạn / khách hàng</span>
               <span className="tabular-nums">
                 {promotion.usageLimitPerCustomer != null
-                  ? promotion.usageLimitPerCustomer
+                  ? promotion.usageLimitPerCustomer.toLocaleString('vi-VN')
                   : 'Không giới hạn'}
               </span>
             </div>
