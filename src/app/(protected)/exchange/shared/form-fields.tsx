@@ -109,11 +109,12 @@ type MoneyInputProps = {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  max?: number;
 };
 
 export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
   function MoneyInput(
-    { value, onChange, placeholder = "0", className, disabled },
+    { value, onChange, placeholder = "0", className, disabled, max },
     ref,
   ) {
     return (
@@ -130,12 +131,49 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
             : ""
         }
         onChange={(e) => {
-          onChange(parseImportPriceInput(e.target.value));
+          const next = parseImportPriceInput(e.target.value);
+          onChange(typeof max === "number" ? Math.min(next, max) : next);
         }}
       />
     );
   },
 );
+
+type NullableMoneyInputProps = {
+  value: number | null | undefined;
+  onChange: (value: number | null) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+};
+
+export const NullableMoneyInput = React.forwardRef<
+  HTMLInputElement,
+  NullableMoneyInputProps
+>(function NullableMoneyInput(
+  { value, onChange, placeholder = "0", className, disabled },
+  ref,
+) {
+  return (
+    <Input
+      ref={ref}
+      type="text"
+      inputMode="numeric"
+      placeholder={placeholder}
+      disabled={disabled}
+      className={cn("h-9 w-full text-sm tabular-nums tracking-tight", className)}
+      value={
+        Number.isFinite(value) && (value as number) > 0
+          ? (value as number).toLocaleString("vi-VN")
+          : ""
+      }
+      onChange={(e) => {
+        const digits = e.target.value.replace(/[^\d]/g, "");
+        onChange(digits === "" ? null : parseImportPriceInput(digits));
+      }}
+    />
+  );
+});
 
 /* ─── Product picker ─── */
 

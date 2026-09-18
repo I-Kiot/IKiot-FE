@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { MoneyInput, NullableMoneyInput } from '@/app/(protected)/exchange/shared/form-fields'
 import {
   Select,
   SelectContent,
@@ -384,15 +385,10 @@ export function PromotionsMutateDialog({
                       Giá trị giảm {discountType === 'PERCENT' ? '(%)' : '(VND)'}
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
+                      <MoneyInput
+                        value={field.value}
+                        onChange={field.onChange}
                         max={discountType === 'PERCENT' ? 100 : undefined}
-                        {...field}
-                        onChange={(e) => {
-                          const val = e.target.valueAsNumber
-                          field.onChange(isNaN(val) ? 0 : val)
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -409,15 +405,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Mức giảm tối đa (VND, để trống nếu không giới hạn)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          field.onChange(val === '' ? null : Number(val))
-                        }}
-                      />
+                      <NullableMoneyInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -433,15 +421,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Giá trị đơn tối thiểu (VND)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        {...field}
-                        onChange={(e) => {
-                          const val = e.target.valueAsNumber
-                          field.onChange(isNaN(val) ? 0 : val)
-                        }}
-                      />
+                      <MoneyInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -613,15 +593,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Giới hạn lượt dùng (để trống nếu không giới hạn)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          field.onChange(val === '' ? null : Number(val))
-                        }}
-                      />
+                      <NullableMoneyInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -634,15 +606,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Giới hạn lượt dùng / khách hàng</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          field.onChange(val === '' ? null : Number(val))
-                        }}
-                      />
+                      <NullableMoneyInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

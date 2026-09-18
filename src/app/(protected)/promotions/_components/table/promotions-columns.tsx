@@ -121,8 +121,10 @@ export const promotionsColumns: ColumnDef<Promotion>[] = [
       const promotion = row.original
       return (
         <span className="text-sm tabular-nums">
-          {promotion.usedCount}
-          {promotion.usageLimit != null ? ` / ${promotion.usageLimit}` : ''}
+          {promotion.usedCount.toLocaleString('vi-VN')}
+          {promotion.usageLimit != null
+            ? ` / ${promotion.usageLimit.toLocaleString('vi-VN')}`
+            : ''}
         </span>
       )
     },
