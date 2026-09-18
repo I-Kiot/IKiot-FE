@@ -188,6 +188,15 @@ async function getStats<T, P extends object = object>(path: string, params?: P):
   return res.data.data;
 }
 
+async function getCashflowListPage(params?: object): Promise<CashflowList> {
+  const res = await client.get<{
+    success: boolean;
+    data: CashflowTransaction[];
+    pagination: CashflowList['pagination'];
+  }>('/stats/cashflow/transactions', { params });
+  return { data: res.data.data, pagination: res.data.pagination };
+}
+
 export const statsApi = {
   getOverview: (params?: StatsDateRangeParams) =>
     getStats<StatsOverview>('/stats/overview', params),
@@ -212,7 +221,7 @@ export const statsApi = {
       page?: number;
       limit?: number;
     },
-  ) => getStats<CashflowList>('/stats/cashflow/transactions', params),
+  ) => getCashflowListPage(params),
 
   getTopProducts: (params?: StatsDateRangeParams & { sortBy?: 'quantity' | 'revenue'; limit?: number }) =>
     getStats<TopProducts>('/stats/top-products', params),
