@@ -9,6 +9,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { ShoppingCart } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { NotificationBell } from "@/components/notification-bell";
+import { canOpenCheckout } from "@/components/sidebar/utils/get-sidebar";
 
 export function SiteHeader() {
   const { user } = useAuthStore();
@@ -39,7 +40,7 @@ export function SiteHeader() {
             <SearchTrigger onClick={() => setSearchOpen(true)} />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            {user?.role !== "ADMIN" && (
+            {canOpenCheckout(user?.role) && (
               <Button
                 variant="default"
                 asChild

@@ -14,6 +14,7 @@ import { loginSchema, LoginInput } from "@/lib/validation";
 import { loginUser, loginWithGoogle } from "@/lib/api/auth";
 import { setTokens, setCachedUser } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth-store";
+import { getHomeRoute } from "@/components/sidebar/utils/get-sidebar";
 
 export function LoginForm2({
   className,
@@ -24,15 +25,10 @@ export function LoginForm2({
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
 
-  // Send each role to its home screen after a successful login.
+  // Send each account to its home screen after a successful login - decided by what the
+  // role may open, not by the account kind (see `getHomeRoute`).
   const routeByRole = (role?: string) => {
-    if (role === "STAFF") {
-      router.push("/check-out");
-    } else if (role === "ADMIN") {
-      router.push("/admin/dashboard");
-    } else {
-      router.push("/dashboard");
-    }
+    router.push(getHomeRoute(role));
     router.refresh();
   };
 

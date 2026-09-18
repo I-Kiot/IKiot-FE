@@ -9,7 +9,10 @@ import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { useNotificationSocket } from "@/hooks/use-notification-socket";
 import { useAuthStore } from "@/store/auth-store";
-import { getAllowedSidebarUrls } from "@/components/sidebar/utils/get-sidebar";
+import {
+  canOpenCheckout,
+  getAllowedSidebarUrls,
+} from "@/components/sidebar/utils/get-sidebar";
 import { UnauthorizedPage } from "@/components/unauthorized";
 
 function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
@@ -33,10 +36,9 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     (route) => pathname === route || pathname.startsWith(route + "/"),
   );
 
-  // Special handling for checkout (allowed for all except ADMIN)
   const isCheckout = pathname === "/check-out" || pathname.startsWith("/check-out/");
-  if (isCheckout && user.role !== "ADMIN") {
-    return <>{children}</>;
+  if (isCheckout) {
+    return canOpenCheckout(user.role) ? <>{children}</> : <UnauthorizedPage />;
   }
 
   if (isPublicProtected) {

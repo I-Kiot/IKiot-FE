@@ -15,8 +15,7 @@ const HR_NAV_PERMISSION = {
   leaveRequests: ["leaveRequests", "read_mine"],
   holidays: ["holidays", "read"],
   payroll: ["payroll", "read"],
-  // Your own payslips: `GET /payroll/my-payslips` needs nothing but an account.
-  myPayroll: null,
+  myPayroll: ["payslips", "read_own"],
 } as const;
 
 export type HrNavItemKey = keyof typeof HR_NAV_PERMISSION;
