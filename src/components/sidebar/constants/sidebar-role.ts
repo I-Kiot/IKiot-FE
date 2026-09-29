@@ -53,7 +53,6 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       label: "Quản lý",
       items: [
         sidebarItems.tongQuan,
-        sidebarItems.troLyAI,
         sidebarItems.soThuChi,
         sidebarItems.nhanVienChuCuaHang,
       ],
@@ -75,14 +74,13 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
   // `AppSidebar` decide what this particular role actually sees. Leaving a group out here
   // is not a restriction, it is an entry nobody can ever reach - which is what happened to
   // `giaoDich` until 2026-09-09, hiding imports/transfers even from a full-permission role,
-  // and to `tongQuan`/`troLyAI`/`soThuChi` until 2026-09-09. Those three are leaves, so they
+  // and to `tongQuan`/`soThuChi` until 2026-09-09. Those two are leaves, so they
   // are gated by `nav-leaf-permissions.ts` rather than by a submenu filter.
   STAFF: [
     {
       label: "Quản lý",
       items: [
         sidebarItems.tongQuan,
-        sidebarItems.troLyAI,
         sidebarItems.soThuChi,
         sidebarItems.nhanVien,
       ],

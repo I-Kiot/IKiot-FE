@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  MessageCircle,
   Users,
   Package,
   Shuffle,
@@ -25,11 +24,6 @@ export const sidebarItems = {
     title: "Tổng quan",
     url: "/dashboard",
     icon: LayoutDashboard,
-  },
-  troLyAI: {
-    title: "Trợ lý AI",
-    url: "/chat",
-    icon: MessageCircle,
   },
   soThuChi: {
     title: "Sổ thu chi",

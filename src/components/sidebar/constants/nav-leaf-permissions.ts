@@ -3,7 +3,7 @@
  *
  * `sidebarRoleConfig` lists what an account kind *can* reach and the filters decide what
  * this particular role may - but until now only submenus were filtered, so a leaf could
- * only be all-or-nothing. That is why "Tổng quan", "Trợ lý AI" and "Sổ thu chi" were left
+ * only be all-or-nothing. That is why "Tổng quan" and "Sổ thu chi" were left
  * out of the `STAFF` block entirely: the same mistake `giaoDich` carried until 2026-09-09,
  * an entry no permission could ever reveal.
  *
@@ -19,8 +19,6 @@ const LEAF_NAV_PERMISSION: Record<string, readonly [string, string]> = {
   // the `cash_flows` module, so `cash_flows:read` is the wrong gate for it.
   "/dashboard": ["reports", "read"],
   "/cashflow": ["reports", "read"],
-  // Listing conversations; sending a message additionally needs `ai_chat:create`.
-  "/chat": ["ai_chat", "read"],
 };
 
 export function canAccessLeafNavItem(
