@@ -92,7 +92,7 @@ export const adjustmentsColumns: ColumnDef<StockMovement>[] = [
         <div className="flex flex-col">
           <span className="text-sm font-medium">{r.fromLocationName ?? "-"}</span>
           <span className="text-xs text-muted-foreground">
-            {r.fromLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+            {r.fromLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
           </span>
         </div>
       );

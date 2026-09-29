@@ -1,7 +1,10 @@
 import { getCachedUser } from "@/lib/auth";
 import { parseLocationKey } from "@/lib/location-key";
 import { useAuthStore } from "@/store/auth-store";
-import type { StockMovementLocationOption } from "@/types/stock-movement";
+import type {
+  LocationType,
+  StockMovementLocationOption,
+} from "@/types/stock-movement";
 
 export interface AuthScope {
   userId?: string;
@@ -15,7 +18,7 @@ export interface AuthScope {
 export interface EffectiveLocationScope extends AuthScope {
   /** Location đang khóa (JWT BM/WM hoặc tenant đã switch BR/WH). */
   locationId?: string;
-  locationType?: "branch" | "warehouse";
+  locationType?: LocationType;
   /** true khi TENANT_OWNER bị khóa bởi switcher, không phải JWT BM/WM. */
   lockedBySwitcher: boolean;
 }
@@ -25,12 +28,12 @@ export function filterLocationsByAuthScope(
   locations: StockMovementLocationOption[],
   scope: AuthScope & {
     locationId?: string;
-    locationType?: "branch" | "warehouse";
+    locationType?: LocationType;
   },
 ): StockMovementLocationOption[] {
   if (
     scope.locationId &&
-    (scope.locationType === "warehouse" || scope.locationType === "branch")
+    (scope.locationType === "WAREHOUSE" || scope.locationType === "BRANCH")
   ) {
     return locations.filter(
       (l) => l.id === scope.locationId && l.type === scope.locationType,
@@ -86,7 +89,7 @@ export function getEffectiveLocationScope(
     return {
       ...auth,
       locationId: auth.warehouseId,
-      locationType: "warehouse",
+      locationType: "WAREHOUSE",
       lockedBySwitcher: false,
     };
   }
@@ -94,7 +97,7 @@ export function getEffectiveLocationScope(
     return {
       ...auth,
       locationId: auth.branchId,
-      locationType: "branch",
+      locationType: "BRANCH",
       lockedBySwitcher: false,
     };
   }
@@ -104,9 +107,9 @@ export function getEffectiveLocationScope(
       return {
         ...auth,
         branchId:
-          parsed.locationType === "branch" ? parsed.locationId : undefined,
+          parsed.locationType === "BRANCH" ? parsed.locationId : undefined,
         warehouseId:
-          parsed.locationType === "warehouse" ? parsed.locationId : undefined,
+          parsed.locationType === "WAREHOUSE" ? parsed.locationId : undefined,
         locationId: parsed.locationId,
         locationType: parsed.locationType,
         lockedBySwitcher: true,

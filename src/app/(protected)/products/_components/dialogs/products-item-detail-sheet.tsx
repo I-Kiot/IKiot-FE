@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,6 @@ import {
   safeImageSrc,
   STATUS_MAP,
 } from "../../_constants/product.constants";
-import { useProducts } from "../../_context/products-provider";
 import type { Product, ProductItem, StockDetail } from "@/types/product";
 import { getCachedUser } from "@/lib/auth";
 import {
@@ -105,18 +104,10 @@ export function ProductsItemDetailSheet({
   const [removingLocation, setRemovingLocation] = useState<StockDetail | null>(
     null,
   );
-  const { branchOptions, warehouseOptions, ensureLocationOptionsLoaded } =
-    useProducts();
   const role = getCachedUser()?.role;
   const canEdit = canUpdateProduct(role);
   const canDelete = canDeleteProduct(role);
   const canRemoveLocation = canRemoveInventoryLocation(role);
-
-  useEffect(() => {
-    if (!open) return;
-    ensureLocationOptionsLoaded();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   if (!item) return null;
 
@@ -124,14 +115,6 @@ export function ProductsItemDetailSheet({
     item.suppliers && item.suppliers.length > 0
       ? item.suppliers.map((s) => s.supplierName).join(", ")
       : "-";
-
-  function resolveLocationName(
-    locationType: string,
-    locationId: string,
-  ): string {
-    const opts = locationType === "branch" ? branchOptions : warehouseOptions;
-    return opts.find((o) => o.value === locationId)?.label ?? locationId;
-  }
 
   const hasLocations = (item.stockDetails?.length ?? 0) > 0;
 
@@ -310,7 +293,7 @@ export function ProductsItemDetailSheet({
                         className="flex items-center justify-between text-sm rounded-md bg-muted/40 px-3 py-1.5"
                       >
                         <span className="text-muted-foreground">
-                          {resolveLocationName(sd.locationType, sd.locationId)}
+                          {sd.location.name}
                         </span>
                         <div className="flex items-center gap-1.5">
                           <span className="font-semibold tabular-nums">
@@ -439,11 +422,7 @@ export function ProductsItemDetailSheet({
               <DialogDescription>
                 Bạn có chắc muốn gỡ{" "}
                 <strong className="text-foreground">
-                  {removingLocation &&
-                    resolveLocationName(
-                      removingLocation.locationType,
-                      removingLocation.locationId,
-                    )}
+                  {removingLocation?.location.name}
                 </strong>{" "}
                 khỏi phiên bản này? Tồn kho tại vị trí này đang bằng 0.
               </DialogDescription>

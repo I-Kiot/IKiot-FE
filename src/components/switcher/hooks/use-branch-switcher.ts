@@ -19,6 +19,18 @@ export type SwitcherItem = {
   status?: string;
 };
 
+/**
+ * The chain-wide view (locationKey "all"): every branch and every warehouse, no filter.
+ * Its id stays "all-branches" - check-out reads it back from localStorage
+ * (`activeSwitcherItemId`) to tell "no branch picked" apart from a real branch.
+ */
+export const ALL_LOCATIONS_ITEM: SwitcherItem = {
+  id: "all-branches",
+  name: "Tổng",
+  address: "Toàn bộ chuỗi",
+  type: "branch",
+};
+
 export function useBranchSwitcher() {
   const { isMobile } = useSidebar();
   const [dbBranches, setDbBranches] = React.useState<Branch[]>([]);
@@ -146,19 +158,14 @@ export function useBranchSwitcher() {
     }
 
     if (locationKey === "all") {
-      setActiveItem({
-        id: "all-branches",
-        name: "Tổng",
-        address: "all",
-        type: "branch",
-      });
+      setActiveItem(ALL_LOCATIONS_ITEM);
       return;
     }
 
     const parsed = parseLocationKey(locationKey);
     const type = parsed?.locationType;
     const id = parsed?.locationId ?? "";
-    if (type === "branch") {
+    if (type === "BRANCH") {
       const match = dbBranches.find((b) => b.id === id);
       if (match) {
         setActiveItem(mapBranchToItem(match));
@@ -170,7 +177,7 @@ export function useBranchSwitcher() {
           type: "branch",
         });
       }
-    } else if (type === "warehouse") {
+    } else if (type === "WAREHOUSE") {
       const match = dbWarehouses.find((w) => w.id === id);
       if (match) {
         setActiveItem(mapWarehouseToItem(match));
@@ -294,12 +301,7 @@ export function useBranchSwitcher() {
       }
 
       if (activeItem && activeItem.id === id) {
-        handleSelect({
-          id: "all-branches",
-          name: "Tổng",
-          address: "all",
-          type: "branch",
-        });
+        handleSelect(ALL_LOCATIONS_ITEM);
       }
       await fetchBranches();
       window.dispatchEvent(new Event("branches-updated"));

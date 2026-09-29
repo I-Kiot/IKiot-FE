@@ -1,5 +1,8 @@
+import type { LocationRef, LocationType } from "./location";
+
+export type { LocationRef, LocationType } from "./location";
+
 export type ProductStatus = "ACTIVE" | "INACTIVE" | "DISCONTINUED";
-export type LocationType = "branch" | "warehouse";
 
 export interface ProductImage {
   id?: string;
@@ -15,9 +18,8 @@ export interface ProductDetail {
 
 export interface StockDetail {
   inventoryId: string;
-  locationId: string;
-  locationType: LocationType;
   stock: number;
+  location: LocationRef;
 }
 
 // Populated subset of Supplier as returned on ProductItem.suppliers

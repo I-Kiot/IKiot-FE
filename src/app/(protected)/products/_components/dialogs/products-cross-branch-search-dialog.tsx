@@ -43,7 +43,6 @@ type Props = {
 export function ProductsCrossBranchSearchDialog({ open, onOpenChange }: Props) {
   const {
     branchOptions,
-    warehouseOptions,
     ensureLocationOptionsLoaded,
     categories,
     suppliers,
@@ -115,7 +114,7 @@ export function ProductsCrossBranchSearchDialog({ open, onOpenChange }: Props) {
             supplierId: supplierFilter || undefined,
             status: (statusFilter || undefined) as ProductStatus | undefined,
             locationId: branchFilter || undefined,
-            locationType: branchFilter ? "branch" : undefined,
+            locationType: branchFilter ? "BRANCH" : undefined,
             limit: 30,
           },
           controller.signal,
@@ -318,13 +317,7 @@ export function ProductsCrossBranchSearchDialog({ open, onOpenChange }: Props) {
                                   : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
                               )}
                             >
-                              {branchOptions.find(
-                                (b) => b.value === sd.locationId,
-                              )?.label ??
-                                warehouseOptions.find(
-                                  (w) => w.value === sd.locationId,
-                                )?.label ??
-                                sd.locationId}
+                              {sd.location.name}
                               : {sd.stock}
                             </span>
                           ))

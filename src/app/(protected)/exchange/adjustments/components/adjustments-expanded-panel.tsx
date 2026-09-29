@@ -100,10 +100,10 @@ export function AdjustmentsExpandedPanel({
   const isCancelled = detail.status === "CANCELLED";
 
   const matchesFromLocation =
-    (detail.fromLocationType === "warehouse" &&
+    (detail.fromLocationType === "WAREHOUSE" &&
       !!authScope.warehouseId &&
       detail.fromLocationId === authScope.warehouseId) ||
-    (detail.fromLocationType === "branch" &&
+    (detail.fromLocationType === "BRANCH" &&
       !!authScope.branchId &&
       detail.fromLocationId === authScope.branchId);
   const isTenantOwner = authScope.role === "TENANT_OWNER";
@@ -130,7 +130,7 @@ export function AdjustmentsExpandedPanel({
     stockMovementApi
       .getProductItemsAtSource(
         detail.fromLocationId,
-        detail.fromLocationType ?? "warehouse",
+        detail.fromLocationType ?? "WAREHOUSE",
       )
       .then(setProducts)
       .catch(() => setProducts([]));
@@ -228,7 +228,7 @@ export function AdjustmentsExpandedPanel({
   }
 
   const locLabel =
-    detail.fromLocationType === "warehouse" ? "Kho" : "Chi nhánh";
+    detail.fromLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh";
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm animate-in fade-in-0 duration-200">

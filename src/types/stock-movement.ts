@@ -1,3 +1,7 @@
+import type { LocationType } from "./location";
+
+export type { LocationType } from "./location";
+
 export type MovementType = "IMPORT" | "EXPORT" | "RETURN" | "ADJUST";
 
 export type MovementStatus =
@@ -9,8 +13,6 @@ export type MovementStatus =
   | "RECEIVED"
   | "CANCELLED"
   | "COMPLETED";
-
-export type LocationType = "branch" | "warehouse";
 
 export interface StockMovementDetail {
   productItemId: string;

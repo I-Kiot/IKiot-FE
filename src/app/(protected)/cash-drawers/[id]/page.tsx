@@ -116,13 +116,13 @@ export default function CashDrawerDetailPage() {
     }
 
     // Switched to a warehouse
-    if (locationKey?.startsWith("warehouse") || parsed?.locationType === "warehouse") {
+    if (locationKey?.startsWith("warehouse") || parsed?.locationType === "WAREHOUSE") {
       prevLocationKeyRef.current = locationKey;
       return; // Do nothing, let it render the warehouse warning screen below
     }
 
     // Switched to another branch
-    if (parsed && parsed.locationType === "branch" && parsed.locationId !== currentSessionBranchId) {
+    if (parsed && parsed.locationType === "BRANCH" && parsed.locationId !== currentSessionBranchId) {
       setIsLoading(true);
       cashDrawerApi
         .getCurrentSession(parsed.locationId)
@@ -409,7 +409,7 @@ export default function CashDrawerDetailPage() {
   }
 
   const parsedLocation = parseLocationKey(locationKey);
-  const isWarehouse = locationKey?.startsWith("warehouse") || parsedLocation?.locationType === "warehouse";
+  const isWarehouse = locationKey?.startsWith("warehouse") || parsedLocation?.locationType === "WAREHOUSE";
 
   if (isWarehouse) {
     return (

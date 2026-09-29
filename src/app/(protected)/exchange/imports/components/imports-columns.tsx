@@ -123,7 +123,7 @@ export const importsColumns: ColumnDef<StockMovement>[] = [
         <div className="flex flex-col">
           <span className="text-sm font-medium">{record.toLocationName}</span>
           <span className="text-xs text-muted-foreground capitalize">
-            {record.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+            {record.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
           </span>
         </div>
       );

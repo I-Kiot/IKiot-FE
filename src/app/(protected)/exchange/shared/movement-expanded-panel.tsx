@@ -454,10 +454,10 @@ export function MovementExpandedPanel({
   const headerSubtitle =
     mode === "import"
       ? `Nơi nhận: ${detail.toLocationName || "-"} · ${
-          detail.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"
+          detail.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"
         }`
-      : `${detail.fromLocationType === "warehouse" ? "Kho" : "Chi nhánh"} → ${
-          detail.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"
+      : `${detail.fromLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"} → ${
+          detail.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"
         }`;
 
   return (
@@ -479,7 +479,7 @@ export function MovementExpandedPanel({
                 {detail.fromLocationName ?? "-"}
               </span>
               <span className="text-xs text-muted-foreground capitalize">
-                {detail.fromLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+                {detail.fromLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
               </span>
             </div>
             <ArrowRight className="size-5 shrink-0 text-muted-foreground" />
@@ -489,7 +489,7 @@ export function MovementExpandedPanel({
                 {detail.toLocationName || "-"}
               </span>
               <span className="text-xs text-muted-foreground capitalize">
-                {detail.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+                {detail.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
               </span>
             </div>
           </div>
@@ -527,7 +527,7 @@ export function MovementExpandedPanel({
           <InfoItem
             icon={<Warehouse className="size-4" />}
             label="Nơi nhận"
-            value={`${detail.toLocationName} (${detail.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"})`}
+            value={`${detail.toLocationName} (${detail.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"})`}
           />
           <InfoItem
             icon={<User className="size-4" />}

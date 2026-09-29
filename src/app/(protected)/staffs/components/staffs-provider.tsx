@@ -247,13 +247,13 @@ export function StaffsProvider({
       // locationKey - so switching branch immediately scopes the staff list.
       const scope = parseLocationKey(locationKey);
       const branchId =
-        scope?.locationType === "branch"
+        scope?.locationType === "BRANCH"
           ? scope.locationId
           : listQuery.branchId === "all"
             ? undefined
             : listQuery.branchId;
       const warehouseId =
-        scope?.locationType === "warehouse"
+        scope?.locationType === "WAREHOUSE"
           ? scope.locationId
           : listQuery.warehouseId === "all"
             ? undefined

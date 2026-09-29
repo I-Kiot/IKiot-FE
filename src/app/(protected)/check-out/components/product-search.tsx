@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useCheckoutProducts } from "../_hooks/use-checkout-products";
 import { productApi } from "@/lib/api/product";
+import type { ProductSearchParams } from "@/types/product";
 import { useAuthStore } from "@/store/auth-store";
 import { getCachedUser } from "@/lib/auth";
 
@@ -70,10 +71,10 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
   // Fetch initial active products for quick purchase on mount or location changes
   useEffect(() => {
     const branchId = resolveBranchId();
-    const params: any = { limit: 10, status: "ACTIVE" };
+    const params: ProductSearchParams = { limit: 10, status: "ACTIVE" };
     if (branchId) {
       params.locationId = branchId;
-      params.locationType = "branch";
+      params.locationType = "BRANCH";
     }
 
     productApi

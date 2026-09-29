@@ -92,9 +92,9 @@ export function StaffsTable() {
   const isLocationLocked = locationKey !== "all";
   const lockedLocation = parseLocationKey(locationKey);
   const lockedBranchId =
-    lockedLocation?.locationType === "branch" ? lockedLocation.locationId : "all";
+    lockedLocation?.locationType === "BRANCH" ? lockedLocation.locationId : "all";
   const lockedWarehouseId =
-    lockedLocation?.locationType === "warehouse" ? lockedLocation.locationId : "all";
+    lockedLocation?.locationType === "WAREHOUSE" ? lockedLocation.locationId : "all";
 
   const table = useReactTable({
     data: staffs,

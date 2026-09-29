@@ -1,5 +1,6 @@
 // [API – Stats]
 import client from '@/lib/api/client';
+import type { LocationType } from '@/types/location';
 
 export interface StatsDateRangeParams {
   fromDate?: string;
@@ -79,7 +80,7 @@ export interface CashflowTransaction {
   branchName: string | null;
   warehouseName: string | null;
   locationName: string | null;
-  locationType: 'branch' | 'warehouse' | null;
+  locationType: LocationType | null;
   supplierName: string | null;
   createdByName: string | null;
   orderId: string | null;
@@ -107,8 +108,10 @@ export interface LowStockItem {
   productItemId: string;
   productName: string;
   sku: string;
-  locationId: string;
-  locationType: string;
+  // Exactly one of the two is set, matching `locationType`.
+  branchId: string | null;
+  warehouseId: string | null;
+  locationType: LocationType;
   stock: number;
 }
 

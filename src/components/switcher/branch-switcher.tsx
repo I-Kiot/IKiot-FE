@@ -9,6 +9,7 @@ import {
   Edit2,
   Trash2,
   UserCog,
+  Building2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,7 +36,10 @@ import {
 import { BranchFormDialog } from "./branch-form-dialog";
 import { WarehouseFormDialog } from "./warehouse-form-dialog";
 import { AssignBranchManagerDialog } from "@/components/branch/assign-branch-manager-dialog";
-import { useBranchSwitcher } from "./hooks/use-branch-switcher";
+import {
+  ALL_LOCATIONS_ITEM,
+  useBranchSwitcher,
+} from "./hooks/use-branch-switcher";
 
 export function BranchSwitcher() {
   const {
@@ -142,7 +146,9 @@ export function BranchSwitcher() {
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group"
               >
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  {activeItem.type === "branch" ? (
+                  {activeItem.id === ALL_LOCATIONS_ITEM.id ? (
+                    <Building2 className="size-4" />
+                  ) : activeItem.type === "branch" ? (
                     <Store className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
                   ) : (
                     <Warehouse className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
@@ -174,28 +180,27 @@ export function BranchSwitcher() {
               side={isMobile ? "bottom" : "right"}
               sideOffset={4}
             >
-              <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Chi nhánh
-              </DropdownMenuLabel>
               <DropdownMenuItem
-                key="all-branches"
-                onClick={() =>
-                  handleSelect({
-                    id: "all-branches",
-                    name: "Tổng",
-                    address: "all",
-                    type: "branch",
-                  })
-                }
+                key={ALL_LOCATIONS_ITEM.id}
+                onClick={() => handleSelect(ALL_LOCATIONS_ITEM)}
                 className="gap-2 p-2 cursor-pointer flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
                   <div className="flex size-6 items-center justify-center rounded-sm border">
-                    <Store className="size-4 shrink-0" />
+                    <Building2 className="size-4 shrink-0" />
                   </div>
-                  Tổng
+                  <div className="grid leading-tight">
+                    <span>{ALL_LOCATIONS_ITEM.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {ALL_LOCATIONS_ITEM.address}
+                    </span>
+                  </div>
                 </div>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Chi nhánh
+              </DropdownMenuLabel>
               {dbBranches.map((item) => (
                 <DropdownMenuItem
                   key={item.id}
