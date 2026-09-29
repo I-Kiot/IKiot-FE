@@ -14,8 +14,8 @@ import { formatVND, formatNumber } from "../shared/format"
 const LOW_STOCK_THRESHOLD_OPTIONS = [5, 10, 20, 50]
 
 const LOCATION_TYPE_LABELS: Record<string, string> = {
-  branch: "Chi nhánh",
-  warehouse: "Kho",
+  BRANCH: "Chi nhánh",
+  WAREHOUSE: "Kho",
 }
 
 export function CashflowInventory() {
@@ -32,7 +32,7 @@ export function CashflowInventory() {
   } = useDashboard()
 
   const getLocationName = (locationId: string, locationType: string): string => {
-    const options = locationType === 'warehouse' ? warehouseOptions : branchOptions
+    const options = locationType === 'WAREHOUSE' ? warehouseOptions : branchOptions
     return (
       options.find((o) => o.value === locationId)?.label ??
       LOCATION_TYPE_LABELS[locationType] ??
@@ -169,12 +169,12 @@ export function CashflowInventory() {
                         </TableRow>
                       ) : (
                         inventory!.lowStock.slice(0, 10).map((item) => (
-                          <TableRow key={`${item.productItemId}-${item.locationId}`} className="hover:bg-muted/30 transition-colors">
+                          <TableRow key={`${item.productItemId}-${item.branchId ?? item.warehouseId}`} className="hover:bg-muted/30 transition-colors">
                             <TableCell className="font-medium py-4 px-6">{item.productName}</TableCell>
                             <TableCell className="py-4 px-6 text-muted-foreground">{item.sku}</TableCell>
                             <TableCell className="py-4 px-6">
                               <Badge variant="outline">
-                                {getLocationName(item.locationId, item.locationType)}
+                                {getLocationName(item.branchId ?? item.warehouseId ?? '', item.locationType)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right py-4 px-6">

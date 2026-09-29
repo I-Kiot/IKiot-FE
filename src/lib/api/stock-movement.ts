@@ -13,6 +13,7 @@ import type {
   StockMovementProductItemOption,
   StockMovementSupplierOption,
 } from "@/types/stock-movement";
+import type { LocationRef } from "@/types/location";
 
 type ApiRef =
   | string
@@ -34,21 +35,12 @@ type ApiMovementDetail = {
 };
 
 /**
- * "A branch or a warehouse", the shape the API speaks on both sides of the wire.
- *
- * Postgres stores it as a pair of nullable foreign keys, and `location-ref.dto.ts` is the
- * one place on the server that maps between the two - so requests carry `fromLocation:
- * { locationId, locationType }` and responses answer the same object plus a separate
- * `*LocationName`. This file used to send and read the pair **flat**
- * (`fromLocationId` + `fromLocationType`), which is neither: `whitelist: true` dropped the
- * flat keys off every create, and every response read them back as `undefined`. The
- * exchange screens have been showing "warehouse" for every destination because that is the
- * fallback three lines below.
+ * One end of a movement as the API answers it: the Location row itself, `{ id, type, name }`
+ * (`type` is `BRANCH` / `WAREHOUSE`). Requests go the other way with just the id -
+ * `fromLocationId` / `toLocationId` - since the server reads the kind off the row rather
+ * than taking it from the client.
  */
-type ApiLocationRef = {
-  locationId: string;
-  locationType: LocationType;
-};
+type ApiLocationRef = LocationRef;
 
 type ApiMovement = {
   id: string;
@@ -57,9 +49,7 @@ type ApiMovement = {
   status?: StockMovement["status"];
   fromSupplierId?: ApiRef;
   fromLocation?: ApiLocationRef | null;
-  fromLocationName?: string | null;
   toLocation?: ApiLocationRef | null;
-  toLocationName?: string | null;
   createdBy?: ApiRef;
   requestedBy?: ApiRef;
   note?: string;
@@ -169,12 +159,12 @@ function mapMovement(raw: ApiMovement): StockMovement {
     status: raw.status ?? "PENDING",
     fromSupplierId: resolveRefId(raw.fromSupplierId),
     supplierName: resolveSupplierName(raw.fromSupplierId),
-    fromLocationId: raw.fromLocation?.locationId,
-    fromLocationName: raw.fromLocationName ?? undefined,
-    fromLocationType: raw.fromLocation?.locationType,
-    toLocationId: raw.toLocation?.locationId ?? "",
-    toLocationName: raw.toLocationName ?? raw.toLocation?.locationId ?? "",
-    toLocationType: raw.toLocation?.locationType ?? "warehouse",
+    fromLocationId: raw.fromLocation?.id,
+    fromLocationName: raw.fromLocation?.name,
+    fromLocationType: raw.fromLocation?.type,
+    toLocationId: raw.toLocation?.id ?? "",
+    toLocationName: raw.toLocation?.name ?? "",
+    toLocationType: raw.toLocation?.type ?? "WAREHOUSE",
     requestedBy: resolveRefId(creator),
     requestedByName: resolveUserName(creator),
     requestedByPhone: resolveUserPhone(creator),
@@ -188,14 +178,14 @@ function mapMovement(raw: ApiMovement): StockMovement {
 /**
  * The create body `POST /stock-movements` actually accepts.
  *
- * The screens work in flat ids (that is what a `<Select>` binds to), and
- * `CreateStockMovementDto` takes the pair nested - so the conversion belongs here, once,
- * rather than at each of the four call sites that used to spread a flat payload straight
- * into the request and have both locations dropped in silence.
+ * The screens keep each end's type beside its id (they need it to label and scope the
+ * pickers), but `CreateStockMovementDto` takes only `fromLocationId` / `toLocationId` - the
+ * server reads the kind off the Location row. The types are stripped here, once, rather
+ * than at each of the call sites.
  *
- * A missing half is left off entirely rather than sent as `{ locationId: undefined }`:
- * IMPORT has no source and ADJUST no destination, and `assertEndpointsValid` decides which
- * of those is legal for the movement type.
+ * A missing half is left off entirely rather than sent as `undefined`: IMPORT has no source
+ * and ADJUST no destination, and the server decides which of those is legal for the
+ * movement type.
  */
 function toCreateBody<
   T extends {
@@ -205,23 +195,12 @@ function toCreateBody<
     toLocationType?: LocationType;
   },
 >(payload: T) {
-  const {
-    fromLocationId,
-    fromLocationType,
-    toLocationId,
-    toLocationType,
-    ...rest
-  } = payload;
-
-  return {
-    ...rest,
-    ...(fromLocationId && fromLocationType
-      ? { fromLocation: { locationId: fromLocationId, locationType: fromLocationType } }
-      : {}),
-    ...(toLocationId && toLocationType
-      ? { toLocation: { locationId: toLocationId, locationType: toLocationType } }
-      : {}),
-  };
+  const body: Record<string, unknown> = { ...payload };
+  delete body.fromLocationType;
+  delete body.toLocationType;
+  if (!payload.fromLocationId) delete body.fromLocationId;
+  if (!payload.toLocationId) delete body.toLocationId;
+  return body;
 }
 
 type ProductLookup = Map<string, StockMovementProductItemOption>;
@@ -260,14 +239,14 @@ async function fetchLocationOptions(): Promise<StockMovementLocationOption[]> {
     (warehouse) => ({
       id: warehouse.id,
       name: warehouse.name ?? warehouse.id,
-      type: "warehouse" as const,
+      type: "WAREHOUSE" as const,
     }),
   );
   const branches = asArray<ApiLocation>(branchesResponse.data?.data).map(
     (branch) => ({
       id: branch.id,
       name: branch.name ?? branch.id,
-      type: "branch" as const,
+      type: "BRANCH" as const,
     }),
   );
 
@@ -503,7 +482,7 @@ function applyLookups(
       movement.toLocationName && movement.toLocationName !== movement.toLocationId
         ? movement.toLocationName
         : (toLocation?.name ?? movement.toLocationName),
-    toLocationType: movement.toLocationType || toLocation?.type || "warehouse",
+    toLocationType: movement.toLocationType || toLocation?.type || "WAREHOUSE",
     details: movement.details.map((detail) => {
       const product = products?.get(detail.productItemId);
       return {
@@ -687,7 +666,7 @@ export const stockMovementApi = {
     const toLocationType = source.fromLocationType;
 
     const movementType =
-      fromLocationType === "branch" && toLocationType === "warehouse"
+      fromLocationType === "BRANCH" && toLocationType === "WAREHOUSE"
         ? ("RETURN" as const)
         : ("EXPORT" as const);
 

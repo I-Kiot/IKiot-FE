@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { productApi } from '@/lib/api/product'
-import type { Product } from '@/types/product'
+import type { Product, ProductSearchParams } from '@/types/product'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/store/auth-store'
 import { getCachedUser } from '@/lib/auth'
@@ -33,10 +33,10 @@ export function useCheckoutProducts(searchQuery: string) {
       setLoading(true)
       try {
         const branchId = resolveBranchId()
-        const params: any = { q: searchQuery, limit: 20, status: 'ACTIVE' }
+        const params: ProductSearchParams = { q: searchQuery, limit: 20, status: 'ACTIVE' }
         if (branchId) {
           params.locationId = branchId
-          params.locationType = 'branch'
+          params.locationType = 'BRANCH'
         }
         const res = await productApi.search(params)
         setProducts(res.data)

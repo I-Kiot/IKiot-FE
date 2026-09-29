@@ -115,7 +115,7 @@ export function createTransfersColumns(
             {record.fromLocationName ?? "-"}
           </span>
           <span className="text-xs text-muted-foreground capitalize">
-            {record.fromLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+            {record.fromLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
           </span>
         </div>
       );
@@ -130,7 +130,7 @@ export function createTransfersColumns(
         <div className="flex flex-col">
           <span className="text-sm font-medium">{record.toLocationName}</span>
           <span className="text-xs text-muted-foreground capitalize">
-            {record.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+            {record.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
           </span>
         </div>
       );

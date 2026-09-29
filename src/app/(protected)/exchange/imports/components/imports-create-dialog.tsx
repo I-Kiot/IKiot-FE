@@ -420,7 +420,7 @@ export function ImportsCreateDialog({
 
     const toType =
       visibleLocations.find((l) => l.id === data.toLocationId)?.type ??
-      "warehouse";
+      "WAREHOUSE";
 
     try {
       await stockMovementApi.createImport({
@@ -547,7 +547,7 @@ export function ImportsCreateDialog({
                           {visibleLocations.map((l) => (
                             <SelectItem key={l.id} value={l.id}>
                               {l.name} (
-                              {l.type === "warehouse" ? "Kho" : "Chi nhánh"})
+                              {l.type === "WAREHOUSE" ? "Kho" : "Chi nhánh"})
                             </SelectItem>
                           ))}
                         </SelectContent>

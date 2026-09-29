@@ -106,7 +106,7 @@ export default function CashDrawersTodayPage() {
 
     if (user.role === "TENANT_OWNER") {
       const parsed = parseLocationKey(locationKey);
-      if (parsed && parsed.locationType === "branch") {
+      if (parsed && parsed.locationType === "BRANCH") {
         setActiveBranchId(parsed.locationId);
         branchApi
           .getById(parsed.locationId)
@@ -288,7 +288,7 @@ export default function CashDrawersTodayPage() {
   const parsedKey = parseLocationKey(locationKey);
   const isWarehouse =
     locationKey?.startsWith("warehouse") ||
-    parsedKey?.locationType === "warehouse";
+    parsedKey?.locationType === "WAREHOUSE";
 
   if (isWarehouse) {
     return (

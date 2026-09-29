@@ -87,9 +87,9 @@ export function TransfersCreateDialog({ open, onOpenChange }: TransfersCreateDia
   )
   /** BM JWT hoặc tenant đang switch sang chi nhánh. */
   const isBranchActor =
-    effectiveScope.locationType === 'branch' && !!effectiveScope.locationId
+    effectiveScope.locationType === 'BRANCH' && !!effectiveScope.locationId
   const isWarehouseActor =
-    effectiveScope.locationType === 'warehouse' && !!effectiveScope.locationId
+    effectiveScope.locationType === 'WAREHOUSE' && !!effectiveScope.locationId
   /** Chi nhánh xin hàng về: nơi nhận là chỗ mình, nơi gửi mới là ô chọn. */
   const isInboundRequest = isBranchActor && branchRequestKind === 'inbound'
   const isFromLocationLocked = !!effectiveScope.locationId && !isInboundRequest
@@ -256,13 +256,13 @@ export function TransfersCreateDialog({ open, onOpenChange }: TransfersCreateDia
     }
     if (!fromLocationId) return []
     if (isWarehouseActor) {
-      return locations.filter((l) => l.type === 'branch' && l.id !== fromLocationId)
+      return locations.filter((l) => l.type === 'BRANCH' && l.id !== fromLocationId)
     }
     // BR chuyển hàng: chỉ CN khác. BR trả hàng: kho / CN khác (không gồm nơi gửi).
     if (isBranchActor) {
       if (branchRequestKind === 'transfer') {
         return locations.filter(
-          (l) => l.type === 'branch' && l.id !== fromLocationId,
+          (l) => l.type === 'BRANCH' && l.id !== fromLocationId,
         )
       }
       return locations.filter((l) => l.id !== fromLocationId)
@@ -342,7 +342,7 @@ export function TransfersCreateDialog({ open, onOpenChange }: TransfersCreateDia
     if (
       isBranchActor &&
       branchRequestKind === 'transfer' &&
-      toLoc?.type !== 'branch'
+      toLoc?.type !== 'BRANCH'
     ) {
       toast.error('Chuyển hàng chỉ được gửi tới chi nhánh khác')
       return
@@ -350,7 +350,7 @@ export function TransfersCreateDialog({ open, onOpenChange }: TransfersCreateDia
 
     // BR→WH phải RETURN; còn lại EXPORT (kể cả BR→BR)
     const movementType =
-      fromLoc?.type === 'branch' && toLoc?.type === 'warehouse'
+      fromLoc?.type === 'BRANCH' && toLoc?.type === 'WAREHOUSE'
         ? ('RETURN' as const)
         : ('EXPORT' as const)
 
@@ -358,9 +358,9 @@ export function TransfersCreateDialog({ open, onOpenChange }: TransfersCreateDia
       await stockMovementApi.createExport({
         movementType,
         fromLocationId: data.fromLocationId,
-        fromLocationType: fromLoc?.type ?? 'warehouse',
+        fromLocationType: fromLoc?.type ?? 'WAREHOUSE',
         toLocationId: data.toLocationId,
-        toLocationType: toLoc?.type ?? 'branch',
+        toLocationType: toLoc?.type ?? 'BRANCH',
         note: normalizeOptionalNote(data.note),
         details: data.details.map((d) => ({
           productItemId: d.productItemId,
@@ -445,7 +445,7 @@ export function TransfersCreateDialog({ open, onOpenChange }: TransfersCreateDia
                     </FormControl>
                     <SelectContent>
                       {visibleFromLocations.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>{l.name} ({l.type === 'warehouse' ? 'Kho' : 'Chi nhánh'})</SelectItem>
+                        <SelectItem key={l.id} value={l.id}>{l.name} ({l.type === 'WAREHOUSE' ? 'Kho' : 'Chi nhánh'})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -468,7 +468,7 @@ export function TransfersCreateDialog({ open, onOpenChange }: TransfersCreateDia
                     </FormControl>
                     <SelectContent>
                       {visibleToLocations.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>{l.name} ({l.type === 'warehouse' ? 'Kho' : 'Chi nhánh'})</SelectItem>
+                        <SelectItem key={l.id} value={l.id}>{l.name} ({l.type === 'WAREHOUSE' ? 'Kho' : 'Chi nhánh'})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

@@ -1,17 +1,31 @@
-/** Parse switcher key: "all" | "branch-{id}" | "warehouse-{id}". */
+import type { LocationType } from "@/types/location"
+
+/**
+ * Parse switcher key: "all" | "branch-{id}" | "warehouse-{id}".
+ *
+ * The key keeps its lowercase prefix - it is persisted in localStorage (`activeLocationKey`)
+ * and changing it would strand every saved selection. The parsed `locationType` is the
+ * API's own `BRANCH` / `WAREHOUSE`, so it can go straight into a request.
+ */
 export type ParsedLocationKey = {
   locationId: string
-  locationType: "branch" | "warehouse"
+  locationType: LocationType
+}
+
+const KEY_PREFIX_TYPE: Record<string, LocationType> = {
+  branch: "BRANCH",
+  warehouse: "WAREHOUSE",
 }
 
 export function parseLocationKey(
   key: string | null | undefined,
 ): ParsedLocationKey | null {
   if (!key || key === "all") return null
-  const [type, ...rest] = key.split("-")
+  const [prefix, ...rest] = key.split("-")
   const id = rest.join("-")
-  if ((type === "branch" || type === "warehouse") && id) {
-    return { locationId: id, locationType: type }
+  const locationType = KEY_PREFIX_TYPE[prefix]
+  if (locationType && id) {
+    return { locationId: id, locationType }
   }
   return null
 }
@@ -32,7 +46,7 @@ export function locationFilter(key: string | null | undefined): {
 } {
   const parsed = parseLocationKey(key)
   if (!parsed) return {}
-  return parsed.locationType === "branch"
+  return parsed.locationType === "BRANCH"
     ? { branchId: parsed.locationId }
     : { warehouseId: parsed.locationId }
 }
@@ -40,5 +54,5 @@ export function locationFilter(key: string | null | undefined): {
 /** Just the branch, for the endpoints that take no warehouse filter at all. */
 export function branchIdOf(key: string | null | undefined): string | undefined {
   const parsed = parseLocationKey(key)
-  return parsed?.locationType === "branch" ? parsed.locationId : undefined
+  return parsed?.locationType === "BRANCH" ? parsed.locationId : undefined
 }

@@ -59,7 +59,7 @@ const adjustDetailSchema = z.object({
 const adjustFormSchema = z
   .object({
     locationId: z.string().min(1, 'Vui lòng chọn kho / chi nhánh'),
-    locationType: z.enum(['warehouse', 'branch']),
+    locationType: z.enum(['WAREHOUSE', 'BRANCH']),
     note: z.string().optional(),
     details: z.array(adjustDetailSchema).min(1, 'Cần ít nhất 1 mặt hàng'),
   })
@@ -69,7 +69,7 @@ type AdjustFormValues = z.infer<typeof adjustFormSchema>
 
 const EMPTY: AdjustFormValues = {
   locationId: '',
-  locationType: 'warehouse',
+  locationType: 'WAREHOUSE',
   note: '',
   details: [{ productItemId: '', receivedQuantity: 1, note: '' }],
 }
@@ -271,7 +271,7 @@ export function AdjustmentsCreateDialog({
                           <SelectItem key={l.id} value={l.id}>
                             {l.name}{' '}
                             <span className="text-muted-foreground">
-                              ({l.type === 'warehouse' ? 'Kho' : 'Chi nhánh'})
+                              ({l.type === 'WAREHOUSE' ? 'Kho' : 'Chi nhánh'})
                             </span>
                           </SelectItem>
                         ))}

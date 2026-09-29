@@ -218,7 +218,7 @@ export default function CashflowPage() {
                         {tx.locationName ? (
                           <span className="inline-flex items-center gap-1.5">
                             {tx.locationName}
-                            {tx.locationType === 'warehouse' && (
+                            {tx.locationType === 'WAREHOUSE' && (
                               <Badge variant="secondary" className="text-[10px]">
                                 Kho
                               </Badge>

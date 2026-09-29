@@ -158,7 +158,7 @@ export function useBranchSwitcher() {
     const parsed = parseLocationKey(locationKey);
     const type = parsed?.locationType;
     const id = parsed?.locationId ?? "";
-    if (type === "branch") {
+    if (type === "BRANCH") {
       const match = dbBranches.find((b) => b.id === id);
       if (match) {
         setActiveItem(mapBranchToItem(match));
@@ -170,7 +170,7 @@ export function useBranchSwitcher() {
           type: "branch",
         });
       }
-    } else if (type === "warehouse") {
+    } else if (type === "WAREHOUSE") {
       const match = dbWarehouses.find((w) => w.id === id);
       if (match) {
         setActiveItem(mapWarehouseToItem(match));
