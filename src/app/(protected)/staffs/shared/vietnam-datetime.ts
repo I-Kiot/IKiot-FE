@@ -64,7 +64,7 @@ export function formatVietnamWorkDate(dateText?: string | null): string {
   }).format(utcAnchor);
 }
 
-/** Hiển thị ngày giờ thực tế (check-in/out, createdAt...) theo giờ VN. */
+/** Hiển thị ngày giờ thực tế (createdAt, updatedAt...) theo giờ VN. */
 export function formatVietnamDateTime(iso?: string | null): string {
   if (!iso) return "-";
   try {

@@ -1,5 +1,4 @@
 import type {
-  AttendanceDetail,
   ScheduleAssignee,
   ScheduleStatus,
   WorkingSchedule,
@@ -44,7 +43,6 @@ export type CalendarScheduleEntry = {
   chipKey: string;
   displayName: string;
   displayAvatarUrl?: string | null;
-  displayAttendance: AttendanceDetail;
 };
 
 /** Giữ một assignee khi mở chi tiết từ chip / day list (fallback nếu API lỗi). */
@@ -61,7 +59,6 @@ export function filterScheduleToAssignee(
     staffName: assignee.staffName,
     staffAvatarUrl: assignee.staffAvatarUrl,
     staffPhone: assignee.staffPhone,
-    attendance: assignee.attendance,
   };
 }
 
@@ -81,7 +78,6 @@ export function expandSchedulesForCalendar(
         chipKey: schedule.id,
         displayName: schedule.staffName,
         displayAvatarUrl: schedule.staffAvatarUrl,
-        displayAttendance: schedule.attendance,
       });
       continue;
     }
@@ -97,7 +93,6 @@ export function expandSchedulesForCalendar(
         chipKey: `${schedule.id}-${assignee.userId}`,
         displayName: assignee.staffName,
         displayAvatarUrl: assignee.staffAvatarUrl,
-        displayAttendance: assignee.attendance,
       });
     }
   }

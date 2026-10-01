@@ -12,10 +12,7 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 const HR_NAV_PERMISSION = {
   staffList: ["users", "read"],
   schedule: ["schedules", "read"],
-  leaveRequests: ["leaveRequests", "read_mine"],
   holidays: ["holidays", "read"],
-  payroll: ["payroll", "read"],
-  myPayroll: ["payslips", "read_own"],
 } as const;
 
 export type HrNavItemKey = keyof typeof HR_NAV_PERMISSION;
@@ -36,10 +33,7 @@ export function filterHrNavItems<
   const urlToKey: Record<string, HrNavItemKey> = {
     "/staffs": "staffList",
     "/staffs/schedule": "schedule",
-    "/staffs/schedule/leave-requests": "leaveRequests",
     "/staffs/holidays": "holidays",
-    "/staffs/payroll": "payroll",
-    "/staffs/payroll/my-payslips": "myPayroll",
   };
 
   return items.filter((item) => {

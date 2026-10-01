@@ -5,10 +5,8 @@ import { formatVietnamDateTime, formatVietnamWorkDate } from "@/app/(protected)/
 import {
   CalendarDays,
   Clock,
-  Fingerprint,
   Hash,
   Lock,
-  MapPin,
   Phone,
   Timer,
   Pencil,
@@ -18,13 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  formatAttendanceDateTime,
-  formatAttendanceLocation,
-  formatWorkedMinutes,
-  getAttendanceStatusDisplay,
-  hasAttendanceLocation,
-} from "@/app/(protected)/staffs/shared/attendance-status";
 import { SCHEDULE_STATUS_MAP } from "@/app/(protected)/staffs/shared/schedule-status";
 import {
   formatShiftTimeRange,
@@ -72,11 +63,9 @@ const STATUS_ACCENT: Record<
   },
 };
 
-function AssigneeAttendanceCard({ assignee }: { assignee: ScheduleAssignee }) {
-  const attendanceStatus = getAttendanceStatusDisplay(assignee.attendance?.status);
-
+function AssigneeCard({ assignee }: { assignee: ScheduleAssignee }) {
   return (
-    <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+    <div className="rounded-xl border bg-muted/30 p-4">
       <div className="flex items-center gap-3">
         <ScheduleStaffAvatar
           name={assignee.staffName}
@@ -90,63 +79,6 @@ function AssigneeAttendanceCard({ assignee }: { assignee: ScheduleAssignee }) {
             {assignee.staffPhone || "-"}
           </p>
         </div>
-        <Badge variant={attendanceStatus.variant}>{attendanceStatus.label}</Badge>
-      </div>
-
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <InfoItem
-          icon={<Clock className="size-4" />}
-          label="Check-in thực tế"
-          value={formatAttendanceDateTime(assignee.attendance?.actualCheckinAt)}
-        />
-        <InfoItem
-          icon={<Clock className="size-4" />}
-          label="Check-out thực tế"
-          value={formatAttendanceDateTime(assignee.attendance?.actualCheckoutAt)}
-        />
-        <InfoItem
-          icon={<Timer className="size-4" />}
-          label="Đi muộn"
-          value={
-            assignee.attendance?.lateMinutes != null
-              ? `${assignee.attendance.lateMinutes} phút`
-              : "-"
-          }
-        />
-        <InfoItem
-          icon={<Timer className="size-4" />}
-          label="Giờ làm thực tế"
-          value={formatWorkedMinutes(assignee.attendance?.workedMinutes)}
-        />
-        <InfoItem
-          icon={<Timer className="size-4" />}
-          label="Tăng ca"
-          value={
-            assignee.attendance?.overtimeMinute != null
-              ? `${assignee.attendance.overtimeMinute} phút`
-              : "-"
-          }
-        />
-        {hasAttendanceLocation(assignee.attendance?.checkInLocation) && (
-          <div className="col-span-2">
-            <InfoItem
-              icon={<MapPin className="size-4" />}
-              label="Vị trí check-in"
-              value={formatAttendanceLocation(assignee.attendance.checkInLocation)}
-            />
-          </div>
-        )}
-        {hasAttendanceLocation(assignee.attendance?.checkOutLocation) && (
-          <div className="col-span-2">
-            <InfoItem
-              icon={<MapPin className="size-4" />}
-              label="Vị trí check-out"
-              value={formatAttendanceLocation(
-                assignee.attendance.checkOutLocation,
-              )}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
@@ -325,11 +257,11 @@ export function ScheduleDetailContent({
 
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <Fingerprint className="size-4 text-primary" />
-            Chấm công theo nhân viên
+            <User className="size-4 text-primary" />
+            Nhân viên trong ca
           </div>
           {assignees.map((assignee) => (
-            <AssigneeAttendanceCard key={assignee.userId} assignee={assignee} />
+            <AssigneeCard key={assignee.userId} assignee={assignee} />
           ))}
         </div>
 

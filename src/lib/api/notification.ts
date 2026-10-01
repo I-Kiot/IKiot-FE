@@ -68,13 +68,11 @@ export async function deleteAllSystemNotifications(): Promise<{ success: boolean
 // ---- Hộp thư cấp tenant (khác hoàn toàn với /admin/* ở trên) ----
 
 export type NotificationType =
-  | "LEAVE_REQUEST_CREATED" | "LEAVE_REQUEST_APPROVED" | "LEAVE_REQUEST_REJECTED"
-  | "LEAVE_REQUEST_CANCELLED" | "LEAVE_REQUEST_EXPIRED"
   | "STOCK_MOVEMENT_CREATED" | "STOCK_MOVEMENT_IN_TRANSIT"
   | "STOCK_MOVEMENT_RECEIVED" | "STOCK_MOVEMENT_CANCELLED"
   | "INVENTORY_LOW_STOCK" | "ORDER_PAID"
   | "SUBSCRIPTION_ACTIVATED" | "SUBSCRIPTION_EXPIRING" | "SUBSCRIPTION_EXPIRED"
-  | "SCHEDULE_ASSIGNED" | "PAYSLIP_APPROVED" | "PAYSLIP_PAID"
+  | "SCHEDULE_ASSIGNED"
   | "STAFF_ACCOUNT_CREATED" | "TICKET_REPLIED" | "SEPAY_LINKED";
 
 /** Payload socket event "notification" chính là document này. */

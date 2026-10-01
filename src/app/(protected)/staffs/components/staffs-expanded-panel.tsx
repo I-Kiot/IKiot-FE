@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   Building2,
@@ -18,13 +17,11 @@ import {
   UserCheck,
   UserCog,
   Warehouse,
-  Wallet,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   formatStaffDate,
   formatStaffDateTime,
@@ -49,10 +46,8 @@ import {
 import {
   getStaffGenderLabel,
 } from "@/lib/api/staff-mapper";
-import { describeBasicPay, paySheetApi } from "@/lib/api/paysheet";
 import { formatIdentificationId } from "@/app/(protected)/staffs/shared/identification-format";
 import type { Staff } from "@/types/staff";
-import type { PaySheetDetail } from "@/types/paysheet";
 import { useStaffs } from "./staffs-provider";
 
 function InfoItem({
@@ -87,10 +82,6 @@ export function StaffsExpandedPanel({
   const { setOpen, setCurrentRow, openAssignBranchManager, openAssignWarehouseManager } =
     useStaffs();
   const userRole = getSessionRole();
-  const [paySheetDetail, setPaySheetDetail] = useState<PaySheetDetail | null>(
-    null,
-  );
-  const [paySheetLoading, setPaySheetLoading] = useState(false);
 
   const showDelete =
     canDeleteStaff(userRole) &&
@@ -101,32 +92,6 @@ export function StaffsExpandedPanel({
     canAssignBranchManager(userRole) && Boolean(staff.branchId);
   const showAssignWarehouseManager =
     canAssignWarehouseManager(userRole) && Boolean(staff.warehouseId);
-
-  useEffect(() => {
-    if (!isExpanded || !staff.paySheetId) {
-      setPaySheetDetail(null);
-      setPaySheetLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setPaySheetLoading(true);
-    void paySheetApi
-      .getById(staff.paySheetId)
-      .then((detail) => {
-        if (!cancelled) setPaySheetDetail(detail);
-      })
-      .catch(() => {
-        if (!cancelled) setPaySheetDetail(null);
-      })
-      .finally(() => {
-        if (!cancelled) setPaySheetLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isExpanded, staff.paySheetId]);
 
   if (!isExpanded) return null;
 
@@ -139,14 +104,6 @@ export function StaffsExpandedPanel({
     canDeactivateStaffRow(userRole);
   const canChangePassword =
     showAccountActions && staff.status === "ACTIVE";
-
-  const paySheetName =
-    paySheetDetail?.name ||
-    staff.paySheetName ||
-    (staff.paySheetId
-      ? `#${String(staff.paySheetId).slice(-6).toUpperCase()}`
-      : null);
-  const paySheetSummary = describeBasicPay(paySheetDetail?.basicPay);
 
   return (
     <div
@@ -170,34 +127,6 @@ export function StaffsExpandedPanel({
         <div>
           <p className="text-xs text-muted-foreground">Ảnh đại diện</p>
           <p className="text-sm font-medium">{staff.fullName}</p>
-        </div>
-      </div>
-
-      <div className="mb-4 rounded-lg border bg-muted/30 px-4 py-3">
-        <div className="flex items-start gap-2">
-          <Wallet className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-xs text-muted-foreground">Bảng lương</p>
-            {paySheetLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-56" />
-                <Skeleton className="h-3 w-40" />
-              </div>
-            ) : paySheetName ? (
-              <>
-                <p className="text-sm font-semibold break-words">
-                  {paySheetName}
-                </p>
-                {paySheetSummary ? (
-                  <p className="text-sm text-foreground/80">{paySheetSummary}</p>
-                ) : null}
-              </>
-            ) : (
-              <p className="text-sm font-medium text-muted-foreground">
-                Chưa gán bảng lương
-              </p>
-            )}
-          </div>
         </div>
       </div>
 
@@ -238,13 +167,6 @@ export function StaffsExpandedPanel({
           label="Ngày vào làm"
           value={formatStaffDate(staff.joinedAt)}
         />
-        {staff.leaveBalance && (
-          <InfoItem
-            icon={<CalendarDays className="size-4" />}
-            label="Phép năm"
-            value={`${staff.leaveBalance.remainingDays}/${staff.leaveBalance.annualLeaveDays} ngày`}
-          />
-        )}
         {staff.profile?.identificationId && (
           <InfoItem
             icon={<CreditCard className="size-4" />}
@@ -399,21 +321,6 @@ export function StaffsExpandedPanel({
             >
               <KeyRound className="mr-2 size-4" />
               Đổi mật khẩu
-            </Button>
-          )}
-          {showEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                setCurrentRow(staff);
-                setOpen("leaveBalance");
-              }}
-            >
-              <CalendarDays className="mr-2 size-4" />
-              {staff.leaveBalance ? "Sửa ngày phép" : "Tạo ngày phép"}
             </Button>
           )}
           {showEdit && (

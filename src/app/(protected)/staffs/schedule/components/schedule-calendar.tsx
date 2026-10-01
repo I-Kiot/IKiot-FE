@@ -24,7 +24,6 @@ import {
 import { cn } from "@/lib/utils";
 import { getSessionRole } from "@/lib/auth";
 import { canFilterScheduleByStaff } from "@/app/(protected)/staffs/shared/schedule-permissions";
-import { getAttendanceStatusDisplay } from "@/app/(protected)/staffs/shared/attendance-status";
 import { SCHEDULE_STATUS_MAP } from "@/app/(protected)/staffs/shared/schedule-status";
 import { toHolidayDateKey } from "@/app/(protected)/staffs/shared/schedule-day-meta";
 import {
@@ -33,33 +32,12 @@ import {
   type CalendarScheduleEntry,
 } from "@/app/(protected)/staffs/shared/schedule-utils";
 import type { WorkingSchedule } from "@/types/working-schedule";
-import type { LeaveRequestPerDay } from "@/types/leave-request";
 import { ScheduleMonthPicker } from "./schedule-month-picker";
 import { useSchedule } from "./schedule-provider";
 
 const WEEKDAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 const MAX_VISIBLE_PER_DAY = 3;
 const EMPTY_DAY_ENTRIES: CalendarScheduleEntry[] = [];
-const EMPTY_LEAVE_DAYS: LeaveRequestPerDay[] = [];
-
-function leaveChipLabel(item: LeaveRequestPerDay): string {
-  return item.status === "PENDING" ? "Chờ duyệt nghỉ" : "Nghỉ phép";
-}
-
-function attendanceDotClass(status?: string): string {
-  switch (status) {
-    case "CHECKED_OUT":
-      return "bg-emerald-500";
-    case "CHECKED_IN":
-      return "bg-sky-500";
-    case "LATE":
-      return "bg-amber-500";
-    case "ABSENT":
-      return "bg-red-500";
-    default:
-      return "bg-muted-foreground/40";
-  }
-}
 
 function ScheduleDayChip({
   entry,
@@ -70,7 +48,7 @@ function ScheduleDayChip({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const { schedule, displayName, displayAttendance } = entry;
+  const { schedule, displayName } = entry;
   const status = SCHEDULE_STATUS_MAP[schedule.status];
   const isOvertime = schedule.scheduleType === "OVERTIME";
 
@@ -93,14 +71,8 @@ function ScheduleDayChip({
           "bg-muted border-border text-muted-foreground",
         isOvertime && "border-amber-500/50",
       )}
-      title={`${displayName} · ${schedule.shiftName}${isOvertime ? " · Tăng ca" : ""} · ${getAttendanceStatusDisplay(displayAttendance?.status).label}`}
+      title={`${displayName} · ${schedule.shiftName}${isOvertime ? " · Tăng ca" : ""}`}
     >
-      <span
-        className={cn(
-          "size-1.5 shrink-0 rounded-full",
-          attendanceDotClass(displayAttendance?.status),
-        )}
-      />
       <span className="truncate">
         <span className="font-medium">{displayName}</span>
         <span className="opacity-75"> · {schedule.shiftName}</span>
@@ -145,7 +117,6 @@ type CalendarDayCellProps = {
   today: boolean;
   isSunday: boolean;
   holidayName: string | null;
-  leaveDays: LeaveRequestPerDay[];
   dayEntries: CalendarScheduleEntry[];
   isSelected: boolean;
   isLoading: boolean;
@@ -166,7 +137,6 @@ const CalendarDayCell = memo(function CalendarDayCell({
   today,
   isSunday,
   holidayName,
-  leaveDays,
   dayEntries,
   isSelected,
   isLoading,
@@ -177,9 +147,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
 }: CalendarDayCellProps) {
   const visible = dayEntries.slice(0, MAX_VISIBLE_PER_DAY);
   const hiddenCount = dayEntries.length - visible.length;
-  const primaryLeave = leaveDays[0] ?? null;
-  const canOpen =
-    dayEntries.length > 0 || Boolean(holidayName) || leaveDays.length > 0;
+  const canOpen = dayEntries.length > 0 || Boolean(holidayName);
 
   return (
     <div
@@ -191,8 +159,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
         !inMonth && "bg-muted/20",
         today && "bg-primary/5",
         holidayName && "bg-amber-500/5",
-        primaryLeave && !holidayName && "bg-violet-500/5",
-        isSunday && !holidayName && !primaryLeave && "bg-rose-500/5",
+        isSunday && !holidayName && "bg-rose-500/5",
         isSelected && "bg-primary/10 ring-1 ring-inset ring-primary/30",
         canOpen && "cursor-pointer hover:bg-muted/30 transition-colors",
       )}
@@ -235,20 +202,6 @@ const CalendarDayCell = memo(function CalendarDayCell({
           title={holidayName}
         >
           {holidayName}
-        </p>
-      )}
-
-      {primaryLeave && (
-        <p
-          className={cn(
-            "w-full shrink-0 whitespace-normal break-words rounded px-1 py-0.5 text-left text-[10px] font-semibold leading-tight",
-            primaryLeave.status === "PENDING"
-              ? "bg-orange-500/20 text-orange-900 dark:text-orange-100"
-              : "bg-violet-500/20 text-violet-950 dark:text-violet-100",
-          )}
-          title={primaryLeave.reason || leaveChipLabel(primaryLeave)}
-        >
-          {leaveChipLabel(primaryLeave)}
         </p>
       )}
 
@@ -309,7 +262,6 @@ export function ScheduleCalendar() {
     updateUserFilter,
     currentSchedule,
     holidaysByDate,
-    leaveByDate,
   } = useSchedule();
 
   const [search, setKeyword] = useState("");
@@ -446,31 +398,6 @@ export function ScheduleCalendar() {
           </span>
           Ngày lễ
         </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="rounded bg-violet-500/20 px-1 py-0.5 text-[9px] font-medium text-violet-800 dark:text-violet-200">
-            Nghỉ
-          </span>
-          Nghỉ phép
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="rounded bg-orange-500/20 px-1 py-0.5 text-[9px] font-medium text-orange-800 dark:text-orange-200">
-            Chờ
-          </span>
-          Chờ duyệt nghỉ
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="size-2 rounded-full bg-muted-foreground/40" /> Chưa
-          chấm
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="size-2 rounded-full bg-sky-500" /> Check-in
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="size-2 rounded-full bg-emerald-500" /> Check-out
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="size-2 rounded-full bg-orange-500" /> Muộn
-        </span>
       </div>
 
       <div className="rounded-lg border overflow-hidden">
@@ -497,7 +424,6 @@ export function ScheduleCalendar() {
                 today={isToday(day)}
                 isSunday={day.getDay() === 0}
                 holidayName={holidaysByDate.get(dateKey) ?? null}
-                leaveDays={leaveByDate.get(dateKey) ?? EMPTY_LEAVE_DAYS}
                 dayEntries={entriesByDate.get(dateKey) ?? EMPTY_DAY_ENTRIES}
                 isSelected={selectedDayDate === dateKey}
                 isLoading={isLoading}

@@ -9,7 +9,7 @@ import { statsApi, type Cashflow, type CashflowList } from '@/lib/api/stats'
 
 export type CashflowRange = '7d' | '30d' | '90d' | '12m'
 export type FlowTypeFilter = 'ALL' | 'INCOME' | 'EXPENSE'
-export type FlowPrefixFilter = 'ALL' | 'ORD' | 'SUP' | 'PAYR'
+export type FlowPrefixFilter = 'ALL' | 'ORD' | 'SUP'
 
 const RANGE_DAYS: Record<CashflowRange, number> = {
   '7d': 7,

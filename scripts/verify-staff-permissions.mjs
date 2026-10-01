@@ -22,8 +22,6 @@ const expectations = {
     canAssignWarehouseOnStaffForm: true,
     hrStaffList: true,
     hrSchedule: true,
-    hrLeave: true,
-    hrPayroll: false,
     canDeactivateManager: true,
   },
   BRANCH_MANAGER: {
@@ -36,8 +34,6 @@ const expectations = {
     canAssignWarehouseOnStaffForm: false,
     hrStaffList: true,
     hrSchedule: true,
-    hrLeave: true,
-    hrPayroll: false,
     canDeactivateManager: false,
   },
   WAREHOUSE_MANAGER: {
@@ -50,8 +46,6 @@ const expectations = {
     canAssignWarehouseOnStaffForm: false,
     hrStaffList: false,
     hrSchedule: true,
-    hrLeave: true,
-    hrPayroll: false,
     canDeactivateManager: false,
   },
   STAFF: {
@@ -64,8 +58,6 @@ const expectations = {
     canAssignWarehouseOnStaffForm: false,
     hrStaffList: false,
     hrSchedule: true,
-    hrLeave: true,
-    hrPayroll: false,
     canDeactivateManager: false,
   },
   CUSTOMER: {
@@ -78,8 +70,6 @@ const expectations = {
     canAssignWarehouseOnStaffForm: false,
     hrStaffList: false,
     hrSchedule: false,
-    hrLeave: false,
-    hrPayroll: false,
     canDeactivateManager: false,
   },
 };
@@ -90,13 +80,6 @@ const STAFF_DELETE = new Set(["TENANT_OWNER", "BRANCH_MANAGER"]);
 const HR_NAV = {
   staffList: ["TENANT_OWNER", "BRANCH_MANAGER"],
   schedule: ["TENANT_OWNER", "BRANCH_MANAGER", "WAREHOUSE_MANAGER", "STAFF"],
-  leaveRequests: [
-    "TENANT_OWNER",
-    "BRANCH_MANAGER",
-    "WAREHOUSE_MANAGER",
-    "STAFF",
-  ],
-  payroll: [],
 };
 
 function canAccessHr(item, role) {
@@ -114,8 +97,6 @@ function evaluate(role) {
     canAssignWarehouseOnStaffForm: role === "TENANT_OWNER",
     hrStaffList: canAccessHr("staffList", role),
     hrSchedule: canAccessHr("schedule", role),
-    hrLeave: canAccessHr("leaveRequests", role),
-    hrPayroll: canAccessHr("payroll", role),
     canDeactivateManager: role === "TENANT_OWNER",
   };
 }

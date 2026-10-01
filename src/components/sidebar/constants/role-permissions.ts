@@ -188,64 +188,6 @@ export function canAssignWarehouseManager(role?: string | null): boolean {
 }
 
 /** Thăng STAFF → BM/WM qua form sửa - chỉ TENANT_OWNER. */
-// Leave requests - aligned with BE permissions.json leaveRequests actions
-export function canViewLeaveRequests(role?: string | null): boolean {
-  return allows(role, 'leaveRequests', 'read_mine');
-}
-export function canReviewLeaveRequest(role?: string | null): boolean {
-  return allows(role, 'leaveRequests', 'approve');
-}
-
-/**
- * Whether this account may approve *this particular* request.
- *
- * Two rules survive from the old version, and one does not:
- *  - **Nobody reviews their own request.** The backend enforces it; hiding the button keeps
- *    the refusal from being a surprise.
- *  - Holding `leaveRequests:approve` is the rest of it.
- *
- * What is gone is the hierarchy - "a branch manager may only approve STAFF, their own kind
- * goes to the owner". That compared two fixed roles, and roles are shop-defined rows now, so
- * there is nothing to rank. The backend dropped the same rule when the module was ported.
- */
-export function canReviewLeaveRequestTarget(
-  reviewerRole?: string | null,
-  options?: {
-    requestUserId?: string | null;
-    currentUserId?: string | null;
-  },
-): boolean {
-  if (!canReviewLeaveRequest(reviewerRole)) return false;
-
-  const requestUserId = options?.requestUserId
-    ? String(options.requestUserId).trim()
-    : "";
-  const currentUserId = options?.currentUserId
-    ? String(options.currentUserId).trim()
-    : "";
-
-  if (requestUserId && currentUserId && requestUserId === currentUserId) {
-    return false;
-  }
-  return true;
-}
-export function canCreateEmergencyLeave(role?: string | null): boolean {
-  return allows(role, 'leaveRequests', 'create_emergency');
-}
-/**
- * Filing your own leave.
- *
- * `POST /leave-requests` carries **no `@Permissions` decorator** - deliberately: anybody
- * with an account may ask for time off. So this is "are you signed in", not a permission.
- */
-export function canCreatePersonalLeave(role?: string | null): boolean {
-  return Boolean(role);
-}
-/** BR / WH / STAFF: POST /leave-requests/:id/cancel. */
-export function canCancelOwnLeave(role?: string | null): boolean {
-  return allows(role, 'leaveRequests', 'cancel');
-}
-
 // Billing
 export function canManageBilling(role?: string | null): boolean {
   return allows(role, 'subscriptions', 'manage');

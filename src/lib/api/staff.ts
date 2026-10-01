@@ -14,7 +14,6 @@ import type {
   CreateStaffAccountPayload,
   CreateStaffPayload,
   Staff,
-  StaffLeaveBalance,
   StaffListResponse,
   StaffQueryParams,
   StaffRoleOption,
@@ -29,40 +28,6 @@ interface StaffListApiResponse {
     page: number;
     limit: number;
     totalPages: number;
-  };
-}
-
-/** Response shape from POST/PATCH /staff/:staffId/leave-balance */
-type LeaveBalanceApiResponse = {
-  success?: boolean;
-  message?: string;
-  leaveBalance?: StaffLeaveBalance & { usedDays?: number };
-};
-
-export type StaffLeaveBalanceResult = {
-  message?: string;
-  leaveBalance: StaffLeaveBalance & { usedDays?: number };
-};
-
-function mapLeaveBalanceResult(
-  payload: LeaveBalanceApiResponse | undefined,
-): StaffLeaveBalanceResult {
-  const leaveBalance = payload?.leaveBalance;
-  const annual = Number(leaveBalance?.annualLeaveDays);
-  const remaining = Number(leaveBalance?.remainingDays);
-  if (!leaveBalance || !Number.isFinite(annual) || !Number.isFinite(remaining)) {
-    throw new Error("Không nhận được leaveBalance từ máy chủ");
-  }
-
-  return {
-    message: payload?.message,
-    leaveBalance: {
-      annualLeaveDays: annual,
-      remainingDays: remaining,
-      ...(leaveBalance.usedDays != null
-        ? { usedDays: Number(leaveBalance.usedDays) }
-        : {}),
-    },
   };
 }
 
@@ -94,12 +59,10 @@ function buildProfileBody(
  * **not** in here: switching the login on is `POST /users/:id/account`, a second call the
  * provider makes right after this one.
  *
- * Two things this used to get wrong, both invisible because `whitelist: true` drops
- * unknown keys without complaining. `paySheetId` is `paysheetId` on the wire (lowercase
- * `s`), so nobody was ever hired onto a pay scheme. And `avatarUrl`/`taxNumber`/`dob` were
- * repeated flat beside `profile`, which `CreateUserDto` has never accepted at the top
- * level - the nested copy is the one that counts, so the flat trio is gone rather than
- * left there implying the server reads it.
+ * `avatarUrl`/`taxNumber`/`dob` used to be repeated flat beside `profile`, which
+ * `CreateUserDto` has never accepted at the top level (`whitelist: true` drops unknown keys
+ * without complaining) - the nested copy is the one that counts, so the flat trio is gone
+ * rather than left there implying the server reads it.
  */
 function buildCreateBody(payload: CreateStaffPayload) {
   const profile = buildProfileBody(
@@ -121,22 +84,18 @@ function buildCreateBody(payload: CreateStaffPayload) {
     firstName: payload.firstName,
     lastName: payload.lastName,
     profile,
-    ...(payload.paySheetId ? { paysheetId: payload.paySheetId } : {}),
   };
 }
 
 /**
  * The body of `PATCH /users/:id`.
  *
- * Three things about it were wrong at once, and the first one hid the other two:
+ * Two things about it were wrong at once, and the first one hid the second:
  *
  * 1. It used to `return { data }`. The server's global `ValidationPipe({ whitelist: true })`
  *    **drops unknown keys silently** rather than erroring, so the whole edit arrived as an
  *    empty object: HTTP 200, nothing saved, no complaint anywhere. Return the fields flat.
- * 2. `paySheetId` is `paysheetId` on the wire (lowercase `s`) - `UpdateUserDto` spells it
- *    that way, and the misspelt key was being whitelisted away with everything else.
- *    `null` still removes the assignment.
- * 3. **At most one posting may be sent.** `UserService.resolvePosting` throws 400 the
+ * 2. **At most one posting may be sent.** `UserService.resolvePosting` throws 400 the
  *    moment `branchId` *and* `warehouseId` are both present - `undefined` is the only
  *    "leave it alone", and naming one already clears the other server-side. The edit
  *    dialog sends `warehouseId: null` alongside a real `branchId`, which would have been
@@ -157,9 +116,6 @@ function buildUpdateBody(payload: UpdateStaffPayload) {
   }
   if (payload.accountNote !== undefined) {
     data.accountNote = payload.accountNote.trim();
-  }
-  if (payload.paySheetId !== undefined) {
-    data.paysheetId = payload.paySheetId;
   }
 
   // Exactly one, never both. A form that clears the posting sends null for both, and the
@@ -295,29 +251,5 @@ export const staffApi = {
       value: role.id,
       label: role.name,
     }));
-  },
-
-  /** POST /staff/:staffId/leave-balance - body: { annualLeaveDays } */
-  createLeaveBalance: async (
-    staffId: string,
-    annualLeaveDays: number,
-  ): Promise<StaffLeaveBalanceResult> => {
-    const response = await client.post<LeaveBalanceApiResponse>(
-      `/users/${staffId}/leave-balance`,
-      { annualLeaveDays },
-    );
-    return mapLeaveBalanceResult(response.data);
-  },
-
-  /** PATCH /staff/:staffId/leave-balance - body: { annualLeaveDays } */
-  updateAnnualLeaveDays: async (
-    staffId: string,
-    annualLeaveDays: number,
-  ): Promise<StaffLeaveBalanceResult> => {
-    const response = await client.patch<LeaveBalanceApiResponse>(
-      `/users/${staffId}/leave-balance`,
-      { annualLeaveDays },
-    );
-    return mapLeaveBalanceResult(response.data);
   },
 };

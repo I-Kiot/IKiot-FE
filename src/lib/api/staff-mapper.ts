@@ -2,7 +2,6 @@ import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import type {
   Staff,
   StaffGender,
-  StaffLeaveBalance,
   StaffProfile,
   StaffStatus,
 } from "@/types/staff";
@@ -31,18 +30,6 @@ export interface ApiStaffUser {
   };
   hireDate?: string;
   accountNote?: string;
-  /**
-   * `paysheetId` with a lowercase `s` - that is how the column, `UpdateUserDto` and the
-   * response all spell it. This interface said `paySheetId`, so every staff row read the
-   * pay scheme as `undefined` and the column rendered empty. `paysheet` carries the name
-   * beside it, which is what the list actually displays.
-   */
-  paysheetId?: string | null;
-  paysheet?: { id?: string; name?: string } | null;
-  leaveBalance?: {
-    annualLeaveDays?: number;
-    remainingDays?: number;
-  };
   createdAt: string;
   updatedAt: string;
 }
@@ -104,32 +91,6 @@ function mapProfile(profile?: ApiStaffUser["profile"]): StaffProfile | undefined
   return Object.keys(mapped).length > 0 ? mapped : undefined;
 }
 
-function mapLeaveBalance(
-  balance?: ApiStaffUser["leaveBalance"],
-): StaffLeaveBalance | undefined {
-  if (!balance) return undefined;
-  const annual = Number(balance.annualLeaveDays);
-  const remaining = Number(balance.remainingDays);
-  if (!Number.isFinite(annual) || !Number.isFinite(remaining)) return undefined;
-  return { annualLeaveDays: annual, remainingDays: remaining };
-}
-
-function resolvePaySheetId(
-  ref?: string | { id?: string; name?: string } | null,
-): string | null | undefined {
-  if (ref === null) return null;
-  if (ref === undefined) return undefined;
-  if (typeof ref === "string") return ref || null;
-  return ref.id ?? null;
-}
-
-function resolvePaySheetName(
-  ref?: string | { id?: string; name?: string } | null,
-): string | undefined {
-  if (!ref || typeof ref === "string") return undefined;
-  return ref.name?.trim() || undefined;
-}
-
 export function isDeletedStaff(user: ApiStaffUser): boolean {
   return user.status === "DELETED";
 }
@@ -178,11 +139,8 @@ export function mapStaffFromApi(user: ApiStaffUser): Staff {
     roleName: getStaffRoleLabel(user.role?.name),
     status: mapStatus(user.status),
     joinedAt: user.hireDate ?? user.createdAt,
-    paySheetId: resolvePaySheetId(user.paysheetId),
-    paySheetName: resolvePaySheetName(user.paysheet),
     profile: mapProfile(user.profile),
     accountNote: user.accountNote,
-    leaveBalance: mapLeaveBalance(user.leaveBalance),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
