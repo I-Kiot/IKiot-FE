@@ -60,7 +60,7 @@ const menuSections = [
       {
         title: "Nhân viên & Ca làm",
         description:
-          "Phân ca làm việc, chấm công và phân công chi nhánh tiện lợi",
+          "Phân ca làm việc và phân công chi nhánh tiện lợi",
         icon: Rocket,
         href: "#features",
       },

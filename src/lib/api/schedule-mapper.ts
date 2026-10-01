@@ -9,8 +9,6 @@ import {
 import type {
   ApiScheduleUser,
   ApiWorkingSchedule,
-  AttendanceDetail,
-  AttendanceLocation,
   ScheduleAssignee,
   ShiftTemplate,
   ShiftTemplateOption,
@@ -26,46 +24,6 @@ function resolveStaffName(user: ApiScheduleUser): string {
   const { firstName, lastName } = user.profile ?? {};
   const name = `${lastName ?? ""} ${firstName ?? ""}`.trim();
   return name || user.phoneNumber || user.id;
-}
-
-function mapAttendanceLocation(value: unknown): AttendanceLocation | null {
-  if (!value || typeof value !== "object") return null;
-  const loc = value as Record<string, unknown>;
-  return {
-    latitude: typeof loc.latitude === "number" ? loc.latitude : undefined,
-    longitude: typeof loc.longitude === "number" ? loc.longitude : undefined,
-    accuracy: typeof loc.accuracy === "number" ? loc.accuracy : undefined,
-    distance: typeof loc.distance === "number" ? loc.distance : undefined,
-    verificationStatus:
-      typeof loc.verificationStatus === "string"
-        ? loc.verificationStatus
-        : undefined,
-  };
-}
-
-function mapAttendance(
-  att: ApiScheduleUser["attendance"],
-): AttendanceDetail {
-  return {
-    id: att?.id,
-    status: att?.status ?? "NOT_CHECKED_IN",
-    actualCheckinAt: att?.actualCheckinAt ?? null,
-    actualCheckoutAt: att?.actualCheckoutAt ?? null,
-    checkInLocation:
-      att && "checkInLocation" in att
-        ? mapAttendanceLocation(att.checkInLocation)
-        : null,
-    checkOutLocation:
-      att && "checkOutLocation" in att
-        ? mapAttendanceLocation(att.checkOutLocation)
-        : null,
-    workedMinutes:
-      att && "workedMinutes" in att ? (att.workedMinutes ?? null) : null,
-    overtimeMinute:
-      att && "overtimeMinute" in att ? (att.overtimeMinute ?? null) : null,
-    lateMinutes:
-      att && "lateMinutes" in att ? (att.lateMinutes ?? null) : null,
-  };
 }
 
 /**
@@ -119,7 +77,6 @@ function mapAssignee(user: ApiScheduleUser): ScheduleAssignee {
     role: user.role ?? "STAFF",
     branchId: resolveWorkplaceId(user.branchId),
     warehouseId: resolveWorkplaceId(user.warehouseId),
-    attendance: mapAttendance(user.attendance),
   };
 }
 
@@ -209,7 +166,6 @@ export function mapScheduleFromApi(raw: ApiWorkingSchedule): WorkingSchedule {
         }
       : undefined,
     status: raw.status as WorkingSchedule["status"],
-    attendance: firstAssignee?.attendance ?? mapAttendance(undefined),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
@@ -286,7 +242,6 @@ export function filterScheduleToWorkplaceScope(
     staffName: buildStaffLabel(assignees),
     staffAvatarUrl: firstAssignee?.staffAvatarUrl,
     staffPhone: firstAssignee?.staffPhone ?? "",
-    attendance: firstAssignee?.attendance ?? schedule.attendance,
   };
 }
 

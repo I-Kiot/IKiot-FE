@@ -33,7 +33,6 @@ export function ScheduleDetailPanel() {
   const {
     schedules,
     holidaysByDate,
-    leaveByDate,
     selectedSchedule,
     setSelectedSchedule,
     selectedAssigneeUserId,
@@ -72,10 +71,6 @@ export function ScheduleDetailPanel() {
   const dayHolidayName = selectedDayDate
     ? holidaysByDate.get(selectedDayDate) ?? null
     : null;
-
-  const dayLeaveItems = selectedDayDate
-    ? leaveByDate.get(selectedDayDate) ?? []
-    : [];
 
   /** Mỗi ca (schedule.id) cần đếm riêng để hiển thị số người. */
   const dayScheduleCount = useMemo(
@@ -208,11 +203,6 @@ export function ScheduleDetailPanel() {
                   <p className="text-xs text-muted-foreground">
                     {[
                       dayHolidayName,
-                      dayLeaveItems.length > 0
-                        ? dayLeaveItems[0]?.status === "PENDING"
-                          ? "Chờ duyệt nghỉ"
-                          : "Nghỉ phép"
-                        : null,
                       dayEntries.length > 0
                         ? `${dayEntries.length} nhân viên · ${dayScheduleCount} ca`
                         : null,
@@ -242,38 +232,6 @@ export function ScheduleDetailPanel() {
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {showDayList && (
             <div className="space-y-2 p-4">
-              {dayLeaveItems.map((leave) => (
-                <div
-                  key={`${leave.id}-${leave.date}`}
-                  className={
-                    leave.status === "PENDING"
-                      ? "rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3"
-                      : "rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-3"
-                  }
-                >
-                  <p
-                    className={
-                      leave.status === "PENDING"
-                        ? "text-xs font-medium uppercase tracking-wide text-orange-800 dark:text-orange-200"
-                        : "text-xs font-medium uppercase tracking-wide text-violet-800 dark:text-violet-200"
-                    }
-                  >
-                    {leave.status === "PENDING"
-                      ? "Chờ duyệt nghỉ"
-                      : "Nghỉ phép"}
-                  </p>
-                  <p
-                    className={
-                      leave.status === "PENDING"
-                        ? "mt-1 text-sm font-medium text-orange-950 dark:text-orange-100"
-                        : "mt-1 text-sm font-medium text-violet-950 dark:text-violet-100"
-                    }
-                  >
-                    {leave.reason || "Không có lý do"}
-                  </p>
-                </div>
-              ))}
-
               {dayEntries.length === 0 ? (
                 <div className="space-y-3 py-6 text-center">
                   {dayHolidayName ? (
@@ -286,11 +244,9 @@ export function ScheduleDetailPanel() {
                       </p>
                     </div>
                   ) : null}
-                  {dayLeaveItems.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Không có lịch làm trong ngày này.
-                    </p>
-                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Không có lịch làm trong ngày này.
+                  </p>
                 </div>
               ) : (
                 dayEntries.map((entry) => (

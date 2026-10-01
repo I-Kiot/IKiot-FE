@@ -6,7 +6,6 @@ export const PLAN_FEATURE_OPTIONS: { key: string; label: string }[] = [
   { key: "sales", label: "Bán hàng" },
   { key: "reports", label: "Xem báo cáo" },
   { key: "hr_management", label: "Quản lý nhân sự" },
-  { key: "payroll", label: "Quản lý lương" },
 ];
 
 export const BILLING_CYCLE_LABELS: Record<string, string> = {

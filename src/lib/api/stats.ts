@@ -213,12 +213,12 @@ export const statsApi = {
   getRevenueByStaff: (params?: StatsDateRangeParams) =>
     getStats<RevenueByStaff>('/stats/revenue-by-staff', params),
 
-  getCashflow: (params?: StatsDateRangeParams & { flow?: 'ORD' | 'SUP' | 'PAYR'; flowType?: 'INCOME' | 'EXPENSE' }) =>
+  getCashflow: (params?: StatsDateRangeParams & { flow?: 'ORD' | 'SUP'; flowType?: 'INCOME' | 'EXPENSE' }) =>
     getStats<Cashflow>('/stats/cashflow', params),
 
   getCashflowList: (
     params?: StatsDateRangeParams & {
-      flow?: 'ORD' | 'SUP' | 'PAYR';
+      flow?: 'ORD' | 'SUP';
       flowType?: 'INCOME' | 'EXPENSE';
       paymentMethod?: string;
       page?: number;

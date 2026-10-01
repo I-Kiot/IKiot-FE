@@ -40,7 +40,6 @@ const FLOW_LABELS: Record<FlowPrefixFilter, string> = {
   ALL: 'Tất cả nguồn',
   ORD: 'Bán hàng',
   SUP: 'Nhà cung cấp',
-  PAYR: 'Lương',
 }
 
 function formatDateTime(iso: string): string {

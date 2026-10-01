@@ -37,10 +37,7 @@ export const sidebarItems = {
     items: [
       { title: "Danh sách", url: "/staffs" },
       { title: "Lịch làm", url: "/staffs/schedule" },
-      { title: "Nghỉ phép", url: "/staffs/schedule/leave-requests" },
       { title: "Ngày lễ", url: "/staffs/holidays" },
-      { title: "Bảng lương", url: "/staffs/payroll" },
-
     ],
   },
   /**
@@ -57,16 +54,9 @@ export const sidebarItems = {
     items: [
       { title: "Danh sách", url: "/staffs" },
       { title: "Lịch làm", url: "/staffs/schedule" },
-      { title: "Nghỉ phép", url: "/staffs/schedule/leave-requests" },
       { title: "Ngày lễ", url: "/staffs/holidays" },
-      { title: "Bảng lương", url: "/staffs/payroll" },
       { title: "Phân quyền", url: "/staffs/roles" },
     ],
-  },
-  luong: {
-    title: "Lương của tôi",
-    url: "/staffs/payroll/my-payslips",
-    icon: Wallet,
   },
 
   // Quản lý bán hàng

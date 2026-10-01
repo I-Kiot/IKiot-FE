@@ -8,37 +8,6 @@ export type ScheduleDayType =
   | "HOLIDAY"
   | "SUNDAY_HOLIDAY";
 
-export type AttendanceStatus =
-  | "NOT_CHECKED_IN"
-  | "CHECKED_IN"
-  | "CHECKED_OUT"
-  | "LATE"
-  | "ABSENT"
-  | string;
-
-export interface AttendanceLocation {
-  latitude?: number;
-  longitude?: number;
-  accuracy?: number;
-  distance?: number;
-  verificationStatus?: string;
-}
-
-export interface AttendanceSummary {
-  id?: string;
-  status: AttendanceStatus;
-  actualCheckinAt?: string | null;
-  actualCheckoutAt?: string | null;
-}
-
-export interface AttendanceDetail extends AttendanceSummary {
-  checkInLocation?: AttendanceLocation | null;
-  checkOutLocation?: AttendanceLocation | null;
-  workedMinutes?: number | null;
-  overtimeMinute?: number | null;
-  lateMinutes?: number | null;
-}
-
 export interface ScheduleDayInfo {
   dayType: ScheduleDayType | string;
   isSunday: boolean;
@@ -73,7 +42,6 @@ export interface ApiScheduleUser {
   role?: string;
   branchId?: string | { id: string };
   warehouseId?: string | { id: string };
-  attendance?: AttendanceSummary | AttendanceDetail;
 }
 
 /**
@@ -117,7 +85,6 @@ export interface ScheduleAssignee {
   role: string;
   branchId?: string;
   warehouseId?: string;
-  attendance: AttendanceDetail;
 }
 
 /** Một ca làm (có thể nhiều nhân viên). */
@@ -139,8 +106,6 @@ export interface WorkingSchedule {
   scheduleType: ScheduleType;
   dayInfo?: ScheduleDayInfo;
   status: ScheduleStatus;
-  /** Attendance tổng hợp (assignee đầu hoặc tổng quan). */
-  attendance: AttendanceDetail;
   createdAt: string;
   updatedAt: string;
 }

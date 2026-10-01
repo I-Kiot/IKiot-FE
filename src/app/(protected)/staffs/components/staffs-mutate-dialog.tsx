@@ -33,8 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Staff, StaffGender, StaffProfilePayload } from "@/types/staff";
-import type { PaySheetOption } from "@/types/paysheet";
-import { paySheetApi } from "@/lib/api/paysheet";
 import {
   parseIdentificationId,
   validateStaffIdentificationId,
@@ -207,8 +205,6 @@ function buildProfilePayload(data: {
   return hasExplicitAvatar || hasOtherValue ? profile : undefined;
 }
 
-const PAYSHEET_NONE = "__none__";
-
 const createFormSchema = z
   .object({
     firstName: z.string().trim().min(1, "Tên là bắt buộc").max(50, "Tên tối đa 50 ký tự"),
@@ -228,7 +224,6 @@ const createFormSchema = z
     branchId: z.string().optional(),
     warehouseId: z.string().optional(),
     hireDate: z.string().optional(),
-    paySheetId: z.string().optional(),
     newPassword: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
     reEnterPassword: z.string().min(6, "Xác nhận mật khẩu tối thiểu 6 ký tự"),
     ...profileFieldsSchema,
@@ -251,7 +246,6 @@ const editFormSchema = z
     branchId: z.string().optional(),
     warehouseId: z.string().optional(),
     hireDate: z.string().optional(),
-    paySheetId: z.string().optional(),
     accountNote: z.string().optional(),
     ...profileFieldsSchema,
   })
@@ -272,7 +266,6 @@ function getEditDefaults(staff: Staff): EditFormValues {
     branchId: staff.branchId ?? "",
     warehouseId: staff.warehouseId ?? "",
     hireDate: toDateInputValue(staff.joinedAt),
-    paySheetId: staff.paySheetId || PAYSHEET_NONE,
     identificationId:
       parseIdentificationId(staff.profile?.identificationId) ?? "",
     address: staff.profile?.address ?? "",
@@ -292,7 +285,6 @@ const EMPTY_CREATE_VALUES: CreateFormValues = {
   branchId: "",
   warehouseId: "",
   hireDate: "",
-  paySheetId: PAYSHEET_NONE,
   identificationId: "",
   address: "",
   gender: "",
@@ -301,11 +293,6 @@ const EMPTY_CREATE_VALUES: CreateFormValues = {
   newPassword: "",
   reEnterPassword: "",
 };
-
-function resolvePaySheetIdForApi(value?: string): string | null {
-  if (!value || value === PAYSHEET_NONE) return null;
-  return value;
-}
 
 type StaffsMutateDialogProps = {
   open: boolean;
@@ -334,8 +321,6 @@ export function StaffsMutateDialog({
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarRemoved, setAvatarRemoved] = useState(false);
-  const [paySheetOptions, setPaySheetOptions] = useState<PaySheetOption[]>([]);
-  const [paySheetOptionsFailed, setPaySheetOptionsFailed] = useState(false);
   const avatarBlobUrlRef = useRef<string | null>(null);
 
   const form = useForm<CreateFormValues | EditFormValues>({
@@ -396,42 +381,6 @@ export function StaffsMutateDialog({
   }, []);
 
 
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    void paySheetApi
-      .getAllForOptions()
-      .then((options) => {
-        if (cancelled) return;
-        // Giữ option hiện tại nếu nhân viên đang gán bảng lương không còn trong list.
-        if (
-          isEdit &&
-          currentRow?.paySheetId &&
-          !options.some((item) => item.value === currentRow.paySheetId)
-        ) {
-          options = [
-            {
-              value: currentRow.paySheetId,
-              label:
-                currentRow.paySheetName ||
-                `Bảng lương đã gán (#${currentRow.paySheetId.slice(-6)})`,
-            },
-            ...options,
-          ];
-        }
-        setPaySheetOptions(options);
-        setPaySheetOptionsFailed(false);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setPaySheetOptions([]);
-        setPaySheetOptionsFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, isEdit, currentRow?.paySheetId, currentRow?.paySheetName]);
-
 
   useEffect(() => {
     if (!open) return;
@@ -481,7 +430,6 @@ export function StaffsMutateDialog({
           lastName: editData.lastName,
           email: editData.email || undefined,
           hireDate: normalizeDateInput(editData.hireDate),
-          paySheetId: resolvePaySheetIdForApi(editData.paySheetId),
           profile: buildProfilePayload({
             ...editData,
             avatarUrl,
@@ -516,7 +464,6 @@ export function StaffsMutateDialog({
             ? createData.warehouseId || null
             : undefined,
           hireDate: normalizeDateInput(createData.hireDate),
-          paySheetId: resolvePaySheetIdForApi(createData.paySheetId),
           profile: buildProfilePayload({
             ...createData,
             avatarUrl: avatarUrl ?? undefined,
@@ -790,45 +737,6 @@ export function StaffsMutateDialog({
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="paySheetId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bảng lương</FormLabel>
-                  {paySheetOptionsFailed ? (
-                    <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-2">
-                      Không tải được danh sách bảng lương (
-                      <code className="text-xs">GET /payroll/paysheets</code>
-                      ).
-                    </p>
-                  ) : (
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || PAYSHEET_NONE}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer w-full">
-                          <SelectValue placeholder="Chọn bảng lương" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value={PAYSHEET_NONE}>
-                          Chưa gán bảng lương
-                        </SelectItem>
-                        {paySheetOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
                   <FormMessage />
                 </FormItem>
               )}

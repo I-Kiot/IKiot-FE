@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Eye } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getSessionRole } from "@/lib/auth";
 import {
   canCreateSchedule,
@@ -59,14 +57,6 @@ export default function StaffSchedulePage() {
                 Chỉ xem
               </Badge>
             )}
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-            >
-              <Link href="/staffs/schedule/leave-requests">Đơn nghỉ phép</Link>
-            </Button>
             <ScheduleButtonGroup />
           </div>
         }
