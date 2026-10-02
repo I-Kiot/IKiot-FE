@@ -63,6 +63,13 @@ export const ACTION_LABELS: Record<string, string> = {
   export: 'Xuất dữ liệu',
   suspend: 'Tạm khóa',
   inactive: 'Ngừng hoạt động',
+  // Hành trình đơn hàng (2026-10-02)
+  confirm: 'Xác nhận đơn',
+  assign: 'Gán người phụ trách',
+  verify: 'Xác nhận đã đóng hàng',
+  deliver: 'Giao hàng (shipper)',
+  inspect: 'Kiểm hàng hoàn',
+  refund: 'Hoàn tiền',
 }
 
 export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action
