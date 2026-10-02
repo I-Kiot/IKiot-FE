@@ -2,6 +2,7 @@ import { sidebarRoleConfig } from "../constants/sidebar-role";
 import { type UserRole, type NavGroup } from "../constants/types";
 import { allows } from "../constants/role-permissions";
 import { filterLeafNavItems } from "../constants/nav-leaf-permissions";
+import { filterOrderFlowNavItems } from "../constants/nav-order-flow-permissions";
 import { filterHrNavItems } from "@/app/(protected)/staffs/shared/nav-hr-permissions";
 import { filterExchangeNavItems } from "@/app/(protected)/exchange/shared/nav-exchange-permissions";
 
@@ -28,8 +29,8 @@ export function getFilteredSidebar(role?: string | null): NavGroup[] {
           item.items
             ? {
                 ...item,
-                items: filterExchangeNavItems(
-                  filterHrNavItems(item.items, role),
+                items: filterOrderFlowNavItems(
+                  filterExchangeNavItems(filterHrNavItems(item.items, role), role),
                   role,
                 ),
               }

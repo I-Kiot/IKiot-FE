@@ -19,6 +19,8 @@ const LEAF_NAV_PERMISSION: Record<string, readonly [string, string]> = {
   // the `cash_flows` module, so `cash_flows:read` is the wrong gate for it.
   "/dashboard": ["reports", "read"],
   "/cashflow": ["reports", "read"],
+  // The shipper's own deliveries - `GET /shipments/mine`.
+  "/shipper": ["shipments", "deliver"],
 };
 
 export function canAccessLeafNavItem(
