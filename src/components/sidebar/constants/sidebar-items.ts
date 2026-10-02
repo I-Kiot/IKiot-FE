@@ -15,6 +15,8 @@ import {
   Wallet,
   Landmark,
   Vault,
+  PackageCheck,
+  Truck,
 } from "lucide-react";
 import { type NavItem } from "./types";
 
@@ -79,6 +81,7 @@ export const sidebarItems = {
       { title: "Nhập hàng", url: "/exchange/imports" },
       { title: "Chuyển kho", url: "/exchange/exports" },
       { title: "Điều chỉnh tồn kho", url: "/exchange/adjustments" },
+      { title: "Yêu cầu sản xuất", url: "/exchange/production-requests" },
     ],
   },
   // `giaoDichBranch` (a BRANCH_MANAGER-only variant without "Nhập hàng") lived here until
@@ -90,8 +93,26 @@ export const sidebarItems = {
     url: "/#",
     icon: ShoppingCart,
     items: [
+      { title: "Danh sách đơn", url: "/sales/orders" },
+      { title: "Hoàn hàng", url: "/order-returns" },
       { title: "Hoá đơn", url: "/sales/invoices" },
     ],
+  },
+  // Order journey (P0-7, 2026-10-02): packing and delivery, one entry per track C screen.
+  vanHanh: {
+    title: "Vận hành",
+    url: "/#",
+    icon: PackageCheck,
+    items: [
+      { title: "Đóng hàng", url: "/fulfillments" },
+      { title: "Giao hàng", url: "/shipments" },
+    ],
+  },
+  /** The contracted shipper's own deliveries (mobile web, track C). STAFF only - an owner does not deliver. */
+  donGiaoCuaToi: {
+    title: "Đơn giao của tôi",
+    url: "/shipper",
+    icon: Truck,
   },
 
   // CRM

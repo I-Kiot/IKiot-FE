@@ -19,6 +19,7 @@ const EXCHANGE_NAV_PERMISSION = {
   imports: ["stock_movement", "read"],
   exports: ["stock_movement", "read"],
   adjustments: ["stock_movement", "read"],
+  productionRequests: ["production_requests", "read"],
 } as const;
 
 export type ExchangeNavItemKey = keyof typeof EXCHANGE_NAV_PERMISSION;
@@ -40,6 +41,7 @@ export function filterExchangeNavItems<
     "/exchange/imports": "imports",
     "/exchange/exports": "exports",
     "/exchange/adjustments": "adjustments",
+    "/exchange/production-requests": "productionRequests",
   };
 
   return items.filter((item) => {
