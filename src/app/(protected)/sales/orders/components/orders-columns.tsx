@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,14 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
     header: ORDERS_COLUMN_LABELS.code,
     cell: ({ row }) => (
       <div className="flex flex-col">
-        <span className="font-mono text-sm font-medium">{row.original.code}</span>
+        {/* Opens the detail (D-3); stopPropagation so the click does not also toggle the row. */}
+        <Link
+          href={`/sales/orders/${row.original.id}`}
+          onClick={(event) => event.stopPropagation()}
+          className="font-mono text-sm font-medium text-primary underline-offset-2 hover:underline"
+        >
+          {row.original.code}
+        </Link>
         <span className="text-xs text-muted-foreground">
           {row.original.branch?.name ?? "-"}
         </span>

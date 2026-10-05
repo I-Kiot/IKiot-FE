@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   FULFILLMENT_TYPE_LABELS,
@@ -7,23 +10,7 @@ import {
   type OrderLine,
   type OrderListItem,
 } from "@/types/order-flow";
-import { formatVND, stockDisplay } from "../shared/order-display";
-
-/** A combo line, then its components indented under it; plain lines as they come. */
-function orderedLines(items: OrderLine[]): { line: OrderLine; depth: number }[] {
-  const children = new Map<string, OrderLine[]>();
-  for (const line of items) {
-    if (line.parentItemId) {
-      children.set(line.parentItemId, [...(children.get(line.parentItemId) ?? []), line]);
-    }
-  }
-  return items
-    .filter((line) => !line.parentItemId)
-    .flatMap((line) => [
-      { line, depth: 0 },
-      ...(children.get(line.id) ?? []).map((child) => ({ line: child, depth: 1 })),
-    ]);
-}
+import { formatVND, orderedLines, stockDisplay } from "../shared/order-display";
 
 function StockCell({ line }: { line: OrderLine }) {
   if (!line.stockCheck) return <span className="text-muted-foreground">-</span>;
@@ -60,7 +47,15 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
   return (
     <div className={cn("grid gap-6 p-4 lg:grid-cols-3", isLastRow && "pb-2")}>
       <div className="lg:col-span-2">
-        <p className="mb-2 text-sm font-semibold">Sản phẩm ({order.itemCount})</p>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold">Sản phẩm ({order.itemCount})</p>
+          <Button asChild variant="outline" size="sm" className="cursor-pointer">
+            <Link href={`/sales/orders/${order.id}`}>
+              Xem chi tiết
+              <ArrowRight />
+            </Link>
+          </Button>
+        </div>
         <div className="overflow-x-auto rounded-md border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
