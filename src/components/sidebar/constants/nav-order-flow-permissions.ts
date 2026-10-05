@@ -13,7 +13,7 @@ import { allows } from "./role-permissions";
 const ORDER_FLOW_NAV_PERMISSION: Record<string, readonly [string, string]> = {
   "/sales/orders": ["orders", "read"],
   "/order-returns": ["returns", "read"],
-  // [C-6] SỬA: trước là ["fulfillments", "read"] - cặp này không có trong CATALOG nên menu bị ẩn với mọi STAFF.
+  // Không dùng ["fulfillments", "read"]: cặp này không có trong CATALOG nên menu sẽ ẩn với mọi STAFF.
   // Màn này chỉ để đóng gói; xem được danh sách còn cần `orders:read` (GET /orders).
   "/fulfillments": ["orders", "pack"],
   "/shipments": ["shipments", "read"],

@@ -9,13 +9,16 @@ import type {
   OrderItemCustomization,
   OrderJourneyQuery,
   OrderListItem,
-  PackableOrder, // [C-6]
-  PackResult, // [C-6]
+  PackableOrder,
+  PackResult,
   Paginated,
   UpdateDraftOrderPayload,
 } from '@/types/order-flow';
 
 type Envelope<T> = { success: boolean; data: T };
+
+/** Số đơn mỗi trang mặc định của màn Đóng hàng (người dùng đổi được ở ô "Hiển thị"). */
+export const PACK_PAGE_SIZE = 10;
 
 export const orderJourneyApi = {
   getList: async (params?: OrderJourneyQuery): Promise<Paginated<OrderListItem>> => {
@@ -70,19 +73,14 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  // [C-6] THÊM MỚI
-  /**
-   * Đơn CONFIRMED (chờ đóng gói) trong phạm vi chi nhánh của người gọi.
-   * Chưa phân trang: lấy tối đa 100 đơn (mức trần của BE).
-   */
-  listPackable: async (): Promise<PackableOrder[]> => {
-    const res = await client.get<Envelope<PackableOrder[]>>('/orders', {
-      params: { status: 'CONFIRMED', limit: 100 },
+  /** Một trang đơn CONFIRMED (chờ đóng gói) trong phạm vi chi nhánh của người gọi. */
+  listPackable: async (page: number, limit = PACK_PAGE_SIZE): Promise<Paginated<PackableOrder>> => {
+    const res = await client.get<Paginated<PackableOrder>>('/orders', {
+      params: { status: 'CONFIRMED', page, limit },
     });
-    return res.data.data;
+    return { data: res.data.data, pagination: res.data.pagination };
   },
 
-  // [C-6] THÊM MỚI
   /** CONFIRMED → PACKED (C-1): khoá hàng trên kệ và tự sinh kiện. */
   pack: async (id: string, note?: string): Promise<PackResult> => {
     const res = await client.post<Envelope<PackResult>>(

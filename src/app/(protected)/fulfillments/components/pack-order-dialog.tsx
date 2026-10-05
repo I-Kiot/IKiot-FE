@@ -1,7 +1,5 @@
 "use client";
 
-// [C-6] THÊM MỚI - toàn bộ file.
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -30,15 +28,15 @@ interface PackOrderDialogProps {
   /** Đơn đang mở; `null` = dialog đóng. */
   order: PackableOrder | null;
   onClose: () => void;
-  /** Gọi khi danh sách cần tải lại: đóng gói thành công, hoặc đơn đã đổi trạng thái ở nơi khác. */
-  onPacked: () => void;
+  /** Danh sách đã cũ: đóng gói xong, hoặc đơn vừa đổi trạng thái ở nơi khác. */
+  onNeedsReload: () => void;
 }
 
 /**
  * Dialog xác nhận đã đóng gói một đơn: xem các dòng hàng, ghi chú, gọi `POST /orders/:id/pack`.
  * Trang cha đặt `key={order.id}` nên mỗi đơn mở ra là một dialog mới, ghi chú / lỗi cũ không còn.
  */
-export function PackOrderDialog({ order, onClose, onPacked }: PackOrderDialogProps) {
+export function PackOrderDialog({ order, onClose, onNeedsReload }: PackOrderDialogProps) {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [shortLines, setShortLines] = useState<ShortStockLine[]>([]);
@@ -52,7 +50,7 @@ export function PackOrderDialog({ order, onClose, onPacked }: PackOrderDialogPro
       .pack(order.id, note.trim() || undefined)
       .then((result) => {
         toast.success(`Đã đóng gói đơn ${order.code} - ${result.packages.length} kiện`);
-        onPacked();
+        onNeedsReload();
       })
       .catch((error: unknown) => {
         // Thiếu hàng: giữ dialog mở, liệt kê từng mặt hàng thiếu để người đóng gói đọc.
@@ -64,7 +62,7 @@ export function PackOrderDialog({ order, onClose, onPacked }: PackOrderDialogPro
         const code = getApiErrorBody(error)?.code;
         toast.error(messageForCode(code) ?? "Đóng gói thất bại, vui lòng thử lại");
         // Người khác vừa đóng (hoặc đơn đã đổi trạng thái): đóng dialog và tải lại danh sách.
-        if (code && STALE_ORDER_CODES.has(code)) onPacked();
+        if (code && STALE_ORDER_CODES.has(code)) onNeedsReload();
       })
       .finally(() => setSubmitting(false));
   };

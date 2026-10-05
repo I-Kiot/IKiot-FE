@@ -434,7 +434,6 @@ export interface AddFulfillmentPackagePayload {
   photoUrls: string[];
 }
 
-// [C-6] THÊM MỚI
 /**
  * Đơn chờ đóng gói - đúng phần `GET /orders?status=CONFIRMED` trả về mà màn Đóng hàng đọc.
  * Khai báo hẹp riêng thay vì dùng `OrderListItem`, vì type đó đang lệch response thật của BE.
@@ -448,7 +447,6 @@ export interface PackableOrder {
   items: { id: string; productName: string | null; sku: string | null; quantity: number }[];
 }
 
-// [C-6] THÊM MỚI
 /** Kết quả `POST /orders/:id/pack` - phần màn hình cần (BE trả cả Fulfillment kèm items). */
 export interface PackResult {
   id: string;

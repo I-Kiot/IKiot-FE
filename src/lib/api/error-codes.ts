@@ -75,7 +75,7 @@ export const ERROR_MESSAGES = {
   IDENTIFICATION_YEAR_MISMATCH: "Năm sinh trên số căn cước không khớp với ngày sinh của nhân viên",
   IMPORT_PRICE_ABOVE_RETAIL: "Đơn giá nhập không được lớn hơn giá bán lẻ",
   IMPORT_PRICE_MUST_BE_POSITIVE: "Đơn giá nhập phải lớn hơn 0",
-  INSUFFICIENT_STOCK: "Hàng trên kệ không đủ", // [C-6] SỬA: trước là "Không đủ tồn kho" - giờ tồn kho tính theo hàng trên kệ (stock − đã khoá)
+  INSUFFICIENT_STOCK: "Hàng trên kệ không đủ", // tồn kho bán được = hàng trên kệ (stock − đã khoá)
   INTERNAL_ERROR: "Đã có lỗi xảy ra, vui lòng thử lại sau",
   INVALID_CREDENTIALS: "Số điện thoại hoặc mật khẩu không đúng",
   INVENTORY_ALREADY_AT_LOCATION: "Mặt hàng đã có tại địa điểm này",
@@ -326,7 +326,7 @@ interface ApiErrorBody {
   code?: string;
   message?: string;
   error?: string;
-  /** [C-6] THÊM MỚI: chi tiết đi kèm, hình dạng tuỳ mã lỗi - chỉ đọc qua type guard (vd. `shortStockLinesOf`). */
+  /** Chi tiết đi kèm, hình dạng tuỳ mã lỗi - chỉ đọc qua type guard (vd. `shortStockLinesOf`). */
   errors?: unknown;
 }
 
@@ -345,7 +345,6 @@ export function messageForCode(code: string | undefined): string | undefined {
   return ERROR_MESSAGES[code as ApiErrorCode];
 }
 
-// [C-6] THÊM MỚI
 /** Một mặt hàng thiếu khi đóng gói. Khớp `ShortStockLine` của BE (`inventories.service.ts`, `lockStock`). */
 export interface ShortStockLine {
   label: string;
@@ -353,7 +352,6 @@ export interface ShortStockLine {
   onShelf: number;
 }
 
-// [C-6] THÊM MỚI
 /** Kiểm tra một phần tử `errors` có đúng hình dạng `ShortStockLine` không. */
 function isShortStockLine(value: unknown): value is ShortStockLine {
   if (typeof value !== "object" || value === null) return false;
@@ -361,7 +359,6 @@ function isShortStockLine(value: unknown): value is ShortStockLine {
   return typeof v.label === "string" && typeof v.needed === "number" && typeof v.onShelf === "number";
 }
 
-// [C-6] THÊM MỚI
 /**
  * Danh sách hàng thiếu trong lỗi `INSUFFICIENT_STOCK` của `POST /orders/:id/pack`.
  * Lỗi khác, hoặc `INSUFFICIENT_STOCK` không kèm chi tiết (vd. từ `deductStock`) → `[]`.
