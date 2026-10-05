@@ -34,8 +34,9 @@ export interface PayOfflinePayload {
 }
 
 export const orderApi = {
+  /** Bán tại quầy (POS). `POST /orders` giờ là tạo đơn tay của hành trình đơn hàng (A-2). */
   create: async (payload: OrderCreatePayload): Promise<OrderCreateResponse> => {
-    const res = await client.post<OrderCreateResponse>('/orders', payload);
+    const res = await client.post<OrderCreateResponse>('/orders/pos', payload);
     return res.data;
   },
   /** Khách bỏ QR SePay và trả tại quầy - chốt đơn theo phương thức offline. */

@@ -1,6 +1,6 @@
 // [API – Order journey] Track A routes (BE `orders/`), used by track D's screens.
 // Contract: Ikiot_BE/docs/api-contract-order-flow.md §2. The till keeps using `orderApi`
-// (`order.ts`) until A-2 moves it over.
+// (`order.ts`), which posts to `/orders/pos` since A-2.
 import client from '@/lib/api/client';
 import type {
   ConfirmOrderPayload,
