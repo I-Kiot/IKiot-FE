@@ -9,6 +9,8 @@ import type {
   OrderItemCustomization,
   OrderJourneyQuery,
   OrderListItem,
+  PackableOrder, // [C-6]
+  PackResult, // [C-6]
   Paginated,
   UpdateDraftOrderPayload,
 } from '@/types/order-flow';
@@ -65,6 +67,28 @@ export const orderJourneyApi = {
 
   cancel: async (id: string, reason?: string): Promise<OrderDetail> => {
     const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/cancel`, { reason });
+    return res.data.data;
+  },
+
+  // [C-6] THÊM MỚI
+  /**
+   * Đơn CONFIRMED (chờ đóng gói) trong phạm vi chi nhánh của người gọi.
+   * Chưa phân trang: lấy tối đa 100 đơn (mức trần của BE).
+   */
+  listPackable: async (): Promise<PackableOrder[]> => {
+    const res = await client.get<Envelope<PackableOrder[]>>('/orders', {
+      params: { status: 'CONFIRMED', limit: 100 },
+    });
+    return res.data.data;
+  },
+
+  // [C-6] THÊM MỚI
+  /** CONFIRMED → PACKED (C-1): khoá hàng trên kệ và tự sinh kiện. */
+  pack: async (id: string, note?: string): Promise<PackResult> => {
+    const res = await client.post<Envelope<PackResult>>(
+      `/orders/${id}/pack`,
+      note ? { note } : {},
+    );
     return res.data.data;
   },
 };
