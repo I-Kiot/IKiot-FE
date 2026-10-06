@@ -30,14 +30,15 @@ export interface PageQuery {
 
 // ─── Statuses (same strings as the BE constants) ────────────────────────────
 
+// Order statuses per contract §2 (revised 2026-10-04): DRAFT, READY_TO_PACK and DELIVERED are
+// gone; PICKED_UP and RECEIVED are new. Labels are the journey's own words.
 export const ORDER_STATUSES = [
-  "DRAFT",
   "PENDING_CONFIRMATION",
   "CONFIRMED",
-  "READY_TO_PACK",
   "PACKED",
+  "PICKED_UP",
   "SHIPPING",
-  "DELIVERED",
+  "RECEIVED",
   "COMPLETED",
   "CANCELLED",
   "RETURNED",
@@ -47,25 +48,22 @@ export const ORDER_STATUSES = [
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  DRAFT: "Nháp",
   PENDING_CONFIRMATION: "Chờ xác nhận",
-  CONFIRMED: "Đã xác nhận",
-  READY_TO_PACK: "Chờ đóng hàng",
-  PACKED: "Chờ giao hàng",
-  SHIPPING: "Đang giao",
-  DELIVERED: "Đã giao",
-  COMPLETED: "Hoàn tất",
+  CONFIRMED: "Xác nhận",
+  PACKED: "Đóng đơn",
+  PICKED_UP: "ĐVVC đã lấy hàng",
+  SHIPPING: "Đang vận chuyển",
+  RECEIVED: "Đã nhận hàng",
+  COMPLETED: "Hoàn thành",
   CANCELLED: "Đã huỷ",
   RETURNED: "Đã hoàn",
   PENDING: "Chờ thanh toán",
 };
 
+/** A line has no stock-held states any more: whether its goods are there is `stockCheck`, not a status. */
 export const ORDER_ITEM_STATUSES = [
   "PENDING",
-  "WAITING_STOCK",
-  "READY",
-  "PACKED",
-  "DELIVERED",
+  "SHIPPED",
   "CANCELLED",
   "RETURNED",
 ] as const;
@@ -73,13 +71,42 @@ export type OrderItemStatus = (typeof ORDER_ITEM_STATUSES)[number];
 
 export const ORDER_ITEM_STATUS_LABELS: Record<OrderItemStatus, string> = {
   PENDING: "Chờ xử lý",
-  WAITING_STOCK: "Chờ hàng",
-  READY: "Sẵn sàng",
-  PACKED: "Đã đóng",
-  DELIVERED: "Đã giao",
+  SHIPPED: "Đã xuất kho",
   CANCELLED: "Đã huỷ",
   RETURNED: "Đã hoàn",
 };
+
+/** The tag staff pick the next order to pack by (journey GĐ1 – Bước 3). */
+export const ORDER_PRIORITIES = ["NORMAL", "HIGH", "URGENT"] as const;
+export type OrderPriority = (typeof ORDER_PRIORITIES)[number];
+
+export const ORDER_PRIORITY_LABELS: Record<OrderPriority, string> = {
+  NORMAL: "Bình thường",
+  HIGH: "Cao",
+  URGENT: "Gấp",
+};
+
+/** A line's stockCheck / an order's stockSummary (its worst line) - worked out when read, not held. */
+export const STOCK_CHECK_STATUSES = ["ENOUGH", "PARTIAL", "OUT"] as const;
+export type StockCheckStatus = (typeof STOCK_CHECK_STATUSES)[number];
+
+export const STOCK_CHECK_STATUS_LABELS: Record<StockCheckStatus, string> = {
+  ENOUGH: "Đủ hàng",
+  PARTIAL: "Thiếu một phần",
+  OUT: "Hết hàng",
+};
+
+/** Has the cash a shipper collected reached the owner? */
+export const REMITTANCE_STATUSES = ["NOT_APPLICABLE", "PENDING", "RECEIVED"] as const;
+export type RemittanceStatus = (typeof REMITTANCE_STATUSES)[number];
+
+export const REMITTANCE_STATUS_LABELS: Record<RemittanceStatus, string> = {
+  NOT_APPLICABLE: "Không áp dụng",
+  PENDING: "Chờ nộp tiền",
+  RECEIVED: "Đã nộp tiền",
+};
+
+export type CollectionMethod = "CASH" | "BANK_TRANSFER_QR" | "NONE";
 
 export type OrderLineType = "PRODUCT" | "COMBO" | "COMBO_COMPONENT" | "SERVICE";
 export type OrderChannel = "MANUAL" | "SHOPEE";
@@ -214,25 +241,51 @@ export interface OrderLine {
   unitPrice: number;
   discountAmount: number;
   lineTotal: number;
-  /** Σ ACTIVE + CONSUMED holds. */
-  heldQuantity: number;
   returnedQuantity: number;
-  sourceLocation: LocationRef | null;
   isCustom: boolean;
+  /** Read against on-shelf stock; null for COMBO / SERVICE lines and once the line has shipped. */
+  stockCheck: StockCheck | null;
+}
+
+/** A line as `GET /orders/:id` returns it: plus where it ships from and its custom specs. */
+export interface OrderDetailLine extends OrderLine {
+  sourceLocation: LocationRef | null;
   customization: OrderItemCustomization | null;
+}
+
+export interface StockCheck {
+  status: StockCheckStatus;
+  /** On-shelf stock at the line's source location (stock − locked). */
+  stock: number;
+  shortQuantity: number;
+}
+
+/** What was collected on delivery; null until then. */
+export interface OrderCollection {
+  method: CollectionMethod;
+  amount: number;
+  collectedBy: UserRef | null;
+  collectedAt: string | null;
+  cashRemittanceStatus: RemittanceStatus;
+  remittanceConfirmedBy: UserRef | null;
+  remittanceConfirmedAt: string | null;
 }
 
 export interface OrderListItem {
   id: string;
-  code?: string | null;
+  code: string;
   status: OrderStatus;
   channel: OrderChannel;
+  priority: OrderPriority;
   branch: LocationRef;
   customer: { id: string; name: string; phone: string | null };
   assignee: UserRef | null;
   createdBy: UserRef | null;
   confirmedBy: UserRef | null;
   confirmedAt: string | null;
+  /** Who confirmed SHIPPING (the stock deduction), and when. */
+  shippedBy: UserRef | null;
+  shippedAt: string | null;
   fulfillmentType: FulfillmentType;
   subtotal: number;
   shippingFee: number;
@@ -241,40 +294,59 @@ export interface OrderListItem {
   discountType: "ORDER" | "PROMOTION" | null;
   discountValue: number;
   grandTotal: number;
-  depositRequired: number | null;
+  /** `percent` is null when the deposit was typed as an amount. */
+  deposit: { amount: number; percent: number | null } | null;
+  /** grandTotal − deposit: what the shipper collects on delivery. Server-computed. */
+  amountDue: number;
+  collection: OrderCollection | null;
   paymentStatus: OrderPaymentStatus;
   recipientName: string | null;
   recipientPhone: string | null;
   deliveryAddress: string | null;
+  /** `YYYY-MM-DD`. */
   requestedDeliveryDate: string | null;
   shipByDate: string | null;
   channelOrderRef: string | null;
   note: string | null;
   createdAt: string;
   updatedAt: string;
-  itemCount?: number;
+  /** Top-level lines - a combo counts once. */
+  itemCount: number;
+  /** The worst line's stockCheck; null once shipped or with no stock-carrying lines. */
+  stockSummary: StockCheckStatus | null;
+  /** The list keeps each order's lines (POS reads them off the same route). */
+  items: OrderLine[];
 }
 
-export interface OrderDetail extends OrderListItem {
-  items: OrderLine[];
-  fulfillments: { id: string; status: FulfillmentStatus; locationId: string }[];
+export interface OrderDetail extends Omit<OrderListItem, "items" | "itemCount" | "stockSummary"> {
+  items: OrderDetailLine[];
   shipments: {
     id: string;
     status: ShipmentStatus;
     carrierType: CarrierType;
+    carrierName: string | null;
     trackingCode: string | null;
+    driver: UserRef | null;
   }[];
   returns: { id: string; code: string; status: OrderReturnStatus }[];
 }
+
+export const ORDER_SORTS = ["createdAt", "requestedDeliveryDate", "priority"] as const;
+/** Each has one fixed direction: newest first, soonest delivery first, most urgent first. */
+export type OrderSort = (typeof ORDER_SORTS)[number];
 
 export interface OrderJourneyQuery extends PageQuery {
   status?: OrderStatus;
   channel?: OrderChannel;
   assigneeId?: string;
   branchId?: string;
-  fulfillmentType?: FulfillmentType;
+  priority?: OrderPriority;
+  stockSummary?: StockCheckStatus;
+  cashRemittanceStatus?: RemittanceStatus;
+  /** Creation-date window, ISO. */
   from?: string;
   to?: string;
+  sort?: OrderSort;
 }
 
 export interface CreateOrderLinePayload {
