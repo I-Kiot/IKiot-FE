@@ -41,11 +41,13 @@ import {
   ORDER_PRIORITIES,
   ORDER_PRIORITY_LABELS,
   ORDER_STATUS_LABELS,
+  REMITTANCE_STATUS_LABELS,
   STOCK_CHECK_STATUSES,
   STOCK_CHECK_STATUS_LABELS,
   type OrderPriority,
   type OrderSort,
   type OrderStatus,
+  type RemittanceStatus,
   type StockCheckStatus,
 } from "@/types/order-flow";
 import { ORDERS_COLUMN_LABELS, ordersColumns as columns } from "./orders-columns";
@@ -126,6 +128,7 @@ export function OrdersTable() {
     listQuery.status !== "all" ||
     listQuery.priority !== "all" ||
     listQuery.stockSummary !== "all" ||
+    listQuery.cashRemittanceStatus !== "all" ||
     listQuery.mineOnly;
 
   const rangeStart = total === 0 ? 0 : (listQuery.page - 1) * listQuery.limit + 1;
@@ -197,6 +200,22 @@ export function OrdersTable() {
                   {STOCK_CHECK_STATUS_LABELS[status]}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={listQuery.cashRemittanceStatus}
+            onValueChange={(value) =>
+              updateQuery({ cashRemittanceStatus: value as RemittanceStatus | "all" })
+            }
+          >
+            <SelectTrigger className="h-9 w-44 cursor-pointer text-sm">
+              <SelectValue placeholder="Tiền shipper" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Mọi tình trạng tiền</SelectItem>
+              <SelectItem value="PENDING">{REMITTANCE_STATUS_LABELS.PENDING}</SelectItem>
+              <SelectItem value="RECEIVED">{REMITTANCE_STATUS_LABELS.RECEIVED}</SelectItem>
             </SelectContent>
           </Select>
 

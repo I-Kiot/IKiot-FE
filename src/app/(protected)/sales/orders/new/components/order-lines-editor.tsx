@@ -20,6 +20,8 @@ import { formatVND, lineTotal, stockLevel } from "../shared/order-totals";
 export interface OrderLineDraft {
   /** Local key; the same SKU can be added twice with different agreed prices. */
   key: string;
+  /** The existing order line this draft edits (D-7); absent for a line added in the form. */
+  id?: string;
   productItemId: string;
   name: string;
   sku: string;

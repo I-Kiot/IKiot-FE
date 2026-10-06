@@ -400,3 +400,28 @@ export function shortStockLinesOf(error: unknown): ShortStockLine[] {
   if (body?.code !== "INSUFFICIENT_STOCK" || !Array.isArray(body.errors)) return [];
   return body.errors.filter(isShortStockLine);
 }
+
+/** A money difference the backend explains alongside its code: `{ held, amount, difference }`. */
+export interface MoneyGap {
+  held: number;
+  amount: number;
+  difference: number;
+}
+
+function moneyGapAt(error: unknown, code: ApiErrorCode, key: string): MoneyGap | null {
+  const body = getApiErrorBody(error) as (ApiErrorBody & Record<string, unknown>) | undefined;
+  if (body?.code !== code) return null;
+  const gap = body[key] as Partial<MoneyGap> | undefined;
+  if (typeof gap?.held !== "number" || typeof gap.amount !== "number") return null;
+  return { held: gap.held, amount: gap.amount, difference: gap.amount - gap.held };
+}
+
+/** `ORDER_DEPOSIT_CHANGED` (A-8): the edit would move the deposit off the money already taken. */
+export function depositChangeOf(error: unknown): MoneyGap | null {
+  return moneyGapAt(error, "ORDER_DEPOSIT_CHANGED", "deposit");
+}
+
+/** `ORDER_REMITTANCE_AMOUNT_MISMATCH` (A-10): what the owner counted is not what the shipper collected. */
+export function remittanceGapOf(error: unknown): MoneyGap | null {
+  return moneyGapAt(error, "ORDER_REMITTANCE_AMOUNT_MISMATCH", "remittance");
+}

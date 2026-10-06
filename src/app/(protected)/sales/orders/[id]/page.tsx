@@ -19,6 +19,7 @@ import {
   stockDisplay,
   worstStock,
 } from "../shared/order-display";
+import { OrderActions } from "./components/order-actions";
 import { OrderDeliveryCard } from "./components/order-delivery-card";
 import { OrderInfoCard } from "./components/order-info-card";
 import { OrderJourneySteps } from "./components/order-journey-steps";
@@ -39,7 +40,7 @@ function errorMessage(error: unknown): string {
   return messageForCode(getApiErrorBody(error)?.code) ?? "Không tải được đơn hàng";
 }
 
-/** D-3: one order in full (`GET /orders/:id`, contract §2) - where it is in the journey, its lines and their stock, the money and the delivery. Read-only: the actions on it belong to their own tasks (C-6 pack, D-7 edit, D-9 confirm cash). */
+/** D-3: one order in full (`GET /orders/:id`, contract §2) - where it is in the journey, its lines and their stock, the money and the delivery. Its actions are their own tasks: D-7 edit / hand over, D-9 confirm the shipper's cash (`OrderActions`); packing is on its own screen (C-6). */
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -120,6 +121,12 @@ export default function OrderDetailPage() {
           </div>
         }
         onBack={goBack}
+        actions={
+          <OrderActions
+            order={order}
+            onChanged={(updated) => setState({ id, kind: "loaded", order: updated })}
+          />
+        }
       />
 
       <Card>
