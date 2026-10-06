@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,10 @@ export default function CreateOrderPage() {
         description="Đơn tạo tay vào thẳng bước Xác nhận, chọn người phụ trách và thu cọc ngay trên form"
       />
       {canCreate ? (
-        <CreateOrderForm />
+        // The form reads `?replacementFor=` (D-11), and useSearchParams needs a Suspense boundary.
+        <Suspense fallback={null}>
+          <CreateOrderForm />
+        </Suspense>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-16 text-center">
           <h2 className="text-lg font-semibold">Không có quyền tạo đơn</h2>

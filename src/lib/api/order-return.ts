@@ -41,4 +41,12 @@ export const orderReturnApi = {
     const res = await client.post<Envelope<OrderReturn>>(`/order-returns/${id}/cancel`, {});
     return res.data.data;
   },
+
+  /** D-10 · D-11: link the new order a customer placed to buy the damaged goods again (GĐ2 – 3B). */
+  setReplacementOrder: async (id: string, orderId: string): Promise<OrderReturn> => {
+    const res = await client.patch<Envelope<OrderReturn>>(`/order-returns/${id}/replacement-order`, {
+      orderId,
+    });
+    return res.data.data;
+  },
 };
