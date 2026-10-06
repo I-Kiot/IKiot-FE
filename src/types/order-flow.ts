@@ -411,8 +411,33 @@ export interface CreateOrderJourneyPayload {
   note?: string;
 }
 
-/** `PATCH /orders/:id` (A-8) takes the same fields as create. */
-export type UpdateDraftOrderPayload = CreateOrderJourneyPayload;
+/** A line on `PATCH /orders/:id` (A-8): with `id`, that line changed in place (same product); without, a new line. A line left out is removed. Specs go through `setCustomization`, never here. */
+export interface UpdateOrderLinePayload extends Omit<CreateOrderLinePayload, "customization"> {
+  id?: string;
+}
+
+/** `PATCH /orders/:id` (A-8): the create's fields but the branch, every one optional - a field left out is left as it is. `items` is the whole new list, and only while CONFIRMED. `discountType: null` clears a manual discount. */
+export interface UpdateOrderPayload
+  extends Partial<Omit<CreateOrderJourneyPayload, "branchId" | "items" | "discountType">> {
+  items?: UpdateOrderLinePayload[];
+  discountType?: "ORDER" | null;
+}
+
+/** @deprecated The A-8 edit is not a draft edit; use `UpdateOrderPayload`. */
+export type UpdateDraftOrderPayload = UpdateOrderPayload;
+
+/** `ORDER_DEPOSIT_CHANGED` (409): the edit would move the deposit off the money already taken. */
+export interface DepositChange {
+  held: number;
+  amount: number;
+  difference: number;
+}
+
+/** `POST /orders/:id/confirm-remittance` (A-10): the cash the owner counted from the shipper - all of it. */
+export interface ConfirmRemittancePayload {
+  amount: number;
+  note?: string;
+}
 
 export interface ConfirmOrderPayload {
   assigneeId?: string;

@@ -13,6 +13,7 @@ import type {
   OrderPriority,
   OrderSort,
   OrderStatus,
+  RemittanceStatus,
   StockCheckStatus,
 } from "@/types/order-flow";
 
@@ -24,6 +25,8 @@ export interface OrdersListQuery {
   status: OrderStatus | "all";
   priority: OrderPriority | "all";
   stockSummary: StockCheckStatus | "all";
+  /** D-9: orders whose cash is still with the shipper (`PENDING`), or already handed back. */
+  cashRemittanceStatus: RemittanceStatus | "all";
   sort: OrderSort;
   /** Only orders the signed-in account is in charge of. */
   mineOnly: boolean;
@@ -36,6 +39,7 @@ const DEFAULT_LIST_QUERY: OrdersListQuery = {
   status: "all",
   priority: "all",
   stockSummary: "all",
+  cashRemittanceStatus: "all",
   sort: "createdAt",
   mineOnly: false,
 };
@@ -113,6 +117,8 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
       status: listQuery.status === "all" ? undefined : listQuery.status,
       priority: listQuery.priority === "all" ? undefined : listQuery.priority,
       stockSummary: listQuery.stockSummary === "all" ? undefined : listQuery.stockSummary,
+      cashRemittanceStatus:
+        listQuery.cashRemittanceStatus === "all" ? undefined : listQuery.cashRemittanceStatus,
       sort: listQuery.sort,
       assigneeId: listQuery.mineOnly ? getSessionUserId() : undefined,
       branchId: scope?.locationType === "BRANCH" ? scope.locationId : undefined,
