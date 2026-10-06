@@ -1,7 +1,16 @@
 // [Domain – Types]
+/** GOODS sells finished goods (supplier imports); WORKSHOP makes them to order (production requests). */
+export type SupplierType = 'GOODS' | 'WORKSHOP'
+
+export const SUPPLIER_TYPE_LABELS: Record<SupplierType, string> = {
+  GOODS: 'Nhà cung cấp',
+  WORKSHOP: 'Xưởng sản xuất',
+}
+
 export interface Supplier {
   id: string
   supplierName: string
+  type: SupplierType
   contactName: string
   phoneNumber: string
   email: string
@@ -22,6 +31,7 @@ export interface SupplierPagination {
 export interface SupplierQueryParams {
   search?: string
   hasDebt?: 'true' | 'false'
+  type?: SupplierType
   page?: number
   limit?: number
 }
@@ -33,6 +43,8 @@ export interface SupplierListResponse {
 
 export interface SupplierCreatePayload {
   supplierName: string
+  /** Locked by the backend once an import or a production request names the supplier. */
+  type?: SupplierType
   contactName?: string
   phoneNumber?: string
   email?: string

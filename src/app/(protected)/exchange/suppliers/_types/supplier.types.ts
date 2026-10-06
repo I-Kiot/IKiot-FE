@@ -5,6 +5,7 @@ export type SuppliersDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'pa
 
 export const supplierFormSchema = z.object({
   supplierName: z.string().min(1, 'Tên nhà cung cấp là bắt buộc'),
+  type: z.enum(['GOODS', 'WORKSHOP']),
   contactName: z.string().optional(),
   phoneNumber: z
     .string()

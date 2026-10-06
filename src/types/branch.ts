@@ -11,6 +11,8 @@ export interface Branch {
   defaultFulfillmentLocationId?: string | null;
   /** D-4: where this branch's damaged / defective goods go (a non-sellable warehouse). */
   damagedLocationId?: string | null;
+  /** false = a damaged-goods location: nothing is sold from it, and a workshop never delivers to it. */
+  isSellable?: boolean;
   /** Who runs this location. Appointed through `PATCH /:id/manager`, not by holding a
    *  particular role - the rewrite moved that from `User.role` onto the location itself. */
   managerId?: string | null;

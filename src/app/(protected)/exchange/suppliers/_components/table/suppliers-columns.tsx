@@ -1,6 +1,7 @@
 // [Table – Columns Supplier]
 import { type ColumnDef } from '@tanstack/react-table'
 import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import type { Supplier } from '@/types/supplier'
@@ -69,7 +70,14 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
     accessorKey: 'supplierName',
     header: ({ column }) => <SortableHeader label="Tên nhà cung cấp" column={column} />,
     cell: ({ row }) => (
-      <span className="font-medium line-clamp-1 max-w-52">{row.getValue('supplierName')}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-medium line-clamp-1 max-w-52">{row.getValue('supplierName')}</span>
+        {row.original.type === 'WORKSHOP' && (
+          <Badge variant="secondary" className="shrink-0">
+            Xưởng
+          </Badge>
+        )}
+      </div>
     ),
   },
   {

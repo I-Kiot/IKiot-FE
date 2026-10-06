@@ -272,6 +272,17 @@ export const ERROR_MESSAGES = {
   PRODUCTION_REQUEST_NOT_FOUND: "Không tìm thấy yêu cầu sản xuất",
   PRODUCTION_REQUEST_STATUS_INVALID: "Không chuyển được yêu cầu sản xuất sang trạng thái này",
   SUPPLIER_NOT_WORKSHOP: "Nhà cung cấp được chọn không phải xưởng",
+  SUPPLIER_TYPE_LOCKED: "Không đổi được loại nhà cung cấp đã có phiếu nhập hoặc yêu cầu sản xuất",
+  PRODUCTION_REQUEST_DUPLICATE_ITEM: "Một mặt hàng bị lặp trong yêu cầu sản xuất",
+  PRODUCTION_REQUEST_ORDER_ITEM_INVALID:
+    "Dòng đơn không tồn tại, khác mặt hàng hoặc đơn đã được giao đi",
+  PRODUCTION_REQUEST_LOCATION_DENIED: "Bạn chỉ thao tác được yêu cầu sản xuất giao về nơi mình làm việc",
+  PRODUCTION_REQUEST_HAS_RECEIPTS: "Yêu cầu đã nhận hàng, không huỷ được nữa",
+  PRODUCTION_REQUEST_RECEIVE_EMPTY: "Phải nhận ít nhất một mặt hàng",
+  PRODUCTION_REQUEST_CODE_UNAVAILABLE: "Không cấp được mã yêu cầu, vui lòng thử lại",
+  PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Phải ghi lý do khi đóng yêu cầu còn thiếu hàng",
+  PRODUCTION_REQUEST_ITEM_NOT_PRODUCIBLE: "Chỉ đặt xưởng được sản phẩm thường (combo đặt theo từng món bên trong)",
+  IMPORT_WORKSHOP_VIA_PRODUCTION_REQUEST: "Hàng của xưởng nhập qua yêu cầu sản xuất, không tạo phiếu nhập thường",
   // Đóng hàng & giao hàng
   FULFILLMENT_ALREADY_EXISTS: "Đơn này đã có phiếu đóng hàng",
   FULFILLMENT_LOCATION_DENIED: "Bạn không thao tác được ở kho này",

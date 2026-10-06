@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import type { Supplier } from '@/types/supplier'
 import type { SupplierFormValues } from '../_types/supplier.types'
 import { supplierApi } from '@/lib/api/supplier'
+import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
 import type { SupplierPayDebtPayload } from '@/types/supplier'
 
 function extractErrorMessage(error: unknown, fallback: string): string {
@@ -30,6 +31,7 @@ export function useSuppliersMutations() {
     try {
       const supplier = await supplierApi.create({
         supplierName: data.supplierName,
+        type: data.type,
         contactName: data.contactName || undefined,
         phoneNumber: data.phoneNumber || undefined,
         email: data.email || undefined,
@@ -52,6 +54,7 @@ export function useSuppliersMutations() {
     try {
       const updated = await supplierApi.update(id, {
         supplierName: data.supplierName,
+        type: data.type,
         contactName: data.contactName || undefined,
         phoneNumber: data.phoneNumber || undefined,
         email: data.email || undefined,
@@ -61,8 +64,9 @@ export function useSuppliersMutations() {
       setSuppliers((prev) => prev.map((s) => (s.id === id ? updated : s)))
       toast.success('Cập nhật nhà cung cấp thành công')
       return true
-    } catch {
-      toast.error('Cập nhật nhà cung cấp thất bại')
+    } catch (error) {
+      // SUPPLIER_TYPE_LOCKED is the one an owner can act on, so it gets its own sentence.
+      toast.error(messageForCode(getApiErrorBody(error)?.code) ?? 'Cập nhật nhà cung cấp thất bại')
       return false
     } finally {
       setIsLoading(false)

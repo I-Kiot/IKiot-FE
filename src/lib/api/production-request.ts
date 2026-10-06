@@ -4,9 +4,11 @@ import type {
   CreateProductionRequestPayload,
   Paginated,
   ProductionRequest,
+  ProductionListQuery,
+  ProductionListPage,
   ProductionRequestLinePayload,
   ProductionRequestQuery,
-  Shortage,
+  ReceiveProductionPayload,
   UpdateProductionRequestStatusPayload,
 } from '@/types/order-flow';
 
@@ -51,7 +53,7 @@ export const productionRequestApi = {
     return res.data.data;
   },
 
-  /** "Thêm vào yêu cầu" from a shortage alert. */
+  /** "Thêm vào yêu cầu" from the production list - adds to the line if the SKU is already there. */
   addItem: async (
     id: string,
     payload: ProductionRequestLinePayload,
@@ -67,10 +69,21 @@ export const productionRequestApi = {
     await client.delete(`/production-requests/${id}`);
   },
 
-  getShortages: async (locationId?: string): Promise<Shortage[]> => {
-    const res = await client.get<Envelope<Shortage[]>>('/production-requests/shortages', {
-      params: locationId ? { locationId } : undefined,
-    });
+  /** DRAFT, after "Gửi xưởng" a SENT / PARTIALLY_RECEIVED request takes receipts. Stock rises here. */
+  receive: async (
+    id: string,
+    payload: ReceiveProductionPayload,
+  ): Promise<ProductionRequest & { stockMovementId: string }> => {
+    const res = await client.post<Envelope<ProductionRequest & { stockMovementId: string }>>(
+      `/production-requests/${id}/receive`,
+      payload,
+    );
     return res.data.data;
+  },
+
+  /** Every producible SKU at each location with its "cần sản xuất" figure - recomputed on every read. */
+  getProductionList: async (params?: ProductionListQuery): Promise<ProductionListPage> => {
+    const res = await client.get<ProductionListPage>('/production-list', { params });
+    return { data: res.data.data, pagination: res.data.pagination, summary: res.data.summary };
   },
 };

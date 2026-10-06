@@ -107,6 +107,19 @@ export function useBranchSwitcher() {
 
         setDbBranches(fetchedBranches);
         setDbWarehouses(fetchedWarehouses);
+
+        // A key saved in localStorage can outlive its location (deleted, or a database reset).
+        // Kept as is, every list on every screen filters by an id that no longer exists and
+        // shows nothing - so fall back to "all" once we know it is gone.
+        const saved = parseLocationKey(useAuthStore.getState().locationKey);
+        if (
+          saved &&
+          ![...fetchedBranches, ...fetchedWarehouses].some(
+            (location) => location.id === saved.locationId,
+          )
+        ) {
+          useAuthStore.getState().setLocationKey("all");
+        }
       } else {
         // Non-TENANT_OWNER user: fetch their specific assigned branch or warehouse to show name/address
         if (user?.branchId) {

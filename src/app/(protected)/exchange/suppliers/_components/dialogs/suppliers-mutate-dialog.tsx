@@ -24,13 +24,21 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { Supplier } from '@/types/supplier'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { SUPPLIER_TYPE_LABELS, type Supplier, type SupplierType } from '@/types/supplier'
 import { supplierFormSchema, type SupplierFormValues } from '../../_types/supplier.types'
 import { useSuppliers } from '../../_context/suppliers-provider'
 import { MoneyInput } from '@/app/(protected)/exchange/shared/form-fields'
 
 const EMPTY_VALUES: SupplierFormValues = {
   supplierName: '',
+  type: 'GOODS',
   contactName: '',
   phoneNumber: '',
   email: '',
@@ -62,6 +70,7 @@ export function SuppliersMutateDialog({
     if (isEdit && currentRow) {
       form.reset({
         supplierName: currentRow.supplierName,
+        type: currentRow.type ?? 'GOODS',
         contactName: currentRow.contactName,
         phoneNumber: currentRow.phoneNumber,
         email: currentRow.email,
@@ -107,6 +116,35 @@ export function SuppliersMutateDialog({
                     <FormControl>
                       <Input placeholder="Nhập tên nhà cung cấp" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Loại</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full cursor-pointer">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {(Object.keys(SUPPLIER_TYPE_LABELS) as SupplierType[]).map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {SUPPLIER_TYPE_LABELS[value]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Xưởng nhận yêu cầu sản xuất; hàng của xưởng nhập qua yêu cầu sản xuất. Không đổi được
+                      sau khi đã có phiếu nhập hoặc yêu cầu sản xuất.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

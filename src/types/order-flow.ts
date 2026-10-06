@@ -422,15 +422,38 @@ export interface ConfirmOrderPayload {
 
 // ─── Production requests & imports (track B) ────────────────────────────────
 
+/** A person as the production endpoints return them (`withNestedProfile` on the BE). */
+export interface PersonRef {
+  id: string;
+  phoneNumber: string;
+  email?: string | null;
+  profile: { firstName: string | null; lastName: string | null };
+}
+
+export function personName(person: PersonRef | null | undefined): string {
+  if (!person) return "-";
+  const name = [person.profile?.lastName, person.profile?.firstName].filter(Boolean).join(" ");
+  return name || person.phoneNumber;
+}
+
 export interface ProductionRequestLine {
   id: string;
   productItemId: string;
   sku: string | null;
   productName: string;
+  /** SKU thumbnail, falling back to the product's. */
+  imageUrl?: string | null;
   quantity: number;
   receivedQuantity: number;
   note: string | null;
   orderItem: { id: string; orderId: string; orderCode: string | null; isCustom: boolean } | null;
+}
+
+/** One receipt = one WORKSHOP import on `/stock-movements`. */
+export interface ProductionReceipt {
+  stockMovementId: string;
+  receivedAt: string | null;
+  receivedBy: PersonRef | null;
 }
 
 export interface ProductionRequest {
@@ -442,23 +465,29 @@ export interface ProductionRequest {
   expectedReadyDate: string | null;
   sentAt: string | null;
   note: string | null;
-  createdBy: UserRef | null;
-  statusUpdatedBy: UserRef | null;
+  createdBy: PersonRef | null;
+  statusUpdatedBy: PersonRef | null;
   statusUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
   items: ProductionRequestLine[];
+  receipts: ProductionReceipt[];
+  /** COMPLETED by hand with something never delivered: the rest no longer counts as on order. */
+  closedShort: boolean;
 }
 
 export interface ProductionRequestQuery extends PageQuery {
   status?: ProductionRequestStatus;
   supplierId?: string;
   locationId?: string;
+  /** Requests with a line for this SKU. */
+  productItemId?: string;
 }
 
 export interface ProductionRequestLinePayload {
   productItemId: string;
   quantity: number;
+  /** Required in practice for a custom piece - the production list row carries it. */
   orderItemId?: string;
   note?: string;
 }
@@ -466,26 +495,104 @@ export interface ProductionRequestLinePayload {
 export interface CreateProductionRequestPayload {
   supplierId: string;
   locationId: string;
+  /** `YYYY-MM-DD` */
   expectedReadyDate?: string;
   note?: string;
   items: ProductionRequestLinePayload[];
 }
 
+/** PARTIALLY_RECEIVED follows from receiving. COMPLETED by hand = close short: only from PARTIALLY_RECEIVED, and `note` (the reason) is required. */
 export interface UpdateProductionRequestStatusPayload {
-  status: "SENT" | "COMPLETED" | "CANCELLED";
+  status: "SENT" | "CANCELLED" | "COMPLETED";
   note?: string;
 }
 
-export interface Shortage {
-  locationId: string;
-  locationName: string;
+export interface ReceiveProductionPayload {
+  items: {
+    productionRequestItemId: string;
+    /** This receipt, defects included. */
+    receivedQuantity: number;
+    defectQuantity?: number;
+    /** The workshop's price; blank = the SKU's cost price. */
+    unitCost?: number;
+  }[];
+  /** Defaults to the receiving location's damaged-goods location. */
+  defectLocationId?: string;
+  note?: string;
+}
+
+export type OrderPriority = "NORMAL" | "HIGH" | "URGENT";
+
+export const ORDER_PRIORITY_LABELS: Record<OrderPriority, string> = {
+  NORMAL: "Thường",
+  HIGH: "Cao",
+  URGENT: "Gấp",
+};
+
+/** One row of the production screen (`GET /production-list`): one SKU at one location - or one custom piece. Every producible SKU is listed, short or not; computed on every read. */
+export interface ProductionListRow {
+  key: string;
+  /** null = order lines with no source location chosen yet. */
+  location: (LocationRef & { type: "BRANCH" | "WAREHOUSE" }) | null;
   productItemId: string;
   sku: string | null;
   productName: string;
-  available: number;
-  waitingQuantity: number;
+  variantLabel: string | null;
+  isCustom: boolean;
+  /** The order line a custom row is for - send it as `orderItemId` when ordering it. */
+  customOrderItemId: string | null;
+  customization: {
+    lengthCm: number | null;
+    widthCm: number | null;
+    heightCm: number | null;
+    material: string | null;
+    color: string | null;
+    fabricCode: string | null;
+    note: string | null;
+    attachmentUrls: string[];
+    specs: { name: string; value: string; unit: string | null; position: number }[];
+  } | null;
+  stock: number;
+  demandQuantity: number;
   onOrderQuantity: number;
+  draftQuantity: number;
+  /** demand − stock − onOrder − draft, never below 0: short and not yet ordered. */
   shortQuantity: number;
+  orders: {
+    orderId: string;
+    orderCode: string;
+    orderItemId: string;
+    quantity: number;
+    priority: OrderPriority;
+    requestedDeliveryDate: string | null;
+    assignee: PersonRef | null;
+    status: OrderStatus;
+  }[];
+  requests: {
+    id: string;
+    code: string;
+    status: ProductionRequestStatus;
+    supplierName: string;
+    quantity: number;
+    receivedQuantity: number;
+    expectedReadyDate: string | null;
+  }[];
+}
+
+export interface ProductionListQuery {
+  page?: number;
+  limit?: number;
+  locationId?: string;
+  search?: string;
+  /** Only rows still short (Cần sản xuất > 0). Off = the whole catalogue, short rows first. */
+  onlyShort?: boolean;
+  /** Only rows with a production request still open. */
+  hasOpenRequest?: boolean;
+}
+
+export interface ProductionListPage extends Paginated<ProductionListRow> {
+  /** Rows that need ordering, whatever the filter - for the filter's badge. */
+  summary: { shortRows: number };
 }
 
 // ─── Fulfillment & delivery (track C) ───────────────────────────────────────

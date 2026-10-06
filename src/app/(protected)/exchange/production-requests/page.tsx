@@ -1,13 +1,17 @@
-import { ComingSoonPage } from "@/components/coming-soon-page";
+import { ProductionPage } from "./components/production-page";
 
-// P0-7 placeholder - replaced by task B-6.
-export default function ProductionRequestsPage() {
+// Task B-6 / B-7. `?locationId=` and `?create=short` let a shortage notification land on the
+// create dialog, already filtered to what needs ordering.
+export default async function ProductionRequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ locationId?: string; create?: string }>;
+}) {
+  const { locationId, create } = await searchParams;
   return (
-    <ComingSoonPage
-      breadcrumbs={[{ label: "Trang chủ", href: "/dashboard" }, { label: "Giao dịch" }, { label: "Yêu cầu sản xuất" }]}
-      title="Yêu cầu sản xuất"
-      description="Theo dõi hàng đặt xưởng và cảnh báo thiếu hàng"
-      task="B-6"
+    <ProductionPage
+      initialLocationId={locationId || undefined}
+      openCreateShort={create === "short"}
     />
   );
 }
