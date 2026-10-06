@@ -505,6 +505,8 @@ export interface ShipmentSummary {
 /** `GET /shipments/:id` và kết quả mọi thao tác ghi – kèm nhật trình. */
 export interface Shipment extends ShipmentSummary {
   events: ShipmentEvent[];
+  /** Khoản thu QR lúc giao (nếu đã chọn QR), để mở lại mã QR; `null` khi không có. */
+  payment: ShipmentQrPayment | null;
 }
 
 export interface ShipmentQuery extends PageQuery {
@@ -556,11 +558,26 @@ export interface HandOverReadyOrder {
   deliveryAddress: string | null;
 }
 
+/** Cách shipper thu số còn phải thu khi giao: tiền mặt, chuyển khoản QR, hoặc không còn gì phải thu (đã cọc đủ). */
+export type DeliveryCollectionMethod = "CASH" | "BANK_TRANSFER_QR" | "NONE";
+
+/** Body `POST /shipments/:id/deliver` – giao thành công. Chỉ thu đủ 100%: `collectedAmount` phải bằng số còn phải thu. */
 export interface DeliverShipmentPayload {
-  proofPhotoUrls?: string[];
+  /** Ảnh bằng chứng (URL từ `POST /uploads`), ít nhất 1 ảnh. */
+  proofPhotoUrls: string[];
+  paymentMethod: DeliveryCollectionMethod;
+  collectedAmount: number;
   note?: string;
   latitude?: number;
   longitude?: number;
+}
+
+/** Khoản thu QR lúc giao trên lần giao: `qrUrl` chỉ có khi còn chờ tiền về. */
+export interface ShipmentQrPayment {
+  reference: string;
+  amount: number;
+  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+  qrUrl: string | null;
 }
 
 // ─── Returns (track D) ──────────────────────────────────────────────────────

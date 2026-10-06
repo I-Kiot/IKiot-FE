@@ -62,8 +62,8 @@ interface ShipmentNoteDialogProps {
   onConfirm: (note: string | undefined) => Promise<void>;
 }
 
-/** Xác nhận một thao tác kèm ghi chú. Nơi gọi đặt `key` theo thao tác nên mỗi lần mở là ghi chú trống. */
-function ShipmentNoteDialog({
+/** Xác nhận một thao tác kèm ghi chú. Nơi gọi đặt `key` theo thao tác nên mỗi lần mở là ghi chú trống. Màn shipper (C-7) dùng lại. */
+export function ShipmentNoteDialog({
   open,
   title,
   description,

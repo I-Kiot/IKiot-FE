@@ -297,6 +297,10 @@ export const ERROR_MESSAGES = {
   SHIPMENT_DRIVER_NOT_ALLOWED: "Đơn giao qua đơn vị vận chuyển ngoài không gán shipper của shop",
   INVENTORY_LOCK_MISMATCH: "Số hàng đã khoá cho đơn không khớp - liên hệ quản lý kho để kiểm tra",
   ORDER_STEP_DENIED: "Chỉ chủ shop, người phụ trách đơn, hoặc người có quyền tại kho này mới làm được bước này",
+  SHIPMENT_DELIVER_INTERNAL_ONLY: "Đơn giao qua đơn vị vận chuyển ngoài sẽ được hãng cập nhật, không xác nhận tay được",
+  SHIPMENT_ORDER_NOT_SHIPPING: "Đơn chưa ở trạng thái Đang vận chuyển",
+  ORDER_COLLECTION_AMOUNT_MISMATCH: "Số tiền thu phải đúng bằng số còn phải thu",
+  ORDER_QR_PAYMENT_NOT_PENDING: "Khoản chuyển khoản QR không còn chờ - có thể khách vừa chuyển xong",
   // Hoàn hàng
   ORDER_RETURN_CONDITION_REQUIRED: "Cần chọn tình trạng cho từng dòng hàng hoàn",
   ORDER_RETURN_DENIED: "Chỉ người phụ trách đơn hoặc người có quyền mới tạo được đơn hoàn",

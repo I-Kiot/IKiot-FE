@@ -108,7 +108,7 @@ export const sidebarItems = {
       { title: "Giao hàng", url: "/shipments" },
     ],
   },
-  /** The contracted shipper's own deliveries (mobile web, track C). STAFF only - an owner does not deliver. */
+  /** Đơn giao của chính mình (C-7). Chủ shop và người phụ trách đơn cũng có thể là shipper (chốt 2026-10-06). */
   donGiaoCuaToi: {
     title: "Đơn giao của tôi",
     url: "/shipper",

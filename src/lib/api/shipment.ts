@@ -23,9 +23,9 @@ export const shipmentApi = {
     return { data: res.data.data, pagination: res.data.pagination };
   },
 
-  /** The shipper's own open deliveries (`/shipper`, C-7). */
-  getMine: async (): Promise<Shipment[]> => {
-    const res = await client.get<Envelope<Shipment[]>>('/shipments/mine');
+  /** Các lần giao chưa kết thúc mà mình là shipper (`/shipper`, C-7) – dạng dòng danh sách, không kèm nhật trình. */
+  getMine: async (): Promise<ShipmentSummary[]> => {
+    const res = await client.get<Envelope<ShipmentSummary[]>>('/shipments/mine');
     return res.data.data;
   },
 
@@ -59,9 +59,18 @@ export const shipmentApi = {
     return res.data.data;
   },
 
-  /** INTERNAL: needs at least one proof photo URL (upload via `/uploads` first). C-5 / C-7. */
+  /** Giao thành công: ảnh bằng chứng + thu tiền. Thu QR thì kết quả có `payment.qrUrl` để khách quét. */
   deliver: async (id: string, payload: DeliverShipmentPayload): Promise<Shipment> => {
     const res = await client.post<Envelope<Shipment>>(`/shipments/${id}/deliver`, payload);
+    return res.data.data;
+  },
+
+  /** Đã giao với QR nhưng khách không chuyển khoản: thu tiền mặt thay. */
+  payCash: async (id: string, note?: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(
+      `/shipments/${id}/pay-cash`,
+      note ? { note } : {},
+    );
     return res.data.data;
   },
 

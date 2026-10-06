@@ -58,6 +58,8 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       sidebarItems.giaoDich,
       sidebarItems.donHang,
       sidebarItems.vanHanh,
+      // Chủ shop cũng có thể tự giao hàng (chốt 2026-10-06).
+      sidebarItems.donGiaoCuaToi,
       sidebarItems.ketTien,
     ]),
     crmGroup,
