@@ -212,6 +212,7 @@ export function useBranchSwitcher() {
         phoneNumber: values.phoneNumber ? [values.phoneNumber] : ["0000000000"],
         address: values.address,
         email: values.email || undefined,
+        damagedLocationId: values.damagedLocationId || undefined,
       };
       const newBranch = await branchApi.create(payload);
       toast.success(`Đã tạo chi nhánh "${newBranch.name}" thành công!`);
@@ -233,6 +234,7 @@ export function useBranchSwitcher() {
         address: values.address,
         email: values.email || undefined,
         status: values.status as any,
+        damagedLocationId: values.damagedLocationId || null,
       };
       const updated = await branchApi.update(editingBranch.id, payload);
       toast.success(`Đã cập nhật chi nhánh "${updated.name}" thành công!`);
@@ -254,6 +256,8 @@ export function useBranchSwitcher() {
         address: values.address,
         phoneNumber: [values.phoneNumber],
         ...(values.email ? { email: values.email } : {}),
+        isSellable: values.isSellable,
+        damagedLocationId: values.damagedLocationId || undefined,
       };
       const newWarehouse = await warehouseApi.create(payload);
       toast.success(`Đã tạo kho hàng "${newWarehouse.name}" thành công!`);
@@ -275,6 +279,8 @@ export function useBranchSwitcher() {
         phoneNumber: [values.phoneNumber],
         ...(values.email ? { email: values.email } : {}),
         status: values.status as any,
+        isSellable: values.isSellable,
+        damagedLocationId: values.damagedLocationId || null,
       };
       const updated = await warehouseApi.update(editingWarehouse.id, payload);
       toast.success(`Đã cập nhật kho hàng "${updated.name}" thành công!`);
