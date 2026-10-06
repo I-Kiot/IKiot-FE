@@ -23,6 +23,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { allows } from "@/components/sidebar/constants/role-permissions";
+import { getSessionRole } from "@/lib/auth";
 import { orderReturnApi } from "@/lib/api/order-return";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import {
@@ -81,6 +83,15 @@ export function ReturnDetailDialog({
   }
 
   const current = orderReturn;
+  // GĐ2 – 3B: damaged goods the customer wants to buy again become a new manual order (D-11).
+  const hasDamaged = current.items.some((item) => item.condition === "DAMAGED");
+  const role = getSessionRole();
+  const canReorder =
+    current.status === "COMPLETED" &&
+    hasDamaged &&
+    !current.replacementOrder &&
+    allows(role, "orders", "create") &&
+    allows(role, "returns", "create");
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -180,7 +191,24 @@ export function ReturnDetailDialog({
           </p>
         )}
 
+        {current.replacementOrder && (
+          <p className="text-sm">
+            Đơn mua lại:{" "}
+            <Link
+              href={`/sales/orders/${current.replacementOrder.id}`}
+              className="font-medium underline"
+            >
+              {current.replacementOrder.code ?? current.replacementOrder.id.slice(0, 8)}
+            </Link>
+          </p>
+        )}
+
         <DialogFooter className="gap-2">
+          {canReorder && (
+            <Button variant="outline" asChild>
+              <Link href={`/sales/orders/new?replacementFor=${current.id}`}>Tạo đơn mua lại</Link>
+            </Button>
+          )}
           {isOpenReturn(current.status) && canCancel && (
             <Button
               variant="outline"

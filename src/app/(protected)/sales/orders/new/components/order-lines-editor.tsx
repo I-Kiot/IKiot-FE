@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { productApi } from "@/lib/api/product";
 import type { LocationType } from "@/types/location";
+import type { OrderItemCustomization } from "@/types/order-flow";
+import { CustomizationDialog, customizationSummary } from "../../shared/customization-dialog";
 import { formatVND, lineTotal, stockLevel } from "../shared/order-totals";
 
 export interface OrderLineDraft {
@@ -31,6 +33,8 @@ export interface OrderLineDraft {
   quantity: number;
   unitPrice: number;
   discountAmount: number;
+  /** D-2: made to the customer's measure - the line gets a SKU of its own on create (A-4). */
+  customization?: OrderItemCustomization;
 }
 
 interface SkuOption {
@@ -47,12 +51,22 @@ interface OrderLinesEditorProps {
   /** Where the goods are expected to ship from; stock is read there. Empty until a branch is chosen. */
   stockLocation: { id: string; type: LocationType } | null;
   error?: string;
+  /** Offer "Thông số riêng" per line - on create only (`PATCH /orders/:id` takes no specs). */
+  allowCustomization?: boolean;
 }
 
 const toNumber = (raw: string) => Math.max(0, Number(raw) || 0);
 
 /** Product search + the lines of the order. Stock is shown per line and never blocks (contract §2: an order is taken even when the goods are not on the shelf). */
-export function OrderLinesEditor({ lines, onChange, stockLocation, error }: OrderLinesEditorProps) {
+export function OrderLinesEditor({
+  lines,
+  onChange,
+  stockLocation,
+  error,
+  allowCustomization = false,
+}: OrderLinesEditorProps) {
+  const [customizing, setCustomizing] = React.useState<string | null>(null);
+  const customizingLine = lines.find((line) => line.key === customizing) ?? null;
   const [search, setSearch] = React.useState("");
   const keySeq = React.useRef(0);
   const term = search.trim();
@@ -105,7 +119,10 @@ export function OrderLinesEditor({ lines, onChange, stockLocation, error }: Orde
 
   const add = (option: SkuOption) => {
     const existing = lines.find(
-      (line) => line.productItemId === option.productItemId && line.unitPrice === option.retailPrice,
+      (line) =>
+        line.productItemId === option.productItemId &&
+        line.unitPrice === option.retailPrice &&
+        !line.customization,
     );
     if (existing) {
       onChange(
@@ -196,8 +213,31 @@ export function OrderLinesEditor({ lines, onChange, stockLocation, error }: Orde
                 return (
                   <TableRow key={line.key}>
                     <TableCell>
-                      <div className="font-medium">{line.name}</div>
+                      <div className="font-medium">
+                        {line.name}
+                        {line.customization && (
+                          <Badge variant="outline" className="ml-2">
+                            Làm riêng
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground">{line.sku}</div>
+                      {line.customization && (
+                        <div className="text-xs text-muted-foreground">
+                          {customizationSummary(line.customization)}
+                        </div>
+                      )}
+                      {allowCustomization && (
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto px-0 text-xs"
+                          onClick={() => setCustomizing(line.key)}
+                        >
+                          {line.customization ? "Sửa thông số riêng" : "Thông số riêng"}
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell>
                       {level === "ENOUGH" ? (
@@ -269,6 +309,20 @@ export function OrderLinesEditor({ lines, onChange, stockLocation, error }: Orde
         </div>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
+      {customizingLine && (
+        <CustomizationDialog
+          open
+          label={customizingLine.name}
+          value={customizingLine.customization}
+          onOpenChange={(open) => {
+            if (!open) setCustomizing(null);
+          }}
+          onSave={(value) => {
+            patch(customizingLine.key, { customization: value });
+            setCustomizing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

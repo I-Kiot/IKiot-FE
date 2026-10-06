@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { branchApi } from "@/lib/api/branch";
+import { customerApi } from "@/lib/api/customer";
+import { orderReturnApi } from "@/lib/api/order-return";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { staffApi } from "@/lib/api/staff";
@@ -57,6 +59,9 @@ function preferredBranchId(): string {
 /** D-2: a manual order (`POST /orders`, contract §2). It is born CONFIRMED - there is no draft - and stock never blocks it. */
 export function CreateOrderForm() {
   const router = useRouter();
+  // D-11: a buy-again order for the damaged goods of a return - prefilled, then linked to it on create.
+  const replacementFor = useSearchParams().get("replacementFor");
+  const [replacementOf, setReplacementOf] = React.useState<{ id: string; code: string } | null>(null);
 
   const [branches, setBranches] = React.useState<Branch[]>([]);
   const [assignees, setAssignees] = React.useState<AssigneeOption[]>([]);
@@ -91,7 +96,10 @@ export function CreateOrderForm() {
           const list = branchResult.value.data;
           setBranches(list);
           const wanted = preferredBranchId();
-          setBranchId(list.find((b) => b.id === wanted)?.id ?? (list.length === 1 ? list[0].id : ""));
+          setBranchId(
+            (current) =>
+              current || (list.find((b) => b.id === wanted)?.id ?? (list.length === 1 ? list[0].id : "")),
+          );
         } else {
           toast.error("Không tải được danh sách chi nhánh");
         }
@@ -147,6 +155,63 @@ export function CreateOrderForm() {
   const valid = !errors.customer && !errors.branch && !errors.assignee && !errors.lines && !errors.deposit;
 
   // Picking a customer fills the delivery details they already have, once, without overwriting what was typed.
+  // D-11: once the pick-lists are in, copy the customer, branch, person in charge, delivery and the
+  // damaged lines of the return's order. Prices are re-read from the catalogue by the server unless
+  // the user keeps the agreed ones shown here.
+  React.useEffect(() => {
+    if (!replacementFor || !optionsReady) return;
+    let stale = false;
+    (async () => {
+      try {
+        const orderReturn = await orderReturnApi.getById(replacementFor);
+        const order = await orderJourneyApi.getById(orderReturn.order.id);
+        const original = await customerApi.getById(order.customer.id).catch(() => null);
+        if (stale) return;
+        const byLine = new Map(order.items.map((line) => [line.id, line]));
+        const damaged = orderReturn.items.filter((item) => item.condition === "DAMAGED");
+        setReplacementOf({ id: orderReturn.id, code: orderReturn.code });
+        if (original) setCustomer({ mode: "existing", customer: original });
+        setBranchId(order.branch.id);
+        if (order.assignee) {
+          const person = { id: order.assignee.id, name: order.assignee.name };
+          setAssignees((prev) => (prev.some((a) => a.id === person.id) ? prev : [person, ...prev]));
+          setAssigneeId(person.id);
+        }
+        if (order.fulfillmentType === "HOME_DELIVERY" || order.fulfillmentType === "STORE_PICKUP") {
+          setFulfillment(order.fulfillmentType);
+        }
+        setRecipientName(order.recipientName ?? "");
+        setRecipientPhone(order.recipientPhone ?? "");
+        setDeliveryAddress(order.deliveryAddress ?? "");
+        setNote(`Mua lại hàng hỏng của đơn hoàn ${orderReturn.code}`);
+        setLines(
+          damaged.flatMap((item) => {
+            const line = byLine.get(item.orderItemId);
+            if (!line) return [];
+            return [
+              {
+                key: `${line.productItemId}-replace-${item.id}`,
+                productItemId: line.productItemId,
+                name: line.productName ?? line.sku ?? "",
+                sku: line.sku ?? "",
+                retailPrice: line.listUnitPrice,
+                stock: 0,
+                quantity: item.quantity,
+                unitPrice: line.unitPrice,
+                discountAmount: 0,
+              },
+            ];
+          }),
+        );
+      } catch (error) {
+        if (!stale) toast.error(getApiErrorBody(error)?.message ?? "Không tải được đơn hoàn");
+      }
+    })();
+    return () => {
+      stale = true;
+    };
+  }, [replacementFor, optionsReady]);
+
   const handleCustomer = (next: CustomerChoice) => {
     setCustomer(next);
     if (next.mode === "existing" && next.customer) {
@@ -169,6 +234,7 @@ export function CreateOrderForm() {
         quantity: line.quantity,
         unitPrice: line.unitPrice,
         ...(line.discountAmount > 0 ? { discountAmount: line.discountAmount } : {}),
+        ...(line.customization ? { customization: line.customization } : {}),
       })),
       ...(customer.mode === "existing"
         ? { customerId: customer.customer!.id }
@@ -195,7 +261,14 @@ export function CreateOrderForm() {
     try {
       const created = await orderJourneyApi.create(payload);
       toast.success(`Đã tạo đơn ${created.code ?? ""}`.trim());
-      router.push(`/sales/orders/${created.id}`);
+      if (replacementOf) {
+        // The order exists either way; a failed link is reported, not undone.
+        await orderReturnApi
+          .setReplacementOrder(replacementOf.id, created.id)
+          .catch(() =>
+            toast.warning(`Đơn đã tạo nhưng chưa gắn được vào đơn hoàn ${replacementOf.code}`),
+          );
+      }      router.push(`/sales/orders/${created.id}`);
     } catch (error) {
       toast.error(getApiErrorBody(error)?.message ?? "Không tạo được đơn hàng");
       setSubmitting(false);
@@ -225,6 +298,7 @@ export function CreateOrderForm() {
               lines={lines}
               onChange={setLines}
               stockLocation={stockLocation}
+              allowCustomization
               error={show(errors.lines)}
             />
             <p className="mt-3 text-xs text-muted-foreground">
