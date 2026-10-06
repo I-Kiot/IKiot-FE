@@ -291,6 +291,12 @@ export const ERROR_MESSAGES = {
   SHIPMENT_PROOF_REQUIRED: "Cần ít nhất một ảnh bằng chứng giao hàng",
   SHIPMENT_STATUS_INVALID: "Lần giao không ở trạng thái phù hợp",
   SHIPMENT_TRACKING_TAKEN: "Mã vận đơn đã tồn tại",
+  SHIPMENT_ORDER_NOT_PACKED: "Đơn chưa đóng gói nên chưa giao cho đơn vị vận chuyển được",
+  SHIPMENT_DRIVER_REQUIRED: "Giao nội bộ cần chọn shipper",
+  SHIPMENT_DRIVER_INVALID: "Shipper phải là chủ shop, người phụ trách đơn, hoặc nhân viên có quyền giao hàng",
+  SHIPMENT_DRIVER_NOT_ALLOWED: "Đơn giao qua đơn vị vận chuyển ngoài không gán shipper của shop",
+  INVENTORY_LOCK_MISMATCH: "Số hàng đã khoá cho đơn không khớp - liên hệ quản lý kho để kiểm tra",
+  ORDER_STEP_DENIED: "Chỉ chủ shop, người phụ trách đơn, hoặc người có quyền tại kho này mới làm được bước này",
   // Hoàn hàng
   ORDER_RETURN_CONDITION_REQUIRED: "Cần chọn tình trạng cho từng dòng hàng hoàn",
   ORDER_RETURN_DENIED: "Chỉ người phụ trách đơn hoặc người có quyền mới tạo được đơn hoàn",
