@@ -234,6 +234,7 @@ export function CreateOrderForm() {
         quantity: line.quantity,
         unitPrice: line.unitPrice,
         ...(line.discountAmount > 0 ? { discountAmount: line.discountAmount } : {}),
+        ...(line.customization ? { customization: line.customization } : {}),
       })),
       ...(customer.mode === "existing"
         ? { customerId: customer.customer!.id }
@@ -297,6 +298,7 @@ export function CreateOrderForm() {
               lines={lines}
               onChange={setLines}
               stockLocation={stockLocation}
+              allowCustomization
               error={show(errors.lines)}
             />
             <p className="mt-3 text-xs text-muted-foreground">
