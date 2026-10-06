@@ -434,6 +434,39 @@ export interface AddFulfillmentPackagePayload {
   photoUrls: string[];
 }
 
+/**
+ * Đơn chờ đóng gói - đúng phần `GET /orders?status=CONFIRMED` trả về mà màn Đóng hàng đọc.
+ * Khai báo hẹp riêng thay vì dùng `OrderListItem`, vì type đó đang lệch response thật của BE.
+ */
+export interface PackableOrder {
+  id: string;
+  code: string;
+  createdAt: string;
+  branch: LocationRef;
+  customer: { id: string; name: string; phone: string | null };
+  items: { id: string; productName: string | null; sku: string | null; quantity: number }[];
+}
+
+/** Kết quả `POST /orders/:id/pack` - phần màn hình cần (BE trả cả Fulfillment kèm items). */
+export interface PackResult {
+  id: string;
+  packages: { id: string; code: string }[];
+}
+
+/** Một người trong payload của BE: `{ id, phoneNumber, profile }` (`withNestedProfile`). */
+export interface PersonRef {
+  id: string;
+  phoneNumber: string;
+  profile: { firstName: string | null; lastName: string | null; avatarUrl: string | null };
+}
+
+/** Tên hiển thị: "Họ Tên", không có thì số điện thoại. */
+export function personName(person: PersonRef | null | undefined): string {
+  if (!person) return "";
+  const name = `${person.profile?.lastName ?? ""} ${person.profile?.firstName ?? ""}`.trim();
+  return name || person.phoneNumber;
+}
+
 export interface ShipmentEvent {
   id: string;
   status: ShipmentStatus;
@@ -441,25 +474,25 @@ export interface ShipmentEvent {
   note: string | null;
   latitude: number | null;
   longitude: number | null;
-  createdBy: UserRef | null;
+  createdBy: PersonRef | null;
   occurredAt: string;
 }
 
-export interface Shipment {
+/** Một dòng của `GET /shipments` – không kèm nhật trình. */
+export interface ShipmentSummary {
   id: string;
   status: ShipmentStatus;
   carrierType: CarrierType;
   carrierName: string | null;
   trackingCode: string | null;
-  order: { id: string; code: string | null; customerName: string };
+  order: { id: string; code: string; status: OrderStatus; customerName: string; amountDue: number };
   fulfillmentId: string;
-  driver: UserRef | null;
+  driver: PersonRef | null;
   recipientName: string | null;
   recipientPhone: string | null;
   deliveryAddress: string | null;
   scheduledDate: string | null;
   scheduledSlot: string | null;
-  expectedDeliveryAt: string | null;
   deliveredAt: string | null;
   requiresInstallation: boolean;
   installedAt: string | null;
@@ -467,43 +500,84 @@ export interface Shipment {
   shippingCost: number | null;
   note: string | null;
   createdAt: string;
+}
+
+/** `GET /shipments/:id` và kết quả mọi thao tác ghi – kèm nhật trình. */
+export interface Shipment extends ShipmentSummary {
   events: ShipmentEvent[];
+  /** Khoản thu QR lúc giao (nếu đã chọn QR), để mở lại mã QR; `null` khi không có. */
+  payment: ShipmentQrPayment | null;
 }
 
 export interface ShipmentQuery extends PageQuery {
   status?: ShipmentStatus;
   carrierType?: CarrierType;
   driverId?: string;
+  /** `YYYY-MM-DD`, trọn ngày theo giờ Việt Nam. */
   from?: string;
   to?: string;
 }
 
+/** Body `POST /shipments` – "ĐVVC đã lấy hàng" cho một đơn đã đóng gói. */
 export interface CreateShipmentPayload {
-  fulfillmentId: string;
+  orderId: string;
   carrierType: CarrierType;
   carrierName?: string;
   trackingCode?: string;
   driverId?: string;
   scheduledDate?: string;
   scheduledSlot?: string;
-  expectedDeliveryAt?: string;
   requiresInstallation?: boolean;
   shippingCost?: number;
   note?: string;
 }
 
+/** Nhật trình chỉ mang "Đang đi giao" (chốt 2026-10-06). */
 export interface ShipmentEventPayload {
-  status: ShipmentStatus;
+  status: "OUT_FOR_DELIVERY";
   note?: string;
   latitude?: number;
   longitude?: number;
 }
 
+/** Một người chọn được làm shipper (`GET /shipments/drivers`). */
+export interface DriverOption extends PersonRef {
+  systemRole: string;
+  isAssignee: boolean;
+}
+
+/** Đơn chờ giao cho vận chuyển – phần `GET /orders?status=PACKED` mà màn Giao hàng đọc. */
+export interface HandOverReadyOrder {
+  id: string;
+  code: string;
+  createdAt: string;
+  branch: LocationRef;
+  customer: { id: string; name: string; phone: string | null };
+  recipientName: string | null;
+  recipientPhone: string | null;
+  deliveryAddress: string | null;
+}
+
+/** Cách shipper thu số còn phải thu khi giao: tiền mặt, chuyển khoản QR, hoặc không còn gì phải thu (đã cọc đủ). */
+export type DeliveryCollectionMethod = "CASH" | "BANK_TRANSFER_QR" | "NONE";
+
+/** Body `POST /shipments/:id/deliver` – giao thành công. Chỉ thu đủ 100%: `collectedAmount` phải bằng số còn phải thu. */
 export interface DeliverShipmentPayload {
-  proofPhotoUrls?: string[];
+  /** Ảnh bằng chứng (URL từ `POST /uploads`), ít nhất 1 ảnh. */
+  proofPhotoUrls: string[];
+  paymentMethod: DeliveryCollectionMethod;
+  collectedAmount: number;
   note?: string;
   latitude?: number;
   longitude?: number;
+}
+
+/** Khoản thu QR lúc giao trên lần giao: `qrUrl` chỉ có khi còn chờ tiền về. */
+export interface ShipmentQrPayment {
+  reference: string;
+  amount: number;
+  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+  qrUrl: string | null;
 }
 
 // ─── Returns (track D) ──────────────────────────────────────────────────────

@@ -5,15 +5,22 @@ import client from '@/lib/api/client';
 import type {
   ConfirmOrderPayload,
   CreateOrderJourneyPayload,
+  HandOverReadyOrder,
   OrderDetail,
   OrderItemCustomization,
   OrderJourneyQuery,
   OrderListItem,
+  PackableOrder,
+  PackResult,
   Paginated,
+  Shipment,
   UpdateDraftOrderPayload,
 } from '@/types/order-flow';
 
 type Envelope<T> = { success: boolean; data: T };
+
+/** Số đơn mỗi trang mặc định của màn Đóng hàng (người dùng đổi được ở ô "Hiển thị"). */
+export const PACK_PAGE_SIZE = 10;
 
 export const orderJourneyApi = {
   getList: async (params?: OrderJourneyQuery): Promise<Paginated<OrderListItem>> => {
@@ -65,6 +72,40 @@ export const orderJourneyApi = {
 
   cancel: async (id: string, reason?: string): Promise<OrderDetail> => {
     const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/cancel`, { reason });
+    return res.data.data;
+  },
+
+  /** Một trang đơn CONFIRMED (chờ đóng gói) trong phạm vi chi nhánh của người gọi. */
+  listPackable: async (page: number, limit = PACK_PAGE_SIZE): Promise<Paginated<PackableOrder>> => {
+    const res = await client.get<Paginated<PackableOrder>>('/orders', {
+      params: { status: 'CONFIRMED', page, limit },
+    });
+    return { data: res.data.data, pagination: res.data.pagination };
+  },
+
+  /** CONFIRMED → PACKED (C-1): khoá hàng trên kệ và tự sinh kiện. */
+  pack: async (id: string, note?: string): Promise<PackResult> => {
+    const res = await client.post<Envelope<PackResult>>(
+      `/orders/${id}/pack`,
+      note ? { note } : {},
+    );
+    return res.data.data;
+  },
+
+  /** Một trang đơn PACKED (đã đóng gói, chờ giao cho vận chuyển) trong phạm vi chi nhánh của người gọi. */
+  listHandOverReady: async (page: number, limit: number): Promise<Paginated<HandOverReadyOrder>> => {
+    const res = await client.get<Paginated<HandOverReadyOrder>>('/orders', {
+      params: { status: 'PACKED', page, limit },
+    });
+    return { data: res.data.data, pagination: res.data.pagination };
+  },
+
+  /** PICKED_UP → SHIPPING (C-2): trừ tồn kho đúng phần đã khoá lúc đóng gói. Trả về lần giao của đơn. */
+  ship: async (id: string, note?: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(
+      `/orders/${id}/ship`,
+      note ? { note } : {},
+    );
     return res.data.data;
   },
 };

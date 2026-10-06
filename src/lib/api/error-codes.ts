@@ -75,7 +75,7 @@ export const ERROR_MESSAGES = {
   IDENTIFICATION_YEAR_MISMATCH: "Năm sinh trên số căn cước không khớp với ngày sinh của nhân viên",
   IMPORT_PRICE_ABOVE_RETAIL: "Đơn giá nhập không được lớn hơn giá bán lẻ",
   IMPORT_PRICE_MUST_BE_POSITIVE: "Đơn giá nhập phải lớn hơn 0",
-  INSUFFICIENT_STOCK: "Không đủ tồn kho",
+  INSUFFICIENT_STOCK: "Hàng trên kệ không đủ", // tồn kho bán được = hàng trên kệ (stock − đã khoá)
   INTERNAL_ERROR: "Đã có lỗi xảy ra, vui lòng thử lại sau",
   INVALID_CREDENTIALS: "Số điện thoại hoặc mật khẩu không đúng",
   INVENTORY_ALREADY_AT_LOCATION: "Mặt hàng đã có tại địa điểm này",
@@ -277,6 +277,9 @@ export const ERROR_MESSAGES = {
   FULFILLMENT_LOCATION_DENIED: "Bạn không thao tác được ở kho này",
   FULFILLMENT_NOT_FOUND: "Không tìm thấy phiếu đóng hàng",
   FULFILLMENT_ORDER_NOT_READY: "Đơn chưa sẵn sàng để đóng hàng",
+  FULFILLMENT_MULTIPLE_SOURCES: "Hàng của đơn nằm ở nhiều kho - chuyển kho về một nơi rồi đóng hàng",
+  FULFILLMENT_LINE_NO_SOURCE: "Có dòng hàng chưa có kho xuất - bổ sung kho xuất trước khi đóng hàng",
+  FULFILLMENT_NOTHING_TO_PACK: "Đơn không có mặt hàng nào cần đóng gói",
   FULFILLMENT_PACKAGES_INCOMPLETE: "Chưa đóng đủ số kiện",
   FULFILLMENT_QTY_EXCEEDS: "Số lượng vượt quá số trên đơn",
   FULFILLMENT_STATUS_INVALID: "Phiếu đóng hàng không ở trạng thái phù hợp",
@@ -288,6 +291,16 @@ export const ERROR_MESSAGES = {
   SHIPMENT_PROOF_REQUIRED: "Cần ít nhất một ảnh bằng chứng giao hàng",
   SHIPMENT_STATUS_INVALID: "Lần giao không ở trạng thái phù hợp",
   SHIPMENT_TRACKING_TAKEN: "Mã vận đơn đã tồn tại",
+  SHIPMENT_ORDER_NOT_PACKED: "Đơn chưa đóng gói nên chưa giao cho đơn vị vận chuyển được",
+  SHIPMENT_DRIVER_REQUIRED: "Giao nội bộ cần chọn shipper",
+  SHIPMENT_DRIVER_INVALID: "Shipper phải là chủ shop, người phụ trách đơn, hoặc nhân viên có quyền giao hàng",
+  SHIPMENT_DRIVER_NOT_ALLOWED: "Đơn giao qua đơn vị vận chuyển ngoài không gán shipper của shop",
+  INVENTORY_LOCK_MISMATCH: "Số hàng đã khoá cho đơn không khớp - liên hệ quản lý kho để kiểm tra",
+  ORDER_STEP_DENIED: "Chỉ chủ shop, người phụ trách đơn, hoặc người có quyền tại kho này mới làm được bước này",
+  SHIPMENT_DELIVER_INTERNAL_ONLY: "Đơn giao qua đơn vị vận chuyển ngoài sẽ được hãng cập nhật, không xác nhận tay được",
+  SHIPMENT_ORDER_NOT_SHIPPING: "Đơn chưa ở trạng thái Đang vận chuyển",
+  ORDER_COLLECTION_AMOUNT_MISMATCH: "Số tiền thu phải đúng bằng số còn phải thu",
+  ORDER_QR_PAYMENT_NOT_PENDING: "Khoản chuyển khoản QR không còn chờ - có thể khách vừa chuyển xong",
   // Hoàn hàng
   ORDER_RETURN_CONDITION_REQUIRED: "Cần chọn tình trạng cho từng dòng hàng hoàn",
   ORDER_RETURN_DENIED: "Chỉ người phụ trách đơn hoặc người có quyền mới tạo được đơn hoàn",
@@ -326,6 +339,8 @@ interface ApiErrorBody {
   code?: string;
   message?: string;
   error?: string;
+  /** Chi tiết đi kèm, hình dạng tuỳ mã lỗi - chỉ đọc qua type guard (vd. `shortStockLinesOf`). */
+  errors?: unknown;
 }
 
 /** Lấy thân lỗi ra khỏi một lỗi axios bất kỳ. */
@@ -341,4 +356,28 @@ export function getApiErrorBody(error: unknown): ApiErrorBody | undefined {
 export function messageForCode(code: string | undefined): string | undefined {
   if (!code) return undefined;
   return ERROR_MESSAGES[code as ApiErrorCode];
+}
+
+/** Một mặt hàng thiếu khi đóng gói. Khớp `ShortStockLine` của BE (`inventories.service.ts`, `lockStock`). */
+export interface ShortStockLine {
+  label: string;
+  needed: number;
+  onShelf: number;
+}
+
+/** Kiểm tra một phần tử `errors` có đúng hình dạng `ShortStockLine` không. */
+function isShortStockLine(value: unknown): value is ShortStockLine {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.label === "string" && typeof v.needed === "number" && typeof v.onShelf === "number";
+}
+
+/**
+ * Danh sách hàng thiếu trong lỗi `INSUFFICIENT_STOCK` của `POST /orders/:id/pack`.
+ * Lỗi khác, hoặc `INSUFFICIENT_STOCK` không kèm chi tiết (vd. từ `deductStock`) → `[]`.
+ */
+export function shortStockLinesOf(error: unknown): ShortStockLine[] {
+  const body = getApiErrorBody(error);
+  if (body?.code !== "INSUFFICIENT_STOCK" || !Array.isArray(body.errors)) return [];
+  return body.errors.filter(isShortStockLine);
 }
