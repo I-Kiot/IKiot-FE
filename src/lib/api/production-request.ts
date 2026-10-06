@@ -3,10 +3,12 @@ import client from '@/lib/api/client';
 import type {
   CreateProductionRequestPayload,
   Paginated,
+  ProductionListPage,
+  ProductionListQuery,
   ProductionRequest,
   ProductionRequestLinePayload,
   ProductionRequestQuery,
-  Shortage,
+  ReceiveProductionPayload,
   UpdateProductionRequestStatusPayload,
 } from '@/types/order-flow';
 
@@ -28,10 +30,10 @@ export const productionRequestApi = {
     return res.data.data;
   },
 
-  /** DRAFT only. */
+  /** DRAFT only; `items`, when sent, replaces every line. */
   update: async (
     id: string,
-    payload: CreateProductionRequestPayload,
+    payload: Partial<CreateProductionRequestPayload>,
   ): Promise<ProductionRequest> => {
     const res = await client.patch<Envelope<ProductionRequest>>(
       `/production-requests/${id}`,
@@ -51,7 +53,7 @@ export const productionRequestApi = {
     return res.data.data;
   },
 
-  /** "Thêm vào yêu cầu" from a shortage alert. */
+  /** "Thêm vào yêu cầu" from the production list - DRAFT requests only. */
   addItem: async (
     id: string,
     payload: ProductionRequestLinePayload,
@@ -67,10 +69,25 @@ export const productionRequestApi = {
     await client.delete(`/production-requests/${id}`);
   },
 
-  getShortages: async (locationId?: string): Promise<Shortage[]> => {
-    const res = await client.get<Envelope<Shortage[]>>('/production-requests/shortages', {
-      params: locationId ? { locationId } : undefined,
-    });
+  /** B-5: record goods the workshop delivered. The only way workshop goods enter stock. */
+  receive: async (
+    id: string,
+    payload: ReceiveProductionPayload,
+  ): Promise<ProductionRequest & { stockMovementId: string }> => {
+    const res = await client.post<Envelope<ProductionRequest & { stockMovementId: string }>>(
+      `/production-requests/${id}/receive`,
+      payload,
+    );
     return res.data.data;
+  },
+
+  /** B-4: what has to be made, worked out when read. */
+  getProductionList: async (params?: ProductionListQuery): Promise<ProductionListPage> => {
+    const res = await client.get<ProductionListPage>('/production-list', { params });
+    return {
+      data: res.data.data,
+      pagination: res.data.pagination,
+      summary: res.data.summary,
+    };
   },
 };
