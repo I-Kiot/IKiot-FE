@@ -108,6 +108,12 @@ export const REMITTANCE_STATUS_LABELS: Record<RemittanceStatus, string> = {
 
 export type CollectionMethod = "CASH" | "BANK_TRANSFER_QR" | "NONE";
 
+export const COLLECTION_METHOD_LABELS: Record<CollectionMethod, string> = {
+  CASH: "Tiền mặt",
+  BANK_TRANSFER_QR: "Chuyển khoản QR",
+  NONE: "Không phải thu (đã cọc đủ)",
+};
+
 export type OrderLineType = "PRODUCT" | "COMBO" | "COMBO_COMPONENT" | "SERVICE";
 export type OrderChannel = "MANUAL" | "SHOPEE";
 export type FulfillmentType = "TAKEAWAY" | "STORE_PICKUP" | "HOME_DELIVERY";
@@ -124,6 +130,14 @@ export type OrderPaymentStatus =
   | "PAID"
   | "PARTIALLY_REFUNDED"
   | "REFUNDED";
+
+export const ORDER_PAYMENT_STATUS_LABELS: Record<OrderPaymentStatus, string> = {
+  UNPAID: "Chưa thanh toán",
+  PARTIALLY_PAID: "Đã cọc",
+  PAID: "Đã thanh toán đủ",
+  PARTIALLY_REFUNDED: "Hoàn tiền một phần",
+  REFUNDED: "Đã hoàn tiền",
+};
 
 export type ProductionRequestStatus =
   | "DRAFT"
@@ -183,8 +197,20 @@ export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
 };
 
 export type CarrierType = "INTERNAL" | "EXTERNAL";
+
+export const CARRIER_TYPE_LABELS: Record<CarrierType, string> = {
+  INTERNAL: "Shipper / thợ của shop",
+  EXTERNAL: "Đơn vị vận chuyển",
+};
+
+export const ORDER_CHANNEL_LABELS: Record<OrderChannel, string> = {
+  MANUAL: "Tạo tay",
+  SHOPEE: "Shopee",
+};
+
 /** Contract §5. "Restocked / recorded as damaged" is per line (`condition`), not a status. */
 export type OrderReturnStatus = "REQUESTED" | "INSPECTING" | "COMPLETED" | "CANCELLED";
+
 export type OrderReturnReason = "CUSTOMER_RETURN" | "DELIVERY_FAILED";
 export type ReturnCondition = "GOOD" | "DAMAGED";
 

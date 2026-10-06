@@ -66,6 +66,32 @@ export function stockDisplay(status: StockCheckStatus): BadgeDisplay {
   };
 }
 
+/** The order's worst line (what the list calls stockSummary); null when no line has a stockCheck. */
+export function worstStock(
+  lines: { stockCheck: { status: StockCheckStatus } | null }[],
+): StockCheckStatus | null {
+  const present = new Set(lines.map((line) => line.stockCheck?.status).filter(Boolean));
+  return (["OUT", "PARTIAL", "ENOUGH"] as const).find((status) => present.has(status)) ?? null;
+}
+
+/** A combo line, then its components (`depth: 1`) under it; plain lines as they come. */
+export function orderedLines<T extends { id: string; parentItemId: string | null }>(
+  items: T[],
+): { line: T; depth: number }[] {
+  const children = new Map<string, T[]>();
+  for (const line of items) {
+    if (line.parentItemId) {
+      children.set(line.parentItemId, [...(children.get(line.parentItemId) ?? []), line]);
+    }
+  }
+  return items
+    .filter((line) => !line.parentItemId)
+    .flatMap((line) => [
+      { line, depth: 0 },
+      ...(children.get(line.id) ?? []).map((child) => ({ line: child, depth: 1 })),
+    ]);
+}
+
 export const formatVND = (value: number): string =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
 
