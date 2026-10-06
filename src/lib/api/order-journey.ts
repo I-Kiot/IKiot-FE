@@ -5,6 +5,7 @@ import client from '@/lib/api/client';
 import type {
   ConfirmOrderPayload,
   CreateOrderJourneyPayload,
+  HandOverReadyOrder,
   OrderDetail,
   OrderItemCustomization,
   OrderJourneyQuery,
@@ -12,6 +13,7 @@ import type {
   PackableOrder,
   PackResult,
   Paginated,
+  Shipment,
   UpdateDraftOrderPayload,
 } from '@/types/order-flow';
 
@@ -85,6 +87,23 @@ export const orderJourneyApi = {
   pack: async (id: string, note?: string): Promise<PackResult> => {
     const res = await client.post<Envelope<PackResult>>(
       `/orders/${id}/pack`,
+      note ? { note } : {},
+    );
+    return res.data.data;
+  },
+
+  /** Một trang đơn PACKED (đã đóng gói, chờ giao cho vận chuyển) trong phạm vi chi nhánh của người gọi. */
+  listHandOverReady: async (page: number, limit: number): Promise<Paginated<HandOverReadyOrder>> => {
+    const res = await client.get<Paginated<HandOverReadyOrder>>('/orders', {
+      params: { status: 'PACKED', page, limit },
+    });
+    return { data: res.data.data, pagination: res.data.pagination };
+  },
+
+  /** PICKED_UP → SHIPPING (C-2): trừ tồn kho đúng phần đã khoá lúc đóng gói. Trả về lần giao của đơn. */
+  ship: async (id: string, note?: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(
+      `/orders/${id}/ship`,
       note ? { note } : {},
     );
     return res.data.data;
