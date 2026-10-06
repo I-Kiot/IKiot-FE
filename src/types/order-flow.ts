@@ -156,9 +156,27 @@ export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
 };
 
 export type CarrierType = "INTERNAL" | "EXTERNAL";
-export type OrderReturnStatus = "PENDING" | "INSPECTED" | "CANCELLED";
+/** Contract §5. "Restocked / recorded as damaged" is per line (`condition`), not a status. */
+export type OrderReturnStatus = "REQUESTED" | "INSPECTING" | "COMPLETED" | "CANCELLED";
 export type OrderReturnReason = "CUSTOMER_RETURN" | "DELIVERY_FAILED";
 export type ReturnCondition = "GOOD" | "DAMAGED";
+
+export const ORDER_RETURN_STATUS_LABELS: Record<OrderReturnStatus, string> = {
+  REQUESTED: "Yêu cầu hoàn",
+  INSPECTING: "Đang kiểm tra hàng hoàn",
+  COMPLETED: "Hoàn tất xử lý",
+  CANCELLED: "Đã huỷ",
+};
+
+export const ORDER_RETURN_REASON_LABELS: Record<OrderReturnReason, string> = {
+  CUSTOMER_RETURN: "Khách trả hàng",
+  DELIVERY_FAILED: "Giao thất bại",
+};
+
+export const RETURN_CONDITION_LABELS: Record<ReturnCondition, string> = {
+  GOOD: "Nguyên vẹn",
+  DAMAGED: "Hỏng",
+};
 export type SupplierType = "GOODS" | "WORKSHOP";
 export type ImportSource = "SUPPLIER" | "WORKSHOP";
 
@@ -601,9 +619,14 @@ export interface OrderReturn {
   order: { id: string; code: string | null; customerName: string; assigneeId: string | null };
   shipmentId: string | null;
   note: string | null;
+  /** The new order a customer placed to buy the goods again (GĐ2 – 3B). */
+  replacementOrder: { id: string; code: string | null } | null;
   createdBy: UserRef | null;
+  receivedBy: UserRef | null;
+  receivedAt: string | null;
   inspectedBy: UserRef | null;
   inspectedAt: string | null;
+  completedAt: string | null;
   createdAt: string;
   items: OrderReturnLine[];
 }

@@ -26,6 +26,12 @@ export const orderReturnApi = {
     return res.data.data;
   },
 
+  /** REQUESTED → INSPECTING: the goods are back at the shop. */
+  receive: async (id: string): Promise<OrderReturn> => {
+    const res = await client.post<Envelope<OrderReturn>>(`/order-returns/${id}/receive`, {});
+    return res.data.data;
+  },
+
   inspect: async (id: string, payload: InspectOrderReturnPayload): Promise<OrderReturn> => {
     const res = await client.post<Envelope<OrderReturn>>(`/order-returns/${id}/inspect`, payload);
     return res.data.data;
