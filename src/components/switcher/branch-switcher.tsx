@@ -80,6 +80,11 @@ export function BranchSwitcher() {
     handleAssignManagerSuccess,
   } = useBranchSwitcher();
 
+  // D-4: the warehouses a location can name as its damaged-goods warehouse.
+  const damagedWarehouses = dbWarehouses
+    .filter((w) => w.isSellable === false)
+    .map((w) => ({ id: w.id, name: w.name }));
+
   if (loading || !activeItem) {
     return (
       <SidebarMenu>
@@ -366,6 +371,7 @@ export function BranchSwitcher() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleCreateBranch}
+        damagedWarehouses={damagedWarehouses}
       />
 
       {/* Dialog for editing a branch */}
@@ -374,6 +380,7 @@ export function BranchSwitcher() {
         onOpenChange={setIsEditBranchDialogOpen}
         onSubmit={handleEditBranch}
         title="Cập nhật chi nhánh"
+        damagedWarehouses={damagedWarehouses}
         defaultValues={
           editingBranch
             ? {
@@ -382,6 +389,7 @@ export function BranchSwitcher() {
                 address: editingBranch.address || "",
                 phoneNumber: editingBranch.phoneNumber[0] || "",
                 email: editingBranch.email || "",
+                damagedLocationId: editingBranch.damagedLocationId || "",
               }
             : undefined
         }
@@ -402,6 +410,7 @@ export function BranchSwitcher() {
         open={isWarehouseDialogOpen}
         onOpenChange={setIsWarehouseDialogOpen}
         onSubmit={handleCreateWarehouse}
+        damagedWarehouses={damagedWarehouses}
       />
 
       {/* Dialog for editing a warehouse */}
@@ -410,12 +419,19 @@ export function BranchSwitcher() {
         onOpenChange={setIsEditWarehouseDialogOpen}
         onSubmit={handleEditWarehouse}
         title="Cập nhật kho hàng"
+        damagedWarehouses={damagedWarehouses.filter(
+          (w) => w.id !== editingWarehouse?.id,
+        )}
         defaultValues={
           editingWarehouse
             ? {
                 name: editingWarehouse.name,
                 status: editingWarehouse.status,
                 address: editingWarehouse.address || "",
+                phoneNumber: editingWarehouse.phoneNumber?.[0] || "",
+                email: editingWarehouse.email || "",
+                isSellable: editingWarehouse.isSellable ?? true,
+                damagedLocationId: editingWarehouse.damagedLocationId || "",
               }
             : undefined
         }

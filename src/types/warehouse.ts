@@ -5,6 +5,12 @@ export interface Warehouse {
   name: string;
   address?: string;
   status: WarehouseStatus;
+  phoneNumber?: string[];
+  email?: string | null;
+  /** D-4: `false` marks a damaged-goods warehouse - it takes defective / damaged returns and is never sold from. */
+  isSellable?: boolean;
+  /** D-4: where this warehouse's own damaged goods go (another non-sellable warehouse). */
+  damagedLocationId?: string | null;
   /** Who runs this location. Appointed through `PATCH /:id/manager`, not by holding a
    *  particular role - the rewrite moved that from `User.role` onto the location itself. */
   managerId?: string | null;
@@ -41,6 +47,9 @@ export interface WarehouseCreatePayload {
   phoneNumber: string[];
   address?: string;
   email?: string;
+  /** D-4: `false` makes this a damaged-goods warehouse. Defaults to true server-side. */
+  isSellable?: boolean;
+  damagedLocationId?: string | null;
 }
 
 export interface WarehouseUpdatePayload {
@@ -49,4 +58,6 @@ export interface WarehouseUpdatePayload {
   address?: string;
   email?: string;
   status?: WarehouseStatus;
+  isSellable?: boolean;
+  damagedLocationId?: string | null;
 }

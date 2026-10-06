@@ -14,12 +14,18 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import {
+  DamagedLocationField,
+  type DamagedLocationOption,
+} from "./damaged-location-field"
 import {
   Select,
   SelectContent,
@@ -53,6 +59,8 @@ const warehouseFormSchema = z.object({
     .email({ message: "Email không hợp lệ." })
     .optional()
     .or(z.literal("")),
+  isSellable: z.boolean(),
+  damagedLocationId: z.string(),
 })
 
 export type WarehouseFormValues = z.infer<typeof warehouseFormSchema>
@@ -63,6 +71,8 @@ interface WarehouseFormDialogProps {
   onSubmit: (values: WarehouseFormValues) => void
   defaultValues?: Partial<WarehouseFormValues>
   title?: string
+  /** Non-sellable warehouses to pick a default damaged-goods warehouse from. */
+  damagedWarehouses?: DamagedLocationOption[]
 }
 
 export function WarehouseFormDialog({
@@ -71,6 +81,7 @@ export function WarehouseFormDialog({
   onSubmit,
   defaultValues,
   title,
+  damagedWarehouses = [],
 }: WarehouseFormDialogProps) {
   const form = useForm<WarehouseFormValues>({
     resolver: zodResolver(warehouseFormSchema),
@@ -80,6 +91,8 @@ export function WarehouseFormDialog({
       address: "",
       phoneNumber: "",
       email: "",
+      isSellable: true,
+      damagedLocationId: "",
       ...defaultValues,
     },
   })
@@ -92,6 +105,8 @@ export function WarehouseFormDialog({
         address: "",
         phoneNumber: "",
         email: "",
+        isSellable: true,
+        damagedLocationId: "",
         ...defaultValues,
       })
     }
@@ -188,6 +203,31 @@ export function WarehouseFormDialog({
                   <FormMessage />
                 </FormItem>
               )}
+            />
+            <FormField
+              control={form.control}
+              name="isSellable"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between gap-3 rounded-md border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel>Kho hàng hỏng</FormLabel>
+                    <FormDescription>
+                      Bật nếu kho này chỉ chứa hàng lỗi / hàng hoàn bị hỏng. Hàng trong kho không được bán.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={!field.value}
+                      onCheckedChange={(damaged) => field.onChange(!damaged)}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <DamagedLocationField
+              control={form.control}
+              name="damagedLocationId"
+              options={damagedWarehouses}
             />
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

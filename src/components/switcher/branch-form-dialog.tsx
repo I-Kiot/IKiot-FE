@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
+  DamagedLocationField,
+  type DamagedLocationOption,
+} from "./damaged-location-field"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -47,6 +51,7 @@ const branchFormSchema = z.object({
   email: z.string().email({
     message: "Email không hợp lệ.",
   }).optional().or(z.literal("")),
+  damagedLocationId: z.string(),
 })
 
 export type BranchFormValues = z.infer<typeof branchFormSchema>
@@ -57,6 +62,8 @@ interface BranchFormDialogProps {
   onSubmit: (values: BranchFormValues) => void
   defaultValues?: Partial<BranchFormValues>
   title?: string
+  /** Non-sellable warehouses to pick a default damaged-goods warehouse from. */
+  damagedWarehouses?: DamagedLocationOption[]
 }
 
 export function BranchFormDialog({
@@ -65,6 +72,7 @@ export function BranchFormDialog({
   onSubmit,
   defaultValues,
   title,
+  damagedWarehouses = [],
 }: BranchFormDialogProps) {
   const form = useForm<BranchFormValues>({
     resolver: zodResolver(branchFormSchema),
@@ -74,6 +82,7 @@ export function BranchFormDialog({
       address: "",
       phoneNumber: "",
       email: "",
+      damagedLocationId: "",
       ...defaultValues,
     },
   })
@@ -86,6 +95,7 @@ export function BranchFormDialog({
         address: "",
         phoneNumber: "",
         email: "",
+        damagedLocationId: "",
         ...defaultValues,
       })
     }
@@ -182,6 +192,11 @@ export function BranchFormDialog({
                   <FormMessage />
                 </FormItem>
               )}
+            />
+            <DamagedLocationField
+              control={form.control}
+              name="damagedLocationId"
+              options={damagedWarehouses}
             />
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
