@@ -7,6 +7,8 @@ export interface Branch {
   address?: string;
   email?: string;
   status: BranchStatus;
+  /** Where this branch's orders ship from by default; the branch itself when empty. */
+  defaultFulfillmentLocationId?: string | null;
   /** D-4: where this branch's damaged / defective goods go (a non-sellable warehouse). */
   damagedLocationId?: string | null;
   /** Who runs this location. Appointed through `PATCH /:id/manager`, not by holding a

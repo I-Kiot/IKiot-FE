@@ -390,25 +390,27 @@ export interface CreateOrderJourneyPayload {
   branchId: string;
   customerId?: string;
   customer?: { name: string; phone?: string; address?: string };
-  /** Required unless `asDraft`. */
-  assigneeId?: string;
-  fulfillmentType: FulfillmentType;
+  /** Required: the person in charge is picked on the form (ORDER_ASSIGNEE_REQUIRED / _INVALID). */
+  assigneeId: string;
+  /** The journey's two kinds only; TAKEAWAY is the till's. */
+  fulfillmentType: "STORE_PICKUP" | "HOME_DELIVERY";
+  priority?: OrderPriority;
   items: CreateOrderLinePayload[];
   shippingFee?: number;
   discountType?: "ORDER";
   discountValue?: number;
   appliedPromotions?: { promotionId: string }[];
-  depositRequired?: number;
+  /** Money taken now. `value` is đồng for AMOUNT, a percentage (0 < value ≤ 100) for PERCENT. */
+  deposit?: { type: "AMOUNT" | "PERCENT"; value: number; method: "CASH" | "BANK_TRANSFER" };
   recipientName?: string;
   recipientPhone?: string;
   deliveryAddress?: string;
   requestedDeliveryDate?: string;
   note?: string;
-  asDraft?: boolean;
-  payment?: { method: "CASH" | "BANK_TRANSFER" | "SEPAY"; customerPay?: number };
 }
 
-export type UpdateDraftOrderPayload = Omit<CreateOrderJourneyPayload, "asDraft">;
+/** `PATCH /orders/:id` (A-8) takes the same fields as create. */
+export type UpdateDraftOrderPayload = CreateOrderJourneyPayload;
 
 export interface ConfirmOrderPayload {
   assigneeId?: string;
