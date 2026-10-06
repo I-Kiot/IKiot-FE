@@ -165,12 +165,12 @@ export type FulfillmentStatus =
   | "CANCELLED";
 
 export const FULFILLMENT_STATUS_LABELS: Record<FulfillmentStatus, string> = {
-  PENDING: "Chờ lấy hàng",
+  PENDING: "Chờ xử lý lấy hàng",
   PICKING: "Đang lấy hàng",
-  PICKED: "Đã lấy hàng",
+  PICKED: "Đã lấy đủ hàng",
   PACKING: "Đang đóng gói",
-  PACKED: "Đã đóng gói",
-  HANDED_OVER: "Đã bàn giao",
+  PACKED: "Đã đóng gói xong",
+  HANDED_OVER: "Đã bàn giao vận chuyển",
   EXCEPTION: "Có sự cố",
   CANCELLED: "Đã huỷ",
 };
@@ -186,13 +186,13 @@ export type ShipmentStatus =
   | "CANCELLED";
 
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
-  CREATED: "Mới tạo",
-  PICKED_UP: "Đã lấy hàng",
+  CREATED: "Đã tạo vận đơn",
+  PICKED_UP: "DVVC đã nhận hàng",
   IN_TRANSIT: "Đang vận chuyển",
-  OUT_FOR_DELIVERY: "Đang giao",
-  DELIVERED: "Đã giao",
-  FAILED: "Giao thất bại",
-  RETURNED: "Đã hoàn",
+  OUT_FOR_DELIVERY: "Đang giao đến người nhận",
+  DELIVERED: "Đã giao đến người nhận",
+  FAILED: "Giao hàng thất bại",
+  RETURNED: "Đã hoàn hàng",
   CANCELLED: "Đã huỷ",
 };
 
