@@ -33,13 +33,13 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** `asDraft: true` saves a quote; otherwise the order is created and confirmed at once. */
+  /** A manual order is born CONFIRMED (contract §2, A-2); there is no draft. */
   create: async (payload: CreateOrderJourneyPayload): Promise<OrderDetail> => {
     const res = await client.post<Envelope<OrderDetail>>('/orders', payload);
     return res.data.data;
   },
 
-  /** DRAFT only. */
+  /** Before the order ships (A-8). */
   updateDraft: async (id: string, payload: UpdateDraftOrderPayload): Promise<OrderDetail> => {
     const res = await client.patch<Envelope<OrderDetail>>(`/orders/${id}`, payload);
     return res.data.data;
