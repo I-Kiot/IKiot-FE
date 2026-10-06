@@ -116,6 +116,8 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
       sort: listQuery.sort,
       assigneeId: listQuery.mineOnly ? getSessionUserId() : undefined,
       branchId: scope?.locationType === "BRANCH" ? scope.locationId : undefined,
+      // Till sales share the route but are not part of the journey (contract §2).
+      excludePos: true,
     };
   }, [listQuery, locationKey]);
 

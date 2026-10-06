@@ -373,6 +373,8 @@ export interface OrderJourneyQuery extends PageQuery {
   from?: string;
   to?: string;
   sort?: OrderSort;
+  /** Leave out the till's sales (`TAKEAWAY`). POS lists through the same `GET /orders`, so the backend only drops them when asked - every journey screen sends `true`. */
+  excludePos?: boolean;
 }
 
 export interface CreateOrderLinePayload {
