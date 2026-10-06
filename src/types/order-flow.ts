@@ -427,12 +427,22 @@ export interface ProductionRequestLine {
   productItemId: string;
   sku: string | null;
   productName: string;
+  imageUrl: string | null;
   quantity: number;
   receivedQuantity: number;
   note: string | null;
+  /** The order line the piece is made for - always set for a custom piece. */
   orderItem: { id: string; orderId: string; orderCode: string | null; isCustom: boolean } | null;
 }
 
+/** One receipt against a request: the WORKSHOP import it wrote (`/stock-movements`). */
+export interface ProductionReceipt {
+  stockMovementId: string;
+  receivedAt: string | null;
+  receivedBy: PersonRef | null;
+}
+
+/** `GET /production-requests/:id` (contract §3, BE track B). People come with a nested `profile`. */
 export interface ProductionRequest {
   id: string;
   code: string;
@@ -442,18 +452,23 @@ export interface ProductionRequest {
   expectedReadyDate: string | null;
   sentAt: string | null;
   note: string | null;
-  createdBy: UserRef | null;
-  statusUpdatedBy: UserRef | null;
+  /** COMPLETED with a line never fully delivered: closed short by hand. */
+  closedShort: boolean;
+  createdBy: PersonRef | null;
+  statusUpdatedBy: PersonRef | null;
   statusUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
   items: ProductionRequestLine[];
+  receipts: ProductionReceipt[];
 }
 
 export interface ProductionRequestQuery extends PageQuery {
   status?: ProductionRequestStatus;
   supplierId?: string;
   locationId?: string;
+  /** Requests with a line for this SKU. */
+  productItemId?: string;
 }
 
 export interface ProductionRequestLinePayload {
@@ -466,26 +481,87 @@ export interface ProductionRequestLinePayload {
 export interface CreateProductionRequestPayload {
   supplierId: string;
   locationId: string;
+  /** `YYYY-MM-DD`. */
   expectedReadyDate?: string;
   note?: string;
   items: ProductionRequestLinePayload[];
 }
 
+/** SENT = the workshop has been called; CANCELLED only before anything arrived; COMPLETED by hand = close a partly delivered request short (`note` required). */
 export interface UpdateProductionRequestStatusPayload {
   status: "SENT" | "COMPLETED" | "CANCELLED";
   note?: string;
 }
 
-export interface Shortage {
-  locationId: string;
-  locationName: string;
+/** `POST /production-requests/:id/receive` (B-5): what arrived this time. Good units open a lot at the request's location; defects go to its damaged-goods location. */
+export interface ReceiveProductionPayload {
+  items: {
+    productionRequestItemId: string;
+    /** Arrived this time, defects included. */
+    receivedQuantity: number;
+    defectQuantity?: number;
+    /** The workshop's price per unit; blank = the SKU's cost price. */
+    unitCost?: number;
+  }[];
+  /** Defaults to the receiving location's damaged-goods location. */
+  defectLocationId?: string;
+  note?: string;
+}
+
+/** One row of the production list (`GET /production-list`): a (location, SKU), worked out when read. */
+export interface ProductionListRow {
+  key: string;
+  location: (LocationRef & { type: "BRANCH" | "WAREHOUSE" }) | null;
   productItemId: string;
   sku: string | null;
   productName: string;
-  available: number;
-  waitingQuantity: number;
+  variantLabel: string | null;
+  isCustom: boolean;
+  /** The order line a custom row is made for. */
+  customOrderItemId: string | null;
+  customization: OrderItemCustomization | null;
+  stock: number;
+  demandQuantity: number;
+  /** Sent to the workshop, not yet delivered. */
   onOrderQuantity: number;
+  /** On a draft request, not yet sent. */
+  draftQuantity: number;
+  /** Still short and not ordered at all. */
   shortQuantity: number;
+  orders: {
+    orderId: string;
+    orderCode: string;
+    orderItemId: string;
+    quantity: number;
+    priority: OrderPriority;
+    requestedDeliveryDate: string | null;
+    assignee: PersonRef | null;
+    status: OrderStatus;
+  }[];
+  requests: {
+    id: string;
+    code: string;
+    status: ProductionRequestStatus;
+    supplierName: string;
+    quantity: number;
+    receivedQuantity: number;
+    expectedReadyDate: string | null;
+  }[];
+}
+
+export interface ProductionListQuery extends PageQuery {
+  locationId?: string;
+  /** One SKU - where a shortage notification links to. */
+  productItemId?: string;
+  /** Only rows still short after stock and every open request. */
+  onlyShort?: boolean;
+  /** Only rows with a request still open. */
+  hasOpenRequest?: boolean;
+}
+
+/** The list is paged like every list, plus how many rows need ordering whatever the filter. */
+export interface ProductionListPage extends Paginated<ProductionListRow> {
+  summary: { shortRows: number };
 }
 
 // ─── Fulfillment & delivery (track C) ───────────────────────────────────────

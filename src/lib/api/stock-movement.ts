@@ -62,6 +62,7 @@ type ApiSupplier = {
   id: string;
   supplierName?: string;
   name?: string;
+  type?: "GOODS" | "WORKSHOP";
 };
 
 type ApiLocation = {
@@ -226,6 +227,7 @@ async function fetchSupplierOptions(): Promise<StockMovementSupplierOption[]> {
   return asArray<ApiSupplier>(response.data?.data).map((supplier) => ({
     id: supplier.id,
     name: supplier.supplierName ?? supplier.name ?? supplier.id,
+    type: supplier.type,
   }));
 }
 

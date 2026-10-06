@@ -19,6 +19,7 @@ export const supplierFormSchema = z.object({
     }),
   address: z.string().optional(),
   creditLimit: z.number().min(0, 'Hạn mức tín dụng không được âm'),
+  type: z.enum(['GOODS', 'WORKSHOP']),
 })
 
 export type SupplierFormValues = z.infer<typeof supplierFormSchema>
