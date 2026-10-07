@@ -197,7 +197,7 @@ export function ReceiveProductionDialog({ request, open, onOpenChange, onReceive
           </Table>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           {anyDefect && (
             <div className="grid gap-2">
               <Label>Kho nhận hàng lỗi</Label>

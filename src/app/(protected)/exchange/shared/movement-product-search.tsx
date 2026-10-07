@@ -13,6 +13,9 @@ import type { StockMovementProductItemOption } from "@/types/stock-movement";
 
 export type MovementProductSearchScope = "catalog" | "list";
 
+/** Stable default: a fresh `[]` per render re-fires the search effect, which sets state, which renders again. */
+const NO_POOL: StockMovementProductItemOption[] = [];
+
 type MovementProductSearchProps = {
   usedIds: Set<string>;
   onPick: (item: StockMovementProductItemOption) => void;
@@ -34,7 +37,7 @@ export function MovementProductSearch({
   usedIds,
   onPick,
   searchScope = "catalog",
-  poolProducts = [],
+  poolProducts = NO_POOL,
   placeholder,
   disabled = false,
   className,

@@ -54,7 +54,7 @@ export default function ShipmentsPage() {
       </Tabs>
 
       <HandOverDialog
-        key={handOverOrder?.id ?? "none"}
+        key={`hand-over-${handOverOrder?.id ?? "none"}`}
         order={handOverOrder}
         onClose={() => setHandOverOrder(null)}
         onNeedsReload={() => {
@@ -63,7 +63,7 @@ export default function ShipmentsPage() {
         }}
       />
       <ShipmentDetailSheet
-        key={openShipmentId ?? "none"}
+        key={`shipment-${openShipmentId ?? "none"}`}
         shipmentId={openShipmentId}
         reloadKey={reloadKey}
         onClose={() => setOpenShipmentId(null)}

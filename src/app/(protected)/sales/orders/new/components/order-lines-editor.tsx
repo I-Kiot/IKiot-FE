@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { productApi } from "@/lib/api/product";
 import type { LocationType } from "@/types/location";
 import type { OrderItemCustomization } from "@/types/order-flow";
@@ -55,7 +56,6 @@ interface OrderLinesEditorProps {
   allowCustomization?: boolean;
 }
 
-const toNumber = (raw: string) => Math.max(0, Number(raw) || 0);
 
 /** Product search + the lines of the order. Stock is shown per line and never blocks (contract §2: an order is taken even when the goods are not on the shelf). */
 export function OrderLinesEditor({
@@ -263,13 +263,11 @@ export function OrderLinesEditor({
                       />
                     </TableCell>
                     <TableCell>
-                      <Input
-                        type="number"
-                        min={0}
+                      <MoneyInput
                         className="text-right"
                         aria-label={`Đơn giá ${line.name}`}
                         value={line.unitPrice}
-                        onChange={(event) => patch(line.key, { unitPrice: toNumber(event.target.value) })}
+                        onChange={(unitPrice) => patch(line.key, { unitPrice })}
                       />
                       {line.unitPrice !== line.retailPrice && (
                         <div className="mt-1 text-right text-xs text-muted-foreground">
@@ -278,15 +276,11 @@ export function OrderLinesEditor({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Input
-                        type="number"
-                        min={0}
+                      <MoneyInput
                         className="text-right"
                         aria-label={`Giảm giá ${line.name}`}
                         value={line.discountAmount}
-                        onChange={(event) =>
-                          patch(line.key, { discountAmount: toNumber(event.target.value) })
-                        }
+                        onChange={(discountAmount) => patch(line.key, { discountAmount })}
                       />
                     </TableCell>
                     <TableCell className="text-right font-medium">{formatVND(lineTotal(line))}</TableCell>

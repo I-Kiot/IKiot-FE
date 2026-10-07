@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -440,24 +441,20 @@ export function CreateOrderForm() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="shipping-fee">Phí giao hàng</Label>
-                <Input
+                <MoneyInput
                   id="shipping-fee"
-                  type="number"
-                  min={0}
                   className="text-right"
                   value={shippingFee}
-                  onChange={(event) => setShippingFee(toNumber(event.target.value))}
+                  onChange={setShippingFee}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="order-discount">Giảm giá cả đơn</Label>
-                <Input
+                <MoneyInput
                   id="order-discount"
-                  type="number"
-                  min={0}
                   className="text-right"
                   value={orderDiscount}
-                  onChange={(event) => setOrderDiscount(toNumber(event.target.value))}
+                  onChange={setOrderDiscount}
                 />
               </div>
             </div>
@@ -475,15 +472,25 @@ export function CreateOrderForm() {
                     <SelectItem value="PERCENT">Theo %</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input
-                  type="number"
-                  min={0}
-                  className="text-right"
-                  aria-label="Giá trị tiền cọc"
-                  disabled={depositType === "NONE"}
-                  value={depositType === "NONE" ? 0 : depositValue}
-                  onChange={(event) => setDepositValue(toNumber(event.target.value))}
-                />
+                {depositType === "AMOUNT" ? (
+                  <MoneyInput
+                    className="text-right"
+                    aria-label="Giá trị tiền cọc"
+                    value={depositValue}
+                    onChange={setDepositValue}
+                  />
+                ) : (
+                  // Theo % là một con số 0-100, không phải tiền: không chèn dấu chấm ngăn cách.
+                  <Input
+                    type="number"
+                    min={0}
+                    className="text-right"
+                    aria-label="Giá trị tiền cọc"
+                    disabled={depositType === "NONE"}
+                    value={depositType === "NONE" ? 0 : depositValue}
+                    onChange={(event) => setDepositValue(toNumber(event.target.value))}
+                  />
+                )}
               </div>
               {depositType !== "NONE" && (
                 <Select value={depositMethod} onValueChange={(v) => setDepositMethod(v as DepositMethod)}>

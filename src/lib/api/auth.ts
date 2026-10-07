@@ -4,6 +4,7 @@ import { firebaseApp } from "../firebase";
 import { LoginInput, SignupInput } from "../validation";
 import { clearCachedUser, clearTokens, getRefreshToken } from "../auth";
 import type { User } from "../auth";
+import type { LocationRef } from "@/types/location";
 import { resetSocket } from "../socket";
 
 /**
@@ -155,28 +156,44 @@ interface ApiSessionUser {
   systemRole?: string;
   /** The tenant-defined role relation - an object, not the account kind. */
   role?: { id?: string; name?: string } | null;
+  /** The posting (`AuthService`'s `SESSION_USER_INCLUDE`); null for an owner or admin. */
+  location?: LocationRef | null;
   [key: string]: unknown;
+}
+
+// Tách nơi làm việc của tài khoản thành branchId / warehouseId theo loại địa điểm.
+function postingIds(location: LocationRef | null | undefined): Pick<User, "branchId" | "warehouseId"> {
+  if (location?.type === "BRANCH") return { branchId: location.id, warehouseId: undefined };
+  if (location?.type === "WAREHOUSE") return { branchId: undefined, warehouseId: location.id };
+  return { branchId: undefined, warehouseId: undefined };
 }
 
 /**
  * Turns a backend user row into the session user the app reads.
  *
- * The one thing it does is put the **account kind** back on `role`. The backend calls that
- * `systemRole` and uses `role` for the tenant `Role` relation, so passing the row through
- * untouched left `user.role` holding `{id,name}` or `null` - which made every
- * `user.role === "TENANT_OWNER"` false and every `!==` true, blanking the sidebar and
- * inverting the negative guards. Same job `staff-mapper.ts` does for staff rows.
+ * It puts the **account kind** back on `role`. The backend calls that `systemRole` and uses
+ * `role` for the tenant `Role` relation, so passing the row through untouched left
+ * `user.role` holding `{id,name}` or `null` - which made every `user.role === "TENANT_OWNER"`
+ * false and every `!==` true, blanking the sidebar and inverting the negative guards. Same
+ * job `staff-mapper.ts` does for staff rows.
+ *
+ * It also derives `branchId` / `warehouseId` from `location`. Since the Location refactor the
+ * backend sends one `locationId` plus the `location` relation; reading the old two names
+ * straight off the row left both undefined, so every STAFF account's location switcher fell
+ * back to "the whole chain" (BUG-01 in docs/bug-log-test-hanh-trinh.md).
  */
 export function normalizeSessionUser(
   user: ApiSessionUser | undefined,
 ): User | undefined {
   if (!user) return undefined;
-  const { role, systemRole, ...rest } = user;
+  const { role, systemRole, location, ...rest } = user;
   return {
     ...(rest as unknown as User),
     systemRole,
     role: systemRole,
     roleName: role?.name,
+    location: location ?? null,
+    ...postingIds(location),
   };
 }
 

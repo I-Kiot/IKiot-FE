@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Banknote, Pencil, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
@@ -24,7 +25,9 @@ export function OrderActions({
   onChanged: (order: OrderDetail) => void;
 }) {
   const role = getSessionRole();
-  const [open, setOpen] = React.useState<Open>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const wantsRemittance = useSearchParams().get("confirmCash") === "1";
 
   const editable =
     order.fulfillmentType !== "TAKEAWAY" &&
@@ -35,10 +38,28 @@ export function OrderActions({
     order.collection?.cashRemittanceStatus === "PENDING" &&
     allows(role, "orders", "confirm_cash");
 
+  // The "Shipper đang giữ tiền mặt" notification links here with ?confirmCash=1: open the dialog
+  // straight away, once the order really is waiting for the cash.
+  const [open, setOpen] = React.useState<Open>(() =>
+    wantsRemittance && awaitingCash ? "remittance" : null,
+  );
+  // Already on this order when the notification is clicked: nothing remounts, so react to the
+  // flag appearing (adjusting state during render, not in an effect).
+  const [seenFlag, setSeenFlag] = React.useState(wantsRemittance);
+  if (wantsRemittance !== seenFlag) {
+    setSeenFlag(wantsRemittance);
+    if (wantsRemittance && awaitingCash) setOpen("remittance");
+  }
+
   if (!editable && !awaitingCash) return null;
 
-  const done = (updated: OrderDetail) => {
+  const close = () => {
     setOpen(null);
+    // Drop the flag so a reload or the next confirm does not reopen the dialog.
+    if (wantsRemittance) router.replace(pathname, { scroll: false });
+  };
+  const done = (updated: OrderDetail) => {
+    close();
     onChanged(updated);
   };
 
@@ -65,16 +86,16 @@ export function OrderActions({
 
       {/* Mounted only while open, so each opening starts from the order as it is now. */}
       {open === "edit" && (
-        <EditOrderDialog order={order} open onOpenChange={() => setOpen(null)} onSaved={done} />
+        <EditOrderDialog order={order} open onOpenChange={close} onSaved={done} />
       )}
       {open === "handling" && (
-        <OrderHandlingDialog order={order} open onOpenChange={() => setOpen(null)} onSaved={done} />
+        <OrderHandlingDialog order={order} open onOpenChange={close} onSaved={done} />
       )}
       {open === "remittance" && (
         <ConfirmRemittanceDialog
           order={order}
           open
-          onOpenChange={() => setOpen(null)}
+          onOpenChange={close}
           onConfirmed={done}
         />
       )}

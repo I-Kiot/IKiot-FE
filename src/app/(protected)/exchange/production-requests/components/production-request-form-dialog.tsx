@@ -93,7 +93,8 @@ export function ProductionRequestFormDialog({
     request?.location.id ?? initialLocationId ?? "",
   );
   const [expectedReadyDate, setExpectedReadyDate] = React.useState(
-    request?.expectedReadyDate ?? "",
+    // The API sends an ISO instant; <input type="date"> only takes the calendar day.
+    request?.expectedReadyDate?.slice(0, 10) ?? "",
   );
   const [note, setNote] = React.useState(request?.note ?? "");
   const [lines, setLines] = React.useState<DraftLine[]>(
@@ -244,7 +245,6 @@ export function ProductionRequestFormDialog({
               <TableHeader>
                 <TableRow>
                   <TableHead>Mặt hàng</TableHead>
-                  <TableHead>Cho đơn</TableHead>
                   <TableHead className="w-28 text-right">Số lượng</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
@@ -256,7 +256,6 @@ export function ProductionRequestFormDialog({
                       <div className="font-medium">{line.productName}</div>
                       <div className="text-xs text-muted-foreground">{line.sku ?? "-"}</div>
                     </TableCell>
-                    <TableCell className="text-sm">{line.orderCode ?? "-"}</TableCell>
                     <TableCell className="text-right">
                       <Input
                         type="number"
@@ -286,7 +285,7 @@ export function ProductionRequestFormDialog({
                 ))}
                 {lines.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
+                    <TableCell colSpan={3} className="py-6 text-center text-muted-foreground">
                       Chưa có mặt hàng nào
                     </TableCell>
                   </TableRow>
