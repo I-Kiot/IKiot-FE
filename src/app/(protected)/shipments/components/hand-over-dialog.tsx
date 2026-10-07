@@ -38,18 +38,21 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
   const [carrierName, setCarrierName] = useState("");
   const [trackingCode, setTrackingCode] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
-  const [scheduledSlot, setScheduledSlot] = useState("");
+  const [slotFrom, setSlotFrom] = useState("");
+  const [slotTo, setSlotTo] = useState("");
   const [requiresInstallation, setRequiresInstallation] = useState(false);
-  const [shippingCost, setShippingCost] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const internal = carrierType === "INTERNAL";
   const missingDriver = internal && !driverId;
+  // Khung giờ lưu dạng "HH:mm-HH:mm"; chỉ chọn một đầu thì lưu đầu đó.
+  const scheduledSlot = slotFrom && slotTo ? `${slotFrom}-${slotTo}` : slotFrom || slotTo;
+  const slotInvalid = !!slotFrom && !!slotTo && slotTo <= slotFrom;
 
   const submit = () => {
     // Khoá nút trong lúc gọi: bấm đúp không gửi hai request.
-    if (!order || submitting || missingDriver) return;
+    if (!order || submitting || missingDriver || slotInvalid) return;
     setSubmitting(true);
     shipmentApi
       .create({
@@ -59,9 +62,10 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
         carrierName: internal ? undefined : carrierName.trim() || undefined,
         trackingCode: internal ? undefined : trackingCode.trim() || undefined,
         scheduledDate: scheduledDate || undefined,
-        scheduledSlot: scheduledSlot.trim() || undefined,
+        scheduledSlot: scheduledSlot || undefined,
         requiresInstallation,
-        shippingCost: shippingCost === "" ? undefined : Number(shippingCost),
+        // Phí giao lấy từ đơn (mục Thanh toán), không nhập lại ở đây.
+        shippingCost: order.shippingFee > 0 ? order.shippingFee : undefined,
         note: note.trim() || undefined,
       })
       .then(() => {
@@ -125,33 +129,33 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
             </div>
             <div className="space-y-2">
               <Label>Khung giờ</Label>
-              <Input
-                value={scheduledSlot}
-                onChange={(e) => setScheduledSlot(e.target.value)}
-                placeholder="vd. 08:00-12:00"
-                maxLength={50}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  aria-label="Từ giờ"
+                  value={slotFrom}
+                  onChange={(e) => setSlotFrom(e.target.value)}
+                />
+                <span className="text-muted-foreground">-</span>
+                <Input
+                  type="time"
+                  aria-label="Đến giờ"
+                  value={slotTo}
+                  min={slotFrom || undefined}
+                  onChange={(e) => setSlotTo(e.target.value)}
+                />
+              </div>
+              {slotInvalid && <p className="text-xs text-destructive">Giờ kết thúc phải sau giờ bắt đầu</p>}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 items-end gap-3">
-            <div className="space-y-2">
-              <Label>Phí vận chuyển (shop trả)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={shippingCost}
-                onChange={(e) => setShippingCost(e.target.value)}
-              />
-            </div>
-            <Label className="flex h-9 items-center gap-2 font-normal">
-              <Checkbox
-                checked={requiresInstallation}
-                onCheckedChange={(checked) => setRequiresInstallation(checked === true)}
-              />
-              Cần lắp đặt tại nhà khách
-            </Label>
-          </div>
+          <Label className="flex items-center gap-2 font-normal">
+            <Checkbox
+              checked={requiresInstallation}
+              onCheckedChange={(checked) => setRequiresInstallation(checked === true)}
+            />
+            Cần lắp đặt tại nhà khách
+          </Label>
 
           <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Ghi chú" />
         </div>
@@ -160,7 +164,7 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             Huỷ
           </Button>
-          <Button onClick={submit} disabled={submitting || missingDriver}>
+          <Button onClick={submit} disabled={submitting || missingDriver || slotInvalid}>
             {submitting ? "Đang xử lý..." : "Xác nhận đã giao"}
           </Button>
         </DialogFooter>

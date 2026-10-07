@@ -110,16 +110,20 @@ type MoneyInputProps = {
   className?: string;
   disabled?: boolean;
   max?: number;
+  id?: string;
+  "aria-label"?: string;
 };
 
 export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
   function MoneyInput(
-    { value, onChange, placeholder = "0", className, disabled, max },
+    { value, onChange, placeholder = "0", className, disabled, max, id, "aria-label": ariaLabel },
     ref,
   ) {
     return (
       <Input
         ref={ref}
+        id={id}
+        aria-label={ariaLabel}
         type="text"
         inputMode="numeric"
         placeholder={placeholder}

@@ -209,7 +209,8 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
                     </Button>
                   </>
                 )}
-                {shipment.carrierType === "INTERNAL" && allowed.canChangeDriver && (
+                {/* Đang trên đường thì shipper đã cầm hàng: BE từ chối đổi, nên ẩn nút. */}
+                {shipment.carrierType === "INTERNAL" && allowed.canChangeDriver && !isOnTheRoad(shipment.status) && (
                   <Button variant="outline" onClick={() => setAction("changeDriver")}>
                     Đổi shipper
                   </Button>

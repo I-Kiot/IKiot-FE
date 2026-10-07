@@ -777,6 +777,8 @@ export interface HandOverReadyOrder {
   recipientName: string | null;
   recipientPhone: string | null;
   deliveryAddress: string | null;
+  /** Phí giao hàng đã nhập khi tạo đơn; ghi lại thành `shippingCost` của lần giao. */
+  shippingFee: number;
 }
 
 /** Cách shipper thu số còn phải thu khi giao: tiền mặt, chuyển khoản QR, hoặc không còn gì phải thu (đã cọc đủ). */
