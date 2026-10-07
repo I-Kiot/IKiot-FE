@@ -124,7 +124,7 @@ export function ProductionRequestDetailDialog({
 
   return (
     <>
-      <Dialog open={!editing && !receiving} onOpenChange={onOpenChange}>
+      <Dialog open={!editing && !receiving && !pending} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -223,32 +223,6 @@ export function ProductionRequestDetailDialog({
             </div>
           )}
 
-          {pending && (
-            <div className="space-y-2 rounded-md border bg-muted/40 p-3">
-              <div className="font-medium">{CONFIRM_COPY[pending].title}</div>
-              <p className="text-sm text-muted-foreground">{CONFIRM_COPY[pending].body}</p>
-              {(pending === "close" || pending === "cancel") && (
-                <div className="grid gap-1">
-                  <Label>Lý do{pending === "close" ? " *" : ""}</Label>
-                  <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
-                </div>
-              )}
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPending(null)} disabled={busy}>
-                  Thôi
-                </Button>
-                <Button
-                  size="sm"
-                  variant={pending === "delete" || pending === "cancel" ? "destructive" : "default"}
-                  disabled={busy || (pending === "close" && !reason.trim())}
-                  onClick={() => run(pending)}
-                >
-                  {CONFIRM_COPY[pending].cta}
-                </Button>
-              </div>
-            </div>
-          )}
-
           <DialogFooter className="flex-wrap gap-2 sm:justify-between">
             <div className="flex flex-wrap gap-2">
               {isDraft && canDelete && (
@@ -281,6 +255,53 @@ export function ProductionRequestDetailDialog({
               )}
             </div>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+      <Dialog
+        open={!!pending}
+        onOpenChange={(next) => {
+          if (!next && !busy) {
+            setPending(null);
+            setReason("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          {pending && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{CONFIRM_COPY[pending].title}</DialogTitle>
+                <DialogDescription>{CONFIRM_COPY[pending].body}</DialogDescription>
+              </DialogHeader>
+              {(pending === "close" || pending === "cancel") && (
+                <div className="grid gap-1">
+                  <Label>Lý do{pending === "close" ? " *" : ""}</Label>
+                  <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+                </div>
+              )}
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setPending(null);
+                    setReason("");
+                  }}
+                  disabled={busy}
+                >
+                  Thôi
+                </Button>
+                <Button
+                  variant={pending === "delete" || pending === "cancel" ? "destructive" : "default"}
+                  disabled={busy || (pending === "close" && !reason.trim())}
+                  onClick={() => run(pending)}
+                >
+                  {CONFIRM_COPY[pending].cta}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
