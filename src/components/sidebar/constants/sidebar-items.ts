@@ -17,6 +17,7 @@ import {
   Vault,
   PackageCheck,
   Truck,
+  Factory,
 } from "lucide-react";
 import { type NavItem } from "./types";
 
@@ -83,6 +84,7 @@ export const sidebarItems = {
       { title: "Điều chỉnh tồn kho", url: "/exchange/adjustments" },
       { title: "Danh sách cần sản xuất", url: "/exchange/production-list" },
       { title: "Yêu cầu sản xuất", url: "/exchange/production-requests" },
+      { title: "Phiếu xưởng giao", url: "/exchange/production-deliveries" },
     ],
   },
   // `giaoDichBranch` (a BRANCH_MANAGER-only variant without "Nhập hàng") lived here until
@@ -114,6 +116,12 @@ export const sidebarItems = {
     title: "Đơn giao của tôi",
     url: "/shipper",
     icon: Truck,
+  },
+  /** Nhân viên xưởng (2026-10-09): YCSX gửi cho xưởng mình + phiếu giao. Chỉ STAFF gắn xưởng. */
+  xuongCuaToi: {
+    title: "Xưởng của tôi",
+    url: "/workshop",
+    icon: Factory,
   },
 
   // CRM

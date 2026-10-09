@@ -90,6 +90,8 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       sidebarItems.donHang,
       sidebarItems.vanHanh,
       sidebarItems.donGiaoCuaToi,
+      // Chỉ STAFF: chủ shop không gắn xưởng nên màn này không có gì cho họ.
+      sidebarItems.xuongCuaToi,
       sidebarItems.ketTien,
     ]),
     crmGroup,

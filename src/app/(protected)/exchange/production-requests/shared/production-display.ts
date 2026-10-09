@@ -3,7 +3,9 @@
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
+  PRODUCTION_DELIVERY_STATUS_LABELS,
   PRODUCTION_REQUEST_STATUS_LABELS,
+  type ProductionDeliveryStatus,
   type ProductionRequest,
   type ProductionRequestStatus,
 } from "@/types/order-flow";
@@ -30,6 +32,32 @@ export function requestStatusDisplay(
     label: PRODUCTION_REQUEST_STATUS_LABELS[status] ?? status,
     variant: STATUS_VARIANT[status] ?? "outline",
   };
+}
+
+/** Phiếu giao xưởng: chờ nhận = warning, đã nhận = success, đã huỷ = error. */
+const DELIVERY_VARIANT: Record<ProductionDeliveryStatus, BadgeVariant> = {
+  PENDING: "warning",
+  RECEIVED: "success",
+  CANCELLED: "error",
+};
+
+export function deliveryStatusDisplay(status: ProductionDeliveryStatus): {
+  label: string;
+  variant: BadgeVariant;
+} {
+  return {
+    label: PRODUCTION_DELIVERY_STATUS_LABELS[status] ?? status,
+    variant: DELIVERY_VARIANT[status] ?? "outline",
+  };
+}
+
+/** Số còn giao được của một dòng: đặt − đã nhận − đang chờ nhận. */
+export function deliverableQuantity(line: {
+  quantity: number;
+  receivedQuantity: number;
+  pendingDeliveryQuantity: number;
+}): number {
+  return Math.max(0, line.quantity - line.receivedQuantity - line.pendingDeliveryQuantity);
 }
 
 /** Units ordered and received across the request's lines. */

@@ -49,7 +49,7 @@ export function PermissionPicker({
         group.resource.toLowerCase().includes(needle) ||
         (group.hint?.toLowerCase().includes(needle) ?? false) ||
         group.actions.some((action) =>
-          actionLabel(action).toLowerCase().includes(needle),
+          actionLabel(action, group.resource).toLowerCase().includes(needle),
         ),
     )
   }, [groups, query])
@@ -171,7 +171,7 @@ export function PermissionPicker({
                           }
                           disabled={disabled}
                         />
-                        <span className="truncate">{actionLabel(action)}</span>
+                        <span className="truncate">{actionLabel(action, group.resource)}</span>
                       </label>
                     )
                   })}

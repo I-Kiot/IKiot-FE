@@ -93,6 +93,7 @@ export function ProductionRequestDetailDialog({
   const status = requestStatusDisplay(request.status, request.closedShort);
   const progress = requestProgress(request);
   const hasReceipts = request.receipts.length > 0;
+  const pendingDeliveries = (request.deliveries ?? []).filter((d) => d.status === "PENDING");
   const isDraft = request.status === "DRAFT";
   const isOpen = request.status === "SENT" || request.status === "PARTIALLY_RECEIVED";
 
@@ -200,12 +201,30 @@ export function ProductionRequestDetailDialog({
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {line.receivedQuantity}/{line.quantity}
+                      {line.pendingDeliveryQuantity > 0 && (
+                        <div className="text-xs text-amber-600">
+                          xưởng báo giao {line.pendingDeliveryQuantity}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
+
+          {pendingDeliveries.length > 0 && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              Xưởng đã báo giao {pendingDeliveries.map((d) => d.code).join(", ")} - kiểm hàng và xác nhận ở{" "}
+              <Link
+                href={`/exchange/production-deliveries?status=PENDING`}
+                className="font-medium underline"
+              >
+                Phiếu xưởng giao
+              </Link>
+              . Còn phiếu chờ nhận thì chưa huỷ / đóng yêu cầu được.
+            </div>
+          )}
 
           {hasReceipts && (
             <div className="text-sm">

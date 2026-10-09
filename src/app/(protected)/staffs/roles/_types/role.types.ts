@@ -72,4 +72,12 @@ export const ACTION_LABELS: Record<string, string> = {
   refund: 'Hoàn tiền',
 }
 
-export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action
+/** Nhãn riêng khi cùng một action mang nghĩa khác theo resource (`deliver` của shipper vs của xưởng). */
+const RESOURCE_ACTION_LABELS: Record<string, string> = {
+  'production:deliver': 'Giao hàng sản xuất (nhân viên xưởng)',
+}
+
+export const actionLabel = (action: string, resource?: string) =>
+  (resource ? RESOURCE_ACTION_LABELS[`${resource}:${action}`] : undefined) ??
+  ACTION_LABELS[action] ??
+  action

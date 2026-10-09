@@ -31,6 +31,9 @@ export interface Staff {
   branchName: string;
   warehouseId?: string;
   warehouseName?: string;
+  /** Nhân viên xưởng: xưởng (NCC loại WORKSHOP) người này thuộc về. */
+  workshopId?: string;
+  workshopName?: string;
   firstName: string;
   lastName: string;
   fullName: string;
@@ -91,6 +94,7 @@ export interface CreateStaffPayload {
   roleId: string;
   branchId?: string | null;
   warehouseId?: string | null;
+  workshopId?: string | null;
   hireDate?: string;
   profile?: StaffProfilePayload;
   newPassword?: string;
@@ -106,6 +110,8 @@ export interface UpdateStaffPayload {
   /** Không gửi qua PATCH /staff - đổi manager dùng API gán Branch/Warehouse. */
   branchId?: string | null;
   warehouseId?: string | null;
+  /** `null` bỏ gắn xưởng; `undefined` giữ nguyên. */
+  workshopId?: string | null;
   hireDate?: string;
   profile?: StaffProfilePayload;
   accountNote?: string;

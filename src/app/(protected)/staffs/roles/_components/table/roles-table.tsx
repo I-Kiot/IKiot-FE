@@ -129,7 +129,7 @@ export function RolesTable() {
                             variant="outline"
                             title={role.permissions
                               .filter((grant) => grant.resource === resource)
-                              .map((grant) => actionLabel(grant.action))
+                              .map((grant) => actionLabel(grant.action, grant.resource))
                               .join(', ')}
                           >
                             {labelOf.get(resource) ?? resource} ({count})

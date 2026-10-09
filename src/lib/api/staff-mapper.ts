@@ -24,6 +24,8 @@ export interface ApiStaffUser {
   warehouseId?: string | { id: string; name?: string } | null;
   branch?: string | ApiBranchRef | null;
   warehouse?: string | { id: string; name?: string } | null;
+  workshopId?: string | null;
+  workshop?: { id: string; supplierName: string } | null;
   profile?: StaffProfile & {
     firstName?: string;
     lastName?: string;
@@ -130,6 +132,8 @@ export function mapStaffFromApi(user: ApiStaffUser): Staff {
     branchName: resolveRefName(branchRef),
     warehouseId: resolveRefId(warehouseRef) || undefined,
     warehouseName: warehouseRef ? resolveRefName(warehouseRef) : undefined,
+    workshopId: user.workshop?.id ?? user.workshopId ?? undefined,
+    workshopName: user.workshop?.supplierName,
     firstName,
     lastName,
     fullName: `${lastName} ${firstName}`.trim() || user.phoneNumber,
