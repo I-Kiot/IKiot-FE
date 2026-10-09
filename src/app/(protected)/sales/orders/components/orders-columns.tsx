@@ -3,7 +3,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { OrderListItem } from "@/types/order-flow";
+import { FULFILLMENT_TYPE_LABELS, type OrderListItem } from "@/types/order-flow";
 import {
   formatDateTime,
   formatPlainDate,
@@ -17,6 +17,7 @@ export const ORDERS_COLUMN_LABELS: Record<string, string> = {
   code: "Mã đơn",
   customer: "Khách hàng",
   status: "Trạng thái",
+  fulfillmentType: "Hình thức giao",
   priority: "Ưu tiên",
   stockSummary: "Tồn kho",
   assignee: "Phụ trách",
@@ -65,6 +66,15 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
       const display = orderStatusDisplay(row.original.status);
       return <Badge variant={display.variant}>{display.label}</Badge>;
     },
+  },
+  {
+    accessorKey: "fulfillmentType",
+    header: ORDERS_COLUMN_LABELS.fulfillmentType,
+    cell: ({ row }) => (
+      <span className="text-sm">
+        {FULFILLMENT_TYPE_LABELS[row.original.fulfillmentType] ?? row.original.fulfillmentType}
+      </span>
+    ),
   },
   {
     accessorKey: "priority",

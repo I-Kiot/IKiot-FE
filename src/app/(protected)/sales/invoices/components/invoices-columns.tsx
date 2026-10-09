@@ -8,6 +8,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import type { InvoiceKind, InvoiceStatus, InvoiceType } from "@/types/invoice";
+import { FULFILLMENT_TYPE_LABELS, type FulfillmentType } from "@/types/order-flow";
+
+export type { InvoiceKind };
 
 export interface InvoiceItem {
   productItemId: string;
@@ -30,17 +34,27 @@ export interface Invoice {
     gender: "MALE" | "FEMALE" | "OTHER";
     address: string;
   };
-  status: "COMPLETED" | "CANCELLED" | "RETURNED" | "PENDING";
+  status: InvoiceStatus;
+  type: InvoiceType;
+  /** Null until ISSUED; `invoiceCode` falls back to the order's code until then. */
+  invoiceNumber: string | null;
+  orderId: string;
+  orderCode: string;
+  /** COUNTER = sold over the till (TAKEAWAY); ORDERED = an order taken to be fulfilled later. */
+  kind: InvoiceKind;
+  fulfillmentType: FulfillmentType;
+  reason?: string | null;
   userId: string;
   seller: {
     name: string;
     email: string;
     role: string;
   };
-  paymentMethod: "CASH" | "BANK_TRANSFER" | "MOMO" | "VNPAY" | "SEPAY";
+  /** Null for an order that has not been paid at the till (taken by deposit + collected on delivery). */
+  paymentMethod: "CASH" | "BANK_TRANSFER" | "MOMO" | "VNPAY" | "SEPAY" | null;
   grandTotal: number;
-  customerPay: number;
-  change: number;
+  customerPay: number | null;
+  change: number | null;
   note: string;
   items: InvoiceItem[];
   discountType?: "ORDER" | "PROMOTION" | null;
@@ -60,40 +74,26 @@ const formatVND = (value: number) =>
     value,
   );
 
-export const STATUS_MAP: Record<
-  Invoice["status"],
-  {
-    label: string;
-    variant:
-      | "success"
-      | "warning"
-      | "error"
-      | "info"
-      | "default"
-      | "secondary"
-      | "destructive"
-      | "outline";
-  }
-> = {
-  COMPLETED: {
-    label: "Đã hoàn thành",
-    variant: "success",
-  },
-  CANCELLED: {
-    label: "Đã hủy",
-    variant: "error",
-  },
-  RETURNED: {
-    label: "Trả hàng",
-    variant: "info",
-  },
-  PENDING: {
-    label: "Đang chờ",
-    variant: "warning",
-  },
+export const INVOICE_KIND_LABELS: Record<InvoiceKind, string> = {
+  COUNTER: "Bán tại quầy",
+  ORDERED: "Đơn hàng đặt",
 };
 
-export const PAYMENT_METHOD_MAP: Record<Invoice["paymentMethod"], string> = {
+export const STATUS_MAP: Record<
+  InvoiceStatus,
+  { label: string; variant: "success" | "warning" | "error" | "info" }
+> = {
+  PENDING: { label: "Chờ xuất", variant: "warning" },
+  ISSUED: { label: "Đã xuất", variant: "success" },
+  CANCELLED: { label: "Đã hủy", variant: "error" },
+};
+
+export const INVOICE_TYPE_LABELS: Record<InvoiceType, string> = {
+  SALE: "Bán hàng",
+  ADJUSTMENT: "Điều chỉnh",
+};
+
+export const PAYMENT_METHOD_MAP: Record<NonNullable<Invoice["paymentMethod"]>, string> = {
   CASH: "Tiền mặt",
   BANK_TRANSFER: "Chuyển khoản",
   MOMO: "Ví MoMo",
@@ -162,11 +162,21 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
     header: ({ column }) => (
       <SortableHeader label="Mã hóa đơn" column={column} />
     ),
-    cell: ({ row }) => (
-      <span className="font-mono text-sm font-semibold text-primary">
-        {row.getValue("invoiceCode")}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const { status, type, invoiceNumber, orderCode } = row.original;
+      return (
+        <div className="flex flex-col">
+          <span className="flex items-center gap-1.5 font-mono text-sm font-semibold text-primary">
+            {row.getValue("invoiceCode")}
+            {type === "ADJUSTMENT" && <Badge variant="outline">{INVOICE_TYPE_LABELS.ADJUSTMENT}</Badge>}
+          </span>
+          {/* The order it belongs to, once the invoice has a number of its own. */}
+          {invoiceNumber && status !== "PENDING" && (
+            <span className="font-mono text-xs text-muted-foreground">Đơn {orderCode}</span>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "createdAt",
@@ -234,7 +244,16 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
     header: "Khách đã trả",
     cell: ({ row }) => (
       <span className="text-sm tabular-nums text-muted-foreground">
-        {formatVND(row.getValue("customerPay"))}
+        {row.original.customerPay === null ? "-" : formatVND(row.original.customerPay)}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "fulfillmentType",
+    header: "Hình thức giao",
+    cell: ({ row }) => (
+      <span className="text-sm">
+        {FULFILLMENT_TYPE_LABELS[row.original.fulfillmentType] ?? row.original.fulfillmentType}
       </span>
     ),
   },
@@ -243,7 +262,7 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
     header: "Thanh toán",
     cell: ({ row }) => {
       const method = row.getValue("paymentMethod") as Invoice["paymentMethod"];
-      return PAYMENT_METHOD_MAP[method] || "-";
+      return method ? PAYMENT_METHOD_MAP[method] || "-" : "-";
     },
     filterFn: (row, columnId, value: string) => {
       if (!value || value === "all") return true;
@@ -255,9 +274,10 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
     header: "Trạng thái",
     cell: ({ row }) => {
       const status = row.original.status;
-      const { label, variant } = STATUS_MAP[status];
+      // Keep the fallback: a status the contract adds later must not crash the whole list.
+      const { label, variant } = STATUS_MAP[status] ?? { label: String(status), variant: "info" as const };
       return (
-        <Badge variant={variant as "success" | "warning" | "error" | "info"}>
+        <Badge variant={variant}>
           {label}
         </Badge>
       );
