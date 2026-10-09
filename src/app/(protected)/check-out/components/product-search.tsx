@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Search, Sparkles, AlertCircle, ShoppingBag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useCheckoutProducts } from "../_hooks/use-checkout-products";
+import { useCheckoutProducts, type CheckoutLocation } from "../_hooks/use-checkout-products";
 import { productApi } from "@/lib/api/product";
 import type { ProductSearchParams } from "@/types/product";
 import { useAuthStore } from "@/store/auth-store";
@@ -31,6 +31,12 @@ interface Product {
 
 interface ProductSearchProps {
   onProductSelect: (product: Product) => void;
+  /** See `useCheckoutProducts`: undefined keeps the sale's own branch. */
+  location?: CheckoutLocation | null;
+  /** Manual orders are taken even when the goods are not on the shelf. */
+  allowOutOfStock?: boolean;
+  /** Hide the "Mua nhanh" chips. */
+  hideQuickItems?: boolean;
 }
 
 const formatVND = (value: number) =>
@@ -52,7 +58,12 @@ function resolveBranchId(): string {
   return "";
 }
 
-export function ProductSearch({ onProductSelect }: ProductSearchProps) {
+export function ProductSearch({
+  onProductSelect,
+  location,
+  allowOutOfStock = false,
+  hideQuickItems = false,
+}: ProductSearchProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -61,18 +72,28 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
   const [quickItems, setQuickItems] = useState<Product[]>([]);
 
   // Fetch search results from the custom API hook
-  const { products, loading } = useCheckoutProducts(query);
+  const { products, loading } = useCheckoutProducts(query, location);
   const locationKey = useAuthStore((state) => state.locationKey);
   // Whether `stock` is one branch's figure (a branch is selected / the account is posted
   // to one) or already the whole shop's - decides how the stock badge is worded.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const hasBranchScope = useMemo(() => Boolean(resolveBranchId()), [locationKey]);
+  const hasBranchScope = useMemo(
+    () => (location !== undefined ? Boolean(location) : Boolean(resolveBranchId())),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locationKey, location?.id],
+  );
 
   // Fetch initial active products for quick purchase on mount or location changes
   useEffect(() => {
+    if (hideQuickItems) return;
     const branchId = resolveBranchId();
     const params: ProductSearchParams = { limit: 10, status: "ACTIVE" };
-    if (branchId) {
+    if (location !== undefined) {
+      if (location) {
+        params.locationId = location.id;
+        params.locationType = location.type;
+      }
+    } else if (branchId) {
       params.locationId = branchId;
       params.locationType = "BRANCH";
     }
@@ -108,7 +129,7 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
       .catch((err) => {
         console.error("Failed to load quick items:", err);
       });
-  }, [locationKey]);
+  }, [locationKey, location?.id, location?.type, hideQuickItems]);
 
   // Map API products response to flat list of variants (ProductItems)
   const results = useMemo(() => {
@@ -171,7 +192,7 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
         p.sku.toLowerCase() === lowerQuery,
     );
 
-    if (exactMatch && exactMatch.status === "ACTIVE" && exactMatch.stock > 0) {
+    if (exactMatch && exactMatch.status === "ACTIVE" && (allowOutOfStock || exactMatch.stock > 0)) {
       onProductSelect(exactMatch);
       setQuery("");
       setIsOpen(false);
@@ -264,9 +285,9 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
                     className={cn(
                       "flex items-center gap-3 p-2.5 cursor-pointer text-base transition-colors duration-150",
                       isSelected && "bg-primary/10 dark:bg-primary/20",
-                      (isOutOfStock || isInactive) &&
+                      ((isOutOfStock && !allowOutOfStock) || isInactive) &&
                         "opacity-60 cursor-not-allowed",
-                      product.status === "ACTIVE" &&
+                      product.status === "ACTIVE" && (allowOutOfStock || !isOutOfStock) &&
                         !isOutOfStock &&
                         "hover:bg-muted/60",
                     )}
@@ -341,7 +362,7 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
       </div>
 
       {/* Quick Click Items Grid */}
-      {quickItems.length > 0 && (
+      {!hideQuickItems && quickItems.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold text-muted-foreground flex items-center gap-1">
             <Sparkles className="size-3 text-primary" /> Mua nhanh:
