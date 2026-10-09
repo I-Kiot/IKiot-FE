@@ -5,7 +5,14 @@ import { toast } from 'sonner'
 import { useAuthStore } from '@/store/auth-store'
 import { getCachedUser } from '@/lib/auth'
 
-export function useCheckoutProducts(searchQuery: string) {
+export type CheckoutLocation = { id: string; type: 'BRANCH' | 'WAREHOUSE' }
+
+/**
+ * `location` overrides where stock is read: undefined = the sale's own branch (account posting /
+ * switcher), null = no location, a value = that location (the manual-order form reads the
+ * branch/warehouse the order ships from).
+ */
+export function useCheckoutProducts(searchQuery: string, location?: CheckoutLocation | null) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const locationKey = useAuthStore((state) => state.locationKey)
@@ -34,7 +41,12 @@ export function useCheckoutProducts(searchQuery: string) {
       try {
         const branchId = resolveBranchId()
         const params: ProductSearchParams = { q: searchQuery, limit: 20, status: 'ACTIVE' }
-        if (branchId) {
+        if (location !== undefined) {
+          if (location) {
+            params.locationId = location.id
+            params.locationType = location.type
+          }
+        } else if (branchId) {
           params.locationId = branchId
           params.locationType = 'BRANCH'
         }
@@ -49,7 +61,7 @@ export function useCheckoutProducts(searchQuery: string) {
     }, 300)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [searchQuery, locationKey])
+  }, [searchQuery, locationKey, location?.id, location?.type])
 
   return { products, loading }
 }

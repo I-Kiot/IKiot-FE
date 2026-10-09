@@ -206,7 +206,7 @@ export function ReturnDetailDialog({
         <DialogFooter className="gap-2">
           {canReorder && (
             <Button variant="outline" asChild>
-              <Link href={`/sales/orders/new?replacementFor=${current.id}`}>Tạo đơn mua lại</Link>
+              <Link href={`/check-out?mode=order&replacementFor=${current.id}`}>Tạo đơn mua lại</Link>
             </Button>
           )}
           {isOpenReturn(current.status) && canCancel && (

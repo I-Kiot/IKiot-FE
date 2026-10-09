@@ -54,7 +54,7 @@ export function SiteHeader() {
                   className="flex items-center"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  Bán hàng
+                  Tạo đơn
                 </a>
               </Button>
             )}

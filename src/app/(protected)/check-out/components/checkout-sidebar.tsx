@@ -64,6 +64,8 @@ interface CheckoutSidebarProps {
   onOpenNewCustomerModal: () => void;
   onOpenPromotionPicker: () => void;
   onClearPromotion: () => void;
+  /** "Nơi bán" selector, drawn right under the payment block. */
+  branchSelect?: React.ReactNode;
 }
 
 const formatVND = (value: number) =>
@@ -95,6 +97,7 @@ export function CheckoutSidebar({
   onOpenNewCustomerModal,
   onOpenPromotionPicker,
   onClearPromotion,
+  branchSelect,
 }: CheckoutSidebarProps) {
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerResults, setCustomerResults] = useState<Customer[]>([]);
@@ -517,6 +520,8 @@ export function CheckoutSidebar({
               </span>
             </div>
           )}
+
+          {branchSelect}
 
           {/* Order Note */}
           <div className="space-y-1 pt-1">

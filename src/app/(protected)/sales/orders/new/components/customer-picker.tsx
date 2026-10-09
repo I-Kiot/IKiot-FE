@@ -69,13 +69,13 @@ export function CustomerPicker({ value, onChange, error }: CustomerPickerProps) 
 
       {value.mode === "existing" ? (
         value.customer ? (
-          <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-            <span>
-              <span className="font-medium">{value.customer.name}</span>
-              <span className="text-muted-foreground">
-                {value.customer.phone ? ` · ${value.customer.phone}` : ""}
-              </span>
-            </span>
+          <div className="flex items-center justify-between border bg-primary/5 border-primary/20 rounded-lg p-2.5">
+            <div>
+              <div className="font-bold text-lg text-foreground">{value.customer.name}</div>
+              <div className="text-sm text-muted-foreground font-mono mt-0.5">
+                {value.customer.phone ? `SĐT: ${value.customer.phone}` : "Chưa có SĐT"}
+              </div>
+            </div>
             <Button
               type="button"
               variant="ghost"
@@ -87,29 +87,32 @@ export function CustomerPicker({ value, onChange, error }: CustomerPickerProps) 
           </div>
         ) : (
           <div className="space-y-2">
+            <div className="relative">
             <Input
-              placeholder="Tìm theo tên hoặc số điện thoại"
+              className="h-11 w-full text-base"
+              placeholder="Tìm khách hàng (Tên, SĐT)..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               aria-label="Tìm khách hàng"
             />
-            {searching && <p className="text-sm text-muted-foreground">Đang tìm...</p>}
+            {searching && <p className="mt-1 text-sm text-muted-foreground">Đang tìm...</p>}
             {results.length > 0 && (
-              <ul className="divide-y rounded-md border">
+              <ul className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover text-popover-foreground border rounded-md shadow-lg max-h-[200px] overflow-y-auto divide-y">
                 {results.map((customer) => (
                   <li key={customer.id}>
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted"
+                      className="flex w-full flex-col gap-0.5 p-2 text-left hover:bg-muted"
                       onClick={() => onChange({ mode: "existing", customer })}
                     >
-                      <span className="font-medium">{customer.name}</span>
-                      <span className="text-muted-foreground">{customer.phone}</span>
+                      <span className="font-bold text-base text-foreground">{customer.name}</span>
+                      <span className="text-sm text-muted-foreground font-mono">{customer.phone}</span>
                     </button>
                   </li>
                 ))}
               </ul>
             )}
+            </div>
             {wanted && !searching && results.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 Không tìm thấy khách nào - chọn &ldquo;Khách mới&rdquo; để nhập tay.
@@ -125,6 +128,7 @@ export function CustomerPicker({ value, onChange, error }: CustomerPickerProps) 
               Tên khách hàng <span className="text-destructive">*</span>
             </Label>
             <Input
+              className="h-11 text-base"
               id="new-customer-name"
               value={value.name}
               onChange={(event) => onChange({ ...value, name: event.target.value })}
@@ -134,6 +138,7 @@ export function CustomerPicker({ value, onChange, error }: CustomerPickerProps) 
           <div className="space-y-1.5">
             <Label htmlFor="new-customer-phone">Số điện thoại</Label>
             <Input
+              className="h-11 text-base"
               id="new-customer-phone"
               inputMode="tel"
               value={value.phone}
@@ -143,6 +148,7 @@ export function CustomerPicker({ value, onChange, error }: CustomerPickerProps) 
           <div className="space-y-1.5">
             <Label htmlFor="new-customer-address">Địa chỉ</Label>
             <Input
+              className="h-11 text-base"
               id="new-customer-address"
               value={value.address}
               onChange={(event) => onChange({ ...value, address: event.target.value })}
