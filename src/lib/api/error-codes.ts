@@ -291,6 +291,16 @@ export const ERROR_MESSAGES = {
   PRODUCTION_REQUEST_CODE_UNAVAILABLE: "Không tạo được mã yêu cầu sản xuất, vui lòng thử lại",
   PRODUCTION_REQUEST_ITEM_NOT_PRODUCIBLE: "Chỉ đặt xưởng được sản phẩm thường (không phải combo hay dịch vụ)",
   PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Đóng yêu cầu khi chưa nhận đủ phải ghi lý do",
+  // Nhân viên xưởng & phiếu giao xưởng (2026-10-09)
+  WORKSHOP_STAFF_NOT_LINKED: "Tài khoản chưa được gắn với xưởng nào",
+  USER_WORKSHOP_INVALID: "Xưởng đã chọn không phải xưởng của cửa hàng",
+  PRODUCTION_DELIVERY_NOT_FOUND: "Không tìm thấy phiếu giao",
+  PRODUCTION_DELIVERY_STATUS_INVALID: "Phiếu giao không còn ở trạng thái chờ nhận, hoặc yêu cầu còn phiếu giao chờ nhận",
+  PRODUCTION_DELIVERY_EMPTY: "Phiếu giao phải có ít nhất một mặt hàng",
+  PRODUCTION_DELIVERY_QTY_EXCEEDS: "Số giao vượt số còn lại của yêu cầu (đã tính các phiếu đang chờ nhận)",
+  PRODUCTION_DELIVERY_RECEIVE_EXCEEDS: "Số nhận vượt số xưởng ghi trên phiếu giao",
+  PRODUCTION_DELIVERY_ITEM_MISMATCH: "Mặt hàng không có trên phiếu giao này",
+  PRODUCTION_DELIVERY_CODE_UNAVAILABLE: "Không tạo được mã phiếu giao, vui lòng thử lại",
   // Đóng hàng & giao hàng
   FULFILLMENT_ALREADY_EXISTS: "Đơn này đã có phiếu đóng hàng",
   FULFILLMENT_LOCATION_DENIED: "Bạn không thao tác được ở kho này",

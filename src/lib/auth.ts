@@ -82,6 +82,9 @@ export interface User {
    */
   branchId?: string;
   warehouseId?: string;
+  /** Nhân viên xưởng (2026-10-09): xưởng (NCC loại WORKSHOP) tài khoản này thuộc về; null với người khác. */
+  workshopId?: string | null;
+  workshop?: { id: string; supplierName: string } | null;
   profile?: {
     firstName?: string;
     lastName?: string;

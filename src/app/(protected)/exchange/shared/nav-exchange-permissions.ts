@@ -22,6 +22,8 @@ const EXCHANGE_NAV_PERMISSION = {
   productionRequests: ["production_requests", "read"],
   // Read off the same permission: the list is what production requests are raised from.
   productionList: ["production_requests", "read"],
+  // `GET /production-deliveries`; nhận / từ chối còn cần `production:receive` (kiểm trong màn).
+  productionDeliveries: ["production_requests", "read"],
 } as const;
 
 export type ExchangeNavItemKey = keyof typeof EXCHANGE_NAV_PERMISSION;
@@ -45,6 +47,7 @@ export function filterExchangeNavItems<
     "/exchange/adjustments": "adjustments",
     "/exchange/production-requests": "productionRequests",
     "/exchange/production-list": "productionList",
+    "/exchange/production-deliveries": "productionDeliveries",
   };
 
   return items.filter((item) => {

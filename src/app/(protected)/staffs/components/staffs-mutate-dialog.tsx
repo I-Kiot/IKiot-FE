@@ -223,6 +223,7 @@ const createFormSchema = z
     roleId: z.string().min(1, "Vai trò là bắt buộc"),
     branchId: z.string().optional(),
     warehouseId: z.string().optional(),
+    workshopId: z.string().optional(),
     hireDate: z.string().optional(),
     newPassword: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
     reEnterPassword: z.string().min(6, "Xác nhận mật khẩu tối thiểu 6 ký tự"),
@@ -245,6 +246,7 @@ const editFormSchema = z
     roleId: z.string().min(1, "Vai trò là bắt buộc"),
     branchId: z.string().optional(),
     warehouseId: z.string().optional(),
+    workshopId: z.string().optional(),
     hireDate: z.string().optional(),
     accountNote: z.string().optional(),
     ...profileFieldsSchema,
@@ -253,6 +255,10 @@ const editFormSchema = z
     applyStaffProfileValidation(data, ctx, { identificationRequired: false });
     applyWorkplaceValidation(data, ctx);
   });
+
+/** Giá trị Select cho "không thuộc xưởng" (Radix Select không nhận value rỗng). */
+const NO_WORKSHOP = "none";
+const workshopIdOf = (value?: string) => (value && value !== NO_WORKSHOP ? value : null);
 
 type CreateFormValues = z.infer<typeof createFormSchema>;
 type EditFormValues = z.infer<typeof editFormSchema>;
@@ -265,6 +271,7 @@ function getEditDefaults(staff: Staff): EditFormValues {
     roleId: staff.roleId ?? "",
     branchId: staff.branchId ?? "",
     warehouseId: staff.warehouseId ?? "",
+    workshopId: staff.workshopId ?? NO_WORKSHOP,
     hireDate: toDateInputValue(staff.joinedAt),
     identificationId:
       parseIdentificationId(staff.profile?.identificationId) ?? "",
@@ -284,6 +291,7 @@ const EMPTY_CREATE_VALUES: CreateFormValues = {
   roleId: "",
   branchId: "",
   warehouseId: "",
+  workshopId: NO_WORKSHOP,
   hireDate: "",
   identificationId: "",
   address: "",
@@ -315,8 +323,15 @@ export function StaffsMutateDialog({
   // `users:update` while editing, exactly as the two backend routes are gated.
   const canEditRoleWorkplace = canEditStaffRoleAndWorkplace(userRole, isEdit);
 
-  const { handleAdd, handleEdit, roleOptions, branchOptions, warehouseOptions, warehouseOptionsFailed } =
-    useStaffs();
+  const {
+    handleAdd,
+    handleEdit,
+    roleOptions,
+    branchOptions,
+    warehouseOptions,
+    warehouseOptionsFailed,
+    workshopOptions,
+  } = useStaffs();
 
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -448,6 +463,7 @@ export function StaffsMutateDialog({
           profilePayload.warehouseId = canAssignWarehouse
             ? editData.warehouseId || null
             : undefined;
+          profilePayload.workshopId = workshopIdOf(editData.workshopId);
         }
 
         await handleEdit(currentRow.id, profilePayload);
@@ -463,6 +479,7 @@ export function StaffsMutateDialog({
           warehouseId: canAssignWarehouse
             ? createData.warehouseId || null
             : undefined,
+          workshopId: workshopIdOf(createData.workshopId),
           hireDate: normalizeDateInput(createData.hireDate),
           profile: buildProfilePayload({
             ...createData,
@@ -722,6 +739,49 @@ export function StaffsMutateDialog({
                 />
               )}
             </div>
+
+            {(workshopOptions.length > 0 || (isEdit && currentRow?.workshopId)) && (
+              <FormField
+                control={form.control}
+                name="workshopId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Thuộc xưởng</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || NO_WORKSHOP}
+                      disabled={!canEditRoleWorkplace}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="cursor-pointer w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NO_WORKSHOP}>Không thuộc xưởng</SelectItem>
+                        {workshopOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                        {/* Xưởng hiện tại không còn trong danh sách (không xem được NCC) vẫn phải hiện tên. */}
+                        {currentRow?.workshopId &&
+                          !workshopOptions.some((o) => o.value === currentRow.workshopId) && (
+                            <SelectItem value={currentRow.workshopId}>
+                              {currentRow.workshopName ?? "Xưởng hiện tại"}
+                            </SelectItem>
+                          )}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Nhân viên xưởng xem yêu cầu sản xuất của xưởng ở mọi kho và tạo phiếu giao. Vai trò
+                      cần quyền &quot;Giao hàng sản xuất (nhân viên xưởng)&quot;.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

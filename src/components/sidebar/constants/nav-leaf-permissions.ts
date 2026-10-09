@@ -19,6 +19,8 @@ const LEAF_NAV_PERMISSION: Record<string, readonly [string, string]> = {
   // the `cash_flows` module, so `cash_flows:read` is the wrong gate for it.
   "/dashboard": ["reports", "read"],
   "/cashflow": ["reports", "read"],
+  // Nhân viên xưởng: mọi route /workshop/* cần `production:deliver` (và tài khoản gắn xưởng - trang tự báo nếu chưa).
+  "/workshop": ["production", "deliver"],
   // "/shipper" (Đơn giao của tôi) cố ý không có ở đây: shipper có thể là chủ shop hay người phụ
   // trách đơn - không cần `shipments:deliver` (chốt 2026-10-06) - và `GET /shipments/mine` chỉ trả
   // lần giao của chính người gọi, nên ai cũng mở được mà không thấy gì của người khác.

@@ -154,6 +154,15 @@ export const PRODUCTION_REQUEST_STATUS_LABELS: Record<ProductionRequestStatus, s
   CANCELLED: "Đã huỷ",
 };
 
+/** Phiếu giao của xưởng (2026-10-09): Chờ nhận → Đã nhận (nơi nhận xác nhận, tồn tăng) / Đã huỷ. */
+export type ProductionDeliveryStatus = "PENDING" | "RECEIVED" | "CANCELLED";
+
+export const PRODUCTION_DELIVERY_STATUS_LABELS: Record<ProductionDeliveryStatus, string> = {
+  PENDING: "Chờ nhận",
+  RECEIVED: "Đã nhận",
+  CANCELLED: "Đã huỷ",
+};
+
 export type FulfillmentStatus =
   | "PENDING"
   | "PICKING"
@@ -455,6 +464,8 @@ export interface ProductionRequestLine {
   imageUrl: string | null;
   quantity: number;
   receivedQuantity: number;
+  /** Xưởng đã báo giao (phiếu Chờ nhận) nhưng nơi nhận chưa đếm. */
+  pendingDeliveryQuantity: number;
   note: string | null;
   /** The order line the piece is made for - always set for a custom piece. */
   orderItem: { id: string; orderId: string; orderCode: string | null; isCustom: boolean } | null;
@@ -486,6 +497,84 @@ export interface ProductionRequest {
   updatedAt: string;
   items: ProductionRequestLine[];
   receipts: ProductionReceipt[];
+  /** Phiếu giao của xưởng theo YCSX này, cũ trước. */
+  deliveries: ProductionDeliverySummary[];
+}
+
+/** Một phiếu giao trong `ProductionRequest.deliveries`. */
+export interface ProductionDeliverySummary {
+  id: string;
+  code: string;
+  status: ProductionDeliveryStatus;
+  note: string | null;
+  createdAt: string;
+  createdBy: PersonRef | null;
+  receivedAt: string | null;
+  receivedBy: PersonRef | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  stockMovementId: string | null;
+  items: {
+    productionRequestItemId: string;
+    quantity: number;
+    receivedQuantity: number | null;
+    defectQuantity: number | null;
+  }[];
+}
+
+/** `GET /production-deliveries` · `/workshop/deliveries`: một phiếu giao kèm YCSX của nó. */
+export interface ProductionDelivery {
+  id: string;
+  code: string;
+  status: ProductionDeliveryStatus;
+  note: string | null;
+  productionRequestId: string;
+  productionRequest: {
+    id: string;
+    code: string;
+    status: ProductionRequestStatus;
+    expectedReadyDate: string | null;
+    supplier: { id: string; supplierName: string };
+    location: LocationRef & { type: "BRANCH" | "WAREHOUSE" };
+  };
+  createdAt: string;
+  createdBy: PersonRef;
+  receivedAt: string | null;
+  receivedBy: PersonRef | null;
+  cancelledAt: string | null;
+  cancelledBy: PersonRef | null;
+  cancelReason: string | null;
+  stockMovementId: string | null;
+  items: {
+    id: string;
+    productionRequestItemId: string;
+    productItemId: string;
+    sku: string | null;
+    productName: string;
+    /** Số xưởng ghi là giao. */
+    quantity: number;
+    receivedQuantity: number | null;
+    defectQuantity: number | null;
+    orderedQuantity: number;
+    /** Tổng đã nhận của dòng YCSX (mọi lần). */
+    totalReceivedQuantity: number;
+  }[];
+}
+
+export interface ProductionDeliveryQuery extends PageQuery {
+  status?: ProductionDeliveryStatus;
+  locationId?: string;
+  productionRequestId?: string;
+}
+
+export interface WorkshopProductionRequestQuery extends PageQuery {
+  status?: Exclude<ProductionRequestStatus, "DRAFT">;
+  locationId?: string;
+}
+
+export interface CreateProductionDeliveryPayload {
+  items: { productionRequestItemId: string; quantity: number }[];
+  note?: string;
 }
 
 export interface ProductionRequestQuery extends PageQuery {
