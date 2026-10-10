@@ -1,0 +1,43 @@
+name: Deploy Check
+
+# Rehearses Deploy Dev on every PR into dev, without touching the VPS: build the same image with
+# the dev build args, then start it and check it serves. Required by the dev branch protection.
+on:
+  pull_request:
+    branches: [dev]
+
+jobs:
+  deploy-check:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ikiot-fe:pr-${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Secrets are not passed to PRs from forks; placeholders are enough to compile.
+      - name: Build image (same Dockerfile as Deploy Dev)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://api-dev.ikiot.io.vn
+            NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY || 'ci' }}
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN || 'ci' }}
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID || 'ci' }}
+            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET || 'ci' }}
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID || 'ci' }}
+            NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID || 'ci' }}
+            NEXT_PUBLIC_FIREBASE_VAPID_KEY=${{ secrets.FIREBASE_VAPID_KEY || 'ci' }}
+            NEXT_PUBLIC_OTP_BYPASS=true
+
+      - name: Boot and check it serves
+        run: |
+          docker run -d --name web -p 3000:3000 $IMAGE
+          for i in $(seq 1 12); do
+            curl -fsS -o /dev/null http://localhost:3000 && exit 0
+            sleep 5
+          done
+          docker logs web
+          exit 1
