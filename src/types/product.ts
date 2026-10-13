@@ -66,6 +66,8 @@ export interface Product {
   name: string;
   status: ProductStatus;
   categoryName?: string;
+  /** Đặt xưởng sản xuất được; false = chỉ nhập từ NCC. */
+  isManufacturable?: boolean;
   images?: ProductImage[];
   items?: ProductItem[];
   // Tồn tại địa điểm đang xem. Khi danh sách không lọc địa điểm thì bằng
@@ -176,6 +178,7 @@ export interface ProductCreatePayload {
   brandId?: string | null;
   categoryId?: string | null;
   status: ProductStatus;
+  isManufacturable?: boolean;
   images?: ProductImage[];
   items: ProductItemCreatePayload[];
 }
@@ -185,5 +188,6 @@ export interface ProductUpdatePayload {
   brandId?: string | null;
   categoryId?: string | null;
   status?: ProductStatus;
+  isManufacturable?: boolean;
   images?: ProductImage[];
 }

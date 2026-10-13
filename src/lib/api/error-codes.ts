@@ -290,6 +290,7 @@ export const ERROR_MESSAGES = {
   PRODUCTION_REQUEST_RECEIVE_EMPTY: "Phải nhận ít nhất một dòng với số lượng lớn hơn 0",
   PRODUCTION_REQUEST_CODE_UNAVAILABLE: "Không tạo được mã yêu cầu sản xuất, vui lòng thử lại",
   PRODUCTION_REQUEST_ITEM_NOT_PRODUCIBLE: "Chỉ đặt xưởng được sản phẩm thường (không phải combo hay dịch vụ)",
+  PRODUCTION_REQUEST_ITEM_NOT_MANUFACTURABLE: "Mặt hàng này không sản xuất được, hãy tạo đơn nhập hàng từ nhà cung cấp",
   PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Đóng yêu cầu khi chưa nhận đủ phải ghi lý do",
   // Nhân viên xưởng & phiếu giao xưởng (2026-10-09)
   WORKSHOP_STAFF_NOT_LINKED: "Tài khoản chưa được gắn với xưởng nào",

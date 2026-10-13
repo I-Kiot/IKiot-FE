@@ -225,6 +225,7 @@ export function ProductionRequestFormDialog({
           <MovementProductSearch
             usedIds={usedIds}
             searchScope="catalog"
+            onlyManufacturable
             metaMode="skuOnly"
             placeholder="Thêm hàng: tìm theo tên, mã, SKU..."
             onPick={(item) =>

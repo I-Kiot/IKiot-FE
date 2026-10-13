@@ -272,7 +272,11 @@ export function ProductionListTable() {
                       {row.shortQuantity}
                     </TableCell>
                     <TableCell className="text-right">
-                      {canOrder && (
+                      {/* Hàng chỉ nhập từ NCC thì bổ sung bằng "Tạo đơn nhập hàng", không đặt xưởng */}
+                      {canOrder && !row.isManufacturable && (
+                        <span className="text-xs text-muted-foreground">Nhập từ NCC</span>
+                      )}
+                      {canOrder && row.isManufacturable && (
                         <Button
                           size="sm"
                           variant={row.shortQuantity > 0 ? "default" : "outline"}

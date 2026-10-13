@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Checkbox } from '@/components/ui/checkbox'
 import type { Product } from '@/types/product'
 import { productFormSchema, type ProductFormValues } from '../../_types/product.types'
 import { useProducts } from '../../_context/products-provider'
@@ -44,6 +45,7 @@ const EMPTY_VALUES: ProductFormValues = {
   brandId: null,
   categoryId: null,
   status: 'ACTIVE',
+  isManufacturable: false,
   images: [],
   itemImages: [],
   useParentNameForItem: true,
@@ -93,6 +95,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
         brandId: currentRow.brandId ?? null,
         categoryId: currentRow.categoryId ?? null,
         status: currentRow.status,
+        isManufacturable: currentRow.isManufacturable ?? false,
         images: currentRow.images ?? [],
         // Not used in edit mode (BE doesn't allow editing productName here),
         // but the schema requires a value.
@@ -320,6 +323,30 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Bật = đặt xưởng sản xuất được (Tạo yêu cầu sản xuất); tắt = chỉ nhập từ nhà cung cấp */}
+            <FormField
+              control={form.control}
+              name="isManufacturable"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-3">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                      className="mt-0.5 cursor-pointer"
+                    />
+                  </FormControl>
+                  <div className="space-y-1">
+                    <FormLabel className="cursor-pointer">Có thể sản xuất</FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Cho phép đặt xưởng làm mặt hàng này qua yêu cầu sản xuất. Tắt thì chỉ nhập
+                      từ nhà cung cấp.
+                    </p>
+                  </div>
                 </FormItem>
               )}
             />
