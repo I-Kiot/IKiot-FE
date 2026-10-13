@@ -40,6 +40,7 @@ export function useProductsMutations() {
         brandId: data.brandId ?? undefined,
         categoryId: data.categoryId ?? undefined,
         status: data.status,
+        isManufacturable: data.isManufacturable,
         images: data.images,
         items: [
           {
@@ -87,6 +88,7 @@ export function useProductsMutations() {
         brandId: data.brandId ?? undefined,
         categoryId: data.categoryId ?? undefined,
         status: data.status,
+        isManufacturable: data.isManufacturable,
         images: data.images,
       })
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...product } : p)))

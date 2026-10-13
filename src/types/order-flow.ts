@@ -630,6 +630,8 @@ export interface ProductionListRow {
   sku: string | null;
   productName: string;
   variantLabel: string | null;
+  /** false = chỉ nhập từ nhà cung cấp, không đặt xưởng được. */
+  isManufacturable: boolean;
   isCustom: boolean;
   /** The order line a custom row is made for. */
   customOrderItemId: string | null;

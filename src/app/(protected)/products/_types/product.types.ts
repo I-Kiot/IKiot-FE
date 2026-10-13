@@ -14,6 +14,8 @@ export const productFormSchema = z.object({
   brandId: z.string().optional().nullable(),
   categoryId: z.string().optional().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DISCONTINUED']),
+  // Có thể đặt xưởng sản xuất (YCSX); tắt = chỉ nhập từ nhà cung cấp.
+  isManufacturable: z.boolean(),
   images: z
     .array(
       z.object({
