@@ -23,16 +23,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DataTableEmpty } from '@/components/data-table/data-table-empty'
+import { DataTableLoading } from '@/components/data-table/data-table-loading'
+import { DataTablePagination } from '@/components/data-table/data-table-pagination'
 import { cn } from '@/lib/utils'
 import { usePromotions } from '../../_context/promotions-provider'
 import { promotionsColumns } from './promotions-columns'
 import { PromotionsToolbar } from './promotions-toolbar'
-import { PromotionsPagination } from './promotions-pagination'
 import { PromotionsExpandedPanel } from './promotions-expanded-panel'
-import { PromotionsEmpty } from '../promotions-empty'
 
 export function PromotionsTable() {
-  const { promotions, setSelectedIds, selectionVersion } = usePromotions()
+  const { promotions, isLoading, setSelectedIds, selectionVersion } = usePromotions()
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -78,6 +79,11 @@ export function PromotionsTable() {
     if (selectionVersion > 0) setRowSelection({})
   }, [selectionVersion])
 
+  const rows = table.getRowModel().rows
+  const columnCount = table.getVisibleLeafColumns().length
+  // Skeleton chỉ khi chưa có dữ liệu nào; lúc thêm/sửa/xoá (cũng bật isLoading) vẫn giữ các dòng cũ.
+  const showLoading = isLoading && promotions.length === 0
+
   return (
     <div className="space-y-4">
       <PromotionsToolbar table={table} />
@@ -98,8 +104,10 @@ export function PromotionsTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, index, rows) => (
+            {showLoading && <DataTableLoading columnCount={columnCount} />}
+            {!showLoading && rows.length === 0 && <DataTableEmpty columnCount={columnCount} />}
+            {!showLoading &&
+              rows.map((row, index) => (
                 <Fragment key={row.id}>
                   <TableRow
                     data-state={row.getIsSelected() ? 'selected' : undefined}
@@ -132,7 +140,7 @@ export function PromotionsTable() {
                     <TableCell colSpan={row.getVisibleCells().length} className="p-0">
                       <div
                         className={cn(
-                          'grid transition-[grid-template-rows] duration-300 ease-in-out',
+                          'sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out',
                           row.getIsExpanded() ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
                         )}
                       >
@@ -147,19 +155,23 @@ export function PromotionsTable() {
                     </TableCell>
                   </TableRow>
                 </Fragment>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={promotionsColumns.length}>
-                  <PromotionsEmpty />
-                </TableCell>
-              </TableRow>
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>
 
-      <PromotionsPagination table={table} />
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit="khuyến mãi"
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize)
+          table.setPageIndex(0)
+        }}
+      />
     </div>
   )
 }

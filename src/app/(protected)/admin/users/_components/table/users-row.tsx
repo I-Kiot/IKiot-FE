@@ -90,7 +90,7 @@ export function UsersRow({ tenant, onRefresh }: UsersRowProps) {
 
       <TableRow className={`hover:bg-transparent border-transparent ${isExpanded ? "border-b border-primary/20" : ""}`}>
         <TableCell colSpan={6} className="p-0">
-          <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+          <div className={`sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
             <div className="overflow-hidden">
               <UsersExpandedPanel
                 tenant={tenant}

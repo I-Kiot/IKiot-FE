@@ -21,6 +21,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { productionRequestApi } from "@/lib/api/production-request";
@@ -39,7 +42,7 @@ import {
 import { ProductionRequestDetailDialog } from "./production-request-detail-dialog";
 import { ProductionRequestFormDialog } from "./production-request-form-dialog";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
 /** B-6: the production-request list (`GET /production-requests`, contract §3). */
@@ -47,6 +50,8 @@ export function ProductionRequestsTable() {
   const canCreate = allows(getSessionRole(), "production_requests", "create");
 
   const [page, setPage] = React.useState(1);
+
+  const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
   const [status, setStatus] = React.useState<string>(ALL);
   const [search, setSearch] = React.useState("");
   const [term, setTerm] = React.useState("");
@@ -54,7 +59,7 @@ export function ProductionRequestsTable() {
   const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<ProductionRequest | null>(null);
   // Tagged with the query it answered: while the tag differs, a newer request is in flight.
-  const query = `${page}|${status}|${term}|${reloads}`;
+  const query = `${page}|${pageSize}|${status}|${term}|${reloads}`;
   const [loaded, setLoaded] = React.useState<{
     query: string;
     rows: ProductionRequest[];
@@ -77,7 +82,7 @@ export function ProductionRequestsTable() {
     productionRequestApi
       .getList({
         page,
-        limit: PAGE_SIZE,
+        limit: pageSize,
         ...(status !== ALL ? { status: status as ProductionRequestStatus } : {}),
         ...(term ? { search: term } : {}),
       })
@@ -92,9 +97,9 @@ export function ProductionRequestsTable() {
     return () => {
       stale = true;
     };
-  }, [page, status, term, query]);
+  }, [page, pageSize, status, term, query]);
 
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pages = Math.ceil(total / pageSize);
 
   const replaceRow = (updated: ProductionRequest) =>
     setLoaded((prev) =>
@@ -177,47 +182,25 @@ export function ProductionRequestsTable() {
                 </TableRow>
               );
             })}
-            {!loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  Chưa có yêu cầu sản xuất nào
-                </TableCell>
-              </TableRow>
-            )}
-            {loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  Đang tải...
-                </TableCell>
-              </TableRow>
-            )}
+            {!loading && rows.length === 0 && <DataTableEmpty columnCount={7} />}
+            {loading && rows.length === 0 && <DataTableLoading columnCount={7} />}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          {total} yêu cầu · trang {page}/{pages}
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || loading}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= pages || loading}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Sau
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={page}
+        pageCount={pages}
+        pageSize={pageSize}
+        total={total}
+        unit="yêu cầu"
+        disabled={loading}
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+      />
 
       {creating && (
         <ProductionRequestFormDialog

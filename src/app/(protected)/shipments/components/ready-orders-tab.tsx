@@ -84,7 +84,6 @@ export function ReadyOrdersTab({ reloadKey, canHandOver, onHandOver }: ReadyOrde
       onQueryChange={setQuery}
       columns={columns}
       unit="đơn"
-      emptyText="Không có đơn nào chờ giao"
       errorText="Không tải được danh sách đơn chờ giao - bấm Tải lại để thử lại"
     />
   );

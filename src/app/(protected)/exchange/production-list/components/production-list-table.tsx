@@ -25,6 +25,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { productionRequestApi } from "@/lib/api/production-request";
@@ -44,7 +47,7 @@ import {
 } from "@/app/(protected)/exchange/production-requests/shared/production-display";
 import { AddToRequestDialog } from "./add-to-request-dialog";
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 const ALL = "ALL";
 
 /** A custom row's agreed specs on one line ("181 × 90 cm · Gỗ óc chó · V-102"). */
@@ -74,13 +77,14 @@ export function ProductionListTable() {
   const [onlyShort, setOnlyShort] = React.useState(!params.get("productItemId"));
   const [hasOpenRequest, setHasOpenRequest] = React.useState(false);
   const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = React.useState("");
   const [term, setTerm] = React.useState("");
   const [reloads, setReloads] = React.useState(0);
   const [expanded, setExpanded] = React.useState<string | null>(null);
   const [adding, setAdding] = React.useState<ProductionListRow | null>(null);
 
-  const query = [page, locationId, productItemId, onlyShort, hasOpenRequest, term, reloads].join("|");
+  const query = [page, pageSize, locationId, productItemId, onlyShort, hasOpenRequest, term, reloads].join("|");
   const [loaded, setLoaded] = React.useState<{
     query: string;
     rows: ProductionListRow[];
@@ -111,7 +115,7 @@ export function ProductionListTable() {
     productionRequestApi
       .getProductionList({
         page,
-        limit: PAGE_SIZE,
+        limit: pageSize,
         ...(locationId !== ALL ? { locationId } : {}),
         ...(productItemId ? { productItemId } : {}),
         ...(term ? { search: term } : {}),
@@ -135,9 +139,9 @@ export function ProductionListTable() {
     return () => {
       stale = true;
     };
-  }, [page, locationId, productItemId, onlyShort, hasOpenRequest, term, query]);
+  }, [page, pageSize, locationId, productItemId, onlyShort, hasOpenRequest, term, query]);
 
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pages = Math.ceil(total / pageSize);
   const resetPage = () => setPage(1);
 
   return (
@@ -354,47 +358,25 @@ export function ProductionListTable() {
                 </React.Fragment>
               );
             })}
-            {!loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
-                  {onlyShort ? "Không có mặt hàng nào đang thiếu" : "Không có mặt hàng nào"}
-                </TableCell>
-              </TableRow>
-            )}
-            {loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
-                  Đang tải...
-                </TableCell>
-              </TableRow>
-            )}
+            {!loading && rows.length === 0 && <DataTableEmpty columnCount={9} />}
+            {loading && rows.length === 0 && <DataTableLoading columnCount={9} />}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          {total} dòng · trang {page}/{pages}
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || loading}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= pages || loading}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Sau
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={page}
+        pageCount={pages}
+        pageSize={pageSize}
+        total={total}
+        unit="dòng"
+        disabled={loading}
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+      />
 
       {adding && (
         <AddToRequestDialog

@@ -24,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -41,8 +40,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { invoiceApi } from "@/lib/api/invoice";
 import { INVOICE_STATUSES, type InvoiceDto } from "@/types/invoice";
@@ -259,6 +260,8 @@ export function InvoicesTable() {
   const statusFilter = table.getColumn("status")?.getFilterValue() as string;
   const paymentMethodFilter = table.getColumn("paymentMethod")?.getFilterValue() as string;
 
+  const columnCount = table.getVisibleLeafColumns().length;
+
   return (
     <div className="space-y-4">
       {/* Search + Filters + Actions */}
@@ -430,17 +433,11 @@ export function InvoicesTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, idx) => (
-                <TableRow key={idx}>
-                  {columns.map((col, cIdx) => (
-                    <TableCell key={cIdx}>
-                      <Skeleton className="h-5 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows?.length ? (
+            {loading && <DataTableLoading columnCount={columnCount} />}
+            {!loading && table.getRowModel().rows.length === 0 && (
+              <DataTableEmpty columnCount={columnCount} />
+            )}
+            {!loading && (
               table.getRowModel().rows.map((row, index, rows) => (
                 <Fragment key={row.id}>
                   {/* Master Data Row */}
@@ -485,7 +482,7 @@ export function InvoicesTable() {
                     >
                       <div
                         className={cn(
-                          "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                          "sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out",
                           row.getIsExpanded()
                             ? "grid-rows-[1fr]"
                             : "grid-rows-[0fr]",
@@ -503,73 +500,23 @@ export function InvoicesTable() {
                   </TableRow>
                 </Fragment>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  Không tìm thấy hóa đơn nào phù hợp.
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Pagination Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 text-xs font-medium">
-        <div className="flex items-center gap-2">
-          <Label className="text-muted-foreground">Hiển thị</Label>
-          <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => table.setPageSize(Number(value))}
-          >
-            <SelectTrigger className="w-18 h-8 cursor-pointer text-xs">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`} className="text-xs">
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="text-muted-foreground">
-          Đã chọn {table.getFilteredSelectedRowModel().rows.length} /{" "}
-          {table.getFilteredRowModel().rows.length} hóa đơn
-        </div>
-
-        <div className="flex items-center gap-4">
-          <span className="text-muted-foreground">
-            Trang{" "}
-            <strong className="text-foreground font-semibold">
-              {table.getState().pagination.pageIndex + 1} /{" "}
-              {table.getPageCount()}
-            </strong>
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="cursor-pointer h-8 px-2 text-xs"
-            >
-              Trước
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="cursor-pointer h-8 px-2 text-xs"
-            >
-              Tiếp
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit="hóa đơn"
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize);
+          table.setPageIndex(0);
+        }}
+      />
     </div>
   );
 }

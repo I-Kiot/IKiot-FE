@@ -14,11 +14,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DataTableEmpty } from '@/components/data-table/data-table-empty'
+import { DataTableLoading } from '@/components/data-table/data-table-loading'
 import { useRoles } from '../../_context/roles-provider'
 import { actionLabel } from '../../_types/role.types'
 
 /** Nhiều nhất bao nhiêu chip quyền hiện trên một dòng trước khi gộp thành "+N". */
 const PERMISSION_CHIP_LIMIT = 4
+
+const COLUMN_COUNT = 4
 
 export function RolesTable() {
   const { roles, catalog, isLoading, setOpen, setCurrentRow } = useRoles()
@@ -75,21 +79,9 @@ export function RolesTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && roles.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground py-10 text-center">
-                  Đang tải...
-                </TableCell>
-              </TableRow>
-            )}
+            {isLoading && roles.length === 0 && <DataTableLoading columnCount={COLUMN_COUNT} />}
 
-            {!isLoading && visible.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground py-10 text-center">
-                  Không có vai trò nào khớp &quot;{query}&quot;
-                </TableCell>
-              </TableRow>
-            )}
+            {!isLoading && visible.length === 0 && <DataTableEmpty columnCount={COLUMN_COUNT} />}
 
             {visible.map((role) => {
               // Gom theo tài nguyên: "Hàng hóa (4)" đọc được, còn 20 chip

@@ -22,6 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { getApiErrorBody } from "@/lib/api/error-codes";
@@ -36,7 +39,7 @@ import { CancelDeliveryDialog } from "../../production-requests/components/cance
 import { deliveryStatusDisplay, formatDateTime } from "../../production-requests/shared/production-display";
 import { ReceiveDeliveryDialog } from "./receive-delivery-dialog";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
 /** Phiếu xưởng giao (`GET /production-deliveries`): mặc định các phiếu chờ nhận ở nơi mình làm. */
@@ -46,13 +49,15 @@ export function ProductionDeliveriesTable() {
   const params = useSearchParams();
 
   const [page, setPage] = React.useState(1);
+
+  const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
   const [status, setStatus] = React.useState<string>(() => params.get("status") ?? "PENDING");
   const [search, setSearch] = React.useState("");
   const [term, setTerm] = React.useState("");
   const [reloads, setReloads] = React.useState(0);
   const [receiving, setReceiving] = React.useState<ProductionDelivery | null>(null);
   const [refusing, setRefusing] = React.useState<ProductionDelivery | null>(null);
-  const query = `${page}|${status}|${term}|${reloads}`;
+  const query = `${page}|${pageSize}|${status}|${term}|${reloads}`;
   const [loaded, setLoaded] = React.useState<{
     query: string;
     rows: ProductionDelivery[];
@@ -75,7 +80,7 @@ export function ProductionDeliveriesTable() {
     productionDeliveryApi
       .getList({
         page,
-        limit: PAGE_SIZE,
+        limit: pageSize,
         ...(status !== ALL ? { status: status as ProductionDeliveryStatus } : {}),
         ...(term ? { search: term } : {}),
       })
@@ -90,9 +95,9 @@ export function ProductionDeliveriesTable() {
     return () => {
       stale = true;
     };
-  }, [page, status, term, query]);
+  }, [page, pageSize, status, term, query]);
 
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pages = Math.ceil(total / pageSize);
   const reload = () => setReloads((n) => n + 1);
 
   async function refuse(reason: string) {
@@ -199,47 +204,25 @@ export function ProductionDeliveriesTable() {
                 </TableRow>
               );
             })}
-            {!loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                  Không có phiếu giao nào
-                </TableCell>
-              </TableRow>
-            )}
-            {loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                  Đang tải...
-                </TableCell>
-              </TableRow>
-            )}
+            {!loading && rows.length === 0 && <DataTableEmpty columnCount={8} />}
+            {loading && rows.length === 0 && <DataTableLoading columnCount={8} />}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          {total} phiếu · trang {page}/{pages}
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || loading}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= pages || loading}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Sau
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={page}
+        pageCount={pages}
+        pageSize={pageSize}
+        total={total}
+        unit="phiếu"
+        disabled={loading}
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+      />
 
       {receiving && (
         <ReceiveDeliveryDialog

@@ -20,7 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, RefreshCw, Wallet } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet } from 'lucide-react'
+import { DataTableEmpty } from '@/components/data-table/data-table-empty'
+import { DataTableLoading } from '@/components/data-table/data-table-loading'
+import { DataTablePagination } from '@/components/data-table/data-table-pagination'
 import { formatVND, PAYMENT_METHOD_LABELS } from '../dashboard/shared/format'
 import {
   useCashflow,
@@ -65,6 +68,8 @@ export default function CashflowPage() {
     setFlow,
     page,
     setPage,
+    pageSize,
+    setPageSize,
     refetch,
   } = useCashflow()
 
@@ -182,19 +187,9 @@ export default function CashflowPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    Đang tải…
-                  </TableCell>
-                </TableRow>
-              ) : rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    Chưa có giao dịch nào trong khoảng thời gian này
-                  </TableCell>
-                </TableRow>
-              ) : (
+              {isLoading && rows.length === 0 && <DataTableLoading columnCount={7} />}
+              {!isLoading && rows.length === 0 && <DataTableEmpty columnCount={7} />}
+              {rows.length > 0 && (
                 rows.map((tx) => {
                   const isIncome = tx.flowType === 'INCOME'
                   return (
@@ -249,33 +244,17 @@ export default function CashflowPage() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
       {pagination && pagination.total > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Trang {pagination.page}/{pagination.totalPages} · Tổng {pagination.total} giao dịch
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page - 1)}
-              disabled={page <= 1 || isLoading}
-            >
-              <ChevronLeft className="size-4" />
-              Trước
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page + 1)}
-              disabled={page >= pagination.totalPages || isLoading}
-            >
-              Sau
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        </div>
+        <DataTablePagination
+          page={page}
+          pageCount={pagination.totalPages}
+          pageSize={pageSize}
+          total={pagination.total}
+          unit="giao dịch"
+          disabled={isLoading}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       )}
     </div>
   )

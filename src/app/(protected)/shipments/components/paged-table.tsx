@@ -2,7 +2,7 @@
 "use client";
 
 // Bảng phân trang ở server dùng chung cho hai tab của màn Giao hàng: hook tải dữ liệu (`usePagedList`),
-// bảng TanStack `manualPagination` (`PagedTable`) và thanh phân trang – cùng cách màn Đóng hàng làm.
+// bảng TanStack `manualPagination` (`PagedTable`) và thanh phân trang dùng chung.
 
 import { useEffect, useState } from "react";
 import {
@@ -10,13 +10,12 @@ import {
   getCoreRowModel,
   type ColumnDef,
   type PaginationState,
-  type Table as TanstackTable,
   useReactTable,
 } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { cn } from "@/lib/utils";
 import type { Paginated } from "@/types/order-flow";
 
@@ -69,68 +68,6 @@ export function usePagedList<T, Q extends PageParams>(
   return state;
 }
 
-// ─── Thanh phân trang ───────────────────────────────────────────────────────
-
-/**
- * Cùng mẫu categories-pagination.tsx; khác ở chỗ phân trang ở server: dòng "Đã chọn x / y" thay bằng
- * tổng số BE trả về (TanStack chỉ thấy các dòng của trang hiện tại).
- */
-function Pagination<TData>({ table, total, unit }: { table: TanstackTable<TData>; total: number; unit: string }) {
-  return (
-    <div className="flex items-center justify-between space-x-2 py-4">
-      <div className="flex items-center space-x-2">
-        <Label className="text-sm font-medium">Hiển thị</Label>
-        <Select
-          value={`${table.getState().pagination.pageSize}`}
-          onValueChange={(value) => table.setPageSize(Number(value))}
-        >
-          <SelectTrigger className="w-20 cursor-pointer">
-            <SelectValue placeholder={table.getState().pagination.pageSize} />
-          </SelectTrigger>
-          <SelectContent side="top">
-            {[10, 20, 30, 50].map((pageSize) => (
-              <SelectItem key={pageSize} value={`${pageSize}`}>
-                {pageSize}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="hidden sm:block text-sm text-muted-foreground">
-        Tổng {total} {unit}
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <span className="hidden sm:block text-sm font-medium">
-          Trang{" "}
-          <strong>
-            {table.getState().pagination.pageIndex + 1} / {Math.max(table.getPageCount(), 1)}
-          </strong>
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-          className="cursor-pointer"
-        >
-          Trước
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-          className="cursor-pointer"
-        >
-          Tiếp
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Bảng ───────────────────────────────────────────────────────────────────
 
 interface PagedTableProps<T extends { id: string }, Q extends PageParams> {
@@ -140,17 +77,8 @@ interface PagedTableProps<T extends { id: string }, Q extends PageParams> {
   columns: ColumnDef<T>[];
   /** Đơn vị đếm ở thanh phân trang, vd. "đơn". */
   unit: string;
-  emptyText: string;
   errorText: string;
   onRowClick?: (row: T) => void;
-}
-
-/** Câu hiện thay cho các dòng khi chưa có gì để vẽ; `null` = vẽ các dòng. */
-function placeholderOf<T>(state: PagedState<T>, rowCount: number, emptyText: string, errorText: string) {
-  if (state.status === "loading") return "Đang tải...";
-  if (state.status === "error") return errorText;
-  if (rowCount === 0) return emptyText;
-  return null;
 }
 
 /** Bảng + thanh phân trang. Không tự tải dữ liệu – nơi gọi dùng `usePagedList`. */
@@ -160,7 +88,6 @@ export function PagedTable<T extends { id: string }, Q extends PageParams>({
   onQueryChange,
   columns,
   unit,
-  emptyText,
   errorText,
   onRowClick,
 }: PagedTableProps<T, Q>) {
@@ -186,7 +113,8 @@ export function PagedTable<T extends { id: string }, Q extends PageParams>({
     },
   });
 
-  const placeholder = placeholderOf(state, table.getRowModel().rows.length, emptyText, errorText);
+  const columnCount = columns.length;
+  const rows = table.getRowModel().rows;
 
   return (
     <div className="space-y-4">
@@ -204,14 +132,17 @@ export function PagedTable<T extends { id: string }, Q extends PageParams>({
             ))}
           </TableHeader>
           <TableBody>
-            {placeholder !== null ? (
+            {state.status === "loading" && <DataTableLoading columnCount={columnCount} />}
+            {state.status === "error" && (
               <TableRow>
-                <TableCell colSpan={columns.length} className="py-8 text-center text-muted-foreground">
-                  {placeholder}
+                <TableCell colSpan={columnCount} className="py-8 text-center text-muted-foreground">
+                  {errorText}
                 </TableCell>
               </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
+            )}
+            {state.status === "ready" && rows.length === 0 && <DataTableEmpty columnCount={columnCount} />}
+            {state.status === "ready" &&
+              rows.map((row) => (
                 <TableRow
                   key={row.id}
                   onClick={onRowClick ? () => onRowClick(row.original) : undefined}
@@ -221,14 +152,21 @@ export function PagedTable<T extends { id: string }, Q extends PageParams>({
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
                 </TableRow>
-              ))
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>
 
       {result && result.pagination.total > 0 && (
-        <Pagination table={table} total={result.pagination.total} unit={unit} />
+        <DataTablePagination
+          page={query.page}
+          pageCount={result.pagination.totalPages}
+          pageSize={query.limit}
+          total={result.pagination.total}
+          unit={unit}
+          onPageChange={(page) => onQueryChange({ ...query, page })}
+          onPageSizeChange={(limit) => onQueryChange({ ...query, page: 1, limit })}
+        />
       )}
     </div>
   );
