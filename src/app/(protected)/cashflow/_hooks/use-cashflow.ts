@@ -18,7 +18,7 @@ const RANGE_DAYS: Record<CashflowRange, number> = {
   '12m': 365,
 }
 
-const PAGE_SIZE = 15
+const DEFAULT_PAGE_SIZE = 15
 
 function toDateOnly(date: Date): string {
   return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
@@ -32,6 +32,7 @@ export function useCashflow() {
   const [flowType, setFlowTypeState] = useState<FlowTypeFilter>('ALL')
   const [flow, setFlowState] = useState<FlowPrefixFilter>('ALL')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSizeState] = useState(DEFAULT_PAGE_SIZE)
 
   const [summary, setSummary] = useState<Cashflow | null>(null)
   const [list, setList] = useState<CashflowList | null>(null)
@@ -50,6 +51,10 @@ export function useCashflow() {
   }, [])
   const setFlow = useCallback((value: FlowPrefixFilter) => {
     setFlowState(value)
+    setPage(1)
+  }, [])
+  const setPageSize = useCallback((value: number) => {
+    setPageSizeState(value)
     setPage(1)
   }, [])
 
@@ -74,7 +79,7 @@ export function useCashflow() {
           flowType: flowTypeParam,
           flow: flowParam,
           page,
-          limit: PAGE_SIZE,
+          limit: pageSize,
         }),
       ])
 
@@ -86,7 +91,7 @@ export function useCashflow() {
     } finally {
       setIsLoading(false)
     }
-  }, [range, flowType, flow, branchId, warehouseId, page])
+  }, [range, flowType, flow, branchId, warehouseId, page, pageSize])
 
   useEffect(() => {
     fetchAll()
@@ -104,7 +109,8 @@ export function useCashflow() {
     setFlow,
     page,
     setPage,
-    pageSize: PAGE_SIZE,
+    pageSize,
+    setPageSize,
     refetch: fetchAll,
   }
 }

@@ -9,7 +9,7 @@ import {
   getExpandedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Funnel, PackageSearch, RotateCcw, Search } from "lucide-react";
+import { Funnel, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -36,6 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { cn } from "@/lib/utils";
 import {
   ORDER_PRIORITIES,
@@ -72,20 +74,6 @@ const SORT_LABELS: Record<OrderSort, string> = {
   requestedDeliveryDate: "Hẹn giao sớm nhất",
   priority: "Ưu tiên cao nhất",
 };
-
-function OrdersEmpty({ filtered }: { filtered: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <PackageSearch className="mb-4 size-12 text-muted-foreground" />
-      <h3 className="mb-1 text-base font-semibold">Không có đơn hàng</h3>
-      <p className="text-sm text-muted-foreground">
-        {filtered
-          ? "Chưa có đơn nào phù hợp với bộ lọc hiện tại."
-          : "Chưa có đơn hàng nào."}
-      </p>
-    </div>
-  );
-}
 
 export function OrdersTable() {
   const {
@@ -131,8 +119,8 @@ export function OrdersTable() {
     listQuery.cashRemittanceStatus !== "all" ||
     listQuery.mineOnly;
 
-  const rangeStart = total === 0 ? 0 : (listQuery.page - 1) * listQuery.limit + 1;
-  const rangeEnd = Math.min(listQuery.page * listQuery.limit, total);
+
+  const columnCount = table.getVisibleLeafColumns().length;
 
   return (
     <div className="space-y-4">
@@ -303,17 +291,11 @@ export function OrdersTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {isInitialLoading ? (
-              Array.from({ length: 6 }).map((_, index) => (
-                <TableRow key={index}>
-                  {columns.map((_, cellIndex) => (
-                    <TableCell key={cellIndex}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows.length ? (
+            {isInitialLoading && <DataTableLoading columnCount={columnCount} />}
+            {!isInitialLoading && table.getRowModel().rows.length === 0 && (
+              <DataTableEmpty columnCount={columnCount} />
+            )}
+            {!isInitialLoading && (
               table.getRowModel().rows.map((row, index, rows) => (
                 <Fragment key={row.id}>
                   <TableRow
@@ -341,7 +323,7 @@ export function OrdersTable() {
                     <TableCell colSpan={row.getVisibleCells().length} className="p-0">
                       <div
                         className={cn(
-                          "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                          "sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out",
                           row.getIsExpanded() ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
                         )}
                       >
@@ -358,68 +340,21 @@ export function OrdersTable() {
                   </TableRow>
                 </Fragment>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length}>
-                  <OrdersEmpty filtered={isFiltered} />
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex items-center space-x-2">
-          <Label className="text-sm font-medium">Hiển thị</Label>
-          <Select
-            value={`${listQuery.limit}`}
-            onValueChange={(value) => updateQuery({ limit: Number(value) })}
-          >
-            <SelectTrigger className="w-20 cursor-pointer">
-              <SelectValue placeholder={listQuery.limit} />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="hidden text-sm text-muted-foreground sm:block">
-          {total === 0
-            ? "Không có đơn hàng"
-            : `Hiển thị ${rangeStart}–${rangeEnd} / ${total} đơn`}
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="hidden text-sm font-medium sm:block">
-            Trang{" "}
-            <strong>
-              {listQuery.page} / {totalPages}
-            </strong>
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => updatePage(listQuery.page - 1)}
-            disabled={listQuery.page <= 1 || isFetching}
-            className="cursor-pointer"
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => updatePage(listQuery.page + 1)}
-            disabled={listQuery.page >= totalPages || isFetching}
-            className="cursor-pointer"
-          >
-            Tiếp
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={listQuery.page}
+        pageCount={totalPages}
+        pageSize={listQuery.limit}
+        total={total}
+        unit="đơn"
+        disabled={isFetching}
+        onPageChange={updatePage}
+        onPageSizeChange={(limit) => updateQuery({ limit })}
+      />
     </div>
   );
 }

@@ -17,7 +17,6 @@ import {
 import { Funnel, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -39,14 +38,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { parseLocationKey } from "@/lib/location-key";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { MovementExpandedPanel } from "@/app/(protected)/exchange/shared/movement-expanded-panel";
 import { useImports } from "./imports-provider";
 import { importsColumns as columns } from "./imports-columns";
-import { ImportsEmpty } from "./imports-empty";
 
 const COLUMN_LABELS: Record<string, string> = {
   id: "Mã đơn",
@@ -178,6 +178,8 @@ export function ImportsTable() {
     },
   });
 
+  const columnCount = table.getVisibleLeafColumns().length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -283,17 +285,11 @@ export function ImportsTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {columns.map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows?.length ? (
+            {isLoading && <DataTableLoading columnCount={columnCount} />}
+            {!isLoading && table.getRowModel().rows.length === 0 && (
+              <DataTableEmpty columnCount={columnCount} />
+            )}
+            {!isLoading && (
               table.getRowModel().rows.map((row) => {
                 const isExpanded = row.getIsExpanded();
                 const hasExpandedRow = table
@@ -354,68 +350,23 @@ export function ImportsTable() {
                   </Fragment>
                 );
               })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length}>
-                  <ImportsEmpty />
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex items-center space-x-2">
-          <Label className="text-sm font-medium">Hiển thị</Label>
-          <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => table.setPageSize(Number(value))}
-          >
-            <SelectTrigger className="w-20 cursor-pointer">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="hidden text-sm text-muted-foreground sm:block">
-          Đã chọn {table.getFilteredSelectedRowModel().rows.length} /{" "}
-          {table.getFilteredRowModel().rows.length} đơn nhập
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="hidden text-sm font-medium sm:block">
-            Trang{" "}
-            <strong>
-              {table.getState().pagination.pageIndex + 1} /{" "}
-              {table.getPageCount() || 1}
-            </strong>
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="cursor-pointer"
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="cursor-pointer"
-          >
-            Tiếp
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit="đơn nhập"
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize);
+          table.setPageIndex(0);
+        }}
+      />
     </div>
   );
 }

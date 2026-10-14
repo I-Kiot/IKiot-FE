@@ -23,16 +23,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DataTableEmpty } from '@/components/data-table/data-table-empty'
+import { DataTableLoading } from '@/components/data-table/data-table-loading'
+import { DataTablePagination } from '@/components/data-table/data-table-pagination'
 import { cn } from '@/lib/utils'
 import { useSuppliers } from '../../_context/suppliers-provider'
 import { suppliersColumns } from './suppliers-columns'
 import { SuppliersToolbar } from './suppliers-toolbar'
-import { SuppliersPagination } from './suppliers-pagination'
 import { SuppliersExpandedPanel } from './suppliers-expanded-panel'
-import { SuppliersEmpty } from '../suppliers-empty'
 
 export function SuppliersTable() {
-  const { suppliers, setSelectedIds, selectionVersion } = useSuppliers()
+  const { suppliers, isLoading, setSelectedIds, selectionVersion } = useSuppliers()
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -74,6 +75,11 @@ export function SuppliersTable() {
     if (selectionVersion > 0) setRowSelection({})
   }, [selectionVersion])
 
+  const rows = table.getRowModel().rows
+  const columnCount = table.getVisibleLeafColumns().length
+  // Skeleton chỉ khi chưa có dữ liệu nào; lúc thêm/sửa/xoá (cũng bật isLoading) vẫn giữ các dòng cũ.
+  const showLoading = isLoading && suppliers.length === 0
+
   return (
     <div className="space-y-4">
       <SuppliersToolbar table={table} />
@@ -94,8 +100,10 @@ export function SuppliersTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, index, rows) => (
+            {showLoading && <DataTableLoading columnCount={columnCount} />}
+            {!showLoading && rows.length === 0 && <DataTableEmpty columnCount={columnCount} />}
+            {!showLoading &&
+              rows.map((row, index) => (
                 <Fragment key={row.id}>
                   <TableRow
                     data-state={row.getIsSelected() ? 'selected' : undefined}
@@ -128,7 +136,7 @@ export function SuppliersTable() {
                     <TableCell colSpan={row.getVisibleCells().length} className="p-0">
                       <div
                         className={cn(
-                          'grid transition-[grid-template-rows] duration-300 ease-in-out',
+                          'sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out',
                           row.getIsExpanded() ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
                         )}
                       >
@@ -143,19 +151,23 @@ export function SuppliersTable() {
                     </TableCell>
                   </TableRow>
                 </Fragment>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={suppliersColumns.length}>
-                  <SuppliersEmpty />
-                </TableCell>
-              </TableRow>
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>
 
-      <SuppliersPagination table={table} />
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit="nhà cung cấp"
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize)
+          table.setPageIndex(0)
+        }}
+      />
     </div>
   )
 }

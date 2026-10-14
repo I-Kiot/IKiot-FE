@@ -23,16 +23,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DataTableEmpty } from '@/components/data-table/data-table-empty'
+import { DataTableLoading } from '@/components/data-table/data-table-loading'
+import { DataTablePagination } from '@/components/data-table/data-table-pagination'
 import { cn } from '@/lib/utils'
 import { useCategories } from '../../_context/categories-provider'
 import { categoriesColumns } from './categories-columns'
 import { CategoriesToolbar } from './categories-toolbar'
-import { CategoriesPagination } from './categories-pagination'
 import { CategoriesExpandedPanel } from './categories-expanded-panel'
-import { CategoriesEmpty } from '../categories-empty'
 
 export function CategoriesTable() {
-  const { categories, setSelectedIds, selectionVersion } = useCategories()
+  const { categories, isLoading, setSelectedIds, selectionVersion } = useCategories()
 
   const topLevelCategories = useMemo(
     () => categories.filter((c) => !c.parentId),
@@ -79,6 +80,11 @@ export function CategoriesTable() {
     if (selectionVersion > 0) setRowSelection({})
   }, [selectionVersion])
 
+  const rows = table.getRowModel().rows
+  const columnCount = table.getVisibleLeafColumns().length
+  // Skeleton chỉ khi chưa có dữ liệu nào; lúc thêm/sửa/xoá (cũng bật isLoading) vẫn giữ các dòng cũ.
+  const showLoading = isLoading && categories.length === 0
+
   return (
     <div className="space-y-4">
       <CategoriesToolbar table={table} />
@@ -99,8 +105,10 @@ export function CategoriesTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, index, rows) => (
+            {showLoading && <DataTableLoading columnCount={columnCount} />}
+            {!showLoading && rows.length === 0 && <DataTableEmpty columnCount={columnCount} />}
+            {!showLoading &&
+              rows.map((row, index) => (
                 <Fragment key={row.id}>
                   <TableRow
                     data-state={row.getIsSelected() ? 'selected' : undefined}
@@ -133,7 +141,7 @@ export function CategoriesTable() {
                     <TableCell colSpan={row.getVisibleCells().length} className="p-0">
                       <div
                         className={cn(
-                          'grid transition-[grid-template-rows] duration-300 ease-in-out',
+                          'sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out',
                           row.getIsExpanded() ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
                         )}
                       >
@@ -148,19 +156,23 @@ export function CategoriesTable() {
                     </TableCell>
                   </TableRow>
                 </Fragment>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={categoriesColumns.length}>
-                  <CategoriesEmpty />
-                </TableCell>
-              </TableRow>
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>
 
-      <CategoriesPagination table={table} />
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit="danh mục"
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize)
+          table.setPageIndex(0)
+        }}
+      />
     </div>
   )
 }

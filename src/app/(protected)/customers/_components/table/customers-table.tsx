@@ -23,16 +23,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DataTableEmpty } from '@/components/data-table/data-table-empty'
+import { DataTableLoading } from '@/components/data-table/data-table-loading'
+import { DataTablePagination } from '@/components/data-table/data-table-pagination'
 import { cn } from '@/lib/utils'
 import { useCustomers } from '../../_context/customers-provider'
 import { customersColumns } from './customers-columns'
 import { CustomersToolbar } from './customers-toolbar'
-import { CustomersPagination } from './customers-pagination'
 import { CustomersExpandedPanel } from './customers-expanded-panel'
-import { CustomersEmpty } from '../customers-empty'
 
 export function CustomersTable() {
-  const { customers, setSelectedIds, selectionVersion } = useCustomers()
+  const { customers, isLoading, setSelectedIds, selectionVersion } = useCustomers()
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -106,6 +107,11 @@ export function CustomersTable() {
     if (selectionVersion > 0) setRowSelection({})
   }, [selectionVersion])
 
+  const rows = table.getRowModel().rows
+  const columnCount = table.getVisibleLeafColumns().length
+  // Skeleton chỉ khi chưa có dữ liệu nào; lúc thêm/sửa/xoá (cũng bật isLoading) vẫn giữ các dòng cũ.
+  const showLoading = isLoading && customers.length === 0
+
   return (
     <div className="space-y-4">
       <CustomersToolbar
@@ -136,8 +142,10 @@ export function CustomersTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, index, rows) => (
+            {showLoading && <DataTableLoading columnCount={columnCount} />}
+            {!showLoading && rows.length === 0 && <DataTableEmpty columnCount={columnCount} />}
+            {!showLoading &&
+              rows.map((row, index) => (
                 <Fragment key={row.id}>
                   <TableRow
                     data-state={row.getIsSelected() ? 'selected' : undefined}
@@ -170,7 +178,7 @@ export function CustomersTable() {
                     <TableCell colSpan={row.getVisibleCells().length} className="p-0">
                       <div
                         className={cn(
-                          'grid transition-[grid-template-rows] duration-300 ease-in-out',
+                          'sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out',
                           row.getIsExpanded() ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
                         )}
                       >
@@ -185,19 +193,23 @@ export function CustomersTable() {
                     </TableCell>
                   </TableRow>
                 </Fragment>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={customersColumns.length}>
-                  <CustomersEmpty />
-                </TableCell>
-              </TableRow>
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>
 
-      <CustomersPagination table={table} />
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit="khách hàng"
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize)
+          table.setPageIndex(0)
+        }}
+      />
     </div>
   )
 }

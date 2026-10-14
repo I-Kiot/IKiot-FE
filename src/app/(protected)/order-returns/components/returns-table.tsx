@@ -21,6 +21,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { orderReturnApi } from "@/lib/api/order-return";
@@ -34,7 +37,7 @@ import { formatDateTime, returnReasonLabel, returnStatusDisplay } from "../share
 import { CreateReturnDialog } from "./create-return-dialog";
 import { ReturnDetailDialog } from "./return-detail-dialog";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
 /** D-6: the return list (`GET /order-returns`) with create / receive / inspect / cancel (contract §5). */
@@ -46,6 +49,8 @@ export function ReturnsTable() {
   const canCancel = allows(role, "returns", "cancel");
 
   const [page, setPage] = React.useState(1);
+
+  const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
   const [status, setStatus] = React.useState<string>(ALL);
   const [search, setSearch] = React.useState("");
   const [term, setTerm] = React.useState("");
@@ -55,7 +60,7 @@ export function ReturnsTable() {
   const [selected, setSelected] = React.useState<OrderReturn | null>(null);
   // What the last request returned, tagged with the query it answered: while the tag differs
   // from the current query a newer request is in flight, so `loading` needs no state of its own.
-  const query = `${page}|${status}|${term}|${reloads}`;
+  const query = `${page}|${pageSize}|${status}|${term}|${reloads}`;
   const [loaded, setLoaded] = React.useState<{
     query: string;
     rows: OrderReturn[];
@@ -78,7 +83,7 @@ export function ReturnsTable() {
     orderReturnApi
       .getList({
         page,
-        limit: PAGE_SIZE,
+        limit: pageSize,
         ...(status !== ALL ? { status: status as OrderReturnStatus } : {}),
         ...(term ? { search: term } : {}),
       })
@@ -93,9 +98,9 @@ export function ReturnsTable() {
     return () => {
       stale = true;
     };
-  }, [page, status, term, query]);
+  }, [page, pageSize, status, term, query]);
 
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pages = Math.ceil(total / pageSize);
 
   return (
     <div className="flex flex-col gap-4">
@@ -169,47 +174,25 @@ export function ReturnsTable() {
                 </TableRow>
               );
             })}
-            {!loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                  Chưa có đơn hoàn nào
-                </TableCell>
-              </TableRow>
-            )}
-            {loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                  Đang tải...
-                </TableCell>
-              </TableRow>
-            )}
+            {!loading && rows.length === 0 && <DataTableEmpty columnCount={6} />}
+            {loading && rows.length === 0 && <DataTableLoading columnCount={6} />}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          {total} đơn hoàn · trang {page}/{pages}
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || loading}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= pages || loading}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Sau
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={page}
+        pageCount={pages}
+        pageSize={pageSize}
+        total={total}
+        unit="đơn hoàn"
+        disabled={loading}
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+      />
 
       {/* Mounted only while open, so each opening starts from an empty form. */}
       {creating && (

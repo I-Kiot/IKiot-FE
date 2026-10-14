@@ -194,7 +194,6 @@ export function ShipmentsTab({ reloadKey, onOpen }: ShipmentsTabProps) {
         onQueryChange={setQuery}
         columns={shipmentsColumns}
         unit="lần giao"
-        emptyText="Không có lần giao nào"
         errorText="Không tải được danh sách lần giao - bấm Tải lại để thử lại"
         onRowClick={onOpen}
       />

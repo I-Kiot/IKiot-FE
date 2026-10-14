@@ -6,9 +6,12 @@ import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
+    // Bảng rộng hơn khung thì cuộn ngang (ô đều whitespace-nowrap), không co cột cho đè nhau.
+    // `@container/table`: panel mở rộng dùng `sticky left-0 w-[100cqw]` để luôn rộng đúng phần
+    // đang nhìn thấy và đứng yên khi cuộn ngang. 100cqw là bề rộng khung này, không phải bề rộng bảng.
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className="@container/table relative w-full overflow-x-auto"
     >
       <table
         data-slot="table"

@@ -99,7 +99,9 @@ export default function DashboardLayout({
                 collapsible={config.collapsible}
                 side={config.side}
               />
-              <SidebarInset>
+              {/* min-w-0: con của flex mặc định không hẹp hơn nội dung, nên bảng rộng sẽ đẩy cả trang
+                  rộng ra thay vì cuộn ngang trong khung của nó. Nhánh sidebar bên phải dưới đây cũng vậy. */}
+              <SidebarInset className="min-w-0">
                 <SiteHeader />
                 <div className="flex flex-1 flex-col">
                   <div className="@container/main flex flex-1 flex-col gap-2">
@@ -112,7 +114,7 @@ export default function DashboardLayout({
             </>
           ) : (
             <>
-              <SidebarInset>
+              <SidebarInset className="min-w-0">
                 <SiteHeader />
                 <div className="flex flex-1 flex-col">
                   <div className="@container/main flex flex-1 flex-col gap-2">
