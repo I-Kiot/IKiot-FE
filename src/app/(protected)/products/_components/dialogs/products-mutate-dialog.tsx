@@ -39,6 +39,7 @@ import { productFormSchema, type ProductFormValues } from '../../_types/product.
 import { useProducts } from '../../_context/products-provider'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
 import { CascadeSelect } from '@/components/ui/cascade-select'
+import { ProductItemImagesField } from '../product-item-images-field'
 
 const EMPTY_VALUES: ProductFormValues = {
   name: '',
@@ -76,6 +77,8 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
     categories,
   } = useProducts()
   const [uploading, setUploading] = useState(false)
+  // Còn ảnh phiên bản đang tải lên thì khoá nút Lưu, tránh lưu thiếu ảnh.
+  const [itemImagesUploading, setItemImagesUploading] = useState(false)
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -113,22 +116,6 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
     try {
       const url = await uploadImage(file)
       form.setValue('images', [{ url, isThumbnail: true }])
-      toast.success('Tải ảnh lên thành công')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Tải ảnh lên thất bại')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const handleItemImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const url = await uploadImage(file)
-      form.setValue('itemImages', [{ url, isThumbnail: true }])
       toast.success('Tải ảnh lên thành công')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err) {
@@ -406,54 +393,13 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                 )}
 
                 {/* Ảnh riêng cho phiên bản */}
-                <div className="space-y-2">
-                  <FormLabel>Hình ảnh phiên bản</FormLabel>
-                  <div className="flex items-center gap-4">
-                    <div className="size-20 rounded-lg border bg-muted flex items-center justify-center overflow-hidden relative shrink-0">
-                      {form.watch('itemImages')?.[0]?.url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={form.watch('itemImages')?.[0]?.url}
-                          alt="Item preview"
-                          className="object-cover size-full"
-                        />
-                      ) : (
-                        <ShoppingBag className="size-8 text-muted-foreground" />
-                      )}
-                      {uploading && (
-                        <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                          <span className="animate-spin size-4 border-2 border-primary border-t-transparent rounded-full" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleItemImageUpload}
-                          disabled={uploading}
-                          className="cursor-pointer max-w-xs"
-                        />
-                        {form.watch('itemImages')?.[0]?.url && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => form.setValue('itemImages', [])}
-                            disabled={uploading}
-                            className="cursor-pointer text-destructive border-destructive/20 hover:bg-destructive/10"
-                          >
-                            Xóa ảnh
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Nếu để trống, ảnh hàng hóa sẽ được dùng thay thế.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <ProductItemImagesField
+                  value={form.watch('itemImages') ?? []}
+                  onChange={(images) => form.setValue('itemImages', images, { shouldDirty: true })}
+                  getLatest={() => form.getValues('itemImages') ?? []}
+                  onBusyChange={setItemImagesUploading}
+                  hint="Nếu để trống, ảnh hàng hóa sẽ được dùng thay thế."
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -667,7 +613,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
               >
                 Hủy
               </Button>
-              <Button type="submit" className="cursor-pointer">
+              <Button type="submit" disabled={uploading || itemImagesUploading} className="cursor-pointer">
                 {isEdit ? (
                   <>
                     <Pencil className="mr-2 h-4 w-4" />

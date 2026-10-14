@@ -9,6 +9,7 @@ import { productApi } from '@/lib/api/product'
 import { parsePriceAmount, getDeleteProductErrorMessage } from '../_constants/product.constants'
 import { useAuthStore } from '@/store/auth-store'
 import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
+import { toItemImagePayload } from '../_components/product-item-images-field'
 
 function extractErrorMessage(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -53,7 +54,8 @@ export function useProductsMutations() {
             vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
             warrantyPeriod: data.warrantyPeriod,
             description: data.description,
-            images: data.itemImages?.length ? data.itemImages : data.images,
+            // Phiên bản không có ảnh riêng thì dùng ảnh hàng hóa; ảnh đầu tiên là ảnh đại diện.
+            images: toItemImagePayload(data.itemImages?.length ? data.itemImages : data.images),
             productDetails: data.productDetails?.filter((d) => d.name.trim() && d.value.trim()),
           },
         ],
