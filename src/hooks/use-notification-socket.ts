@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { getSocket } from "@/lib/socket";
 import { onForegroundMessage } from "@/lib/fcm";
+import { playNotificationSound } from "@/lib/notification-sound";
 import { useNotificationInboxStore } from "@/store/notification-inbox-store";
 import type { AppNotification } from "@/lib/api/notification";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,6 +22,7 @@ export function useNotificationSocket() {
 
     const handle = (notification: AppNotification) => {
       receive(notification);
+      playNotificationSound();
       toast.success(notification.title, {
         description: notification.description,
       });
@@ -37,6 +39,7 @@ export function useNotificationSocket() {
     // nhường app tự quyết) → bắn toast. Nếu bỏ đoạn này, user đang mở app sẽ
     // không thấy gì cả.
     return onForegroundMessage((payload) => {
+      playNotificationSound();
       toast.success(payload.notification?.title ?? "Thông báo", {
         description: payload.notification?.body,
       });

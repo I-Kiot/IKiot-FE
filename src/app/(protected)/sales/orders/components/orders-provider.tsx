@@ -8,6 +8,7 @@ import { getSessionUserId } from "@/lib/auth";
 import { parseLocationKey } from "@/lib/location-key";
 import { useAuthStore } from "@/store/auth-store";
 import type {
+  OrderAttention,
   OrderJourneyQuery,
   OrderListItem,
   OrderPriority,
@@ -25,6 +26,8 @@ export interface OrdersListQuery {
   status: OrderStatus | "all";
   priority: OrderPriority | "all";
   stockSummary: StockCheckStatus | "all";
+  /** Banner shortcuts: only orders short on the shelf / with a near delivery date. */
+  attention: OrderAttention | "all";
   /** D-9: orders whose cash is still with the shipper (`PENDING`), or already handed back. */
   cashRemittanceStatus: RemittanceStatus | "all";
   sort: OrderSort;
@@ -39,6 +42,7 @@ const DEFAULT_LIST_QUERY: OrdersListQuery = {
   status: "all",
   priority: "all",
   stockSummary: "all",
+  attention: "all",
   cashRemittanceStatus: "all",
   sort: "createdAt",
   mineOnly: false,
@@ -119,6 +123,7 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
       stockSummary: listQuery.stockSummary === "all" ? undefined : listQuery.stockSummary,
       cashRemittanceStatus:
         listQuery.cashRemittanceStatus === "all" ? undefined : listQuery.cashRemittanceStatus,
+      attention: listQuery.attention === "all" ? undefined : listQuery.attention,
       sort: listQuery.sort,
       assigneeId: listQuery.mineOnly ? getSessionUserId() : undefined,
       branchId: scope?.locationType === "BRANCH" ? scope.locationId : undefined,

@@ -371,7 +371,20 @@ export const ORDER_SORTS = ["createdAt", "requestedDeliveryDate", "priority"] as
 /** Each has one fixed direction: newest first, soonest delivery first, most urgent first. */
 export type OrderSort = (typeof ORDER_SORTS)[number];
 
+/** What needs someone's eye on an order that has not shipped (BE `attention` filter). */
+export type OrderAttention = "SHORT" | "DUE_SOON";
+
+/** `GET /orders/alerts`. */
+export interface OrderAlerts {
+  /** Orders with a line partly or wholly out on the shelf. */
+  short: number;
+  /** Orders whose requested delivery date is today, within `dueSoonDays`, or already past. */
+  dueSoon: number;
+  dueSoonDays: number;
+}
+
 export interface OrderJourneyQuery extends PageQuery {
+  attention?: OrderAttention;
   status?: OrderStatus;
   channel?: OrderChannel;
   assigneeId?: string;

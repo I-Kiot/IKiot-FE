@@ -8,6 +8,7 @@ import { useSidebarConfig } from "@/hooks/use-sidebar-config";
 import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { useNotificationSocket } from "@/hooks/use-notification-socket";
+import { useTabBadge } from "@/hooks/use-tab-badge";
 import { useAuthStore } from "@/store/auth-store";
 import {
   canOpenCheckout,
@@ -66,6 +67,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   useNotificationSocket();
+  useTabBadge();
   const { config } = useSidebarConfig();
   const pathname = usePathname();
 

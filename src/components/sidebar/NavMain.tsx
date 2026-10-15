@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import { ChevronRight, TriangleAlert, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useNotificationStore } from "@/store/notification-store";
+import { useOrderAlertsStore } from "@/store/order-alerts-store";
+import { useAuthStore } from "@/store/auth-store";
+import { parseLocationKey } from "@/lib/location-key";
+import { getSessionRole } from "@/lib/auth";
+import { allows } from "@/components/sidebar/constants/role-permissions";
 
 import {
   Collapsible,
@@ -42,6 +47,26 @@ export function NavMain({
   const pathname = usePathname();
   const unreadCount = useNotificationStore((state) => state.unreadCount);
   const openTicketsCount = useNotificationStore((state) => state.openTicketsCount);
+
+  const ORDERS_URL = "/sales/orders";
+  const hasOrdersEntry = items.some((item) =>
+    item.items?.some((subItem) => subItem.url === ORDERS_URL),
+  );
+  const orderAlerts = useOrderAlertsStore((state) => state.alerts);
+  const fetchOrderAlerts = useOrderAlertsStore((state) => state.fetchAlerts);
+  const locationKey = useAuthStore((state) => state.locationKey);
+  const orderAlertCount = orderAlerts ? orderAlerts.short + orderAlerts.dueSoon : 0;
+
+  // Refreshed on a minute's poll and whenever the user moves between pages, so the badge
+  // follows a sale or a stock receipt without a socket event of its own.
+  useEffect(() => {
+    if (!hasOrdersEntry || !allows(getSessionRole(), "orders", "read")) return;
+    const scope = parseLocationKey(locationKey);
+    const branchId = scope?.locationType === "BRANCH" ? scope.locationId : undefined;
+    void fetchOrderAlerts(branchId);
+    const timer = setInterval(() => void fetchOrderAlerts(branchId), 60_000);
+    return () => clearInterval(timer);
+  }, [hasOrdersEntry, locationKey, pathname, fetchOrderAlerts]);
 
   const [openStates, setOpenStates] = useState<Record<string, boolean>>({});
   const [isMounted, setIsMounted] = useState(false);
@@ -97,7 +122,20 @@ export function NavMain({
                     <SidebarMenuButton tooltip={item.title} className="cursor-pointer">
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
-                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      {orderAlertCount > 0 &&
+                        item.items.some((subItem) => subItem.url === ORDERS_URL) && (
+                          <TriangleAlert
+                            className="ml-auto size-4 shrink-0 text-amber-500"
+                            aria-label="Có đơn cần chú ý"
+                          />
+                        )}
+                      <ChevronRight
+                        className={`${
+                          orderAlertCount > 0 && item.items.some((subItem) => subItem.url === ORDERS_URL)
+                            ? "ml-2"
+                            : "ml-auto"
+                        } shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90`}
+                      />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -111,6 +149,12 @@ export function NavMain({
                               rel={(item.title === "Auth Pages" || item.title === "Errors") ? "noopener noreferrer" : undefined}
                             >
                               <span>{subItem.title}</span>
+                              {subItem.url === ORDERS_URL && orderAlertCount > 0 && (
+                                <TriangleAlert
+                                className="ml-auto size-4 shrink-0 text-amber-500"
+                                aria-label="Có đơn cần chú ý"
+                              />
+                              )}
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

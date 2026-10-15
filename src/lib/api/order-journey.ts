@@ -6,6 +6,7 @@ import type {
   ConfirmOrderPayload,
   CreateOrderJourneyPayload,
   HandOverReadyOrder,
+  OrderAlerts,
   OrderDetail,
   OrderItemCustomization,
   OrderJourneyQuery,
@@ -28,6 +29,14 @@ export const orderJourneyApi = {
   getList: async (params?: OrderJourneyQuery): Promise<Paginated<OrderListItem>> => {
     const res = await client.get<Paginated<OrderListItem>>('/orders', { params });
     return { data: res.data.data, pagination: res.data.pagination };
+  },
+
+  /** Counts behind the sidebar warning and the banner over the list. */
+  getAlerts: async (branchId?: string): Promise<OrderAlerts> => {
+    const res = await client.get<Envelope<OrderAlerts>>('/orders/alerts', {
+      params: { branchId },
+    });
+    return res.data.data;
   },
 
   getById: async (id: string): Promise<OrderDetail> => {

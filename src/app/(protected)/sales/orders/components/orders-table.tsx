@@ -9,7 +9,7 @@ import {
   getExpandedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Funnel, RotateCcw, Search } from "lucide-react";
+import { Funnel, RotateCcw, Search, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -39,6 +39,7 @@ import { DataTableEmpty } from "@/components/data-table/data-table-empty";
 import { DataTableLoading } from "@/components/data-table/data-table-loading";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { cn } from "@/lib/utils";
+import { useOrderAlertsStore } from "@/store/order-alerts-store";
 import {
   ORDER_PRIORITIES,
   ORDER_PRIORITY_LABELS,
@@ -116,14 +117,59 @@ export function OrdersTable() {
     listQuery.status !== "all" ||
     listQuery.priority !== "all" ||
     listQuery.stockSummary !== "all" ||
+    listQuery.attention !== "all" ||
     listQuery.cashRemittanceStatus !== "all" ||
     listQuery.mineOnly;
 
 
   const columnCount = table.getVisibleLeafColumns().length;
+  const alerts = useOrderAlertsStore((state) => state.alerts);
+  const showAlertBanner = !!alerts && (alerts.short > 0 || alerts.dueSoon > 0);
 
   return (
     <div className="space-y-4">
+      {showAlertBanner && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <TriangleAlert className="size-5 shrink-0 text-amber-500" />
+          <span className="font-medium">Có đơn cần chú ý:</span>
+          {alerts.short > 0 && (
+            <button
+              type="button"
+              onClick={() => updateQuery({ attention: "SHORT" })}
+              className={cn(
+                "cursor-pointer underline-offset-2 hover:underline",
+                listQuery.attention === "SHORT" && "font-semibold underline",
+              )}
+            >
+              {alerts.short} đơn thiếu hàng
+            </button>
+          )}
+          {alerts.dueSoon > 0 && (
+            <button
+              type="button"
+              onClick={() => updateQuery({ attention: "DUE_SOON" })}
+              className={cn(
+                "cursor-pointer underline-offset-2 hover:underline",
+                listQuery.attention === "DUE_SOON" && "font-semibold underline",
+              )}
+            >
+              {alerts.dueSoon} đơn sắp tới ngày giao (trong {alerts.dueSoonDays} ngày, kể cả quá hạn)
+            </button>
+          )}
+          {listQuery.attention !== "all" && (
+            <button
+              type="button"
+              onClick={() => updateQuery({ attention: "all" })}
+              className="ml-auto cursor-pointer text-xs underline-offset-2 hover:underline"
+            >
+              Bỏ lọc cảnh báo
+            </button>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-48 max-w-sm flex-1">
