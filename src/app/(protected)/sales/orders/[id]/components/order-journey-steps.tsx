@@ -26,7 +26,10 @@ function stepTime(order: OrderDetail, status: OrderStatus): string | null {
     case "PENDING_CONFIRMATION":
       return order.createdAt;
     case "CONFIRMED":
-      return order.confirmedAt ?? (order.channel === "MANUAL" ? order.createdAt : null);
+      return (
+        order.confirmedAt ??
+        (order.channel === "MANUAL" ? order.createdAt : null)
+      );
     case "SHIPPING":
       return order.shippedAt;
     case "RECEIVED":
@@ -50,7 +53,8 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
   }
 
   const steps = STEPS.filter((step) => {
-    if (step.status === "PENDING_CONFIRMATION") return order.channel !== "MANUAL";
+    if (step.status === "PENDING_CONFIRMATION")
+      return order.channel !== "MANUAL";
     // QR, or nothing left to collect: SHIPPING goes straight to COMPLETED, no RECEIVED step.
     if (step.status === "RECEIVED") {
       const skipped =
@@ -62,12 +66,21 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
     return true;
   });
 
-  // A returned order went all the way first; its returns are listed further down. A finished
-  // order (COMPLETED / RETURNED) has every step done - none is still "in progress".
+  // Each step is named for the status the order *reaches*, so status X means step X is done and
+  // the step after it is the one in progress - a manual order born CONFIRMED is waiting to be
+  // packed. A returned order went all the way first; its returns are listed further down. A
+  // finished order (COMPLETED / RETURNED) has every step done - none is still "in progress".
+  // A status with no step of its own (PENDING) highlights nothing.
   const finished = order.status === "COMPLETED" || order.status === "RETURNED";
-  const currentIndex = finished
-    ? steps.length
-    : steps.findIndex((step) => step.status === order.status);
+  const reachedIndex = steps.findIndex((step) => step.status === order.status);
+  let currentIndex: number;
+  if (finished) {
+    currentIndex = steps.length;
+  } else if (reachedIndex === -1) {
+    currentIndex = -1;
+  } else {
+    currentIndex = reachedIndex + 1;
+  }
 
   return (
     <div className="space-y-3">
@@ -75,15 +88,20 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
         {steps.map((step, index) => {
           const done = currentIndex >= 0 && index < currentIndex;
           const current = index === currentIndex;
-          const time = done || current ? stepTime(order, step.status) : null;
+          // The current step hasn't happened yet, so only done steps carry a time.
+          const time = done ? stepTime(order, step.status) : null;
           return (
-            <li key={step.status} className="flex items-center gap-2 sm:flex-col sm:items-start">
+            <li
+              key={step.status}
+              className="flex items-center gap-2 sm:flex-col sm:items-start"
+            >
               <div className="flex w-full items-center gap-2">
                 <span
                   className={cn(
                     "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
                     done && "border-primary bg-primary text-primary-foreground",
-                    current && "border-primary text-primary ring-4 ring-primary/15",
+                    current &&
+                      "border-primary text-primary ring-4 ring-primary/15",
                     !done && !current && "text-muted-foreground",
                   )}
                 >
@@ -91,7 +109,10 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
                 </span>
                 {index < steps.length - 1 && (
                   <span
-                    className={cn("hidden h-px flex-1 sm:block", done ? "bg-primary" : "bg-border")}
+                    className={cn(
+                      "hidden h-px flex-1 sm:block",
+                      done ? "bg-primary" : "bg-border",
+                    )}
                   />
                 )}
               </div>
@@ -99,13 +120,17 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
                 <span
                   className={cn(
                     "text-sm",
-                    current ? "font-semibold text-foreground" : "text-muted-foreground",
+                    current
+                      ? "font-semibold text-foreground"
+                      : "text-muted-foreground",
                   )}
                 >
                   {step.label}
                 </span>
                 {time && (
-                  <span className="text-xs text-muted-foreground">{formatDateTime(time)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDateTime(time)}
+                  </span>
                 )}
               </div>
             </li>

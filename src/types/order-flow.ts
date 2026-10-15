@@ -196,7 +196,7 @@ export type ShipmentStatus =
 
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   CREATED: "Đã tạo vận đơn",
-  PICKED_UP: "DVVC đã nhận hàng",
+  PICKED_UP: "ĐVVC đã lấy hàng",
   IN_TRANSIT: "Đang vận chuyển",
   OUT_FOR_DELIVERY: "Đang giao đến người nhận",
   DELIVERED: "Đã giao đến người nhận",

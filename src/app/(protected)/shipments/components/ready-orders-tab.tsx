@@ -58,7 +58,7 @@ function readyOrdersColumns(
       cell: ({ row }) =>
         canHandOver && (
           <Button size="sm" onClick={() => onHandOver(row.original)}>
-            Giao cho vận chuyển
+            Giao cho ĐVVC
           </Button>
         ),
     },
