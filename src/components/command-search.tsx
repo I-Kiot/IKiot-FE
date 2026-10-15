@@ -217,7 +217,7 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
     },
     {
       title: "Notifications",
-      url: "/settings/notifications",
+      url: "/settings",
       group: "Settings",
       icon: Bell,
     },

@@ -5,7 +5,6 @@ import {
   CreditCard,
   EllipsisVertical,
   LogOut,
-  BellDot,
   CircleUser,
   Settings,
 } from "lucide-react";
@@ -118,12 +117,6 @@ export function NavUser({
                     <Link href="/settings/billing">
                       <CreditCard />
                       Thanh toán
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/settings/notifications">
-                      <BellDot />
-                      Thông báo
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="cursor-pointer">
