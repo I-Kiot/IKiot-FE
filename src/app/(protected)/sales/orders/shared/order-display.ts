@@ -118,3 +118,12 @@ export function formatPlainDate(value: string | null | undefined): string {
   const [year, month, day] = value.split("-");
   return year && month && day ? `${day}/${month}/${year}` : value;
 }
+
+/** Whole calendar days from today (viewer's local date) to a `YYYY-MM-DD` date; negative once past. */
+export function daysUntilPlainDate(value: string): number | null {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((Date.UTC(year, month - 1, day) - today) / 86_400_000);
+}

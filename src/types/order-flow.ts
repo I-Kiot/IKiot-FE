@@ -315,6 +315,7 @@ export interface OrderListItem {
   branch: LocationRef;
   customer: { id: string; name: string; phone: string | null };
   assignee: UserRef | null;
+  driver: UserRef | null;
   createdBy: UserRef | null;
   confirmedBy: UserRef | null;
   confirmedAt: string | null;
