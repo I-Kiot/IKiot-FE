@@ -197,7 +197,7 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
             {!isFinished(shipment.status) && (
               <div className="flex flex-wrap gap-2">
                 {shipment.status === "PICKED_UP" && allowed.canShip && (
-                  <Button onClick={() => setAction("ship")}>Bắt đầu ship</Button>
+                  <Button onClick={() => setAction("ship")}>Bắt đầu vận chuyển</Button>
                 )}
                 {isOnTheRoad(shipment.status) && allowed.canTrack && (
                   <>

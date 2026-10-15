@@ -1,6 +1,7 @@
 "use client";
 
-// Dialog "Giao cho vận chuyển": ghi nhận ĐVVC / shipper đã lấy hàng cho một đơn đã đóng gói (POST /shipments).
+// Dialog "Giao cho vận chuyển" cho một đơn đã đóng gói (POST /shipments): ghi nhận ĐVVC đã lấy hàng, hoặc gán
+// shipper của shop - shipper đó còn phải tự xác nhận đã lấy hàng.
 
 import { useState } from "react";
 import { toast } from "sonner";
@@ -69,7 +70,12 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
         note: note.trim() || undefined,
       })
       .then(() => {
-        toast.success(`Đã giao đơn ${order.code} cho vận chuyển`);
+        // Shipper của shop mới chỉ được gán: còn phải tới kho lấy hàng và tự xác nhận (chốt 2026-10-15).
+        toast.success(
+          internal
+            ? `Đã gán shipper cho đơn ${order.code} - chờ shipper xác nhận đã lấy hàng`
+            : `Đã giao đơn ${order.code} cho đơn vị vận chuyển`,
+        );
         onNeedsReload();
       })
       .catch((error: unknown) => {
@@ -85,8 +91,10 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
         <DialogHeader>
           <DialogTitle>Giao đơn {order?.code} cho vận chuyển</DialogTitle>
           <DialogDescription>
-            Ghi nhận đơn vị vận chuyển / shipper đã lấy hàng. Tồn kho chưa bị trừ - chỉ trừ khi chuyển sang Đang
-            vận chuyển.
+            {internal
+              ? "Gán shipper của shop. Đơn chuyển sang ĐVVC đã lấy hàng khi shipper tới kho lấy hàng và bấm xác nhận."
+              : "Ghi nhận đơn vị vận chuyển đã lấy hàng."}{" "}
+            Tồn kho chưa bị trừ - chỉ trừ khi chuyển sang Đang vận chuyển.
           </DialogDescription>
         </DialogHeader>
 

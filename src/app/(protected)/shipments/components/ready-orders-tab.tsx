@@ -1,9 +1,11 @@
 "use client";
 
-// Tab "Chờ giao": đơn đã đóng gói (PACKED), chờ giao cho đơn vị vận chuyển / shipper.
+// Tab "Chờ giao": đơn đã đóng gói (PACKED), chờ giao cho đơn vị vận chuyển / shipper - kể cả đơn đã gán shipper
+// mà shipper chưa xác nhận lấy hàng.
 
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { SHIPMENT_PAGE_SIZE } from "@/lib/api/shipment";
@@ -55,12 +57,20 @@ function readyOrdersColumns(
     {
       id: "actions",
       header: () => <span className="sr-only">Thao tác</span>,
-      cell: ({ row }) =>
-        canHandOver && (
-          <Button size="sm" onClick={() => onHandOver(row.original)}>
-            Giao cho ĐVVC
-          </Button>
-        ),
+      cell: ({ row }) => {
+        // Đã gán shipper của shop: đơn vẫn PACKED tới khi shipper xác nhận lấy hàng - không giao lần nữa.
+        const driver = row.original.driver;
+        if (driver) {
+          return <Badge variant="info">Chờ {driver.name} lấy hàng</Badge>;
+        }
+        return (
+          canHandOver && (
+            <Button size="sm" onClick={() => onHandOver(row.original)}>
+              Giao cho ĐVVC
+            </Button>
+          )
+        );
+      },
     },
   ];
 }

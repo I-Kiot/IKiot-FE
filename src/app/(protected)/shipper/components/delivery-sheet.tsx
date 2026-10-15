@@ -1,7 +1,7 @@
 "use client";
 
 // Chi tiết một lần giao của shipper: người nhận, số tiền phải thu, nhật trình, và các nút theo trạng thái
-// (đang đi giao, đã giao, giao không thành; sau khi giao bằng QR: mã QR, kiểm tra tiền về, đổi sang tiền mặt).
+// (đã lấy hàng, đang đi giao, đã giao, giao không thành; sau khi giao bằng QR: mã QR, kiểm tra tiền về, đổi sang tiền mặt).
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -36,7 +36,7 @@ type DetailState =
   | { status: "ready"; shipment: Shipment };
 
 /** Thao tác đang mở dialog. */
-type OpenAction = "outForDelivery" | "deliver" | "fail" | "payCash" | null;
+type OpenAction = "pickUp" | "outForDelivery" | "deliver" | "fail" | "payCash" | null;
 
 interface DeliverySheetProps {
   /** Lần giao đang mở; `null` = đóng. Trang đặt `key` theo id nên mỗi lần mở là state mới. */
@@ -237,9 +237,16 @@ export function DeliverySheet({
               <Field label="Ghi chú">{shipment.note}</Field>
             </div>
 
+            {/* Mới được gán: tới kho lấy hàng rồi xác nhận thì đơn mới sang ĐVVC đã lấy hàng (chốt 2026-10-15). */}
+            {shipment.status === "CREATED" && (
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => setAction("pickUp")}>Xác nhận đã lấy hàng</Button>
+              </div>
+            )}
+
             {isOnTheRoad(shipment.status) && (
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => setAction("deliver")}>Xác nhận giao thành công</Button>
+                <Button onClick={() => setAction("deliver")}>Giao hàng thành công</Button>
                 <Button
                   variant="outline"
                   onClick={() => setAction("outForDelivery")}
@@ -293,6 +300,22 @@ export function DeliverySheet({
                 onChanged();
               }}
               onNeedsReload={afterWrite}
+            />
+            <ShipmentNoteDialog
+              key={`pickup-${action === "pickUp"}`}
+              open={action === "pickUp"}
+              title="Xác nhận đã lấy hàng"
+              description="Xác nhận đã nhận đủ hàng của đơn tại kho. Đơn chuyển sang ĐVVC đã lấy hàng; tồn kho chưa bị trừ."
+              confirmLabel="Đã lấy hàng"
+              placeholder="Ghi chú (vd. thùng 2 móp góc)"
+              onClose={() => setAction(null)}
+              onConfirm={(note) =>
+                run(
+                  () => shipmentApi.pickUp(shipment.id, note),
+                  `Đã lấy hàng đơn ${shipment.order.code}`,
+                  "Xác nhận lấy hàng thất bại, vui lòng thử lại",
+                )
+              }
             />
             <ShipmentNoteDialog
               key={`out-${action === "outForDelivery"}`}
