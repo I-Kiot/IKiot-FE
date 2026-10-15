@@ -2,39 +2,15 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useDashboardStats, type DashboardRange, type TopProductsSortBy, type RevenueDateRange } from '../hooks/use-dashboard-stats'
+import { useDashboardStats, type DashboardRange } from '../hooks/use-dashboard-stats'
 import { branchApi } from '@/lib/api/branch'
 import { warehouseApi } from '@/lib/api/warehouse'
-import type {
-  StatsOverview,
-  RevenueSeries,
-  RevenueByPaymentMethod,
-  RevenueByStaff,
-  Cashflow,
-  TopProducts,
-  InventoryStats,
-} from '@/lib/api/stats'
 
 type LocationOption = { value: string; label: string }
 
-type DashboardContextType = {
-  overview: StatsOverview | null
-  revenue: RevenueSeries | null
-  revenueDateRange: RevenueDateRange | null
-  revenueByPaymentMethod: RevenueByPaymentMethod | null
-  revenueByStaff: RevenueByStaff | null
-  cashflow: Cashflow | null
-  topProducts: TopProducts | null
-  inventory: InventoryStats | null
-  isLoading: boolean
-  isWarehouse: boolean
+type DashboardContextType = ReturnType<typeof useDashboardStats> & {
   range: DashboardRange
   setRange: (range: DashboardRange) => void
-  topProductsSortBy: TopProductsSortBy
-  setTopProductsSortBy: (sortBy: TopProductsSortBy) => void
-  lowStockThreshold: number
-  setLowStockThreshold: (threshold: number) => void
-  refetch: () => void
   branchOptions: LocationOption[]
   warehouseOptions: LocationOption[]
 }

@@ -124,6 +124,76 @@ export interface InventoryStats {
   lowStock: LowStockItem[];
 }
 
+export type ComparisonKey = 'today' | 'week' | 'month' | 'quarter' | 'year';
+
+export interface ComparisonWindow {
+  fromDate: string;
+  toDate: string;
+  revenue: number;
+  orderCount: number;
+  aov: number;
+}
+
+export interface RevenueComparisonItem {
+  key: ComparisonKey;
+  current: ComparisonWindow;
+  /** The same elapsed span of the period before, not the whole of it. */
+  previous: ComparisonWindow;
+  changePct: { revenue: number | null; orderCount: number | null; aov: number | null };
+}
+
+export interface RevenueComparison {
+  comparisons: RevenueComparisonItem[];
+}
+
+export interface OrdersByStatusItem {
+  status: string;
+  count: number;
+  total: number;
+}
+
+export interface OrdersByStatus {
+  totalCount: number;
+  statuses: OrdersByStatusItem[];
+}
+
+export interface RevenueByBranchItem {
+  branchId: string;
+  branchName: string | null;
+  revenue: number;
+  orderCount: number;
+  aov: number;
+}
+
+export interface RevenueByBranch {
+  branches: RevenueByBranchItem[];
+}
+
+/** weekday: 0 = Sunday .. 6 = Saturday; hour: 0..23, shop-local. */
+export interface SalesHeatmapCell {
+  weekday: number;
+  hour: number;
+  revenue: number;
+  orderCount: number;
+}
+
+export interface SalesHeatmap {
+  cells: SalesHeatmapCell[];
+}
+
+export interface TopCustomerItem {
+  customerId: string;
+  name: string | null;
+  phone: string | null;
+  revenue: number;
+  orderCount: number;
+  aov: number;
+}
+
+export interface TopCustomers {
+  customers: TopCustomerItem[];
+}
+
 // ── Platform-operator overview (ADMIN) ──────────────────────────────────
 export interface AdminRevenuePoint {
   bucket: string;
@@ -231,6 +301,21 @@ export const statsApi = {
 
   getInventory: (params?: { branchId?: string; warehouseId?: string; lowStockThreshold?: number }) =>
     getStats<InventoryStats>('/stats/inventory', params),
+
+  getRevenueComparison: (params?: { branchId?: string }) =>
+    getStats<RevenueComparison>('/stats/revenue-comparison', params),
+
+  getOrdersByStatus: (params?: StatsDateRangeParams) =>
+    getStats<OrdersByStatus>('/stats/orders-by-status', params),
+
+  getRevenueByBranch: (params?: StatsDateRangeParams) =>
+    getStats<RevenueByBranch>('/stats/revenue-by-branch', params),
+
+  getSalesHeatmap: (params?: StatsDateRangeParams) =>
+    getStats<SalesHeatmap>('/stats/sales-heatmap', params),
+
+  getTopCustomers: (params?: StatsDateRangeParams & { limit?: number }) =>
+    getStats<TopCustomers>('/stats/top-customers', params),
 
   getAdminOverview: (params?: { fromDate?: string; toDate?: string; groupBy?: 'day' | 'month' }) =>
     getStats<AdminOverview>('/stats/admin/overview', params),
