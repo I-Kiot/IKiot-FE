@@ -42,8 +42,8 @@ export default function ShipmentsPage() {
 
       <Tabs defaultValue="ready">
         <TabsList>
-          <TabsTrigger value="ready">Chờ giao</TabsTrigger>
-          <TabsTrigger value="shipments">Lần giao</TabsTrigger>
+          <TabsTrigger value="ready">Chờ vận chuyển</TabsTrigger>
+          <TabsTrigger value="shipments">Theo dõi đơn hàng</TabsTrigger>
         </TabsList>
         <TabsContent value="ready" className="mt-4">
           <ReadyOrdersTab reloadKey={reloadKey} canHandOver={canHandOver} onHandOver={openHandOver} />

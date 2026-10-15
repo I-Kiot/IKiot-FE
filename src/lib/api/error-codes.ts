@@ -321,6 +321,7 @@ export const ERROR_MESSAGES = {
   SHIPMENT_PROOF_REQUIRED: "Cần ít nhất một ảnh bằng chứng giao hàng",
   SHIPMENT_STATUS_INVALID: "Lần giao không ở trạng thái phù hợp",
   SHIPMENT_TRACKING_TAKEN: "Mã vận đơn đã tồn tại",
+  SHIPMENT_ALREADY_OPEN: "Đơn đã được giao cho shipper / đơn vị vận chuyển rồi",
   SHIPMENT_ORDER_NOT_PACKED: "Đơn chưa đóng gói nên chưa giao cho đơn vị vận chuyển được",
   SHIPMENT_DRIVER_REQUIRED: "Giao nội bộ cần chọn shipper",
   SHIPMENT_DRIVER_INVALID: "Shipper phải là chủ shop, người phụ trách đơn, hoặc nhân viên có quyền giao hàng",

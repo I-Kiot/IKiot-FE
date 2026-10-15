@@ -21,6 +21,7 @@ const STALE_CODES = new Set([
   "SHIPMENT_STATUS_INVALID",
   "SHIPMENT_ORDER_NOT_PACKED",
   "SHIPMENT_FULFILLMENT_NOT_HANDED_OVER",
+  "SHIPMENT_ALREADY_OPEN",
 ]);
 
 /** Hiện lỗi của một thao tác giao hàng; trả về `true` nếu màn hình cần tải lại vì dữ liệu đã cũ. */

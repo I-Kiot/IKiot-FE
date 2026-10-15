@@ -107,7 +107,7 @@ export const sidebarItems = {
     url: "/#",
     icon: PackageCheck,
     items: [
-      { title: "Đóng hàng", url: "/fulfillments" },
+      { title: "Đóng đơn", url: "/fulfillments" },
       { title: "Giao hàng", url: "/shipments" },
     ],
   },

@@ -195,8 +195,8 @@ export type ShipmentStatus =
   | "CANCELLED";
 
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
-  CREATED: "Đã tạo vận đơn",
-  PICKED_UP: "DVVC đã nhận hàng",
+  CREATED: "Chờ shipper lấy hàng",
+  PICKED_UP: "ĐVVC đã lấy hàng",
   IN_TRANSIT: "Đang vận chuyển",
   OUT_FOR_DELIVERY: "Đang giao đến người nhận",
   DELIVERED: "Đã giao đến người nhận",
@@ -871,6 +871,8 @@ export interface HandOverReadyOrder {
   deliveryAddress: string | null;
   /** Phí giao hàng đã nhập khi tạo đơn; ghi lại thành `shippingCost` của lần giao. */
   shippingFee: number;
+  /** Shipper của lần giao mới nhất. Đơn còn PACKED mà đã có shipper = đã gán, đang chờ shipper tới lấy hàng. */
+  driver: UserRef | null;
 }
 
 /** Cách shipper thu số còn phải thu khi giao: tiền mặt, chuyển khoản QR, hoặc không còn gì phải thu (đã cọc đủ). */

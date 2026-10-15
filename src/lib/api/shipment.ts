@@ -42,9 +42,18 @@ export const shipmentApi = {
     return res.data.data;
   },
 
-  /** "ĐVVC đã lấy hàng": đơn PACKED → PICKED_UP. */
+  /** "Giao cho vận chuyển". ĐVVC ngoài: đơn PACKED → PICKED_UP ngay. Shipper của shop: chỉ gán shipper (lần giao CREATED), đơn vẫn PACKED tới khi shipper `pickUp`. */
   create: async (payload: CreateShipmentPayload): Promise<Shipment> => {
     const res = await client.post<Envelope<Shipment>>('/shipments', payload);
+    return res.data.data;
+  },
+
+  /** Shipper xác nhận đã tới kho lấy hàng: lần giao nội bộ CREATED → PICKED_UP, đơn PACKED → PICKED_UP. Shipper, người phụ trách đơn, chủ shop. */
+  pickUp: async (id: string, note?: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(
+      `/shipments/${id}/pick-up`,
+      note ? { note } : {},
+    );
     return res.data.data;
   },
 
