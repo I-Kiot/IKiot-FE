@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartStyle, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
-import { formatCompactVND, PAYMENT_METHOD_LABELS } from "../shared/format"
+import { formatCompactVND, paymentMethodLabel } from "../shared/format"
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]
 
@@ -19,8 +19,8 @@ export function RevenueBreakdown() {
   const totalRevenue = breakdown.reduce((sum, item) => sum + item.revenue, 0)
 
   const chartData = breakdown.map((item, index) => ({
-    method: item.paymentMethod,
-    label: PAYMENT_METHOD_LABELS[item.paymentMethod] ?? item.paymentMethod,
+    method: item.paymentMethod || "UNKNOWN",
+    label: paymentMethodLabel(item.paymentMethod),
     amount: item.revenue,
     orderCount: item.orderCount,
     percent: totalRevenue ? Math.round((item.revenue / totalRevenue) * 100) : 0,

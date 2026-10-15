@@ -1,87 +1,117 @@
 "use client"
 
 import { useMemo } from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
-import type { DashboardRange } from "../hooks/use-dashboard-stats"
-import { generateDateBuckets } from "../shared/format"
+import { formatBucket, formatCompactVND, formatVND, generateDateBuckets } from "../shared/format"
 
 const chartConfig = {
-  revenue: {
-    label: "Doanh thu",
-    color: "var(--primary)",
-  },
+  revenue: { label: "Kỳ này", color: "var(--primary)" },
+  previous: { label: "Kỳ trước", color: "var(--muted-foreground)" },
 }
 
+/** Revenue over the chosen period with the equal-length period before laid over it, aligned day-for-day (or month-for-month). */
 export function SalesChart() {
-  const { revenue, revenueDateRange, range, setRange, isLoading } = useDashboard()
+  const { revenue, previousRevenue, revenueDateRange, isLoading } = useDashboard()
 
   const data = useMemo(() => {
-    if (!revenueDateRange) return (revenue?.series ?? []).map((point) => ({ bucket: point.bucket, revenue: point.revenue }))
+    if (!revenueDateRange) return []
+    const { fromDate, toDate, groupBy, previousFromDate, previousToDate } = revenueDateRange
+    const buckets = generateDateBuckets(fromDate, toDate, groupBy)
+    const previousBuckets = generateDateBuckets(previousFromDate, previousToDate, groupBy)
+    const current = new Map((revenue?.series ?? []).map((p) => [p.bucket, p.revenue]))
+    const previous = new Map((previousRevenue?.series ?? []).map((p) => [p.bucket, p.revenue]))
 
-    const buckets = generateDateBuckets(revenueDateRange.fromDate, revenueDateRange.toDate, revenueDateRange.groupBy)
-    const seriesByBucket = new Map((revenue?.series ?? []).map((point) => [point.bucket, point.revenue]))
-    return buckets.map((bucket) => ({ bucket, revenue: seriesByBucket.get(bucket) ?? 0 }))
-  }, [revenue, revenueDateRange])
+    return buckets.map((bucket, index) => {
+      const previousBucket = previousBuckets[index]
+      return {
+        bucket,
+        previousBucket,
+        revenue: current.get(bucket) ?? 0,
+        previous: previousBucket ? (previous.get(previousBucket) ?? 0) : null,
+      }
+    })
+  }, [revenue, previousRevenue, revenueDateRange])
 
   return (
-    <Card className="cursor-pointer">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div>
-          <CardTitle>Doanh thu theo thời gian</CardTitle>
-          <CardDescription>Doanh thu đơn hàng đã hoàn tất</CardDescription>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Select value={range} onValueChange={(value) => setRange(value as DashboardRange)}>
-            <SelectTrigger className="w-40 cursor-pointer">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d" className="cursor-pointer">7 ngày qua</SelectItem>
-              <SelectItem value="30d" className="cursor-pointer">30 ngày qua</SelectItem>
-              <SelectItem value="90d" className="cursor-pointer">90 ngày qua</SelectItem>
-              <SelectItem value="12m" className="cursor-pointer">12 tháng qua</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Xu hướng doanh thu</CardTitle>
+        <CardDescription>Đơn hàng đã hoàn tất, đặt cạnh kỳ liền trước có cùng độ dài</CardDescription>
       </CardHeader>
-      <CardContent className="p-0 pt-6">
-        <div className="px-6 pb-6">
-          {isLoading && !revenue ? (
-            <Skeleton className="h-[350px] w-full" />
-          ) : (
-            <ChartContainer config={chartConfig} className="h-[350px] w-full">
-              <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.05} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                <XAxis
-                  dataKey="bucket"
-                  axisLine={false}
-                  tickLine={false}
-                  className="text-xs"
-                  tick={{ fontSize: 12 }}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="var(--color-revenue)"
-                  fill="url(#colorRevenue)"
-                  strokeWidth={1}
-                />
-              </AreaChart>
-            </ChartContainer>
-          )}
-        </div>
+      <CardContent>
+        {isLoading && !revenue ? (
+          <Skeleton className="h-[320px] w-full" />
+        ) : (
+          <ChartContainer config={chartConfig} className="h-[320px] w-full">
+            <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/40" />
+              <XAxis
+                dataKey="bucket"
+                axisLine={false}
+                tickLine={false}
+                tickMargin={8}
+                minTickGap={24}
+                tickFormatter={formatBucket}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                width={64}
+                tickFormatter={(v: number) => formatCompactVND(v)}
+                tick={{ fontSize: 12 }}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(_, payload) => {
+                      const row = payload?.[0]?.payload as { bucket: string; previousBucket?: string } | undefined
+                      if (!row) return ""
+                      return row.previousBucket
+                        ? `${formatBucket(row.bucket)} (so với ${formatBucket(row.previousBucket)})`
+                        : formatBucket(row.bucket)
+                    }}
+                    formatter={(value, name) => (
+                      <div className="flex w-full items-center justify-between gap-4">
+                        <span className="text-muted-foreground">
+                          {chartConfig[name as keyof typeof chartConfig]?.label ?? name}
+                        </span>
+                        <span className="font-mono font-medium tabular-nums">{formatVND(Number(value))}</span>
+                      </div>
+                    )}
+                  />
+                }
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Line
+                type="monotone"
+                dataKey="previous"
+                stroke="var(--color-previous)"
+                strokeWidth={1.5}
+                strokeDasharray="5 4"
+                dot={false}
+                connectNulls
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="var(--color-revenue)"
+                fill="url(#colorRevenue)"
+                strokeWidth={2}
+              />
+            </ComposedChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )
