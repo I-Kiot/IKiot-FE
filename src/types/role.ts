@@ -42,6 +42,8 @@ export interface PermissionGrant {
 /** Một dòng của danh mục quyền. `label` là tên tiếng Việt của nhóm tài nguyên. */
 export interface PermissionCatalogEntry extends PermissionGrant {
   label: string
+  /** Quyền này mở tính năng gì - BE ghi cho những quyền mà tên ngắn chưa đủ rõ, còn lại `null`. */
+  description?: string | null
 }
 
 export interface Role {
@@ -69,4 +71,6 @@ export interface PermissionResourceGroup {
   label: string
   hint?: string
   actions: string[]
+  /** Mô tả theo action, chỉ có ở những quyền BE có ghi. */
+  descriptions: Record<string, string>
 }

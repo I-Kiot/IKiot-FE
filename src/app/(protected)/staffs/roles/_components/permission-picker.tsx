@@ -46,6 +46,9 @@ export function PermissionPicker({
     return groups.filter(
       (group) =>
         group.label.toLowerCase().includes(needle) ||
+        Object.values(group.descriptions).some((text) =>
+          text.toLowerCase().includes(needle),
+        ) ||
         group.resource.toLowerCase().includes(needle) ||
         (group.hint?.toLowerCase().includes(needle) ?? false) ||
         group.actions.some((action) =>
@@ -159,6 +162,34 @@ export function PermissionPicker({
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 pl-6 sm:grid-cols-3">
                   {group.actions.map((action) => {
                     const key = permissionKey(group.resource, action)
+                    const description = group.descriptions[action]
+                    // Quyền có mô tả là quyền mà tên ngắn chưa đủ nói nó làm gì (vd. trừ tồn kho) - cho nó
+                    // nguyên một hàng để đọc được hết, thay vì cắt cụt trong ô lưới.
+                    if (description) {
+                      return (
+                        <label
+                          key={key}
+                          className="col-span-full flex cursor-pointer items-start gap-2 text-sm"
+                        >
+                          <Checkbox
+                            className="mt-0.5"
+                            checked={selected.has(key)}
+                            onCheckedChange={(checked) =>
+                              toggle(key, checked !== false)
+                            }
+                            disabled={disabled}
+                          />
+                          <span className="flex flex-col gap-0.5">
+                            <span className="font-medium">
+                              {actionLabel(action, group.resource)}
+                            </span>
+                            <span className="text-muted-foreground text-xs">
+                              {description}
+                            </span>
+                          </span>
+                        </label>
+                      )
+                    }
                     return (
                       <label
                         key={key}

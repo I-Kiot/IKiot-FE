@@ -75,6 +75,8 @@ export const ACTION_LABELS: Record<string, string> = {
 /** Nhãn riêng khi cùng một action mang nghĩa khác theo resource (`deliver` của shipper vs của xưởng). */
 const RESOURCE_ACTION_LABELS: Record<string, string> = {
   'production:deliver': 'Giao hàng sản xuất (nhân viên xưởng)',
+  // Mã vẫn là `orders:ship` (role_permissions trỏ vào nó); tên hiển thị nói rõ bước và hậu quả.
+  'orders:ship': 'Bắt đầu vận chuyển (trừ tồn kho)',
 }
 
 export const actionLabel = (action: string, resource?: string) =>
