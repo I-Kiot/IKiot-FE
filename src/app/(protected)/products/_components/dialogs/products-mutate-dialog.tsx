@@ -40,6 +40,7 @@ import { useProducts } from '../../_context/products-provider'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
 import { CascadeSelect } from '@/components/ui/cascade-select'
 import { ProductItemImagesField } from '../product-item-images-field'
+import { productApi } from '@/lib/api/product'
 
 const EMPTY_VALUES: ProductFormValues = {
   name: '',
@@ -89,6 +90,14 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
     control: form.control,
     name: 'productDetails',
   })
+  const {
+    fields: attributeFields,
+    append: appendAttribute,
+    remove: removeAttribute,
+    replace: replaceAttributes,
+  } = useFieldArray({ control: form.control, name: 'attributes' })
+  // Sửa hàng hoá: danh sách thuộc tính chỉ có ở GET /products/:id, nên nạp riêng khi mở form.
+  const [attributesLoaded, setAttributesLoaded] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -103,11 +112,27 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
         // Not used in edit mode (BE doesn't allow editing productName here),
         // but the schema requires a value.
         useParentNameForItem: true,
+        attributes: undefined,
       })
+      setAttributesLoaded(false)
+      let cancelled = false
+      productApi
+        .getById(currentRow.id)
+        .then((detail) => {
+          if (cancelled) return
+          replaceAttributes(
+            (detail.attributes ?? []).map((a) => ({ id: a.id, name: a.name, unit: a.unit ?? '' })),
+          )
+          setAttributesLoaded(true)
+        })
+        .catch(() => toast.error('Không tải được thuộc tính của hàng hoá'))
+      return () => {
+        cancelled = true
+      }
     } else {
       form.reset(EMPTY_VALUES)
     }
-  }, [open, isEdit, currentRow, form])
+  }, [open, isEdit, currentRow, form, replaceAttributes])
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -563,7 +588,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                       variant="outline"
                       size="sm"
                       className="cursor-pointer h-7 text-xs"
-                      onClick={() => appendDetail({ name: '', value: '' })}
+                      onClick={() => appendDetail({ name: '', value: '', unit: '' })}
                     >
                       <Plus className="mr-1 size-3.5" />
                       Thêm thuộc tính
@@ -571,7 +596,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                   </div>
                   {detailFields.length === 0 && (
                     <p className="text-xs text-muted-foreground">
-                      VD: Màu sắc - Đỏ, Dung lượng - 512GB
+                      VD: Màu - Óc chó, Kích thước - 140 (đơn vị cm). Đây là thuộc tính của hàng hoá; các phiên bản sau chỉ nhập giá trị.
                     </p>
                   )}
                   <div className="space-y-2">
@@ -586,6 +611,11 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                           placeholder="Giá trị (VD: Đỏ)"
                           className="flex-1"
                           {...form.register(`productDetails.${index}.value`)}
+                        />
+                        <Input
+                          placeholder="Đơn vị (VD: cm)"
+                          className="w-28"
+                          {...form.register(`productDetails.${index}.unit`)}
                         />
                         <Button
                           type="button"
@@ -602,6 +632,54 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                 </div>
 
               </>
+            )}
+
+            {isEdit && (
+              <div className="space-y-2">
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <FormLabel>Thuộc tính hàng hoá</FormLabel>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer h-7 text-xs"
+                    disabled={!attributesLoaded}
+                    onClick={() => appendAttribute({ name: '', unit: '' })}
+                  >
+                    <Plus className="mr-1 size-3.5" />
+                    Thêm thuộc tính
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {attributesLoaded
+                    ? 'Mỗi phiên bản nhập giá trị cho các thuộc tính này. Xoá một thuộc tính sẽ xoá giá trị của nó trên mọi phiên bản.'
+                    : 'Đang tải thuộc tính...'}
+                </p>
+                {attributeFields.map((field, index) => (
+                  <div key={field.id} className="flex gap-2">
+                    <Input
+                      placeholder="Tên thuộc tính (VD: Màu)"
+                      className="flex-1"
+                      {...form.register(`attributes.${index}.name`)}
+                    />
+                    <Input
+                      placeholder="Đơn vị (VD: cm)"
+                      className="w-28"
+                      {...form.register(`attributes.${index}.unit`)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 cursor-pointer text-muted-foreground hover:text-destructive"
+                      onClick={() => removeAttribute(index)}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             )}
 
             <DialogFooter>

@@ -1,5 +1,8 @@
 "use client";
 
+import { ImageAttachments } from "@/components/image-attachments";
+import { CustomizationChips } from "@/app/(protected)/sales/orders/shared/customization-chips";
+
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -186,6 +189,32 @@ export function ProductionRequestDetailDialog({
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">{line.sku ?? "-"}</div>
+                      {line.attributes?.some((a) => a.name && a.value) && (
+                        <div className="text-xs text-muted-foreground">
+                          {line.attributes
+                            .filter((a) => a.name && a.value)
+                            .map((a) => `${a.name}: ${a.value}`)
+                            .join(" · ")}
+                        </div>
+                      )}
+                      {line.orderItem?.customization && (
+                        <div className="mt-1 flex flex-col gap-1 text-xs">
+                          <span className="text-amber-600 dark:text-amber-400">Khách đặt riêng:</span>
+                          <CustomizationChips customization={line.orderItem.customization} />
+                          {line.orderItem.customization.note && (
+                            <span className="text-muted-foreground">Ghi chú: {line.orderItem.customization.note}</span>
+                          )}
+                        </div>
+                      )}
+                      {[...(line.orderItem?.customization?.attachmentUrls ?? []), ...(line.attachmentUrls ?? [])].length > 0 && (
+                        <div className="mt-1">
+                          <ImageAttachments
+                            value={[...(line.orderItem?.customization?.attachmentUrls ?? []), ...(line.attachmentUrls ?? [])]}
+                            onChange={() => undefined}
+                            disabled
+                          />
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       {line.orderItem ? (
