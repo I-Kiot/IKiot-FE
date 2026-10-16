@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { CustomizationChips } from "@/app/(protected)/sales/orders/shared/customization-chips";
 import { Trash2, Ruler } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { productApi } from "@/lib/api/product";
 import type { LocationType } from "@/types/location";
 import type { OrderItemCustomization } from "@/types/order-flow";
-import { CustomizationDialog, customizationSummary } from "../../shared/customization-dialog";
+import { CustomizationDialog } from "../../shared/customization-dialog";
 import { formatVND, lineTotal, stockLevel } from "../shared/order-totals";
 
 export interface OrderLineDraft {
@@ -223,9 +224,7 @@ export function OrderLinesEditor({
                       </div>
                       <div className="text-xs text-muted-foreground">{line.sku}</div>
                       {line.customization && (
-                        <div className="text-xs text-muted-foreground">
-                          {customizationSummary(line.customization)}
-                        </div>
+                        <CustomizationChips customization={line.customization} className="mt-1" />
                       )}
                       {allowCustomization && (
                         <Button

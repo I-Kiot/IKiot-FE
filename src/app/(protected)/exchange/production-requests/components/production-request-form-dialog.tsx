@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { CustomizationChips } from "@/app/(protected)/sales/orders/shared/customization-chips";
 import Link from "next/link";
 import { Minus, PackagePlus, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,6 @@ import type {
   SkuAttributeValue,
 } from "@/types/order-flow";
 import { ImageAttachments } from "@/components/image-attachments";
-import { customizationSummary } from "@/app/(protected)/sales/orders/shared/customization-dialog";
 import {
   changedAttributes,
   loadLineVariant,
@@ -447,14 +447,8 @@ export function ProductionRequestFormDialog({
                             </span>
                             {line.customization ? (
                               <>
-                                <span className="text-amber-600 dark:text-amber-400">
-                                  Khách đặt riêng:{" "}
-                                  {customizationSummary({
-                                    attachmentUrls:
-                                      line.customization.attachmentUrls,
-                                    specs: line.customization.specs,
-                                  }) || "-"}
-                                </span>
+                                <span className="text-amber-600 dark:text-amber-400">Khách đặt riêng:</span>
+                                <CustomizationChips customization={line.customization} />
                                 {line.customization.note && (
                                   <span className="text-muted-foreground">
                                     Ghi chú: {line.customization.note}

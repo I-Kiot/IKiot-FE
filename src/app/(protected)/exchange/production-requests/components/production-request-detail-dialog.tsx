@@ -1,7 +1,7 @@
 "use client";
 
 import { ImageAttachments } from "@/components/image-attachments";
-import { customizationSummary } from "@/app/(protected)/sales/orders/shared/customization-dialog";
+import { CustomizationChips } from "@/app/(protected)/sales/orders/shared/customization-chips";
 
 import * as React from "react";
 import Link from "next/link";
@@ -198,13 +198,12 @@ export function ProductionRequestDetailDialog({
                         </div>
                       )}
                       {line.orderItem?.customization && (
-                        <div className="text-xs text-amber-600 dark:text-amber-400">
-                          Khách đặt riêng:{" "}
-                          {customizationSummary({
-                            attachmentUrls: line.orderItem.customization.attachmentUrls,
-                            specs: line.orderItem.customization.specs,
-                          }) || "-"}
-                          {line.orderItem.customization.note ? ` · Ghi chú: ${line.orderItem.customization.note}` : ""}
+                        <div className="mt-1 flex flex-col gap-1 text-xs">
+                          <span className="text-amber-600 dark:text-amber-400">Khách đặt riêng:</span>
+                          <CustomizationChips customization={line.orderItem.customization} />
+                          {line.orderItem.customization.note && (
+                            <span className="text-muted-foreground">Ghi chú: {line.orderItem.customization.note}</span>
+                          )}
                         </div>
                       )}
                       {[...(line.orderItem?.customization?.attachmentUrls ?? []), ...(line.attachmentUrls ?? [])].length > 0 && (
