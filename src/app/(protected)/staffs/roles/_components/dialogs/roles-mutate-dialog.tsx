@@ -98,7 +98,7 @@ export function RolesMutateDialog({
           <form
             id="role-form"
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex min-h-0 flex-1 flex-col gap-4"
+            className="-mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1 md:mx-0 md:overflow-visible md:px-0"
           >
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
               <FormField
@@ -139,15 +139,15 @@ export function RolesMutateDialog({
               control={form.control}
               name="permissionKeys"
               render={({ field }) => (
-                <FormItem className="flex min-h-0 flex-1 flex-col">
+                <FormItem className="flex flex-col md:min-h-0 md:flex-1">
                   <FormLabel>
                     Quyền <span className="text-destructive">*</span>
-                    <span className="text-muted-foreground font-normal">
+                    <span className="text-muted-foreground hidden font-normal md:inline">
                       - chọn nhóm bên trái, tick những việc vai trò này được làm. Mọi nhân viên luôn xem được sản phẩm, lịch và ca của mình; người phụ trách đơn làm được các bước của đơn mình, trừ &quot;Bắt đầu vận chuyển&quot;.
                     </span>
                   </FormLabel>
                   <FormControl>
-                    <div className="min-h-0 flex-1">
+                    <div className="md:min-h-0 md:flex-1">
                       <PermissionPicker
                         groups={catalog}
                         value={field.value}

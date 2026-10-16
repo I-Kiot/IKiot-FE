@@ -20,6 +20,9 @@ type PermissionPickerProps = {
   disabled?: boolean
 }
 
+/** Viền ô chưa tick: mặc định (`border-input`) gần như biến mất trên nền khối ở chế độ sáng. */
+const BOX = 'border-muted-foreground/60'
+
 type CheckState = boolean | 'indeterminate'
 
 function stateOf(keys: string[], selected: Set<string>): CheckState {
@@ -77,10 +80,11 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
 
   const ActiveIcon = active.icon
 
+  // Màn hẹp: nhóm thành hàng chip cuộn ngang, danh sách quyền trải dọc và cả hộp thoại cuộn chung. Từ md: hai cột, mỗi cột tự cuộn.
   return (
-    <div className="grid h-full min-h-0 gap-4 md:grid-cols-[300px_1fr]">
+    <div className="flex flex-col gap-4 md:grid md:h-full md:min-h-0 md:grid-cols-[300px_1fr]">
       {/* Trái: các nhóm quyền chính */}
-      <nav className="flex min-h-0 flex-col gap-1.5 overflow-y-auto pr-1 [scrollbar-width:thin]">
+      <nav className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin] md:min-h-0 md:flex-col md:overflow-x-visible md:overflow-y-auto md:pr-1 md:pb-0">
         {sections.map((section) => {
           const chosen = section.keys.filter((key) => selected.has(key)).length
           const Icon = section.icon
@@ -94,7 +98,7 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
                 setQuery('')
               }}
               className={cn(
-                'flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-left transition-colors',
+                'flex shrink-0 cursor-pointer items-start gap-3 rounded-lg border p-2.5 text-left transition-colors md:p-3',
                 isActive ? 'border-primary bg-primary/10' : 'hover:bg-muted/60',
               )}
             >
@@ -106,13 +110,13 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
                     {chosen}/{section.keys.length}
                   </Badge>
                 </span>
-                <span className="text-muted-foreground text-xs">{section.summary}</span>
+                <span className="text-muted-foreground hidden text-xs md:block [@media(max-height:920px)]:md:hidden">{section.summary}</span>
               </span>
             </button>
           )
         })}
 
-        <div className="text-muted-foreground mt-auto flex flex-col gap-2 border-t pt-3 text-xs">
+        <div className="text-muted-foreground mt-auto hidden flex-col gap-2 border-t pt-3 text-xs md:flex">
           <span>
             Đã chọn <strong className="text-foreground">{selected.size}</strong> / {allKeys.length} quyền
           </span>
@@ -132,7 +136,7 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
       </nav>
 
       {/* Phải: quyền của nhóm đang chọn */}
-      <div className="flex min-h-0 flex-col gap-3 rounded-lg border p-4">
+      <div className="flex flex-col gap-3 rounded-lg border p-3 md:min-h-0 md:p-4">
         <div className="flex flex-wrap items-center gap-3">
           {needle ? (
             <span className="text-sm font-medium">Kết quả tìm &quot;{query}&quot;</span>
@@ -155,6 +159,7 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
           {!needle && (
             <label className="flex cursor-pointer items-center gap-2 text-sm">
               <Checkbox
+                className={BOX}
                 checked={stateOf(active.keys, selected)}
                 onCheckedChange={(checked) => setKeys(active.keys, checked !== false)}
                 disabled={disabled}
@@ -165,20 +170,21 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
         </div>
         {!needle && <p className="text-muted-foreground -mt-1 text-sm">{active.summary}</p>}
 
-        <ScrollArea className="min-h-0 flex-1">
+        <ScrollArea className="md:min-h-0 md:flex-1">
           {visibleBlocks.length === 0 ? (
             <p className="text-muted-foreground py-10 text-center text-sm">
               Không có quyền nào khớp &quot;{query}&quot;
             </p>
           ) : (
-            <div className="grid gap-4 pr-3 xl:grid-cols-2">
+            <div className="grid gap-4 md:pr-3 xl:grid-cols-2">
               {visibleBlocks.map((block) => {
                 const keys = block.items.map((item) => item.key)
                 const chosen = keys.filter((key) => selected.has(key)).length
                 return (
-                  <section key={block.title} className="bg-muted/30 rounded-lg border">
-                    <label className="flex cursor-pointer items-center gap-2 border-b px-4 py-2.5">
+                  <section key={block.title} className="bg-card rounded-lg border">
+                    <label className="flex cursor-pointer items-center gap-2 border-b px-3 py-2.5 md:px-4">
                       <Checkbox
+                        className={BOX}
                         checked={stateOf(keys, selected)}
                         onCheckedChange={(checked) => setKeys(keys, checked !== false)}
                         disabled={disabled}
@@ -191,9 +197,9 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
                     <ul className="flex flex-col py-1">
                       {block.items.map((item) => (
                         <li key={item.key}>
-                          <label className="hover:bg-muted/60 flex cursor-pointer items-start gap-3 px-4 py-2">
+                          <label className="hover:bg-muted/60 flex cursor-pointer items-start gap-3 px-3 py-2 md:px-4">
                             <Checkbox
-                              className="mt-0.5"
+                              className={cn(BOX, 'mt-0.5')}
                               checked={selected.has(item.key)}
                               onCheckedChange={(checked) => setKeys([item.key], checked !== false)}
                               disabled={disabled}
