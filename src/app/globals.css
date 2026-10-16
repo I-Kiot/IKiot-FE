@@ -241,3 +241,30 @@ html {
   opacity: 1;
   background: rgba(0, 0, 0, 0.06) !important;
 }
+
+/*
+ * Thanh cuộn gọn cho vùng cuộn phụ (sidebar, cột nhóm quyền...): mảnh, rãnh trong suốt, thanh chỉ hiện khi rê
+ * chuột vào vùng đó. Mặc định của trình duyệt là rãnh trắng to, lệch hẳn khỏi giao diện tối.
+ */
+@utility scrollbar-clean {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  &:hover,
+  &:focus-within {
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent) transparent;
+  }
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 9999px;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+  }
+}

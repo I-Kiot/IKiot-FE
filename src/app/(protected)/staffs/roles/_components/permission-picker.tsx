@@ -88,7 +88,7 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
   return (
     <div className="flex flex-col gap-4 md:grid md:h-full md:min-h-0 md:grid-cols-[300px_1fr]">
       {/* Trái: các nhóm quyền chính */}
-      <nav className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin] md:min-h-0 md:flex-col md:overflow-x-visible md:overflow-y-auto md:pr-1 md:pb-0">
+      <nav className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-clean md:min-h-0 md:flex-col md:overflow-x-visible md:overflow-y-auto md:pr-1 md:pb-0">
         {sections.map((section) => {
           const chosen = countOn(section.items, selected)
           const Icon = section.icon
