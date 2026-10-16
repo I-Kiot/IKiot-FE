@@ -243,28 +243,54 @@ html {
 }
 
 /*
- * Thanh cuộn gọn cho vùng cuộn phụ (sidebar, cột nhóm quyền...): mảnh, rãnh trong suốt, thanh chỉ hiện khi rê
- * chuột vào vùng đó. Mặc định của trình duyệt là rãnh trắng to, lệch hẳn khỏi giao diện tối.
+ * Thanh cuộn chung cho cả app (sidebar, bảng, dialog, trang): mảnh, rãnh trong suốt, thanh xám nhạt theo theme và
+ * đậm lên khi rê chuột. Mặc định của trình duyệt là rãnh trắng to có mũi tên, lệch hẳn khỏi giao diện tối.
+ * Đặt ở `base` cho mọi phần tử thay vì gắn class từng nơi - vùng cuộn mới thêm sau cũng tự đúng.
  */
-@utility scrollbar-clean {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  &:hover,
-  &:focus-within {
-    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent) transparent;
+:root {
+  --scrollbar-thumb: color-mix(in oklab, var(--muted-foreground) 35%, transparent);
+  --scrollbar-thumb-hover: color-mix(in oklab, var(--muted-foreground) 65%, transparent);
+}
+@layer base {
+  /*
+   * Chrome / Edge / Safari: dùng ::-webkit-scrollbar - chỉ cách này mới ẩn được nút mũi tên hai đầu. Không đặt
+   * scrollbar-color cho chúng: có thuộc tính chuẩn là Chrome bỏ qua các rule bên dưới và vẽ lại mũi tên.
+   */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
   }
-  &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  ::-webkit-scrollbar-button {
+    display: none;
   }
-  &::-webkit-scrollbar-track {
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
     background: transparent;
   }
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border: 2px solid transparent;
     border-radius: 9999px;
+    background-clip: content-box;
   }
-  &:hover::-webkit-scrollbar-thumb {
-    background: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+  *:hover::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+  /* Firefox không có ::-webkit-scrollbar. */
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+  }
+}
+
+/* Ẩn hẳn thanh cuộn nhưng vẫn cuộn được (dải tab hoá đơn ở bán tại quầy). */
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
