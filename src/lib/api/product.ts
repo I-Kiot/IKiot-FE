@@ -15,6 +15,7 @@ import type {
   ProductSearchParams,
   ProductItemListEntry,
   ProductItemListParams,
+  ProductAttribute,
 } from "@/types/product";
 
 type ApiDoc<T extends object> = Omit<T, "id"> & { id: string };
@@ -32,12 +33,19 @@ function mapId<T extends object>(doc: ApiDoc<T>): T & { id: string } {
   return { ...(rest as unknown as T), id: id };
 }
 
+// BE gọi giá trị thuộc tính của SKU là `details`; FE dùng `productDetails` (tên của API cũ).
+function mapItem(doc: ApiDoc<ProductItem> & { details?: ProductItem["productDetails"] }): ProductItem {
+  const item = mapId(doc) as ProductItem & { details?: ProductItem["productDetails"] };
+  const { details, ...rest } = item;
+  return { ...rest, productDetails: item.productDetails ?? details };
+}
+
 function mapProduct(prod: ApiProductDoc): Product {
   const { id, items, ...rest } = prod;
   return {
     ...(rest as unknown as Omit<Product, "id" | "items">),
     id: id,
-    items: items?.map(mapId),
+    items: items?.map(mapItem),
   };
 }
 
@@ -100,6 +108,15 @@ export const productApi = {
       params,
     });
     return mapProduct(res.data.data) as ProductDetailResponse;
+  },
+
+  /** Thêm một thuộc tính cho sản phẩm; trùng tên thì trả thuộc tính đã có. */
+  addAttribute: async (
+    productId: string,
+    payload: { name: string; unit?: string },
+  ): Promise<ProductAttribute> => {
+    const res = await client.post<{ data: ProductAttribute }>(`/products/${productId}/attributes`, payload);
+    return res.data.data;
   },
 
   create: async (payload: ProductCreatePayload): Promise<Product> => {

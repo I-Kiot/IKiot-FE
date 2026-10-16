@@ -290,6 +290,10 @@ export const ERROR_MESSAGES = {
   PRODUCTION_REQUEST_RECEIVE_EMPTY: "Phải nhận ít nhất một dòng với số lượng lớn hơn 0",
   PRODUCTION_REQUEST_CODE_UNAVAILABLE: "Không tạo được mã yêu cầu sản xuất, vui lòng thử lại",
   PRODUCTION_REQUEST_ITEM_NOT_PRODUCIBLE: "Chỉ đặt xưởng được sản phẩm thường (không phải combo hay dịch vụ)",
+  PRODUCTION_REQUEST_LINE_FIXED_BY_ORDER: "Dòng làm cho đơn hàng đi theo yêu cầu của dòng đơn - không đổi thuộc tính hay giá ở YCSX",
+  PRODUCT_ATTRIBUTE_DUPLICATE: "Hai thuộc tính của hàng hoá trùng tên",
+  PRODUCT_ATTRIBUTE_NOT_FOUND: "Thuộc tính không thuộc hàng hoá này - tải lại trang rồi thử lại",
+  PRODUCT_ATTRIBUTE_VALUE_REQUIRED: "Giá trị thuộc tính không được để trống",
   PRODUCTION_REQUEST_ITEM_NOT_MANUFACTURABLE: "Mặt hàng này không sản xuất được, hãy tạo đơn nhập hàng từ nhà cung cấp",
   PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Đóng yêu cầu khi chưa nhận đủ phải ghi lý do",
   // Nhân viên xưởng & phiếu giao xưởng (2026-10-09)

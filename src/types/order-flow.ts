@@ -245,6 +245,10 @@ export type ImportSource = "SUPPLIER" | "WORKSHOP";
 // ─── Orders (track A BE / track D FE) ───────────────────────────────────────
 
 export interface OrderItemSpec {
+  /** Thuộc tính của sản phẩm mà khách đổi; không có = thông số ghi tự do. */
+  attributeId?: string | null;
+  /** Giá trị của SKU mẫu (BE chụp lại khi lưu) - để hiện "Óc chó → Trắng". */
+  baseValue?: string | null;
   name: string;
   value: string;
   unit?: string | null;
@@ -470,19 +474,40 @@ export interface ConfirmOrderPayload {
 
 // ─── Production requests & imports (track B) ────────────────────────────────
 
+/** Giá trị một thuộc tính của SKU (Màu: Óc chó). `attributeId` null = dòng ghi tự do. */
+export interface SkuAttributeValue {
+  attributeId: string | null;
+  name: string | null;
+  value: string | null;
+}
+
 export interface ProductionRequestLine {
   id: string;
   productItemId: string;
+  productId: string;
   sku: string | null;
   productName: string;
+  /** Giá bán hiện tại của SKU. */
+  retailPrice: number;
+  /** Thuộc tính của SKU - xưởng làm đúng bộ này. */
+  attributes: SkuAttributeValue[];
   imageUrl: string | null;
   quantity: number;
   receivedQuantity: number;
   /** Xưởng đã báo giao (phiếu Chờ nhận) nhưng nơi nhận chưa đếm. */
   pendingDeliveryQuantity: number;
   note: string | null;
+  /** Ảnh gửi xưởng của dòng này (bản thiết kế, ảnh mẫu). */
+  attachmentUrls: string[];
   /** The order line the piece is made for - always set for a custom piece. */
-  orderItem: { id: string; orderId: string; orderCode: string | null; isCustom: boolean } | null;
+  orderItem: {
+    id: string;
+    orderId: string;
+    orderCode: string | null;
+    isCustom: boolean;
+    /** Thứ khách đặt riêng cho dòng đơn: đổi gì so với mẫu, ảnh, ghi chú. */
+    customization: { note: string | null; attachmentUrls: string[]; specs: OrderItemSpec[] } | null;
+  } | null;
 }
 
 /** One receipt against a request: the WORKSHOP import it wrote (`/stock-movements`). */
@@ -604,6 +629,12 @@ export interface ProductionRequestLinePayload {
   quantity: number;
   orderItemId?: string;
   note?: string;
+  /** Thuộc tính đổi so với SKU: dòng chuyển sang SKU đúng bộ đó (có sẵn, hoặc BE tạo mới). */
+  attributeValues?: { attributeId: string; value: string }[];
+  /** Chỉ gửi khi tick "Cập nhật giá mới": giá bán của SKU kết quả. */
+  retailPrice?: number;
+  /** Ảnh gửi xưởng, đã tải qua POST /uploads. */
+  attachmentUrls?: string[];
 }
 
 export interface CreateProductionRequestPayload {

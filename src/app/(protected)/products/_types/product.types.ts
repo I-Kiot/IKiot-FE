@@ -6,6 +6,15 @@ export type ProductsDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'cro
 const productDetailEntrySchema = z.object({
   name: z.string(),
   value: z.string(),
+  // Đơn vị của thuộc tính (cm, kg...) - chỉ dùng ở form tạo hàng hoá, nơi dòng này định nghĩa luôn thuộc tính.
+  unit: z.string().optional(),
+})
+
+// Thuộc tính của sản phẩm khi sửa hàng hoá: tên + đơn vị; `id` giữ dòng cũ (đổi tên không mất giá trị trên SKU).
+const productAttributeEntrySchema = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  unit: z.string().optional(),
 })
 
 // Schema cho form tạo/chỉnh sửa Product (item fields optional - validate thủ công khi create)
@@ -41,6 +50,7 @@ export const productFormSchema = z.object({
   warrantyPeriod: z.string().optional(),
   description: z.string().optional(),
   productDetails: z.array(productDetailEntrySchema).optional(),
+  attributes: z.array(productAttributeEntrySchema).optional(),
 })
 
 export type ProductFormValues = z.infer<typeof productFormSchema>

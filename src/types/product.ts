@@ -12,8 +12,19 @@ export interface ProductImage {
 
 export interface ProductDetail {
   id?: string;
+  /** Thuộc tính của sản phẩm mà giá trị này thuộc về (null = dòng ghi tự do). */
+  attributeId?: string | null;
   name: string;
   value: string;
+}
+
+/** Thuộc tính định nghĩa ở sản phẩm (2026-10-16); mỗi SKU giữ giá trị trong `productDetails`. */
+export interface ProductAttribute {
+  id?: string;
+  name: string;
+  /** Đơn vị của giá trị (cm, kg...). */
+  unit?: string | null;
+  position?: number;
 }
 
 export interface StockDetail {
@@ -69,6 +80,7 @@ export interface Product {
   /** Đặt xưởng sản xuất được; false = chỉ nhập từ NCC. */
   isManufacturable?: boolean;
   images?: ProductImage[];
+  attributes?: ProductAttribute[];
   items?: ProductItem[];
   // Tồn tại địa điểm đang xem. Khi danh sách không lọc địa điểm thì bằng
   // totalStockAllLocations.
@@ -180,6 +192,7 @@ export interface ProductCreatePayload {
   status: ProductStatus;
   isManufacturable?: boolean;
   images?: ProductImage[];
+  attributes?: ProductAttribute[];
   items: ProductItemCreatePayload[];
 }
 
@@ -190,4 +203,6 @@ export interface ProductUpdatePayload {
   status?: ProductStatus;
   isManufacturable?: boolean;
   images?: ProductImage[];
+  /** Thay toàn bộ danh sách thuộc tính; dòng có `id` được giữ, dòng vắng mặt bị xoá cùng giá trị trên mọi SKU. */
+  attributes?: ProductAttribute[];
 }

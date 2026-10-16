@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2, Ruler } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,7 +88,10 @@ export function OrderCartLines({ lines, onChange, error }: OrderCartLinesProps) 
                       </span>
                       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground font-mono mt-0.5">
                         <span>SKU: {line.sku}</span>
-                        {level === "ENOUGH" ? (
+                        {/* Làm riêng = SKU mới, chưa có trên kệ nào: luôn phải đặt xưởng, tồn của SKU mẫu không liên quan. */}
+                        {line.customization ? (
+                          <Badge variant="warning">Cần đặt xưởng</Badge>
+                        ) : level === "ENOUGH" ? (
                           <Badge variant="success">Đủ hàng</Badge>
                         ) : level === "SHORT" ? (
                           <Badge variant="warning">Thiếu {missing}</Badge>
@@ -103,12 +106,13 @@ export function OrderCartLines({ lines, onChange, error }: OrderCartLinesProps) 
                       )}
                       <Button
                         type="button"
-                        variant="link"
+                        variant={line.customization ? "secondary" : "outline"}
                         size="sm"
-                        className="h-auto w-fit px-0 text-xs"
+                        className="mt-1 h-7 w-fit cursor-pointer gap-1.5 text-xs"
                         onClick={() => setCustomizing(line.key)}
                       >
-                        {line.customization ? "Sửa thông số riêng" : "Thông số riêng"}
+                        <Ruler className="size-3.5" />
+                        {line.customization ? "Sửa yêu cầu làm riêng" : "Làm riêng theo yêu cầu"}
                       </Button>
                     </div>
                   </TableCell>
@@ -196,6 +200,8 @@ export function OrderCartLines({ lines, onChange, error }: OrderCartLinesProps) 
         <CustomizationDialog
           open
           label={customizingLine.name}
+          productItemId={customizingLine.productItemId}
+          sku={customizingLine.sku}
           value={customizingLine.customization}
           onOpenChange={(open) => {
             if (!open) setCustomizing(null);
