@@ -31,6 +31,7 @@ import {
   type RoleFormValues,
 } from "../../_types/role.types";
 import { PermissionPicker } from "../permission-picker";
+import { ALWAYS_ON_PERMISSIONS } from "../../_constants/permission-sections";
 
 const EMPTY_VALUES: RoleFormValues = {
   name: "",
@@ -72,7 +73,20 @@ export function RolesMutateDialog({
     }
   }, [open, isEdit, currentRow, form]);
 
-  async function onSubmit(data: RoleFormValues) {
+  async function onSubmit(values: RoleFormValues) {
+    // Quyền chung không hiện thành ô - thêm vào ở đây, chỉ những mã danh mục thật sự có.
+    const inCatalog = new Set(
+      catalog.flatMap((group) =>
+        group.actions.map((action) => permissionKey(group.resource, action)),
+      ),
+    );
+    const alwaysOn = ALWAYS_ON_PERMISSIONS.map((entry) => entry.key).filter(
+      (key) => inCatalog.has(key),
+    );
+    const data: RoleFormValues = {
+      ...values,
+      permissionKeys: [...new Set([...values.permissionKeys, ...alwaysOn])],
+    };
     const success =
       isEdit && currentRow
         ? await handleEdit(currentRow.id, data)

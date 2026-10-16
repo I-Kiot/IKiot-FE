@@ -17,7 +17,7 @@ import {
 import { DataTableEmpty } from '@/components/data-table/data-table-empty'
 import { DataTableLoading } from '@/components/data-table/data-table-loading'
 import { useRoles } from '../../_context/roles-provider'
-import { usePermissionSections } from '../../_hooks/use-permission-sections'
+import { itemState, usePermissionSections } from '../../_hooks/use-permission-sections'
 import { permissionKey } from '../../_types/role.types'
 
 const COLUMN_COUNT = 4
@@ -27,16 +27,6 @@ export function RolesTable() {
   const [query, setQuery] = useState('')
 
   const { sections } = usePermissionSections(catalog)
-  // Tên dễ đọc của từng quyền, để chip của mỗi nhóm liệt kê được các việc vai trò làm khi rê chuột.
-  const labelOf = useMemo(
-    () =>
-      new Map(
-        sections.flatMap((section) =>
-          section.blocks.flatMap((block) => block.items.map((item) => [item.key, item.label] as const)),
-        ),
-      ),
-    [sections],
-  )
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -95,9 +85,10 @@ export function RolesTable() {
               const chips = sections
                 .map((section) => ({
                   section,
-                  keys: section.keys.filter((key) => granted.has(key)),
+                  // Đếm theo ô của màn chọn quyền (đủ mọi mã mới tính), cùng con số người dùng thấy lúc tick.
+                  on: section.items.filter((item) => itemState(item.keys, granted) === true),
                 }))
-                .filter((chip) => chip.keys.length > 0)
+                .filter((chip) => chip.on.length > 0)
 
               return (
                 <TableRow key={role.id}>
@@ -117,17 +108,17 @@ export function RolesTable() {
                       </span>
                     ) : (
                       <div className="flex flex-wrap gap-1">
-                        {chips.map(({ section, keys }) => {
+                        {chips.map(({ section, on }) => {
                           const Icon = section.icon
                           return (
                             <Badge
                               key={section.id}
                               variant="outline"
                               className="gap-1"
-                              title={keys.map((key) => labelOf.get(key) ?? key).join(', ')}
+                              title={on.map((item) => item.label).join(', ')}
                             >
                               <Icon className="size-3" />
-                              {section.title} {keys.length}/{section.keys.length}
+                              {section.title} {on.length}/{section.items.length}
                             </Badge>
                           )
                         })}
