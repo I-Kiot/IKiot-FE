@@ -39,6 +39,13 @@ export type PermissionSection = {
 export const OTHER_SECTION_ID = 'other'
 
 /**
+ * Tài nguyên còn được hiện ở nhóm "Khác" (chốt 2026-10-16). Mọi mã chưa xếp nhóm của tài nguyên khác là quyền
+ * BE không kiểm tra hoặc chỉ admin nền tảng dùng - ẩn khỏi màn hình. Mã ẩn mà vai trò đang có vẫn được giữ
+ * nguyên khi lưu. Tài nguyên mới BE thêm vào thì nhớ xếp vào một nhóm hoặc thêm vào đây.
+ */
+export const OTHER_SECTION_RESOURCES = ['sales_channels', 'fulfillments', 'users']
+
+/**
  * Quyền mọi vai trò đều có: thiếu chúng thì việc chính của nhân viên hỏng, còn cho thêm thì không lộ gì
  * quan trọng. Không hiện thành ô; được thêm vào khi lưu vai trò. (BE nên đưa vào `STAFF_BASE_PERMISSIONS`
  * - khi đó bỏ khỏi đây.)
@@ -59,7 +66,7 @@ const SUPPLIERS_READ = ['suppliers:read']
 export const PERMISSION_SECTIONS: PermissionSection[] = [
   {
     id: 'staff',
-    title: 'Nhân viên bán hàng',
+    title: 'Bán hàng',
     summary: 'Tạo đơn, chăm sóc khách, thu tiền và đứng ca tại cửa hàng.',
     icon: ShoppingBag,
     blocks: [

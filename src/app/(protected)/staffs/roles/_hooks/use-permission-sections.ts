@@ -5,6 +5,7 @@ import type { PermissionResourceGroup } from '@/types/role'
 import {
   ALWAYS_ON_PERMISSIONS,
   OTHER_SECTION_ID,
+  OTHER_SECTION_RESOURCES,
   PERMISSION_SECTIONS,
   type PermissionItem,
   type PermissionSection,
@@ -76,8 +77,9 @@ export function usePermissionSections(groups: PermissionResourceGroup[]) {
       })
     }
 
-    // Phần còn lại, gom theo tài nguyên như danh mục gốc, mỗi mã một ô.
+    // Phần còn lại của các tài nguyên được giữ (`OTHER_SECTION_RESOURCES`), gom theo tài nguyên, mỗi mã một ô.
     const otherBlocks = groups
+      .filter((group) => OTHER_SECTION_RESOURCES.includes(group.resource))
       .map((group) => ({
         title: group.label,
         items: group.actions
@@ -100,7 +102,7 @@ export function usePermissionSections(groups: PermissionResourceGroup[]) {
         id: OTHER_SECTION_ID,
         title: 'Khác',
         summary:
-          'Quyền chưa gắn với màn hình nào đang dùng, hoặc dành cho tính năng sắp có. Thường không cần chọn.',
+          'Quyền dành cho tính năng sắp có (kênh bán, đóng hàng) và các quyền nhân viên chưa xếp nhóm. Thường không cần chọn.',
         icon: Boxes,
         blocks: otherBlocks,
         items,
