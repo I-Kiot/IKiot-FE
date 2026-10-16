@@ -96,6 +96,7 @@ export const sidebarItems = {
     url: "/#",
     icon: ShoppingCart,
     items: [
+      { title: "Tạo đơn hàng", url: "/sales/orders/new" },
       { title: "Danh sách đơn", url: "/sales/orders" },
       { title: "Hoàn hàng", url: "/order-returns" },
       { title: "Hoá đơn", url: "/sales/invoices" },

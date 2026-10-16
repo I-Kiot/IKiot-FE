@@ -28,7 +28,7 @@ export default function OrdersPage() {
         actions={
           canCreate ? (
             <Button asChild>
-              <Link href="/check-out?mode=order">
+              <Link href="/sales/orders/new">
                 <Plus className="size-4" />
                 Tạo đơn
               </Link>

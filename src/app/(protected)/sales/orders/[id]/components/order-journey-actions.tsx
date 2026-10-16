@@ -53,8 +53,14 @@ function deliveredShipment(order: OrderDetail): OrderShipment | undefined {
 
 /**
  * Chỉ để ẩn nút chắc chắn bị từ chối - luật thật là `assertOrderStepAccess` / `deliveryActorAccess` của
- * BE, sai thì BE trả `ORDER_STEP_DENIED`. Người phụ trách đơn làm được mọi bước mà không cần quyền.
+ * BE, sai thì BE trả `ORDER_STEP_DENIED`. Người phụ trách đơn làm được mọi bước mà không cần quyền, trừ "Bắt đầu vận chuyển" (xem `ASSIGNEE_MAY_SHIP`).
  */
+/**
+ * Người phụ trách có được bấm "Đã giao cho ĐVVC" (trừ tồn kho) mà không cần `orders:ship` không. Tắt từ
+ * 2026-10-16, chờ khách xác nhận; bật lại thì đổi cùng lúc `ASSIGNEE_MAY_SHIP` ở BE (`order-handler.ts`).
+ */
+const ASSIGNEE_MAY_SHIP = false;
+
 function stepPermissions(order: OrderDetail) {
   const role = getSessionRole();
   const userId = getCachedUser()?.id;
@@ -71,7 +77,7 @@ function stepPermissions(order: OrderDetail) {
   return {
     canPack: isAssignee || allows(role, "orders", "pack"),
     canHandOver: isAssignee || allows(role, "shipments", "create"),
-    canShip: isAssignee || allows(role, "orders", "ship"),
+    canShip: (ASSIGNEE_MAY_SHIP && isAssignee) || allows(role, "orders", "ship"),
     canConfirmCash: allows(role, "orders", "confirm_cash"),
     canActOnDelivery,
   };
@@ -129,6 +135,8 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
   const showAwaitingPickUp = order.status === "PACKED" && awaitingPickUp !== undefined;
   const showPickUp = showAwaitingPickUp && permissions.canActOnDelivery(awaitingPickUp);
   const showShip = order.status === "PICKED_UP" && permissions.canShip;
+  // Không có nút thì nói vì sao đơn đứng ở đây - kể cả người phụ trách (ASSIGNEE_MAY_SHIP tắt).
+  const showAwaitingShip = order.status === "PICKED_UP" && !permissions.canShip;
   const showDeliver =
     order.status === "SHIPPING" && permissions.canActOnDelivery(onTheRoad);
   const showQr =
@@ -138,7 +146,7 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
 
   const hasButton =
     showPack || showHandOver || showPickUp || showShip || showDeliver || showQr || awaitingCash;
-  const hasRow = hasButton || showAwaitingPickUp;
+  const hasRow = hasButton || showAwaitingPickUp || showAwaitingShip;
 
   /** Đóng dialog; bỏ cờ ?confirmCash để tải lại trang hay lần xác nhận sau không tự mở lại dialog. */
   const closeStep = () => {
@@ -188,6 +196,11 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
           {showAwaitingPickUp && awaitingPickUp && (
             <Badge variant="info" className="self-start sm:self-auto">
               Chờ {awaitingPickUp.driver?.name ?? "shipper"} lấy hàng
+            </Badge>
+          )}
+          {showAwaitingShip && (
+            <Badge variant="info" className="self-start sm:self-auto">
+              Chờ người có quyền &quot;Bắt đầu vận chuyển&quot; tại kho xuất xác nhận (bước trừ tồn kho)
             </Badge>
           )}
           {/* Phải: nút bước kế tiếp, ở cuối chiều đọc của thanh các bước - như nút xác nhận ở chân mọi dialog. */}
