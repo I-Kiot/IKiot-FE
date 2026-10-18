@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -177,14 +178,12 @@ export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived
                       />
                     </TableCell>
                     <TableCell>
-                      <Input
-                        type="number"
-                        min={0}
+                      <MoneyInput
                         placeholder="Giá vốn"
                         className="h-8 text-right"
-                        value={input.unitCost}
-                        onChange={(e) =>
-                          set(line.productionRequestItemId, { unitCost: e.target.value })
+                        value={Number(input.unitCost) || 0}
+                        onChange={(next) =>
+                          set(line.productionRequestItemId, { unitCost: next > 0 ? String(next) : "" })
                         }
                       />
                     </TableCell>

@@ -4,6 +4,7 @@
 // shipper của shop - shipper đó còn phải tự xác nhận đã lấy hàng.
 
 import { useState } from "react";
+import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,11 +50,12 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
   const missingDriver = internal && !driverId;
   // Khung giờ lưu dạng "HH:mm-HH:mm"; chỉ chọn một đầu thì lưu đầu đó.
   const scheduledSlot = slotFrom && slotTo ? `${slotFrom}-${slotTo}` : slotFrom || slotTo;
+  const dateInvalid = isPastDate(scheduledDate);
   const slotInvalid = !!slotFrom && !!slotTo && slotTo <= slotFrom;
 
   const submit = () => {
     // Khoá nút trong lúc gọi: bấm đúp không gửi hai request.
-    if (!order || submitting || missingDriver || slotInvalid) return;
+    if (!order || submitting || missingDriver || slotInvalid || dateInvalid) return;
     setSubmitting(true);
     shipmentApi
       .create({
@@ -133,7 +135,8 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Ngày hẹn giao</Label>
-              <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+              <Input type="date" min={todayIso()} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+              {dateInvalid && <p className="text-xs text-destructive">{PAST_DATE_MESSAGE}</p>}
             </div>
             <div className="space-y-2">
               <Label>Khung giờ</Label>
@@ -172,7 +175,7 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             Huỷ
           </Button>
-          <Button onClick={submit} disabled={submitting || missingDriver || slotInvalid}>
+          <Button onClick={submit} disabled={submitting || missingDriver || slotInvalid || dateInvalid}>
             {submitting ? "Đang xử lý..." : "Xác nhận đã giao"}
           </Button>
         </DialogFooter>

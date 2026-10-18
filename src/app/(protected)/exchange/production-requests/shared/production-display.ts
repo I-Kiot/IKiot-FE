@@ -94,9 +94,4 @@ export function formatMoney(value: number): string {
   return `${value.toLocaleString("vi-VN")} ₫`;
 }
 
-/** Today as `YYYY-MM-DD` in the browser's calendar - the minimum for a promised ready date. */
-export function todayIso(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
+export { todayIso } from "@/lib/date-input";
