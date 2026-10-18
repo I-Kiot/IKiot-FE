@@ -3,7 +3,8 @@
 // Màn Giao hàng (C-9): tab "Chờ giao" (đơn đã đóng gói, giao cho vận chuyển) và tab "Lần giao" (theo dõi,
 // chuyển Đang vận chuyển, đổi shipper, nhật trình, giao không thành). Trang giữ state chung và mở dialog.
 
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,12 +15,13 @@ import { ShipmentDetailSheet } from "./components/shipment-detail-sheet";
 import { ShipmentsTab } from "./components/shipments-tab";
 import { shipmentActions } from "./components/shipment-ui";
 
-/** Màn Giao hàng. */
-export default function ShipmentsPage() {
+/** Màn Giao hàng. `?tab=shipments&open=<id>` là đích của đường dẫn trong thông báo. */
+function ShipmentsScreen() {
+  const params = useSearchParams();
   // Một khoá tải lại chung: thao tác ở một chỗ đổi dữ liệu ở cả hai tab (đơn rời "Chờ giao", lần giao hiện ở "Lần giao") và ở sheet.
   const [reloadKey, setReloadKey] = useState(0);
   const [handOverOrder, setHandOverOrder] = useState<HandOverReadyOrder | null>(null);
-  const [openShipmentId, setOpenShipmentId] = useState<string | null>(null);
+  const [openShipmentId, setOpenShipmentId] = useState<string | null>(params.get("open"));
   const { canHandOver } = shipmentActions();
 
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
@@ -40,7 +42,7 @@ export default function ShipmentsPage() {
         }
       />
 
-      <Tabs defaultValue="ready">
+      <Tabs defaultValue={params.get("tab") === "shipments" || params.get("open") ? "shipments" : "ready"}>
         <TabsList>
           <TabsTrigger value="ready">Chờ vận chuyển</TabsTrigger>
           <TabsTrigger value="shipments">Theo dõi đơn hàng</TabsTrigger>
@@ -70,5 +72,13 @@ export default function ShipmentsPage() {
         onChanged={reload}
       />
     </div>
+  );
+}
+
+export default function ShipmentsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ShipmentsScreen />
+    </Suspense>
   );
 }

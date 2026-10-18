@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/sheet";
 import { shipmentApi } from "@/lib/api/shipment";
 import {
-  personName,
-  SHIPMENT_STATUS_LABELS,
   type Shipment,
   type ShipmentQrPayment,
 } from "@/types/order-flow";
@@ -27,6 +25,7 @@ import {
   isOnTheRoad,
   reportShipmentError,
   ShipmentStatusBadge,
+  ShipmentTimeline,
 } from "../../shipments/components/shipment-ui";
 import { DeliverDialog } from "./deliver-dialog";
 
@@ -272,20 +271,7 @@ export function DeliverySheet({
 
             <div className="space-y-3">
               <p className="text-sm font-medium">Trạng thái đơn hàng</p>
-              <ol className="space-y-3 border-l pl-4">
-                {shipment.events.map((event) => (
-                  <li key={event.id} className="text-sm">
-                    <p className="font-medium">
-                      {SHIPMENT_STATUS_LABELS[event.status]}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(event.occurredAt).toLocaleString("vi-VN")}
-                      {event.createdBy && ` · ${personName(event.createdBy)}`}
-                    </p>
-                    {event.note && <p className="mt-1">{event.note}</p>}
-                  </li>
-                ))}
-              </ol>
+              <ShipmentTimeline shipment={shipment} />
             </div>
 
             <DeliverDialog

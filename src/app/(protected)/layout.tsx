@@ -46,6 +46,13 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // `/shipments/<id>` is where a shipment notification lands. It only looks the shipment up and
+  // redirects (to /shipper for its driver, to /shipments for everyone else), and the API 404s one the
+  // caller cannot see - so it must not need `shipments:read`, which a plain shipper does not hold.
+  if (/^\/shipments\/[^/]+$/.test(pathname)) {
+    return <>{children}</>;
+  }
+
   // Same list the sidebar draws: account-kind config narrowed by this role's permissions.
   const allowedUrls = getAllowedSidebarUrls(user.role);
 

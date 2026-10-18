@@ -859,6 +859,42 @@ export interface ShipmentSummary {
   createdAt: string;
 }
 
+/** Khoản shipper đã thu / đang chờ thu ở một lần giao (`GET /shipments/mine/history`). */
+export interface ShipmentCollection {
+  method: string;
+  amount: number;
+  /** PAID = đã thu; PENDING = QR đã tạo, chờ tiền về. */
+  status: string;
+}
+
+/** Một dòng lịch sử giao của tôi. */
+export interface ShipmentHistoryItem extends ShipmentSummary {
+  collection: ShipmentCollection | null;
+}
+
+/** Số liệu các thẻ trên tab lịch sử; chịu khoảng ngày nhưng không chịu bộ lọc trạng thái / tìm kiếm. */
+export interface ShipmentHistorySummary {
+  /** Cần giao: mọi lần giao chưa kết thúc, không phụ thuộc khoảng ngày. */
+  active: number;
+  delivered: number;
+  failed: number;
+  returned: number;
+  cancelled: number;
+  collectedTotal: number;
+}
+
+export interface ShipmentHistoryQuery extends PageQuery {
+  /** `ACTIVE` = cần giao (chưa kết thúc). */
+  status?: ShipmentStatus | "ACTIVE";
+  /** `YYYY-MM-DD`, theo ngày giao (giờ Việt Nam). */
+  from?: string;
+  to?: string;
+}
+
+export interface ShipmentHistoryPage extends Paginated<ShipmentHistoryItem> {
+  summary: ShipmentHistorySummary;
+}
+
 /** `GET /shipments/:id` và kết quả mọi thao tác ghi – kèm nhật trình. */
 export interface Shipment extends ShipmentSummary {
   events: ShipmentEvent[];

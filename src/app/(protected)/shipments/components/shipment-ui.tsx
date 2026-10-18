@@ -8,8 +8,10 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getCachedUser } from "@/lib/auth";
 import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import {
+  personName,
   SHIPMENT_STATUS_LABELS,
   type CarrierType,
+  type Shipment,
   type ShipmentStatus,
   type ShipmentSummary,
 } from "@/types/order-flow";
@@ -82,4 +84,39 @@ export function shipmentActions(shipment?: Pick<ShipmentSummary, "driver"> | nul
     canChangeDriver: allows(role, "shipments", "update"),
     canTrack: allows(role, "shipments", "update") || isDriver,
   };
+}
+
+/**
+ * Nhật trình của một lần giao, mới nhất lên đầu (kể cả khi BE đổi thứ tự trả về). Mốc "Đã giao" kèm
+ * ảnh bằng chứng shipper đã tải lên lúc xác nhận giao - ảnh nằm ở lần giao chứ không ở từng mốc, nên chỉ
+ * gắn vào đúng mốc DELIVERED.
+ */
+export function ShipmentTimeline({ shipment }: { shipment: Pick<Shipment, "events" | "proofPhotoUrls"> }) {
+  const events = [...shipment.events].sort(
+    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+  );
+  return (
+    <ol className="space-y-3 border-l pl-4">
+      {events.map((event) => (
+        <li key={event.id} className="text-sm">
+          <p className="font-medium">{SHIPMENT_STATUS_LABELS[event.status]}</p>
+          <p className="text-xs text-muted-foreground">
+            {new Date(event.occurredAt).toLocaleString("vi-VN")}
+            {event.createdBy && ` · ${personName(event.createdBy)}`}
+          </p>
+          {event.note && <p className="mt-1">{event.note}</p>}
+          {event.status === "DELIVERED" && shipment.proofPhotoUrls.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {shipment.proofPhotoUrls.map((url) => (
+                <a key={url} href={url} target="_blank" rel="noreferrer" title="Mở ảnh gốc">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- ảnh bằng chứng từ Cloudinary */}
+                  <img src={url} alt="Ảnh bằng chứng giao hàng" className="size-20 rounded-md border object-cover" />
+                </a>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
 }
