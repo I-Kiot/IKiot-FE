@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Banknote, Check, FileText, QrCode } from "lucide-react";
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { CheckoutTabs } from "@/app/(protected)/check-out/components/checkout-tabs";
 import { SalesBranchSelect } from "@/app/(protected)/check-out/components/sales-branch-select";
 import type { SalesBranch } from "@/app/(protected)/check-out/_hooks/use-sales-branch";
 import { ProductSearch } from "@/app/(protected)/check-out/components/product-search";
@@ -39,7 +41,7 @@ import {
   formatVND,
   type DepositType,
 } from "../shared/order-totals";
-import { CustomerPicker, type CustomerChoice } from "./customer-picker";
+import { CustomerPicker, type PickedCustomer } from "./customer-picker";
 import type { OrderLineDraft } from "./order-lines-editor";
 import { OrderCartLines } from "./order-cart-lines";
 
@@ -54,11 +56,22 @@ interface AssigneeOption {
 const toNumber = (raw: string) => Math.max(0, Number(raw) || 0);
 
 /** D-2: a manual order (`POST /orders`, contract §2). It is born CONFIRMED - there is no draft - and stock never blocks it. */
-export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
+function OrderDraftForm({
+  sales,
+  withReplacement = true,
+  tabs,
+}: {
+  sales: SalesBranch;
+  /** Tab strip rendered at the top of the product card, same place as in the direct-sale tab. */
+  tabs?: React.ReactNode;
+  /** Only one tab may consume `?replacementFor=`, or every extra tab would prefill the same return. */
+  withReplacement?: boolean;
+}) {
   const { branches, branchId, setBranchId } = sales;
   const router = useRouter();
   // D-11: a buy-again order for the damaged goods of a return - prefilled, then linked to it on create.
-  const replacementFor = useSearchParams().get("replacementFor");
+  const replacementParam = useSearchParams().get("replacementFor");
+  const replacementFor = withReplacement ? replacementParam : null;
   const [replacementOf, setReplacementOf] = React.useState<{
     id: string;
     code: string;
@@ -67,10 +80,7 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
   const [assignees, setAssignees] = React.useState<AssigneeOption[]>([]);
   const [optionsReady, setOptionsReady] = React.useState(false);
 
-  const [customer, setCustomer] = React.useState<CustomerChoice>({
-    mode: "existing",
-    customer: null,
-  });
+  const [customer, setCustomer] = React.useState<PickedCustomer | null>(null);
   const [assigneeId, setAssigneeId] = React.useState("");
   const [fulfillment, setFulfillment] =
     React.useState<FulfillmentChoice>("HOME_DELIVERY");
@@ -142,27 +152,22 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
     depositValue,
   });
 
-  const customerError =
-    customer.mode === "existing"
-      ? customer.customer
-        ? undefined
-        : "Chọn một khách hàng hoặc nhập khách mới."
-      : customer.name.trim()
-        ? undefined
-        : "Tên khách hàng là bắt buộc.";
+  const customerError = customer ? undefined : "Chọn một khách hàng hoặc thêm khách mới.";
   const errors = {
     customer: customerError,
     branch: branchId ? undefined : "Chọn nơi bán.",
     assignee: assigneeId ? undefined : "Chọn người phụ trách đơn.",
     lines: lines.length > 0 ? undefined : "Đơn hàng cần ít nhất một mặt hàng.",
     deposit: totals.depositError ?? undefined,
+    requestedDate: isPastDate(requestedDate) ? PAST_DATE_MESSAGE : undefined,
   };
   const valid =
     !errors.customer &&
     !errors.branch &&
     !errors.assignee &&
     !errors.lines &&
-    !errors.deposit;
+    !errors.deposit &&
+    !errors.requestedDate;
 
   // Picking a customer fills the delivery details they already have, once, without overwriting what was typed.
   // D-11: once the pick-lists are in, copy the customer, branch, person in charge, delivery and the
@@ -184,7 +189,7 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
           (item) => item.condition === "DAMAGED",
         );
         setReplacementOf({ id: orderReturn.id, code: orderReturn.code });
-        if (original) setCustomer({ mode: "existing", customer: original });
+        if (original) setCustomer(original);
         setBranchId(order.branch.id);
         if (order.assignee) {
           const person = { id: order.assignee.id, name: order.assignee.name };
@@ -234,18 +239,18 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
     };
   }, [replacementFor, optionsReady, setBranchId]);
 
-  const handleCustomer = (next: CustomerChoice) => {
+  const handleCustomer = (next: PickedCustomer | null) => {
     setCustomer(next);
-    if (next.mode === "existing" && next.customer) {
-      setRecipientName((current) => current || next.customer!.name);
-      setRecipientPhone((current) => current || next.customer!.phone || "");
-      setDeliveryAddress((current) => current || next.customer!.address || "");
+    if (next) {
+      setRecipientName((current) => current || next.name);
+      setRecipientPhone((current) => current || next.phone || "");
+      setDeliveryAddress((current) => current || next.address || "");
     }
   };
 
   async function submit() {
     setAttempted(true);
-    if (!valid) return;
+    if (!valid || !customer) return;
     const payload: CreateOrderJourneyPayload = {
       branchId,
       assigneeId,
@@ -260,19 +265,7 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
           : {}),
         ...(line.customization ? { customization: line.customization } : {}),
       })),
-      ...(customer.mode === "existing"
-        ? { customerId: customer.customer!.id }
-        : {
-            customer: {
-              name: customer.name.trim(),
-              ...(customer.phone.trim()
-                ? { phone: customer.phone.trim() }
-                : {}),
-              ...(customer.address.trim()
-                ? { address: customer.address.trim() }
-                : {}),
-            },
-          }),
+      customerId: customer.id,
       ...(shippingFee > 0 ? { shippingFee } : {}),
       ...(orderDiscount > 0
         ? { discountType: "ORDER" as const, discountValue: orderDiscount }
@@ -384,6 +377,7 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 px-4">
+          {tabs}
           {replacementOf && (
             <p className="text-sm text-muted-foreground">
               Mua lại hàng hỏng của đơn hoàn{" "}
@@ -512,9 +506,13 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
                 <Input
                   id="requested-date"
                   type="date"
+                  min={todayIso()}
                   value={requestedDate}
                   onChange={(event) => setRequestedDate(event.target.value)}
                 />
+                {show(errors.requestedDate) && (
+                  <p className="text-sm text-destructive">{errors.requestedDate}</p>
+                )}
               </div>
               {fulfillment === "HOME_DELIVERY" && (
                 <>
@@ -783,6 +781,58 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
           Tạo đơn
         </Button>
       </div>
+    </div>
+  );
+}
+
+interface OrderTab {
+  id: string;
+  tabName: string;
+}
+
+/**
+ * Several order drafts side by side, like the direct-sale invoices. Every tab keeps its own
+ * `OrderDraftForm` mounted (hidden when inactive), so switching never loses what was typed.
+ */
+export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
+  const seq = React.useRef(1);
+  const [tabs, setTabs] = React.useState<OrderTab[]>([{ id: "order-1", tabName: "Đơn 1" }]);
+  const [activeId, setActiveId] = React.useState("order-1");
+
+  const add = () => {
+    seq.current += 1;
+    const tab = { id: `order-${seq.current}`, tabName: `Đơn ${seq.current}` };
+    setTabs((current) => [...current, tab]);
+    setActiveId(tab.id);
+  };
+
+  const close = (id: string) => {
+    if (tabs.length <= 1) return;
+    const index = tabs.findIndex((tab) => tab.id === id);
+    const remaining = tabs.filter((tab) => tab.id !== id);
+    setTabs(remaining);
+    if (activeId === id) setActiveId(remaining[Math.max(0, index - 1)].id);
+  };
+
+  const strip = (
+    <CheckoutTabs
+      tabs={tabs}
+      activeTabId={activeId}
+      onTabChange={setActiveId}
+      onTabAdd={add}
+      onTabClose={close}
+      addTitle="Thêm đơn hàng mới"
+    />
+  );
+
+  return (
+    <div className="h-full min-h-[40rem]">
+      {tabs.map((tab, index) => (
+        <div key={tab.id} className={cn("h-full", tab.id !== activeId && "hidden")}>
+          {/* Only the first tab consumes ?replacementFor=, or every extra tab would prefill the same return. */}
+          <OrderDraftForm sales={sales} withReplacement={index === 0} tabs={strip} />
+        </div>
+      ))}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { Banknote, CheckCircle2, Copy, Loader2, QrCode, XCircle } from "lucide-react";
 import {
   Dialog,
@@ -9,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
@@ -184,13 +184,10 @@ export function OrderQrDialog({
                     <Label htmlFor="offline-customer-pay" className="text-xs">
                       Tiền khách đưa
                     </Label>
-                    <Input
+                    <MoneyInput
                       id="offline-customer-pay"
-                      type="number"
-                      min={grandTotal}
-                      step={1000}
                       value={customerPay}
-                      onChange={(e) => setCustomerPay(Number(e.target.value))}
+                      onChange={setCustomerPay}
                       className="tabular-nums"
                       autoFocus
                     />

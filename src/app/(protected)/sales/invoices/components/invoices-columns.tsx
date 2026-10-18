@@ -4,11 +4,15 @@ import {
   ChevronRight,
   ChevronUp,
   ChevronsUpDown,
+  Printer,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { InvoiceKind, InvoiceStatus, InvoiceType } from "@/types/invoice";
+import { printInvoice } from "./invoice-print";
 import { FULFILLMENT_TYPE_LABELS, type FulfillmentType } from "@/types/order-flow";
 
 export type { InvoiceKind };
@@ -299,6 +303,33 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
       />
     ),
     size: 40,
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    id: "actions",
+    header: "Thao tác",
+    // Only an issued invoice is a document to hand over; a PENDING one has no number yet and a
+    // CANCELLED one was withdrawn.
+    cell: ({ row }) =>
+      row.original.status === "ISSUED" ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 cursor-pointer gap-1.5"
+          onClick={(event) => {
+            // The row toggles its detail panel on click; printing must not.
+            event.stopPropagation();
+            if (!printInvoice(row.original)) {
+              toast.error("Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.");
+            }
+          }}
+        >
+          <Printer className="size-4" />
+          In hóa đơn
+        </Button>
+      ) : null,
     enableSorting: false,
     enableHiding: false,
   },

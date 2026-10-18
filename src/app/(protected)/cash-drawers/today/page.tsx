@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { CurrencySuffix } from "@/app/(protected)/exchange/shared/form-fields";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { parseLocationKey } from "@/lib/location-key";
@@ -438,6 +439,7 @@ export default function CashDrawersTodayPage() {
                   <Label htmlFor="openingAmount" className="font-semibold">
                     Tiền mở két đầu ngày (VND)
                   </Label>
+                  <div className="relative">
                   <Input
                     id="openingAmount"
                     type="text"
@@ -450,8 +452,10 @@ export default function CashDrawersTodayPage() {
                       setOpeningAmount(val || "0");
                     }}
                     placeholder="Nhập số tiền"
-                    className="text-lg font-semibold tracking-wide"
+                    className="pr-8 text-lg font-semibold tracking-wide"
                   />
+                    <CurrencySuffix className="text-base" />
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Đây là số tiền mặt có sẵn trong két để thối lại tiền thừa
                     cho khách.
@@ -595,6 +599,7 @@ export default function CashDrawersTodayPage() {
                 <Label htmlFor="openingAmount2" className="font-semibold">
                   Tiền mở két đầu ngày (VND)
                 </Label>
+                <div className="relative">
                 <Input
                   id="openingAmount2"
                   type="text"
@@ -607,8 +612,10 @@ export default function CashDrawersTodayPage() {
                     setOpeningAmount(val || "0");
                   }}
                   placeholder="Nhập số tiền"
-                  className="text-lg font-semibold tracking-wide"
+                  className="pr-8 text-lg font-semibold tracking-wide"
                 />
+                  <CurrencySuffix className="text-base" />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Đây là số tiền mặt có sẵn trong két để thối lại tiền thừa cho
                   khách.

@@ -103,6 +103,38 @@ export function DetailLineCard({
   );
 }
 
+/** The unit written beside every money field. */
+export const CURRENCY_SYMBOL = "đ";
+
+const WIDTH_CLASS = /^(w|min-w|max-w)-|^flex-1$/;
+
+/**
+ * Puts the currency symbol inside the right edge of a money input. The caller's width classes
+ * (`w-28`, `max-w-[180px]`...) move to the wrapper so the symbol stays next to the input rather
+ * than at the far end of a wider box; everything else stays on the input.
+ */
+function splitMoneyClasses(className?: string) {
+  const tokens = (className ?? "").split(/\s+/).filter(Boolean);
+  return {
+    wrapper: tokens.filter((t) => WIDTH_CLASS.test(t)).join(" "),
+    input: tokens.filter((t) => !WIDTH_CLASS.test(t)).join(" "),
+  };
+}
+
+export function CurrencySuffix({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground",
+        className,
+      )}
+    >
+      {CURRENCY_SYMBOL}
+    </span>
+  );
+}
+
 type MoneyInputProps = {
   value: number | undefined;
   onChange: (value: number) => void;
@@ -111,34 +143,42 @@ type MoneyInputProps = {
   disabled?: boolean;
   max?: number;
   id?: string;
+  title?: string;
+  autoFocus?: boolean;
   "aria-label"?: string;
 };
 
 export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
   function MoneyInput(
-    { value, onChange, placeholder = "0", className, disabled, max, id, "aria-label": ariaLabel },
+    { value, onChange, placeholder = "0", className, disabled, max, id, title, autoFocus, "aria-label": ariaLabel },
     ref,
   ) {
+    const classes = splitMoneyClasses(className);
     return (
-      <Input
-        ref={ref}
-        id={id}
-        aria-label={ariaLabel}
-        type="text"
-        inputMode="numeric"
-        placeholder={placeholder}
-        disabled={disabled}
-        className={cn("h-9 w-full text-sm tabular-nums tracking-tight", className)}
-        value={
-          Number.isFinite(value) && (value ?? 0) > 0
-            ? value!.toLocaleString("vi-VN")
-            : ""
-        }
-        onChange={(e) => {
-          const next = parseImportPriceInput(e.target.value);
-          onChange(typeof max === "number" ? Math.min(next, max) : next);
-        }}
-      />
+      <div className={cn("relative w-full", classes.wrapper)}>
+        <Input
+          ref={ref}
+          id={id}
+          aria-label={ariaLabel}
+          title={title}
+          autoFocus={autoFocus}
+          type="text"
+          inputMode="numeric"
+          placeholder={placeholder}
+          disabled={disabled}
+          className={cn("h-9 w-full text-sm tabular-nums tracking-tight", classes.input, "pr-7")}
+          value={
+            Number.isFinite(value) && (value ?? 0) > 0
+              ? value!.toLocaleString("vi-VN")
+              : ""
+          }
+          onChange={(e) => {
+            const next = parseImportPriceInput(e.target.value);
+            onChange(typeof max === "number" ? Math.min(next, max) : next);
+          }}
+        />
+        <CurrencySuffix />
+      </div>
     );
   },
 );
@@ -158,24 +198,28 @@ export const NullableMoneyInput = React.forwardRef<
   { value, onChange, placeholder = "0", className, disabled },
   ref,
 ) {
+  const classes = splitMoneyClasses(className);
   return (
-    <Input
-      ref={ref}
-      type="text"
-      inputMode="numeric"
-      placeholder={placeholder}
-      disabled={disabled}
-      className={cn("h-9 w-full text-sm tabular-nums tracking-tight", className)}
-      value={
-        Number.isFinite(value) && (value as number) > 0
-          ? (value as number).toLocaleString("vi-VN")
-          : ""
-      }
-      onChange={(e) => {
-        const digits = e.target.value.replace(/[^\d]/g, "");
-        onChange(digits === "" ? null : parseImportPriceInput(digits));
-      }}
-    />
+    <div className={cn("relative w-full", classes.wrapper)}>
+      <Input
+        ref={ref}
+        type="text"
+        inputMode="numeric"
+        placeholder={placeholder}
+        disabled={disabled}
+        className={cn("h-9 w-full text-sm tabular-nums tracking-tight", classes.input, "pr-7")}
+        value={
+          Number.isFinite(value) && (value as number) > 0
+            ? (value as number).toLocaleString("vi-VN")
+            : ""
+        }
+        onChange={(e) => {
+          const digits = e.target.value.replace(/[^\d]/g, "");
+          onChange(digits === "" ? null : parseImportPriceInput(digits));
+        }}
+      />
+      <CurrencySuffix />
+    </div>
   );
 });
 

@@ -18,7 +18,7 @@ export function useCheckoutProducts(searchQuery: string, location?: CheckoutLoca
   const locationKey = useAuthStore((state) => state.locationKey)
 
   useEffect(() => {
-    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+    if (!searchQuery.trim()) {
       setProducts([])
       return
     }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { CurrencySuffix } from "@/app/(protected)/exchange/shared/form-fields";
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Pencil, Plus, X } from 'lucide-react'
@@ -283,18 +284,21 @@ export function ProductsItemMutateDialog(props: Props) {
                     <FormLabel>
                       Giá vốn (đ) <span className="text-destructive">*</span>
                     </FormLabel>
-                    <FormControl>
+                    <div className="relative">
+                      <FormControl>
                       <Input
                         inputMode="numeric"
                         placeholder="0"
-                        className="tabular-nums"
+                        className="tabular-nums pr-7"
                         value={field.value ?? ''}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, '')
                           field.onChange(digits ? formatPriceAmount(digits) : '')
                         }}
                       />
-                    </FormControl>
+                      </FormControl>
+                      <CurrencySuffix />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -307,18 +311,21 @@ export function ProductsItemMutateDialog(props: Props) {
                     <FormLabel>
                       Giá bán (đ) <span className="text-destructive">*</span>
                     </FormLabel>
-                    <FormControl>
+                    <div className="relative">
+                      <FormControl>
                       <Input
                         inputMode="numeric"
                         placeholder="0"
-                        className="tabular-nums"
+                        className="tabular-nums pr-7"
                         value={field.value ?? ''}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, '')
                           field.onChange(digits ? formatPriceAmount(digits) : '')
                         }}
                       />
-                    </FormControl>
+                      </FormControl>
+                      <CurrencySuffix />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

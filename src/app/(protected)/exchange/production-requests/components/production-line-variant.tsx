@@ -1,6 +1,7 @@
 "use client";
 
 import { AddProductAttribute } from "@/components/add-product-attribute";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,14 +147,12 @@ export function ProductionLineVariant({ lineKey, productId, variant, onChange }:
           <Label htmlFor={`${lineKey}-price`} className="text-xs">
             Giá bán {changed ? "của SKU mới" : "của SKU"} (đ)
           </Label>
-          <Input
+          <MoneyInput
             id={`${lineKey}-price`}
-            type="number"
-            min={0}
             className="h-8 w-40 text-right"
             disabled={!variant.updatePrice}
-            value={variant.price}
-            onChange={(e) => onChange({ ...variant, price: e.target.value })}
+            value={Number(variant.price) || 0}
+            onChange={(next) => onChange({ ...variant, price: next > 0 ? String(next) : "" })}
           />
         </div>
         <label className="flex cursor-pointer items-center gap-2 pb-1.5 text-sm">

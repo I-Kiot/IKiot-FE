@@ -40,7 +40,7 @@ import {
   ProductionLineVariant,
   type LineVariantDraft,
 } from "./production-line-variant";
-import { todayIso } from "../shared/production-display";
+import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
 import { useProductionOptions } from "../shared/use-production-options";
 
 /** One line being edited. `orderItemId` ties it to the order line it is made for (a custom piece always has one). */
@@ -167,7 +167,13 @@ export function ProductionRequestFormDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingVariantKeys]);
 
+  // A date left as it was on an existing request is not re-checked; only one the user picks now is.
+  const dateError =
+    expectedReadyDate !== (request?.expectedReadyDate?.slice(0, 10) ?? "") && isPastDate(expectedReadyDate)
+      ? PAST_DATE_MESSAGE
+      : undefined;
   const valid =
+    !dateError &&
     !!supplierId &&
     !!locationId &&
     lines.length > 0 &&
@@ -299,6 +305,7 @@ export function ProductionRequestFormDialog({
                 value={expectedReadyDate}
                 onChange={(e) => setExpectedReadyDate(e.target.value)}
               />
+              {dateError && <p className="text-xs text-destructive">{dateError}</p>}
             </div>
             <div className="grid gap-2">
               <Label>Ghi chú chung</Label>

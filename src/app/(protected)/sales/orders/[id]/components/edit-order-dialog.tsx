@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,7 +120,14 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
 
   const linesChanged = linesEditable && linesKey(lines) !== linesKey(initialLines);
   const fee = Number(shippingFee);
+  // Only a date the user changed is checked: an order whose promised day has since passed must still
+  // be editable for its other fields.
+  const dateError =
+    requestedDeliveryDate !== (order.requestedDeliveryDate ?? "") && isPastDate(requestedDeliveryDate)
+      ? PAST_DATE_MESSAGE
+      : undefined;
   const valid =
+    !dateError &&
     Number.isFinite(fee) &&
     fee >= 0 &&
     (!linesChanged || (lines.length > 0 && lines.every((l) => l.quantity >= 1)));
@@ -209,9 +218,11 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
               <Label>Ngày khách hẹn giao</Label>
               <Input
                 type="date"
+                min={todayIso()}
                 value={requestedDeliveryDate}
                 onChange={(e) => setRequestedDeliveryDate(e.target.value)}
               />
+              {dateError && <p className="text-xs text-destructive">{dateError}</p>}
             </div>
             <div className="grid gap-2">
               <Label>Người nhận</Label>
@@ -227,11 +238,9 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
             </div>
             <div className="grid gap-2">
               <Label>Phí giao hàng</Label>
-              <Input
-                type="number"
-                min={0}
-                value={shippingFee}
-                onChange={(e) => setShippingFee(e.target.value)}
+              <MoneyInput
+                value={Number(shippingFee) || 0}
+                onChange={(next) => setShippingFee(String(next))}
               />
             </div>
             <div className="grid gap-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { CurrencySuffix } from "@/app/(protected)/exchange/shared/form-fields";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { parseLocationKey } from "@/lib/location-key";
@@ -736,6 +737,7 @@ export default function CashDrawerDetailPage() {
                 <Label htmlFor="reportAmount" className="font-semibold">
                   Tổng tiền mặt trong két ca làm việc (VND)
                 </Label>
+                <div className="relative">
                 <Input
                   id="reportAmount"
                   type="text"
@@ -746,8 +748,10 @@ export default function CashDrawerDetailPage() {
                     setReportAmount(val || "0");
                   }}
                   placeholder="Nhập số tiền mặt hiện tại"
-                  className="text-lg font-semibold tracking-wide"
+                  className="pr-8 text-lg font-semibold tracking-wide"
                 />
+                  <CurrencySuffix className="text-base" />
+                </div>
               </div>
 
               <div className="grid gap-2">
@@ -829,6 +833,7 @@ export default function CashDrawerDetailPage() {
                 <Label htmlFor="closeAmount" className="font-semibold">
                   Tổng tiền mặt thu hồi thực tế (VND)
                 </Label>
+                <div className="relative">
                 <Input
                   id="closeAmount"
                   type="text"
@@ -841,6 +846,8 @@ export default function CashDrawerDetailPage() {
                   placeholder="Nhập số tiền chốt thu hồi"
                   className="text-lg font-semibold tracking-wide text-destructive"
                 />
+                  <CurrencySuffix className="text-base" />
+                </div>
               </div>
 
               <div className="grid gap-2">

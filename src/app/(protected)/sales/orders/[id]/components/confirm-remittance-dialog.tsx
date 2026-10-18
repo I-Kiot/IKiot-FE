@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorBody, remittanceGapOf } from "@/lib/api/error-codes";
@@ -75,12 +75,10 @@ export function ConfirmRemittanceDialog({ order, open, onOpenChange, onConfirmed
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label>Số tiền đã nhận</Label>
-            <Input
-              type="number"
-              min={0}
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
+            <MoneyInput
+              value={Number(amount) || 0}
+              onChange={(next) => {
+                setAmount(String(next));
                 setGap(null);
               }}
             />
