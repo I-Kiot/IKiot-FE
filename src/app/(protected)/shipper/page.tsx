@@ -3,14 +3,17 @@
 // Màn "Đơn giao của tôi" (C-7): các lần giao chưa kết thúc mà mình là shipper, kèm số tiền còn phải thu.
 // Bấm một đơn để mở chi tiết: đang đi giao, đã giao (ảnh + thu tiền), giao không thành. Dùng được trên điện thoại.
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { shipmentApi } from "@/lib/api/shipment";
 import type { ShipmentSummary } from "@/types/order-flow";
 import { formatVND, ShipmentStatusBadge } from "../shipments/components/shipment-ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeliverySheet } from "./components/delivery-sheet";
+import { DeliveryHistory } from "./components/delivery-history";
 
 type MineState = { status: "loading" } | { status: "error" } | { status: "ready"; shipments: ShipmentSummary[] };
 
@@ -40,11 +43,15 @@ function DeliveryCard({ shipment, onOpen }: { shipment: ShipmentSummary; onOpen:
   );
 }
 
-/** Màn đơn giao của tôi. */
-export default function ShipperPage() {
+/** Màn đơn giao của tôi. `?tab=history&open=<id>` / `?open=<id>` là đích của đường dẫn trong thông báo. */
+function ShipperScreen() {
+  const params = useSearchParams();
+  const initialTab = params.get("tab") === "history" ? "history" : "current";
+  const openParam = params.get("open");
   const [state, setState] = useState<MineState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
-  const [openId, setOpenId] = useState<string | null>(null);
+  // Drawer của tab "Đang giao"; tab lịch sử tự giữ drawer của nó.
+  const [openId, setOpenId] = useState<string | null>(initialTab === "current" ? openParam : null);
 
   useEffect(() => {
     // Response cũ về sau (bấm "Tải lại" liên tiếp) thì bỏ. Mỗi nhánh chỉ một setter (lint cấm setState trong useEffect).
@@ -77,22 +84,43 @@ export default function ShipperPage() {
         }
       />
 
-      {state.status === "loading" && <p className="text-center text-muted-foreground">Đang tải...</p>}
-      {state.status === "error" && (
-        <p className="text-center text-muted-foreground">Không tải được danh sách - bấm Tải lại để thử lại</p>
-      )}
-      {state.status === "ready" && state.shipments.length === 0 && (
-        <p className="text-center text-muted-foreground">Bạn không có đơn nào cần giao</p>
-      )}
-      {state.status === "ready" && state.shipments.length > 0 && (
-        <div className="grid gap-3 md:grid-cols-2">
-          {state.shipments.map((shipment) => (
-            <DeliveryCard key={shipment.id} shipment={shipment} onOpen={() => setOpenId(shipment.id)} />
-          ))}
-        </div>
-      )}
+      <Tabs defaultValue={initialTab} className="w-full">
+        <TabsList>
+          <TabsTrigger value="current">Đang giao</TabsTrigger>
+          <TabsTrigger value="history">Lịch sử giao</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="current" className="flex flex-col gap-6 outline-none">
+          {state.status === "loading" && <p className="text-center text-muted-foreground">Đang tải...</p>}
+          {state.status === "error" && (
+            <p className="text-center text-muted-foreground">Không tải được danh sách - bấm Tải lại để thử lại</p>
+          )}
+          {state.status === "ready" && state.shipments.length === 0 && (
+            <p className="text-center text-muted-foreground">Bạn không có đơn nào cần giao</p>
+          )}
+          {state.status === "ready" && state.shipments.length > 0 && (
+            <div className="grid gap-3 md:grid-cols-2">
+              {state.shipments.map((shipment) => (
+                <DeliveryCard key={shipment.id} shipment={shipment} onOpen={() => setOpenId(shipment.id)} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="outline-none">
+          <DeliveryHistory initialOpenId={initialTab === "history" ? openParam : null} />
+        </TabsContent>
+      </Tabs>
 
       <DeliverySheet key={openId ?? "none"} shipmentId={openId} onClose={() => setOpenId(null)} onChanged={reload} />
     </div>
+  );
+}
+
+export default function ShipperPage() {
+  return (
+    <Suspense fallback={null}>
+      <ShipperScreen />
+    </Suspense>
   );
 }

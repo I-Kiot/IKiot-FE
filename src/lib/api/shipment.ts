@@ -7,6 +7,8 @@ import type {
   Paginated,
   Shipment,
   ShipmentEventPayload,
+  ShipmentHistoryPage,
+  ShipmentHistoryQuery,
   ShipmentQuery,
   ShipmentSummary,
 } from '@/types/order-flow';
@@ -27,6 +29,12 @@ export const shipmentApi = {
   getMine: async (): Promise<ShipmentSummary[]> => {
     const res = await client.get<Envelope<ShipmentSummary[]>>('/shipments/mine');
     return res.data.data;
+  },
+
+  /** Lịch sử giao của tôi: mọi trạng thái, lọc theo ngày giao, kèm số liệu các thẻ và tiền đã thu. */
+  getMyHistory: async (params?: ShipmentHistoryQuery): Promise<ShipmentHistoryPage> => {
+    const res = await client.get<ShipmentHistoryPage>('/shipments/mine/history', { params });
+    return { data: res.data.data, pagination: res.data.pagination, summary: res.data.summary };
   },
 
   getById: async (id: string): Promise<Shipment> => {
