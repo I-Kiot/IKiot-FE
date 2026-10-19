@@ -356,6 +356,16 @@ export interface OrderListItem {
   stockSummary: StockCheckStatus | null;
   /** The list keeps each order's lines (POS reads them off the same route). */
   items: OrderLine[];
+  /** Status of the newest shipment; a failed delivery leaves the order SHIPPING, so this is what tells them apart. */
+  latestShipmentStatus: ShipmentStatus | null;
+}
+
+/** Order still SHIPPING whose newest delivery attempt failed - waits for a return ticket. */
+export function isDeliveryFailed(order: {
+  status: OrderStatus;
+  latestShipmentStatus: ShipmentStatus | null;
+}): boolean {
+  return order.status === "SHIPPING" && order.latestShipmentStatus === "FAILED";
 }
 
 export interface OrderDetail extends Omit<OrderListItem, "items" | "itemCount" | "stockSummary"> {
@@ -949,6 +959,8 @@ export interface HandOverReadyOrder {
   recipientName: string | null;
   recipientPhone: string | null;
   deliveryAddress: string | null;
+  /** `YYYY-MM-DD`; đơn đã có ngày hẹn thì dialog giao hàng dùng luôn, không cho chọn lại. */
+  requestedDeliveryDate: string | null;
   /** Phí giao hàng đã nhập khi tạo đơn; ghi lại thành `shippingCost` của lần giao. */
   shippingFee: number;
   /** Shipper của lần giao mới nhất. Đơn còn PACKED mà đã có shipper = đã gán, đang chờ shipper tới lấy hàng. */

@@ -115,7 +115,7 @@ export default function OrderDetailPage() {
   }
 
   const { order } = current;
-  const status = orderStatusDisplay(order.status);
+  const status = orderStatusDisplay(order.status, order.latestShipmentStatus);
   const priority = priorityDisplay(order.priority);
   const summary = worstStock(order.items);
   const stock = summary ? stockDisplay(summary) : null;

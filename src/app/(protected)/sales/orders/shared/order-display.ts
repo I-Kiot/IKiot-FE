@@ -4,6 +4,9 @@ import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
   ORDER_PRIORITY_LABELS,
+  SHIPMENT_STATUS_LABELS,
+  isDeliveryFailed,
+  type ShipmentStatus,
   ORDER_STATUS_LABELS,
   STOCK_CHECK_STATUS_LABELS,
   type OrderPriority,
@@ -29,7 +32,7 @@ const ORDER_STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   RECEIVED: "warning",
   COMPLETED: "success",
   CANCELLED: "error",
-  RETURNED: "secondary",
+  RETURNED: "muted",
   PENDING: "outline",
 };
 
@@ -45,7 +48,14 @@ const STOCK_VARIANT: Record<StockCheckStatus, BadgeVariant> = {
   OUT: "error",
 };
 
-export function orderStatusDisplay(status: OrderStatus): BadgeDisplay {
+export function orderStatusDisplay(
+  status: OrderStatus,
+  latestShipmentStatus?: ShipmentStatus | null,
+): BadgeDisplay {
+  // A failed delivery leaves the order SHIPPING (goods still out); show what the shipper reported.
+  if (isDeliveryFailed({ status, latestShipmentStatus: latestShipmentStatus ?? null })) {
+    return { label: SHIPMENT_STATUS_LABELS.FAILED, variant: "error" };
+  }
   return {
     label: ORDER_STATUS_LABELS[status] ?? status,
     variant: ORDER_STATUS_VARIANT[status] ?? "outline",

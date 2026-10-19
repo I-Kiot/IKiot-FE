@@ -39,7 +39,11 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
   const [driverId, setDriverId] = useState("");
   const [carrierName, setCarrierName] = useState("");
   const [trackingCode, setTrackingCode] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
+  // Ngày hẹn đã có sẵn trên đơn thì lấy luôn và khoá; chưa có mới cho chọn.
+  const orderDate = order?.requestedDeliveryDate?.slice(0, 10) ?? "";
+  const dateLocked = !!orderDate;
+  const [pickedDate, setScheduledDate] = useState("");
+  const scheduledDate = dateLocked ? orderDate : pickedDate;
   const [slotFrom, setSlotFrom] = useState("");
   const [slotTo, setSlotTo] = useState("");
   const [requiresInstallation, setRequiresInstallation] = useState(false);
@@ -50,7 +54,7 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
   const missingDriver = internal && !driverId;
   // Khung giờ lưu dạng "HH:mm-HH:mm"; chỉ chọn một đầu thì lưu đầu đó.
   const scheduledSlot = slotFrom && slotTo ? `${slotFrom}-${slotTo}` : slotFrom || slotTo;
-  const dateInvalid = isPastDate(scheduledDate);
+  const dateInvalid = !dateLocked && isPastDate(scheduledDate);
   const slotInvalid = !!slotFrom && !!slotTo && slotTo <= slotFrom;
 
   const submit = () => {
@@ -135,7 +139,14 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Ngày hẹn giao</Label>
-              <Input type="date" min={todayIso()} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+              <Input
+                type="date"
+                min={todayIso()}
+                value={scheduledDate}
+                disabled={dateLocked}
+                onChange={(e) => setScheduledDate(e.target.value)}
+              />
+              {dateLocked && <p className="text-xs text-muted-foreground">Lấy từ ngày hẹn giao của đơn hàng</p>}
               {dateInvalid && <p className="text-xs text-destructive">{PAST_DATE_MESSAGE}</p>}
             </div>
             <div className="space-y-2">

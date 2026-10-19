@@ -205,9 +205,11 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
                     <Button variant="outline" onClick={() => setAction("outForDelivery")}>
                       Cập nhật trạng thái đơn hàng
                     </Button>
-                    <Button variant="destructive" onClick={() => setAction("fail")}>
-                      Giao hàng thất bại
-                    </Button>
+                    {shipment.status !== "FAILED" && (
+                      <Button variant="destructive" onClick={() => setAction("fail")}>
+                        Giao hàng thất bại
+                      </Button>
+                    )}
                   </>
                 )}
                 {/* Đang trên đường thì shipper đã cầm hàng: BE từ chối đổi, nên ẩn nút. */}

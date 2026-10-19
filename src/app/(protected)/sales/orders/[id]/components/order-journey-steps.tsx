@@ -1,10 +1,10 @@
-import { Ban, Check, RotateCcw } from "lucide-react";
+import { Ban, Check, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { OrderDetail, OrderStatus } from "@/types/order-flow";
+import { isDeliveryFailed, type OrderDetail, type OrderStatus } from "@/types/order-flow";
 import { formatDateTime } from "../../shared/order-display";
 
 interface Step {
-  status: OrderStatus;
+  status: OrderStatus | "DELIVERY_FAILED";
   label: string;
 }
 
@@ -21,7 +21,7 @@ const STEPS: Step[] = [
 ];
 
 /** When each step happened, where the order records it. */
-function stepTime(order: OrderDetail, status: OrderStatus): string | null {
+function stepTime(order: OrderDetail, status: Step["status"]): string | null {
   switch (status) {
     case "PENDING_CONFIRMATION":
       return order.createdAt;
@@ -52,7 +52,20 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
     );
   }
 
-  const steps = STEPS.filter((step) => {
+  // The delivery failed: the order stays SHIPPING while the goods are still out (the shipper may retry),
+  // then RETURNED once the shop confirms they are back. The last two steps give way to failed -> returned.
+  const failed = isDeliveryFailed(order);
+  // Whole order came back after a failed delivery: same track, now finished.
+  const returnedAfterFailure =
+    order.status === "RETURNED" && order.latestShipmentStatus === "RETURNED";
+  const steps = (failed || returnedAfterFailure
+    ? [
+        ...STEPS.filter((step) => !["RECEIVED", "COMPLETED"].includes(step.status)),
+        { status: "DELIVERY_FAILED", label: "Giao hàng không thành công" } satisfies Step,
+        { status: "RETURNED", label: "Hoàn trả" } satisfies Step,
+      ]
+    : STEPS
+  ).filter((step) => {
     if (step.status === "PENDING_CONFIRMATION")
       return order.channel !== "MANUAL";
     // QR, or nothing left to collect: SHIPPING goes straight to COMPLETED, no RECEIVED step.
@@ -81,6 +94,7 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
   } else {
     currentIndex = reachedIndex + 1;
   }
+  if (failed) currentIndex = steps.findIndex((step) => step.status === "DELIVERY_FAILED");
 
   return (
     <div className="space-y-3">
@@ -101,11 +115,21 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
                     "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
                     done && "border-primary bg-primary text-primary-foreground",
                     current &&
+                      step.status !== "DELIVERY_FAILED" &&
                       "border-primary text-primary ring-4 ring-primary/15",
+                    current &&
+                      step.status === "DELIVERY_FAILED" &&
+                      "border-red-500 bg-red-500 text-white ring-4 ring-red-500/15",
                     !done && !current && "text-muted-foreground",
                   )}
                 >
-                  {done ? <Check className="size-4" /> : index + 1}
+                  {done ? (
+                    <Check className="size-4" />
+                  ) : current && step.status === "DELIVERY_FAILED" ? (
+                    <X className="size-4" />
+                  ) : (
+                    index + 1
+                  )}
                 </span>
                 {index < steps.length - 1 && (
                   <span
@@ -121,7 +145,9 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
                   className={cn(
                     "text-sm",
                     current
-                      ? "font-semibold text-foreground"
+                      ? step.status === "DELIVERY_FAILED"
+                        ? "font-semibold text-red-600 dark:text-red-400"
+                        : "font-semibold text-foreground"
                       : "text-muted-foreground",
                   )}
                 >

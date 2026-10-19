@@ -44,14 +44,14 @@ export function formatVND(value: number): string {
   return VND.format(value);
 }
 
-const STATUS_VARIANT: Record<ShipmentStatus, "info" | "warning" | "success" | "error" | "secondary"> = {
+const STATUS_VARIANT: Record<ShipmentStatus, "info" | "warning" | "success" | "error" | "secondary" | "muted"> = {
   CREATED: "secondary",
   PICKED_UP: "info",
   IN_TRANSIT: "warning",
   OUT_FOR_DELIVERY: "warning",
   DELIVERED: "success",
   FAILED: "error",
-  RETURNED: "secondary",
+  RETURNED: "muted",
   CANCELLED: "secondary",
 };
 
@@ -60,14 +60,17 @@ export function ShipmentStatusBadge({ status }: { status: ShipmentStatus }) {
   return <Badge variant={STATUS_VARIANT[status]}>{SHIPMENT_STATUS_LABELS[status]}</Badge>;
 }
 
-/** Lần giao đang trên đường (đơn đã Đang vận chuyển): chỉ lúc này mới ghi "Đang đi giao" hay báo giao không thành. */
+/**
+ * Lần giao đang trên đường (đơn đã Đang vận chuyển): chỉ lúc này mới ghi "Đang đi giao", báo giao không thành
+ * hay giao xong. FAILED vẫn tính: hàng chưa về shop nên shipper còn giao lại được, tới khi shop xác nhận hàng đã hoàn về.
+ */
 export function isOnTheRoad(status: ShipmentStatus): boolean {
-  return status === "IN_TRANSIT" || status === "OUT_FOR_DELIVERY";
+  return status === "IN_TRANSIT" || status === "OUT_FOR_DELIVERY" || status === "FAILED";
 }
 
 /** Lần giao đã kết thúc: chỉ xem. */
 export function isFinished(status: ShipmentStatus): boolean {
-  return status === "DELIVERED" || status === "FAILED" || status === "RETURNED" || status === "CANCELLED";
+  return status === "DELIVERED" || status === "RETURNED" || status === "CANCELLED";
 }
 
 /**
