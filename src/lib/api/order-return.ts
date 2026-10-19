@@ -26,6 +26,15 @@ export const orderReturnApi = {
     return res.data.data;
   },
 
+  /** Goods of a failed delivery are back at the shop: shipment and order become RETURNED, stock goes back. */
+  confirmFailedDelivery: async (shipmentId: string, note?: string): Promise<OrderReturn> => {
+    const res = await client.post<Envelope<OrderReturn>>('/order-returns/confirm-failed-delivery', {
+      shipmentId,
+      note,
+    });
+    return res.data.data;
+  },
+
   /** REQUESTED → INSPECTING: the goods are back at the shop. */
   receive: async (id: string): Promise<OrderReturn> => {
     const res = await client.post<Envelope<OrderReturn>>(`/order-returns/${id}/receive`, {});

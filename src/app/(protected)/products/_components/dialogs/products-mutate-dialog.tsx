@@ -332,7 +332,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                     <SelectContent>
                       <SelectItem value="ACTIVE">Đang kinh doanh</SelectItem>
                       <SelectItem value="INACTIVE">Ngừng kinh doanh</SelectItem>
-                      {/* <SelectItem value="DISCONTINUED">Ngừng sản xuất</SelectItem> */}
+                      <SelectItem value="DISCONTINUED">Ngừng sản xuất</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

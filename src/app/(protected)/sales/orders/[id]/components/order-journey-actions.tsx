@@ -7,14 +7,15 @@
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Banknote, PackageCheck, QrCode, Truck, Send, MapPinCheck, PackageOpen } from "lucide-react";
+import { Banknote, PackageCheck, QrCode, Truck, Send, MapPinCheck, PackageOpen, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getCachedUser, getSessionRole } from "@/lib/auth";
 import { orderJourneyApi } from "@/lib/api/order-journey";
+import { orderReturnApi } from "@/lib/api/order-return";
 import { shipmentApi } from "@/lib/api/shipment";
-import type { OrderDetail } from "@/types/order-flow";
+import { isDeliveryFailed, type OrderDetail } from "@/types/order-flow";
 import { PackOrderDialog } from "../../../../fulfillments/components/pack-order-dialog";
 import { HandOverDialog } from "../../../../shipments/components/hand-over-dialog";
 import { ShipmentNoteDialog } from "../../../../shipments/components/shipment-detail-sheet";
@@ -23,7 +24,7 @@ import { DeliverySheet } from "../../../../shipper/components/delivery-sheet";
 import { ConfirmRemittanceDialog } from "./confirm-remittance-dialog";
 
 /** Dialog bước nào đang mở. Sheet giao hàng giữ riêng (xem `sheetShipmentId`). */
-type OpenStep = "pack" | "handOver" | "pickUp" | "ship" | "remittance" | null;
+type OpenStep = "pack" | "handOver" | "pickUp" | "ship" | "remittance" | "confirmReturned" | null;
 
 type OrderShipment = OrderDetail["shipments"][number];
 
@@ -40,7 +41,9 @@ function shipmentOnTheRoad(order: OrderDetail): OrderShipment | undefined {
   return order.shipments.find(
     (shipment) =>
       shipment.carrierType === "INTERNAL" &&
-      (shipment.status === "IN_TRANSIT" || shipment.status === "OUT_FOR_DELIVERY"),
+      (shipment.status === "IN_TRANSIT" ||
+        shipment.status === "OUT_FOR_DELIVERY" ||
+        shipment.status === "FAILED"),
   );
 }
 
@@ -79,6 +82,8 @@ function stepPermissions(order: OrderDetail) {
     canHandOver: isAssignee || allows(role, "shipments", "create"),
     canShip: (ASSIGNEE_MAY_SHIP && isAssignee) || allows(role, "orders", "ship"),
     canConfirmCash: allows(role, "orders", "confirm_cash"),
+    // Hàng của lần giao thất bại đã về shop: người phụ trách hoặc ai xem được đơn (BE: ORDER_RETURN_DENIED).
+    canConfirmReturned: isAssignee || allows(role, "orders", "read"),
     canActOnDelivery,
   };
 }
@@ -139,13 +144,23 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
   const showAwaitingShip = order.status === "PICKED_UP" && !permissions.canShip;
   const showDeliver =
     order.status === "SHIPPING" && permissions.canActOnDelivery(onTheRoad);
+  const failedShipment = order.shipments.find((shipment) => shipment.status === "FAILED");
+  const showConfirmReturned =
+    isDeliveryFailed(order) && failedShipment !== undefined && permissions.canConfirmReturned;
   const showQr =
     order.status === "RECEIVED" &&
     order.collection?.method === "BANK_TRANSFER_QR" &&
     permissions.canActOnDelivery(delivered);
 
   const hasButton =
-    showPack || showHandOver || showPickUp || showShip || showDeliver || showQr || awaitingCash;
+    showPack ||
+    showHandOver ||
+    showPickUp ||
+    showShip ||
+    showDeliver ||
+    showQr ||
+    showConfirmReturned ||
+    awaitingCash;
   const hasRow = hasButton || showAwaitingPickUp || showAwaitingShip;
 
   /** Đóng dialog; bỏ cờ ?confirmCash để tải lại trang hay lần xác nhận sau không tự mở lại dialog. */
@@ -236,6 +251,16 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
                   Giao hàng
                 </Button>
               )}
+              {showConfirmReturned && (
+                <Button
+                  variant="outline"
+                  onClick={() => setOpenStep("confirmReturned")}
+                  className={STEP_BUTTON_CLASS}
+                >
+                  <Undo2 className="size-4" />
+                  Xác nhận hàng đã hoàn về shop
+                </Button>
+              )}
               {showQr && delivered && (
                 <Button onClick={() => setSheetShipmentId(delivered.id)} className={STEP_BUTTON_CLASS}>
                   <QrCode className="size-4" />
@@ -278,6 +303,28 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
           confirmLabel="Xác nhận"
           onClose={closeStep}
           onConfirm={ship}
+        />
+      )}
+      {openStep === "confirmReturned" && failedShipment && (
+        <ShipmentNoteDialog
+          open
+          title="Xác nhận hàng đã hoàn về shop"
+          description="Hàng của lần giao thất bại đã về tới shop. Tồn kho được cộng lại, đơn chuyển sang Hoàn trả và không giao lại được nữa."
+          confirmLabel="Hàng đã về shop"
+          onClose={closeStep}
+          onConfirm={(note) =>
+            orderReturnApi.confirmFailedDelivery(failedShipment.id, note).then(
+              () => {
+                toast.success(`Đơn ${order.code} đã hoàn trả về shop`);
+                closeAndReload();
+              },
+              (error: unknown) => {
+                if (reportShipmentError(error, "Xác nhận hoàn hàng thất bại, vui lòng thử lại")) {
+                  closeAndReload();
+                }
+              },
+            )
+          }
         />
       )}
       {openStep === "remittance" && (

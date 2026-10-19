@@ -614,17 +614,25 @@ function OrderDraftForm({
                   />
                 ) : (
                   // Theo % là một con số 0-100, không phải tiền: không chèn dấu chấm ngăn cách.
-                  <Input
-                    type="number"
-                    min={0}
-                    className="text-right"
-                    aria-label="Giá trị tiền cọc"
-                    disabled={depositType === "NONE"}
-                    value={depositType === "NONE" ? 0 : depositValue}
-                    onChange={(event) =>
-                      setDepositValue(toNumber(event.target.value))
-                    }
-                  />
+                  <div className="relative w-full">
+                    <Input
+                      type="number"
+                      min={0}
+                      className="pr-7 text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      aria-label="Giá trị tiền cọc"
+                      disabled={depositType === "NONE"}
+                      value={depositType === "NONE" ? 0 : depositValue}
+                      onChange={(event) =>
+                        setDepositValue(toNumber(event.target.value))
+                      }
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground"
+                    >
+                      %
+                    </span>
+                  </div>
                 )}
               </div>
               {depositType !== "NONE" && (

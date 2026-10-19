@@ -252,9 +252,11 @@ export function DeliverySheet({
                 >
                   Cập nhật trạng thái đơn hàng
                 </Button>
-                <Button variant="destructive" onClick={() => setAction("fail")}>
-                  Giao hàng thất bại
-                </Button>
+                {shipment.status !== "FAILED" && (
+                  <Button variant="destructive" onClick={() => setAction("fail")}>
+                    Giao hàng thất bại
+                  </Button>
+                )}
               </div>
             )}
 
@@ -327,7 +329,7 @@ export function DeliverySheet({
               key={`fail-${action === "fail"}`}
               open={action === "fail"}
               title="Giao không thành"
-              description="Đơn giữ trạng thái Đang vận chuyển; hàng quay về qua phiếu hoàn hàng. Người phụ trách đơn sẽ được báo."
+              description="Đơn giữ trạng thái Đang vận chuyển, bạn vẫn giao lại được trong lần thử tiếp. Người phụ trách đơn và chủ shop sẽ được báo; đơn chỉ chuyển Hoàn trả khi shop xác nhận hàng đã về."
               confirmLabel="Xác nhận giao không thành"
               placeholder="Lý do (bắt buộc), vd. khách không nghe máy"
               requireNote

@@ -70,7 +70,7 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
     accessorKey: "status",
     header: ORDERS_COLUMN_LABELS.status,
     cell: ({ row }) => {
-      const display = orderStatusDisplay(row.original.status);
+      const display = orderStatusDisplay(row.original.status, row.original.latestShipmentStatus);
       return <Badge variant={display.variant}>{display.label}</Badge>;
     },
   },
