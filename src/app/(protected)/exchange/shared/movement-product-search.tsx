@@ -13,6 +13,9 @@ import type { StockMovementProductItemOption } from "@/types/stock-movement";
 
 export type MovementProductSearchScope = "catalog" | "list";
 
+/** Stable default: a fresh `[]` per render re-fires the search effect, which sets state, which renders again. */
+const NO_POOL: StockMovementProductItemOption[] = [];
+
 type MovementProductSearchProps = {
   usedIds: Set<string>;
   onPick: (item: StockMovementProductItemOption) => void;
@@ -24,6 +27,8 @@ type MovementProductSearchProps = {
   className?: string;
   /** stock = hiện tồn; price = hiện giá bán. */
   metaMode?: "price" | "stock" | "skuOnly";
+  /** Chỉ tìm hàng đặt xưởng được (isManufacturable) - dùng cho form yêu cầu sản xuất. Chỉ áp cho searchScope=catalog. */
+  onlyManufacturable?: boolean;
 };
 
 /**
@@ -34,11 +39,12 @@ export function MovementProductSearch({
   usedIds,
   onPick,
   searchScope = "catalog",
-  poolProducts = [],
+  poolProducts = NO_POOL,
   placeholder,
   disabled = false,
   className,
   metaMode = "price",
+  onlyManufacturable = false,
 }: MovementProductSearchProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<StockMovementProductItemOption[]>([]);
@@ -74,7 +80,9 @@ export function MovementProductSearch({
     setIsSearching(true);
     const timer = setTimeout(() => {
       stockMovementApi
-        .searchProductItems(q)
+        .searchProductItems(q, {
+          isManufacturable: onlyManufacturable ? true : undefined,
+        })
         .then((items) => {
           if (id !== seq.current) return;
           setResults(items);
@@ -88,7 +96,7 @@ export function MovementProductSearch({
         });
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, searchScope, poolProducts, disabled]);
+  }, [query, searchScope, poolProducts, disabled, onlyManufacturable]);
 
   const showPanel = !disabled && query.trim().length >= 2;
 

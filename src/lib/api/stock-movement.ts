@@ -62,6 +62,7 @@ type ApiSupplier = {
   id: string;
   supplierName?: string;
   name?: string;
+  type?: "GOODS" | "WORKSHOP";
 };
 
 type ApiLocation = {
@@ -219,13 +220,24 @@ function isCacheFresh(at: number) {
   return Date.now() - at < LOOKUP_TTL_MS;
 }
 
+/** Toàn bộ NCC (và xưởng) của shop, đọc hết mọi trang - BE giới hạn 100 dòng mỗi trang, nên chỉ lấy trang 1 sẽ thiếu NCC ở shop lớn. */
 async function fetchSupplierOptions(): Promise<StockMovementSupplierOption[]> {
-  const response = await client.get("/suppliers", {
-    params: { page: 1, limit: 100 },
-  });
-  return asArray<ApiSupplier>(response.data?.data).map((supplier) => ({
+  const all: ApiSupplier[] = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const response = await client.get("/suppliers", {
+      params: { page, limit: 100 },
+    });
+    all.push(...asArray<ApiSupplier>(response.data?.data));
+    totalPages = Number(response.data?.pagination?.totalPages ?? 1);
+    page += 1;
+  } while (page <= totalPages);
+
+  return all.map((supplier) => ({
     id: supplier.id,
     name: supplier.supplierName ?? supplier.name ?? supplier.id,
+    type: supplier.type,
   }));
 }
 
@@ -340,6 +352,8 @@ async function fetchProductSearch(params: {
   page?: number;
   limit?: number;
   status?: string;
+  /** true = chỉ hàng đặt xưởng được (form YCSX); bỏ trống = không lọc. */
+  isManufacturable?: boolean;
 }): Promise<{
   items: StockMovementProductItemOption[];
   totalPages: number;
@@ -350,6 +364,7 @@ async function fetchProductSearch(params: {
       page: params.page ?? 1,
       limit: Math.min(params.limit ?? 50, 50),
       status: params.status ?? "ACTIVE",
+      isManufacturable: params.isManufacturable,
     },
   });
   return {
@@ -725,12 +740,16 @@ export const stockMovementApi = {
 
   getSupplierOptions: fetchSupplierOptions,
   getLocationOptions: fetchLocationOptions,
-  searchProductItems: async (q: string) => {
+  searchProductItems: async (
+    q: string,
+    filter: { isManufacturable?: boolean } = {},
+  ) => {
     const res = await fetchProductSearch({
       q,
       page: 1,
       limit: 50,
       status: "ACTIVE",
+      isManufacturable: filter.isManufacturable,
     });
     return res.items;
   },

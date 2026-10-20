@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FileQuestion } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,10 @@ import {
   stockDisplay,
   worstStock,
 } from "../shared/order-display";
+import { OrderActions } from "./components/order-actions";
 import { OrderDeliveryCard } from "./components/order-delivery-card";
 import { OrderInfoCard } from "./components/order-info-card";
+import { OrderJourneyActions } from "./components/order-journey-actions";
 import { OrderJourneySteps } from "./components/order-journey-steps";
 import { OrderLinesCard } from "./components/order-lines-card";
 import { OrderPaymentCard } from "./components/order-payment-card";
@@ -39,16 +42,19 @@ function errorMessage(error: unknown): string {
   return messageForCode(getApiErrorBody(error)?.code) ?? "Không tải được đơn hàng";
 }
 
-/** D-3: one order in full (`GET /orders/:id`, contract §2) - where it is in the journey, its lines and their stock, the money and the delivery. Read-only: the actions on it belong to their own tasks (C-6 pack, D-7 edit, D-9 confirm cash). */
+/** D-3: one order in full (`GET /orders/:id`, contract §2) - where it is in the journey, its lines and their stock, the money and the delivery. The header holds the edits (`OrderActions`, D-7); the journey's next step - pack, hand over, pick up, ship, deliver, the QR, D-9 confirm the shipper's cash - sits right-aligned under the step bar (`OrderJourneyActions`), reusing the dialogs of /fulfillments, /shipments and /shipper. */
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params.id;
   const canView = allows(getSessionRole(), "orders", "read");
   const [state, setState] = useState<LoadState | null>(null);
+  // Bumped after a journey step: those routes answer with a fulfillment / shipment, not the order.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!canView || !id) return;
+    // A newer reload cancels this one, so an older answer landing late cannot overwrite a newer one.
     let cancelled = false;
     orderJourneyApi
       .getById(id)
@@ -56,12 +62,19 @@ export default function OrderDetailPage() {
         if (!cancelled) setState({ id, kind: "loaded", order });
       })
       .catch((error: unknown) => {
-        if (!cancelled) setState({ id, kind: "error", message: errorMessage(error) });
+        if (cancelled) return;
+        // A failed re-read after a step keeps the order on screen (and any open sheet with it);
+        // only a first load with nothing to show becomes the error page.
+        if (reloadKey > 0) toast.error("Không tải lại được đơn hàng, vui lòng tải lại trang");
+        setState((previous) => {
+          if (previous?.id === id && previous.kind === "loaded") return previous;
+          return { id, kind: "error", message: errorMessage(error) };
+        });
       });
     return () => {
       cancelled = true;
     };
-  }, [id, canView]);
+  }, [id, canView, reloadKey]);
 
   const goBack = () => router.push("/sales/orders");
   // A result for another id (navigated between orders) counts as still loading.
@@ -102,10 +115,11 @@ export default function OrderDetailPage() {
   }
 
   const { order } = current;
-  const status = orderStatusDisplay(order.status);
+  const status = orderStatusDisplay(order.status, order.latestShipmentStatus);
   const priority = priorityDisplay(order.priority);
   const summary = worstStock(order.items);
   const stock = summary ? stockDisplay(summary) : null;
+  const replaceOrder = (updated: OrderDetail) => setState({ id, kind: "loaded", order: updated });
 
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6">
@@ -120,11 +134,14 @@ export default function OrderDetailPage() {
           </div>
         }
         onBack={goBack}
+        actions={
+          <OrderActions order={order} onChanged={replaceOrder} />
+        }
       />
 
       <Card>
-        <CardContent>
-          <OrderJourneySteps order={order} />
+        <CardContent className="space-y-4">
+          <OrderJourneySteps order={order} />      
         </CardContent>
       </Card>
 
@@ -132,6 +149,12 @@ export default function OrderDetailPage() {
         <div className="space-y-6 lg:col-span-2">
           <OrderLinesCard items={order.items} />
           <OrderPaymentCard order={order} />
+             {/* Always mounted, even with no button to show: it holds the delivery sheet open across the reload after a delivery. */}
+          <OrderJourneyActions
+            order={order}
+            onChanged={replaceOrder}
+            onNeedsReload={() => setReloadKey((key) => key + 1)}
+          />
         </div>
         <div className="space-y-6">
           <OrderInfoCard order={order} />

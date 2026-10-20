@@ -28,6 +28,7 @@ import {
   Trash2,
   CheckCircle2,
   Clock,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,12 +69,14 @@ import { staffApi } from "@/lib/api/staff";
 import client from "@/lib/api/client";
 import type { Staff } from "@/types/staff";
 import { PageHeader } from "@/components/page-header";
+import { NotificationSettings } from "./components/notification-settings";
 
 type TabType =
   | "store-info"
   | "branches"
   | "warehouses"
   | "security"
+  | "notifications"
   | "theme"
   | "layout";
 
@@ -1245,6 +1248,7 @@ export default function SettingsPage() {
         { id: "branches", label: "Quản lý chi nhánh", icon: GitBranch },
         { id: "warehouses", label: "Quản lý kho tổng", icon: Warehouse },
         { id: "security", label: "Bảo mật", icon: Lock },
+        { id: "notifications", label: "Thông báo", icon: Bell },
       ],
     },
     {
@@ -1331,6 +1335,7 @@ export default function SettingsPage() {
                 {activeTab === "branches" && "Quản lý chi nhánh"}
                 {activeTab === "warehouses" && "Quản lý kho tổng"}
                 {activeTab === "security" && "Cấu hình bảo mật"}
+                {activeTab === "notifications" && "Thông báo"}
                 {activeTab === "theme" && "Tùy biến chủ đề"}
                 {activeTab === "layout" && "Cấu hình bố cục"}
               </h2>
@@ -1343,6 +1348,8 @@ export default function SettingsPage() {
                   "Quản lý danh sách các kho tổng chứa hàng hóa."}
                 {activeTab === "security" &&
                   "Đổi mật khẩu, kích hoạt bảo mật 2 lớp (2FA) và quản lý phiên đăng nhập."}
+                {activeTab === "notifications" &&
+                  "Bật âm báo và nhận thông báo đẩy trên thiết bị này."}
                 {activeTab === "theme" &&
                   "Điều chỉnh giao diện màu sắc, bo góc và chế độ hiển thị sáng tối."}
                 {activeTab === "layout" &&
@@ -2110,6 +2117,8 @@ export default function SettingsPage() {
                 </Card>
               </div>
             )}
+
+            {activeTab === "notifications" && <NotificationSettings />}
 
             {/* Tab 4: Theme Settings (Relocated Theme Customizer logic) */}
             {activeTab === "theme" && (

@@ -80,6 +80,7 @@ function buildCreateBody(payload: CreateStaffPayload) {
       : payload.warehouseId
         ? { warehouseId: payload.warehouseId }
         : {}),
+    ...(payload.workshopId ? { workshopId: payload.workshopId } : {}),
     hireDate: normalizeDateInput(payload.hireDate),
     firstName: payload.firstName,
     lastName: payload.lastName,
@@ -117,6 +118,8 @@ function buildUpdateBody(payload: UpdateStaffPayload) {
   if (payload.accountNote !== undefined) {
     data.accountNote = payload.accountNote.trim();
   }
+  // Khác nơi làm việc: `null` là trạng thái thật (bỏ gắn xưởng), BE nhận `workshopId: null`.
+  if (payload.workshopId !== undefined) data.workshopId = payload.workshopId;
 
   // Exactly one, never both. A form that clears the posting sends null for both, and the
   // server has no "unposted" state to move someone into - so that case sends neither.

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Trash2 } from "lucide-react";
+import { CustomizationChips } from "@/app/(protected)/sales/orders/shared/customization-chips";
+import { Trash2, Ruler } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,13 +14,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { productApi } from "@/lib/api/product";
 import type { LocationType } from "@/types/location";
+import type { OrderItemCustomization } from "@/types/order-flow";
+import { CustomizationDialog } from "../../shared/customization-dialog";
 import { formatVND, lineTotal, stockLevel } from "../shared/order-totals";
 
 export interface OrderLineDraft {
   /** Local key; the same SKU can be added twice with different agreed prices. */
   key: string;
+  /** The existing order line this draft edits (D-7); absent for a line added in the form. */
+  id?: string;
   productItemId: string;
   name: string;
   sku: string;
@@ -29,6 +35,8 @@ export interface OrderLineDraft {
   quantity: number;
   unitPrice: number;
   discountAmount: number;
+  /** D-2: made to the customer's measure - the line gets a SKU of its own on create (A-4). */
+  customization?: OrderItemCustomization;
 }
 
 interface SkuOption {
@@ -45,12 +53,21 @@ interface OrderLinesEditorProps {
   /** Where the goods are expected to ship from; stock is read there. Empty until a branch is chosen. */
   stockLocation: { id: string; type: LocationType } | null;
   error?: string;
+  /** Offer "Thông số riêng" per line - on create only (`PATCH /orders/:id` takes no specs). */
+  allowCustomization?: boolean;
 }
 
-const toNumber = (raw: string) => Math.max(0, Number(raw) || 0);
 
 /** Product search + the lines of the order. Stock is shown per line and never blocks (contract §2: an order is taken even when the goods are not on the shelf). */
-export function OrderLinesEditor({ lines, onChange, stockLocation, error }: OrderLinesEditorProps) {
+export function OrderLinesEditor({
+  lines,
+  onChange,
+  stockLocation,
+  error,
+  allowCustomization = false,
+}: OrderLinesEditorProps) {
+  const [customizing, setCustomizing] = React.useState<string | null>(null);
+  const customizingLine = lines.find((line) => line.key === customizing) ?? null;
   const [search, setSearch] = React.useState("");
   const keySeq = React.useRef(0);
   const term = search.trim();
@@ -103,7 +120,10 @@ export function OrderLinesEditor({ lines, onChange, stockLocation, error }: Orde
 
   const add = (option: SkuOption) => {
     const existing = lines.find(
-      (line) => line.productItemId === option.productItemId && line.unitPrice === option.retailPrice,
+      (line) =>
+        line.productItemId === option.productItemId &&
+        line.unitPrice === option.retailPrice &&
+        !line.customization,
     );
     if (existing) {
       onChange(
@@ -194,11 +214,36 @@ export function OrderLinesEditor({ lines, onChange, stockLocation, error }: Orde
                 return (
                   <TableRow key={line.key}>
                     <TableCell>
-                      <div className="font-medium">{line.name}</div>
+                      <div className="font-medium">
+                        {line.name}
+                        {line.customization && (
+                          <Badge variant="outline" className="ml-2">
+                            Làm riêng
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground">{line.sku}</div>
+                      {line.customization && (
+                        <CustomizationChips customization={line.customization} className="mt-1" />
+                      )}
+                      {allowCustomization && (
+                        <Button
+                          type="button"
+                          variant={line.customization ? "secondary" : "outline"}
+                          size="sm"
+                          className="mt-1 h-7 w-fit cursor-pointer gap-1.5 text-xs"
+                          onClick={() => setCustomizing(line.key)}
+                        >
+                          <Ruler className="size-3.5" />
+                          {line.customization ? "Sửa yêu cầu làm riêng" : "Làm riêng theo yêu cầu"}
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell>
-                      {level === "ENOUGH" ? (
+                      {/* Làm riêng = SKU mới, chưa có trên kệ nào: luôn phải đặt xưởng, tồn của SKU mẫu không liên quan. */}
+                      {line.customization ? (
+                        <Badge variant="warning">Cần đặt xưởng</Badge>
+                      ) : level === "ENOUGH" ? (
                         <Badge variant="success">Đủ hàng</Badge>
                       ) : level === "SHORT" ? (
                         <Badge variant="warning">Thiếu {missing}</Badge>
@@ -221,13 +266,11 @@ export function OrderLinesEditor({ lines, onChange, stockLocation, error }: Orde
                       />
                     </TableCell>
                     <TableCell>
-                      <Input
-                        type="number"
-                        min={0}
+                      <MoneyInput
                         className="text-right"
                         aria-label={`Đơn giá ${line.name}`}
                         value={line.unitPrice}
-                        onChange={(event) => patch(line.key, { unitPrice: toNumber(event.target.value) })}
+                        onChange={(unitPrice) => patch(line.key, { unitPrice })}
                       />
                       {line.unitPrice !== line.retailPrice && (
                         <div className="mt-1 text-right text-xs text-muted-foreground">
@@ -236,15 +279,11 @@ export function OrderLinesEditor({ lines, onChange, stockLocation, error }: Orde
                       )}
                     </TableCell>
                     <TableCell>
-                      <Input
-                        type="number"
-                        min={0}
+                      <MoneyInput
                         className="text-right"
                         aria-label={`Giảm giá ${line.name}`}
                         value={line.discountAmount}
-                        onChange={(event) =>
-                          patch(line.key, { discountAmount: toNumber(event.target.value) })
-                        }
+                        onChange={(discountAmount) => patch(line.key, { discountAmount })}
                       />
                     </TableCell>
                     <TableCell className="text-right font-medium">{formatVND(lineTotal(line))}</TableCell>
@@ -267,6 +306,22 @@ export function OrderLinesEditor({ lines, onChange, stockLocation, error }: Orde
         </div>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
+      {customizingLine && (
+        <CustomizationDialog
+          open
+          label={customizingLine.name}
+          productItemId={customizingLine.productItemId}
+          sku={customizingLine.sku}
+          value={customizingLine.customization}
+          onOpenChange={(open) => {
+            if (!open) setCustomizing(null);
+          }}
+          onSave={(value) => {
+            patch(customizingLine.key, { customization: value });
+            setCustomizing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -7,6 +7,8 @@ import type {
   Paginated,
   Shipment,
   ShipmentEventPayload,
+  ShipmentHistoryPage,
+  ShipmentHistoryQuery,
   ShipmentQuery,
   ShipmentSummary,
 } from '@/types/order-flow';
@@ -29,6 +31,12 @@ export const shipmentApi = {
     return res.data.data;
   },
 
+  /** Lịch sử giao của tôi: mọi trạng thái, lọc theo ngày giao, kèm số liệu các thẻ và tiền đã thu. */
+  getMyHistory: async (params?: ShipmentHistoryQuery): Promise<ShipmentHistoryPage> => {
+    const res = await client.get<ShipmentHistoryPage>('/shipments/mine/history', { params });
+    return { data: res.data.data, pagination: res.data.pagination, summary: res.data.summary };
+  },
+
   getById: async (id: string): Promise<Shipment> => {
     const res = await client.get<Envelope<Shipment>>(`/shipments/${id}`);
     return res.data.data;
@@ -42,9 +50,18 @@ export const shipmentApi = {
     return res.data.data;
   },
 
-  /** "ĐVVC đã lấy hàng": đơn PACKED → PICKED_UP. */
+  /** "Giao cho vận chuyển". ĐVVC ngoài: đơn PACKED → PICKED_UP ngay. Shipper của shop: chỉ gán shipper (lần giao CREATED), đơn vẫn PACKED tới khi shipper `pickUp`. */
   create: async (payload: CreateShipmentPayload): Promise<Shipment> => {
     const res = await client.post<Envelope<Shipment>>('/shipments', payload);
+    return res.data.data;
+  },
+
+  /** Shipper xác nhận đã tới kho lấy hàng: lần giao nội bộ CREATED → PICKED_UP, đơn PACKED → PICKED_UP. Shipper, người phụ trách đơn, chủ shop. */
+  pickUp: async (id: string, note?: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(
+      `/shipments/${id}/pick-up`,
+      note ? { note } : {},
+    );
     return res.data.data;
   },
 

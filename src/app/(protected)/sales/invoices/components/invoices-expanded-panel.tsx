@@ -303,7 +303,7 @@ export function InvoicesExpandedPanel({
                 <div className="flex justify-between text-muted-foreground">
                   <span>Hình thức mua hàng:</span>
                   <span className="text-foreground text-right font-semibold">
-                    {PAYMENT_METHOD_MAP[invoice.paymentMethod]}
+                    {invoice.paymentMethod ? PAYMENT_METHOD_MAP[invoice.paymentMethod] : "-"}
                   </span>
                 </div>
                 {invoice.discountValue && invoice.discountValue > 0 ? (
@@ -342,7 +342,7 @@ export function InvoicesExpandedPanel({
                 <div className="flex justify-between text-muted-foreground">
                   <span>Khách thanh toán:</span>
                   <span className="text-green-600 dark:text-green-400 font-bold tabular-nums">
-                    {formatVND(invoice.customerPay)}
+                    {invoice.customerPay === null ? "-" : formatVND(invoice.customerPay)}
                   </span>
                 </div>
                 <Separator className="my-1 bg-primary/10" />
@@ -351,7 +351,7 @@ export function InvoicesExpandedPanel({
                     Tiền thừa trả khách:
                   </span>
                   <span className="text-primary font-bold tabular-nums">
-                    {formatVND(invoice.change)}
+                    {invoice.change === null ? "-" : formatVND(invoice.change)}
                   </span>
                 </div>
               </div>

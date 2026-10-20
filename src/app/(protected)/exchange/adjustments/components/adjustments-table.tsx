@@ -14,10 +14,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Funnel, PackageSearch, Search } from "lucide-react";
+import { Funnel, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -39,7 +38,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { parseLocationKey } from "@/lib/location-key";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
@@ -127,6 +128,8 @@ export function AdjustmentsTable() {
     state: { sorting, columnFilters, columnVisibility, rowSelection, globalFilter, expanded },
   });
 
+  const columnCount = table.getVisibleLeafColumns().length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -213,17 +216,11 @@ export function AdjustmentsTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {columns.map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows?.length ? (
+            {isLoading && <DataTableLoading columnCount={columnCount} />}
+            {!isLoading && table.getRowModel().rows.length === 0 && (
+              <DataTableEmpty columnCount={columnCount} />
+            )}
+            {!isLoading && (
               table.getRowModel().rows.map((row) => {
                 const isExpanded = row.getIsExpanded();
                 const hasExpandedRow = table.getRowModel().rows.some((r) => r.getIsExpanded());
@@ -265,53 +262,23 @@ export function AdjustmentsTable() {
                   </Fragment>
                 );
               })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length}>
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <PackageSearch className="mb-4 size-12 text-muted-foreground" />
-                    <h3 className="mb-1 text-base font-semibold">Không có phiếu điều chỉnh</h3>
-                    <p className="text-sm text-muted-foreground">Chưa có phiếu nào phù hợp bộ lọc hiện tại.</p>
-                  </div>
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex items-center space-x-2">
-          <Label className="text-sm font-medium">Hiển thị</Label>
-          <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => table.setPageSize(Number(value))}
-          >
-            <SelectTrigger className="w-20 cursor-pointer">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>{pageSize}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="hidden text-sm text-muted-foreground sm:block">
-          Đã chọn {table.getFilteredSelectedRowModel().rows.length} / {table.getFilteredRowModel().rows.length} phiếu
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="hidden text-sm font-medium sm:block">
-            Trang <strong>{table.getState().pagination.pageIndex + 1} / {table.getPageCount() || 1}</strong>
-          </span>
-          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className="cursor-pointer">
-            Trước
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className="cursor-pointer">
-            Tiếp
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit="phiếu"
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize);
+          table.setPageIndex(0);
+        }}
+      />
     </div>
   );
 }

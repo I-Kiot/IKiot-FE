@@ -393,7 +393,8 @@ export function ImportsCreateDialog({
       stockMovementApi.getCatalogProductItems(),
     ])
       .then(([s, l, products]) => {
-        setSuppliers(s);
+        // A workshop's goods arrive through its production request (B-5); a plain import refuses it.
+        setSuppliers(s.filter((supplier) => supplier.type !== "WORKSHOP"));
         setLocations(l);
         setCatalogProducts(products);
       })

@@ -23,7 +23,7 @@ function shipmentStatusFromUrl(value: string | null): ShipmentStatus | undefined
 /** Màn Giao hàng. Bọc Suspense vì đọc `useSearchParams` - Next bắt buộc khi build. */
 export default function ShipmentsPage() {
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <ShipmentsScreen />
     </Suspense>
   );
@@ -37,7 +37,7 @@ function ShipmentsScreen() {
   // Một khoá tải lại chung: thao tác ở một chỗ đổi dữ liệu ở cả hai tab (đơn rời "Chờ giao", lần giao hiện ở "Lần giao") và ở sheet.
   const [reloadKey, setReloadKey] = useState(0);
   const [handOverOrder, setHandOverOrder] = useState<HandOverReadyOrder | null>(null);
-  const [openShipmentId, setOpenShipmentId] = useState<string | null>(null);
+  const [openShipmentId, setOpenShipmentId] = useState<string | null>(searchParams.get("open"));
   const { canHandOver } = shipmentActions();
 
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
@@ -60,8 +60,8 @@ function ShipmentsScreen() {
 
       <Tabs defaultValue={initialTab}>
         <TabsList>
-          <TabsTrigger value="ready">Chờ giao</TabsTrigger>
-          <TabsTrigger value="shipments">Lần giao</TabsTrigger>
+          <TabsTrigger value="ready">Chờ vận chuyển</TabsTrigger>
+          <TabsTrigger value="shipments">Theo dõi đơn hàng</TabsTrigger>
         </TabsList>
         <TabsContent value="ready" className="mt-4">
           <ReadyOrdersTab reloadKey={reloadKey} canHandOver={canHandOver} onHandOver={openHandOver} />
@@ -72,7 +72,7 @@ function ShipmentsScreen() {
       </Tabs>
 
       <HandOverDialog
-        key={handOverOrder?.id ?? "none"}
+        key={`hand-over-${handOverOrder?.id ?? "none"}`}
         order={handOverOrder}
         onClose={() => setHandOverOrder(null)}
         onNeedsReload={() => {
@@ -81,7 +81,7 @@ function ShipmentsScreen() {
         }}
       />
       <ShipmentDetailSheet
-        key={openShipmentId ?? "none"}
+        key={`shipment-${openShipmentId ?? "none"}`}
         shipmentId={openShipmentId}
         reloadKey={reloadKey}
         onClose={() => setOpenShipmentId(null)}
@@ -90,3 +90,5 @@ function ShipmentsScreen() {
     </div>
   );
 }
+
+

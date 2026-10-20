@@ -1,9 +1,11 @@
 // [Table – Columns Supplier]
 import { type ColumnDef } from '@tanstack/react-table'
 import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import type { Supplier } from '@/types/supplier'
+import { SUPPLIER_TYPE_LABELS } from '../../_constants/supplier.constants'
 
 function SortableHeader({
   label,
@@ -71,6 +73,19 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
     cell: ({ row }) => (
       <span className="font-medium line-clamp-1 max-w-52">{row.getValue('supplierName')}</span>
     ),
+  },
+  {
+    accessorKey: 'type',
+    header: 'Loại',
+    cell: ({ row }) => {
+      const type = row.original.type ?? 'GOODS'
+      return (
+        <Badge variant={type === 'WORKSHOP' ? 'default' : 'secondary'}>
+          {SUPPLIER_TYPE_LABELS[type]}
+        </Badge>
+      )
+    },
+    filterFn: (row, _columnId, value: string) => (row.original.type ?? 'GOODS') === value,
   },
   {
     accessorKey: 'contactName',

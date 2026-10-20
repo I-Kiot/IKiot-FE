@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { ImageGalleryDialog } from "../image-gallery-dialog";
 import {
   formatVND,
   safeImageSrc,
@@ -101,6 +102,7 @@ export function ProductsItemDetailSheet({
   isSubDialogOpen,
 }: Props) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [removingLocation, setRemovingLocation] = useState<StockDetail | null>(
     null,
   );
@@ -120,11 +122,12 @@ export function ProductsItemDetailSheet({
 
   const profit = item.retailPrice - item.costPrice;
   const profitPositive = profit >= 0;
-  const thumbnail =
-    item.images?.find((i) => i.isThumbnail) ??
-    item.images?.[0] ??
-    product.images?.find((i) => i.isThumbnail) ??
-    product.images?.[0];
+  // Phiên bản chưa có ảnh riêng thì dùng ảnh của hàng hóa; ảnh đầu tiên là ảnh đại diện.
+  const itemImages = item.images ?? [];
+  const galleryImages =
+    itemImages.length > 0 ? itemImages : (product.images ?? []);
+  const hasImages = galleryImages.length > 0;
+  const extraImageCount = galleryImages.length - 1;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -132,10 +135,10 @@ export function ProductsItemDetailSheet({
         side="right"
         className="w-[36vw] sm:max-w-[36vw] p-0 flex flex-col overflow-hidden"
         onInteractOutside={(e) => {
-          if (confirmDeleteOpen || isSubDialogOpen) e.preventDefault();
+          if (confirmDeleteOpen || isSubDialogOpen || galleryOpen) e.preventDefault();
         }}
         onEscapeKeyDown={(e) => {
-          if (confirmDeleteOpen || isSubDialogOpen) e.preventDefault();
+          if (confirmDeleteOpen || isSubDialogOpen || galleryOpen) e.preventDefault();
         }}
       >
         <SheetHeader className="px-6 pt-2 pb-4 border-b shrink-0">
@@ -148,14 +151,28 @@ export function ProductsItemDetailSheet({
         <ScrollArea className="flex-1 min-h-0">
           <div className="px-6 py-5 space-y-5">
             <div className="grid grid-cols-[3fr_7fr] gap-4">
-              <div className="relative rounded-xl overflow-hidden border shadow-sm">
+              <button
+                type="button"
+                disabled={!hasImages}
+                onClick={() => setGalleryOpen(true)}
+                aria-label="Xem ảnh phiên bản"
+                className={cn(
+                  "relative rounded-xl overflow-hidden border shadow-sm",
+                  hasImages && "cursor-zoom-in hover:opacity-90",
+                )}
+              >
                 <Image
-                  src={safeImageSrc(thumbnail?.url)}
+                  src={safeImageSrc(galleryImages[0]?.url)}
                   alt={product.name}
                   fill
                   className="object-contain"
                 />
-              </div>
+                {extraImageCount > 0 && (
+                  <span className="absolute bottom-2 right-2 rounded bg-background/90 px-1.5 text-xs font-medium shadow">
+                    +{extraImageCount}
+                  </span>
+                )}
+              </button>
               <div className="flex flex-col">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-1.5">
                   Thông tin cơ bản
@@ -449,6 +466,15 @@ export function ProductsItemDetailSheet({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {galleryOpen && (
+          <ImageGalleryDialog
+            images={galleryImages}
+            open
+            onOpenChange={setGalleryOpen}
+            alt={item.productName || product.name}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );

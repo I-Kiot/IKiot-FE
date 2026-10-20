@@ -26,6 +26,15 @@ export const orderReturnApi = {
     return res.data.data;
   },
 
+  /** Goods of a failed delivery are back at the shop: shipment and order become RETURNED, stock goes back. */
+  confirmFailedDelivery: async (shipmentId: string, note?: string): Promise<OrderReturn> => {
+    const res = await client.post<Envelope<OrderReturn>>('/order-returns/confirm-failed-delivery', {
+      shipmentId,
+      note,
+    });
+    return res.data.data;
+  },
+
   /** REQUESTED → INSPECTING: the goods are back at the shop. */
   receive: async (id: string): Promise<OrderReturn> => {
     const res = await client.post<Envelope<OrderReturn>>(`/order-returns/${id}/receive`, {});
@@ -39,6 +48,14 @@ export const orderReturnApi = {
 
   cancel: async (id: string): Promise<OrderReturn> => {
     const res = await client.post<Envelope<OrderReturn>>(`/order-returns/${id}/cancel`, {});
+    return res.data.data;
+  },
+
+  /** D-10 · D-11: link the new order a customer placed to buy the damaged goods again (GĐ2 – 3B). */
+  setReplacementOrder: async (id: string, orderId: string): Promise<OrderReturn> => {
+    const res = await client.patch<Envelope<OrderReturn>>(`/order-returns/${id}/replacement-order`, {
+      orderId,
+    });
     return res.data.data;
   },
 };

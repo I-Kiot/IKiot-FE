@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2, Plus, Minus, ShoppingCart } from "lucide-react";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import {
   Table,
   TableBody,
@@ -167,17 +168,10 @@ export function CartItems({
                 {/* Unit Price editor */}
                 <TableCell>
                   <div className="flex justify-end">
-                    <Input
-                      type="number"
+                    <MoneyInput
                       value={item.unitPrice}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        onUnitPriceChange(
-                          item.productItemId,
-                          isNaN(val) || val < 0 ? 0 : val,
-                        );
-                      }}
-                      className="w-28 h-9 text-right text-base font-bold tabular-nums px-1.5 focus-visible:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      onChange={(val) => onUnitPriceChange(item.productItemId, val)}
+                      className="w-28 h-9 text-right text-base font-bold tabular-nums px-1.5 focus-visible:ring-primary"
                     />
                   </div>
                 </TableCell>
@@ -185,19 +179,12 @@ export function CartItems({
                 {/* Unit Discount editor */}
                 <TableCell>
                   <div className="flex justify-end">
-                    <Input
-                      type="number"
+                    <MoneyInput
                       value={item.discountAmount}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        const cleanVal = isNaN(val) || val < 0 ? 0 : val;
-                        // Clamp discount amount to item unit price
-                        onDiscountChange(
-                          item.productItemId,
-                          cleanVal > item.unitPrice ? item.unitPrice : cleanVal,
-                        );
-                      }}
-                      className="w-24 h-9 text-right text-base font-bold text-red-500 tabular-nums px-1.5 focus-visible:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      // Clamp discount amount to item unit price
+                      max={item.unitPrice}
+                      onChange={(val) => onDiscountChange(item.productItemId, val)}
+                      className="w-24 h-9 text-right text-base font-bold text-red-500 tabular-nums px-1.5 focus-visible:ring-primary"
                     />
                   </div>
                 </TableCell>

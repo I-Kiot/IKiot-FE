@@ -1,155 +1,159 @@
 "use client";
 
 import * as React from "react";
+import { AlertCircle, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { customerApi } from "@/lib/api/customer";
-import type { Customer } from "@/types/customer";
+import { CustomerDialog } from "@/app/(protected)/check-out/components/customer-dialog";
 
-export type CustomerChoice =
-  | { mode: "existing"; customer: Customer | null }
-  | { mode: "new"; name: string; phone: string; address: string };
+export interface PickedCustomer {
+  id: string;
+  customerCode: string;
+  name: string;
+  phone: string;
+  address: string;
+}
 
 interface CustomerPickerProps {
-  value: CustomerChoice;
-  onChange: (value: CustomerChoice) => void;
-  /** Shown under the name field of a new customer. */
+  value: PickedCustomer | null;
+  onChange: (value: PickedCustomer | null) => void;
   error?: string;
 }
 
-/** An existing customer found by name / phone, or a new one typed in (the server matches it to an existing customer by phone first). */
+/**
+ * Same behaviour as the customer block of the direct-sale sidebar: search by name / phone with a
+ * dropdown, or add a new customer through the shared dialog (which creates it straight away).
+ */
 export function CustomerPicker({ value, onChange, error }: CustomerPickerProps) {
-  const [search, setSearch] = React.useState("");
-  const term = search.trim();
-  const wanted = value.mode === "existing" && !value.customer && term.length >= 2;
-  const [found, setFound] = React.useState<{ term: string; items: Customer[] } | null>(null);
-  const results = wanted && found?.term === term ? found.items : [];
-  const searching = wanted && found?.term !== term;
+  const [query, setQuery] = React.useState("");
+  const [results, setResults] = React.useState<PickedCustomer[]>([]);
+  const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (!wanted) return;
+    const term = query.trim();
+    if (!term) {
+      setResults([]);
+      setOpen(false);
+      setLoading(false);
+      return;
+    }
+    setOpen(true);
+    setLoading(true);
     let stale = false;
     const timer = setTimeout(() => {
       customerApi
-        .getList({ search: term, limit: 8 })
+        .getList({ search: term, limit: 10 })
         .then((page) => {
-          if (!stale) setFound({ term, items: page.data });
+          if (!stale) setResults(page.data);
         })
         .catch(() => {
-          if (!stale) setFound({ term, items: [] });
+          if (!stale) setResults([]);
+        })
+        .finally(() => {
+          if (!stale) setLoading(false);
         });
     }, 300);
     return () => {
       stale = true;
       clearTimeout(timer);
     };
-  }, [wanted, term]);
+  }, [query]);
+
+  React.useEffect(() => {
+    const onMouseDown = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
+  const pick = (customer: PickedCustomer | null) => {
+    setQuery("");
+    setOpen(false);
+    onChange(customer);
+  };
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant={value.mode === "existing" ? "default" : "outline"}
-          onClick={() => onChange({ mode: "existing", customer: null })}
-        >
-          Khách có sẵn
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={value.mode === "new" ? "default" : "outline"}
-          onClick={() => onChange({ mode: "new", name: "", phone: "", address: "" })}
-        >
-          Khách mới
-        </Button>
-      </div>
-
-      {value.mode === "existing" ? (
-        value.customer ? (
-          <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-            <span>
-              <span className="font-medium">{value.customer.name}</span>
-              <span className="text-muted-foreground">
-                {value.customer.phone ? ` · ${value.customer.phone}` : ""}
-              </span>
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => onChange({ mode: "existing", customer: null })}
-            >
-              Đổi khách
-            </Button>
+    <div className="space-y-1.5">
+      {value ? (
+        <div className="flex items-center justify-between border bg-primary/5 border-primary/20 rounded-lg p-2.5">
+          <div>
+            <div className="font-bold text-lg text-foreground">{value.name}</div>
+            <div className="text-sm text-muted-foreground font-mono mt-0.5">
+              {value.phone ? `SĐT: ${value.phone}` : "Chưa có SĐT"}
+              {value.customerCode ? ` • ${value.customerCode}` : ""}
+            </div>
           </div>
-        ) : (
-          <div className="space-y-2">
-            <Input
-              placeholder="Tìm theo tên hoặc số điện thoại"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              aria-label="Tìm khách hàng"
-            />
-            {searching && <p className="text-sm text-muted-foreground">Đang tìm...</p>}
-            {results.length > 0 && (
-              <ul className="divide-y rounded-md border">
-                {results.map((customer) => (
-                  <li key={customer.id}>
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted"
-                      onClick={() => onChange({ mode: "existing", customer })}
-                    >
-                      <span className="font-medium">{customer.name}</span>
-                      <span className="text-muted-foreground">{customer.phone}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {wanted && !searching && results.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Không tìm thấy khách nào - chọn &ldquo;Khách mới&rdquo; để nhập tay.
-              </p>
-            )}
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </div>
-        )
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Bỏ chọn khách hàng"
+            onClick={() => pick(null)}
+            className="size-7 rounded-full text-muted-foreground hover:bg-muted cursor-pointer"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="new-customer-name">
-              Tên khách hàng <span className="text-destructive">*</span>
-            </Label>
+        <div className="flex gap-2">
+          <div className="relative flex-1" ref={wrapperRef}>
             <Input
-              id="new-customer-name"
-              value={value.name}
-              onChange={(event) => onChange({ ...value, name: event.target.value })}
+              type="text"
+              placeholder="Tìm khách hàng (Tên, SĐT)..."
+              aria-label="Tìm khách hàng"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="h-11 w-full text-base"
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {open && query.trim() !== "" && (
+              <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover text-popover-foreground border rounded-md shadow-lg max-h-[200px] overflow-y-auto divide-y w-full text-base scrollbar-thin">
+                {loading ? (
+                  <div className="p-4 text-center text-muted-foreground flex items-center justify-center gap-2">
+                    <span className="animate-spin size-4 border-2 border-primary border-t-transparent rounded-full" />
+                    <span>Đang tìm kiếm khách hàng...</span>
+                  </div>
+                ) : results.length > 0 ? (
+                  results.map((customer) => (
+                    <div
+                      key={customer.id}
+                      onClick={() => pick(customer)}
+                      className="p-2 hover:bg-muted cursor-pointer flex flex-col gap-0.5"
+                    >
+                      <span className="font-bold text-base text-foreground">{customer.name}</span>
+                      <span className="text-sm text-muted-foreground font-mono">
+                        {customer.phone} • {customer.customerCode}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-base text-muted-foreground flex flex-col items-center justify-center gap-1.5">
+                    <AlertCircle className="size-5 text-yellow-500" />
+                    <span>Khách hàng không tồn tại</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="new-customer-phone">Số điện thoại</Label>
-            <Input
-              id="new-customer-phone"
-              inputMode="tel"
-              value={value.phone}
-              onChange={(event) => onChange({ ...value, phone: event.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="new-customer-address">Địa chỉ</Label>
-            <Input
-              id="new-customer-address"
-              value={value.address}
-              onChange={(event) => onChange({ ...value, address: event.target.value })}
-            />
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setDialogOpen(true)}
+            className="h-11 w-11 cursor-pointer border-primary/30 text-primary hover:bg-primary/5 shrink-0"
+            title="Thêm khách hàng"
+          >
+            <UserPlus className="size-4" />
+          </Button>
         </div>
       )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <CustomerDialog open={dialogOpen} onOpenChange={setDialogOpen} onCustomerAdded={pick} />
     </div>
   );
 }

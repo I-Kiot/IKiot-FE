@@ -127,6 +127,8 @@ export interface StockMovementQueryParams {
 export interface StockMovementSupplierOption {
   id: string;
   name: string;
+  /** A WORKSHOP's goods only arrive through a production request (B-5), never a plain import. */
+  type?: "GOODS" | "WORKSHOP";
 }
 
 export interface StockMovementLocationOption {

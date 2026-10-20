@@ -1,11 +1,11 @@
 // [Dialog – Mutate Role]
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Pencil, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Pencil, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -21,45 +21,45 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import type { Role } from '@/types/role'
-import { useRoles } from '../../_context/roles-provider'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import type { Role } from "@/types/role";
+import { useRoles } from "../../_context/roles-provider";
 import {
   permissionKey,
   roleFormSchema,
   type RoleFormValues,
-} from '../../_types/role.types'
-import { PermissionPicker } from '../permission-picker'
+} from "../../_types/role.types";
+import { PermissionPicker } from "../permission-picker";
+import { ALWAYS_ON_PERMISSIONS } from "../../_constants/permission-sections";
 
 const EMPTY_VALUES: RoleFormValues = {
-  name: '',
+  name: "",
   description: undefined,
   permissionKeys: [],
-}
+};
 
 type RolesMutateDialogProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  currentRow?: Role
-}
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentRow?: Role;
+};
 
 export function RolesMutateDialog({
   open,
   onOpenChange,
   currentRow,
 }: RolesMutateDialogProps) {
-  const isEdit = !!currentRow
-  const { handleAdd, handleEdit, catalog } = useRoles()
+  const isEdit = !!currentRow;
+  const { handleAdd, handleEdit, catalog } = useRoles();
 
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema),
     defaultValues: EMPTY_VALUES,
-  })
+  });
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
     if (isEdit && currentRow) {
       form.reset({
         name: currentRow.name,
@@ -67,33 +67,44 @@ export function RolesMutateDialog({
         permissionKeys: currentRow.permissions.map((grant) =>
           permissionKey(grant.resource, grant.action),
         ),
-      })
+      });
     } else {
-      form.reset(EMPTY_VALUES)
+      form.reset(EMPTY_VALUES);
     }
-  }, [open, isEdit, currentRow, form])
+  }, [open, isEdit, currentRow, form]);
 
-  async function onSubmit(data: RoleFormValues) {
+  async function onSubmit(values: RoleFormValues) {
+    // Quyền chung không hiện thành ô - thêm vào ở đây, chỉ những mã danh mục thật sự có.
+    const inCatalog = new Set(
+      catalog.flatMap((group) =>
+        group.actions.map((action) => permissionKey(group.resource, action)),
+      ),
+    );
+    const alwaysOn = ALWAYS_ON_PERMISSIONS.map((entry) => entry.key).filter(
+      (key) => inCatalog.has(key),
+    );
+    const data: RoleFormValues = {
+      ...values,
+      permissionKeys: [...new Set([...values.permissionKeys, ...alwaysOn])],
+    };
     const success =
       isEdit && currentRow
         ? await handleEdit(currentRow.id, data)
-        : await handleAdd(data)
-    if (success) onOpenChange(false)
+        : await handleAdd(data);
+    if (success) onOpenChange(false);
   }
 
-  const isSubmitting = form.formState.isSubmitting
+  const isSubmitting = form.formState.isSubmitting;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="flex h-[94vh] flex-col gap-4 sm:max-w-[min(1200px,96vw)]">
         <DialogHeader>
-          <DialogTitle>
-            {isEdit ? 'Sửa vai trò' : 'Thêm vai trò'}
-          </DialogTitle>
+          <DialogTitle>{isEdit ? "Sửa vai trò" : "Thêm vai trò"}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? 'Thay đổi quyền sẽ áp dụng ngay ở request tiếp theo của những người đang giữ vai trò này - không cần họ đăng nhập lại.'
-              : 'Đặt tên vai trò và chọn những gì người giữ nó được làm. Sau đó gán vai trò cho nhân viên ở màn hình danh sách nhân viên.'}
+              ? "Thay đổi quyền sẽ áp dụng ngay ở request tiếp theo của những người đang giữ vai trò này - không cần họ đăng nhập lại."
+              : "Đặt tên vai trò và chọn những gì người giữ nó được làm. Sau đó gán vai trò cho nhân viên ở màn hình danh sách nhân viên."}
           </DialogDescription>
         </DialogHeader>
 
@@ -101,9 +112,9 @@ export function RolesMutateDialog({
           <form
             id="role-form"
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-4"
+            className="-mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1 md:mx-0 md:overflow-visible md:px-0"
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
               <FormField
                 control={form.control}
                 name="name"
@@ -126,11 +137,10 @@ export function RolesMutateDialog({
                   <FormItem>
                     <FormLabel>Mô tả</FormLabel>
                     <FormControl>
-                      <Textarea
-                        rows={1}
-                        placeholder="Vai trò này dùng cho ai"
+                      <Input
+                        placeholder="VD: Đứng quầy, tạo đơn và thu tiền tại chi nhánh"
                         {...field}
-                        value={field.value ?? ''}
+                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -143,17 +153,22 @@ export function RolesMutateDialog({
               control={form.control}
               name="permissionKeys"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col md:min-h-0 md:flex-1">
                   <FormLabel>
                     Quyền <span className="text-destructive">*</span>
+                    <span className="text-muted-foreground hidden font-normal md:inline">
+                      - chọn nhóm bên trái, tick những việc vai trò này được làm. Mọi nhân viên luôn xem được sản phẩm, lịch và ca của mình; người phụ trách đơn làm được các bước của đơn mình, trừ &quot;Bắt đầu vận chuyển&quot;.
+                    </span>
                   </FormLabel>
                   <FormControl>
-                    <PermissionPicker
-                      groups={catalog}
-                      value={field.value}
-                      onChange={field.onChange}
-                      disabled={isSubmitting}
-                    />
+                    <div className="md:min-h-0 md:flex-1">
+                      <PermissionPicker
+                        groups={catalog}
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isSubmitting}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -183,10 +198,14 @@ export function RolesMutateDialog({
             ) : (
               <Plus className="mr-2 size-4" />
             )}
-            {isSubmitting ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Tạo vai trò'}
+            {isSubmitting
+              ? "Đang lưu..."
+              : isEdit
+                ? "Lưu thay đổi"
+                : "Tạo vai trò"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

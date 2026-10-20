@@ -5,6 +5,9 @@ import type { VariantProps } from "class-variance-authority";
 import {
   ORDER_PAYMENT_STATUS_LABELS,
   ORDER_PRIORITY_LABELS,
+  SHIPMENT_STATUS_LABELS,
+  isDeliveryFailed,
+  type ShipmentStatus,
   ORDER_STATUS_LABELS,
   STOCK_CHECK_STATUS_LABELS,
   type OrderPaymentStatus,
@@ -31,7 +34,7 @@ const ORDER_STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   RECEIVED: "warning",
   COMPLETED: "success",
   CANCELLED: "error",
-  RETURNED: "secondary",
+  RETURNED: "muted",
   PENDING: "outline",
 };
 
@@ -56,7 +59,14 @@ const STOCK_VARIANT: Record<StockCheckStatus, BadgeVariant> = {
   OUT: "error",
 };
 
-export function orderStatusDisplay(status: OrderStatus): BadgeDisplay {
+export function orderStatusDisplay(
+  status: OrderStatus,
+  latestShipmentStatus?: ShipmentStatus | null,
+): BadgeDisplay {
+  // A failed delivery leaves the order SHIPPING (goods still out); show what the shipper reported.
+  if (isDeliveryFailed({ status, latestShipmentStatus: latestShipmentStatus ?? null })) {
+    return { label: SHIPMENT_STATUS_LABELS.FAILED, variant: "error" };
+  }
   return {
     label: ORDER_STATUS_LABELS[status] ?? status,
     variant: ORDER_STATUS_VARIANT[status] ?? "outline",
@@ -135,4 +145,13 @@ export function formatPlainDate(value: string | null | undefined): string {
   if (!value) return "-";
   const [year, month, day] = value.split("-");
   return year && month && day ? `${day}/${month}/${year}` : value;
+}
+
+/** Whole calendar days from today (viewer's local date) to a `YYYY-MM-DD` date; negative once past. */
+export function daysUntilPlainDate(value: string): number | null {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((Date.UTC(year, month - 1, day) - today) / 86_400_000);
 }

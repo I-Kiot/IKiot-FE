@@ -25,6 +25,7 @@ import Image from "next/image";
 import { ProductsEmpty } from "../products-empty";
 import { ProductsItemMutateDialog } from "../dialogs/products-item-mutate-dialog";
 import { ProductsItemDetailSheet } from "../dialogs/products-item-detail-sheet";
+import { ImageGalleryDialog } from "../image-gallery-dialog";
 import { getCachedUser } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -57,6 +58,8 @@ export function ProductsExpandedPanel({
   const [addOpen, setAddOpen] = useState(false);
   const [viewingItem, setViewingItem] = useState<ProductItem | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
+  // Phiên bản đang xem ảnh trong lightbox; null = đóng.
+  const [galleryItem, setGalleryItem] = useState<ProductItem | null>(null);
   const fetchedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -202,17 +205,10 @@ export function ProductsExpandedPanel({
                     </Button>
                   </div>
 
-                  <Image
-                    src={safeImageSrc(
-                      (
-                        item.images?.find((i) => i.isThumbnail) ??
-                        item.images?.[0]
-                      )?.url,
-                    )}
+                  <ItemThumbnailButton
+                    item={item}
                     alt={product.name}
-                    width={96}
-                    height={96}
-                    className="w-24 h-24 rounded-lg object-contain border shrink-0"
+                    onOpen={() => setGalleryItem(item)}
                   />
 
                   <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 auto-rows-min">
@@ -412,6 +408,63 @@ export function ProductsExpandedPanel({
           }}
         />
       )}
+
+      {galleryItem && (
+        <ImageGalleryDialog
+          key={galleryItem.id}
+          images={galleryItem.images ?? []}
+          open
+          onOpenChange={(v) => {
+            if (!v) setGalleryItem(null);
+          }}
+          alt={galleryItem.productName || product.name}
+        />
+      )}
     </>
+  );
+}
+
+// Ảnh đại diện (ảnh đầu tiên) của một phiên bản; có nhiều ảnh thì hiện "+N".
+// Bấm vào mở lightbox, chặn lan sự kiện để không kích hoạt click của dòng bảng.
+function ItemThumbnailButton({
+  item,
+  alt,
+  onOpen,
+}: {
+  item: ProductItem;
+  alt: string;
+  onOpen: () => void;
+}) {
+  const images = item.images ?? [];
+  const hasImages = images.length > 0;
+  const extraCount = images.length - 1;
+
+  return (
+    <button
+      type="button"
+      disabled={!hasImages}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen();
+      }}
+      aria-label="Xem ảnh phiên bản"
+      className={cn(
+        "relative w-24 h-24 shrink-0 rounded-lg border overflow-hidden",
+        hasImages && "cursor-zoom-in hover:opacity-90",
+      )}
+    >
+      <Image
+        src={safeImageSrc(images[0]?.url)}
+        alt={alt}
+        width={96}
+        height={96}
+        className="w-24 h-24 object-contain"
+      />
+      {extraCount > 0 && (
+        <span className="absolute bottom-1 right-1 rounded bg-background/90 px-1.5 text-xs font-medium shadow">
+          +{extraCount}
+        </span>
+      )}
+    </button>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
-// Dialog "Giao cho vận chuyển": ghi nhận ĐVVC / shipper đã lấy hàng cho một đơn đã đóng gói (POST /shipments).
+// Dialog "Giao cho vận chuyển" cho một đơn đã đóng gói (POST /shipments): ghi nhận ĐVVC đã lấy hàng, hoặc gán
+// shipper của shop - shipper đó còn phải tự xác nhận đã lấy hàng.
 
 import { useState } from "react";
+import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,19 +39,27 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
   const [driverId, setDriverId] = useState("");
   const [carrierName, setCarrierName] = useState("");
   const [trackingCode, setTrackingCode] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [scheduledSlot, setScheduledSlot] = useState("");
+  // Ngày hẹn đã có sẵn trên đơn thì lấy luôn và khoá; chưa có mới cho chọn.
+  const orderDate = order?.requestedDeliveryDate?.slice(0, 10) ?? "";
+  const dateLocked = !!orderDate;
+  const [pickedDate, setScheduledDate] = useState("");
+  const scheduledDate = dateLocked ? orderDate : pickedDate;
+  const [slotFrom, setSlotFrom] = useState("");
+  const [slotTo, setSlotTo] = useState("");
   const [requiresInstallation, setRequiresInstallation] = useState(false);
-  const [shippingCost, setShippingCost] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const internal = carrierType === "INTERNAL";
   const missingDriver = internal && !driverId;
+  // Khung giờ lưu dạng "HH:mm-HH:mm"; chỉ chọn một đầu thì lưu đầu đó.
+  const scheduledSlot = slotFrom && slotTo ? `${slotFrom}-${slotTo}` : slotFrom || slotTo;
+  const dateInvalid = !dateLocked && isPastDate(scheduledDate);
+  const slotInvalid = !!slotFrom && !!slotTo && slotTo <= slotFrom;
 
   const submit = () => {
     // Khoá nút trong lúc gọi: bấm đúp không gửi hai request.
-    if (!order || submitting || missingDriver) return;
+    if (!order || submitting || missingDriver || slotInvalid || dateInvalid) return;
     setSubmitting(true);
     shipmentApi
       .create({
@@ -59,13 +69,19 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
         carrierName: internal ? undefined : carrierName.trim() || undefined,
         trackingCode: internal ? undefined : trackingCode.trim() || undefined,
         scheduledDate: scheduledDate || undefined,
-        scheduledSlot: scheduledSlot.trim() || undefined,
+        scheduledSlot: scheduledSlot || undefined,
         requiresInstallation,
-        shippingCost: shippingCost === "" ? undefined : Number(shippingCost),
+        // Phí giao lấy từ đơn (mục Thanh toán), không nhập lại ở đây.
+        shippingCost: order.shippingFee > 0 ? order.shippingFee : undefined,
         note: note.trim() || undefined,
       })
       .then(() => {
-        toast.success(`Đã giao đơn ${order.code} cho vận chuyển`);
+        // Shipper của shop mới chỉ được gán: còn phải tới kho lấy hàng và tự xác nhận (chốt 2026-10-15).
+        toast.success(
+          internal
+            ? `Đã gán shipper cho đơn ${order.code} - chờ shipper xác nhận đã lấy hàng`
+            : `Đã giao đơn ${order.code} cho đơn vị vận chuyển`,
+        );
         onNeedsReload();
       })
       .catch((error: unknown) => {
@@ -81,8 +97,10 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
         <DialogHeader>
           <DialogTitle>Giao đơn {order?.code} cho vận chuyển</DialogTitle>
           <DialogDescription>
-            Ghi nhận đơn vị vận chuyển / shipper đã lấy hàng. Tồn kho chưa bị trừ - chỉ trừ khi chuyển sang Đang
-            vận chuyển.
+            {internal
+              ? "Gán shipper của shop. Đơn chuyển sang ĐVVC đã lấy hàng khi shipper tới kho lấy hàng và bấm xác nhận."
+              : "Ghi nhận đơn vị vận chuyển đã lấy hàng."}{" "}
+            Tồn kho chưa bị trừ - chỉ trừ khi chuyển sang Đang vận chuyển.
           </DialogDescription>
         </DialogHeader>
 
@@ -121,37 +139,45 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Ngày hẹn giao</Label>
-              <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+              <Input
+                type="date"
+                min={todayIso()}
+                value={scheduledDate}
+                disabled={dateLocked}
+                onChange={(e) => setScheduledDate(e.target.value)}
+              />
+              {dateLocked && <p className="text-xs text-muted-foreground">Lấy từ ngày hẹn giao của đơn hàng</p>}
+              {dateInvalid && <p className="text-xs text-destructive">{PAST_DATE_MESSAGE}</p>}
             </div>
             <div className="space-y-2">
               <Label>Khung giờ</Label>
-              <Input
-                value={scheduledSlot}
-                onChange={(e) => setScheduledSlot(e.target.value)}
-                placeholder="vd. 08:00-12:00"
-                maxLength={50}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  aria-label="Từ giờ"
+                  value={slotFrom}
+                  onChange={(e) => setSlotFrom(e.target.value)}
+                />
+                <span className="text-muted-foreground">-</span>
+                <Input
+                  type="time"
+                  aria-label="Đến giờ"
+                  value={slotTo}
+                  min={slotFrom || undefined}
+                  onChange={(e) => setSlotTo(e.target.value)}
+                />
+              </div>
+              {slotInvalid && <p className="text-xs text-destructive">Giờ kết thúc phải sau giờ bắt đầu</p>}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 items-end gap-3">
-            <div className="space-y-2">
-              <Label>Phí vận chuyển (shop trả)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={shippingCost}
-                onChange={(e) => setShippingCost(e.target.value)}
-              />
-            </div>
-            <Label className="flex h-9 items-center gap-2 font-normal">
-              <Checkbox
-                checked={requiresInstallation}
-                onCheckedChange={(checked) => setRequiresInstallation(checked === true)}
-              />
-              Cần lắp đặt tại nhà khách
-            </Label>
-          </div>
+          <Label className="flex items-center gap-2 font-normal">
+            <Checkbox
+              checked={requiresInstallation}
+              onCheckedChange={(checked) => setRequiresInstallation(checked === true)}
+            />
+            Cần lắp đặt tại nhà khách
+          </Label>
 
           <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Ghi chú" />
         </div>
@@ -160,7 +186,7 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             Huỷ
           </Button>
-          <Button onClick={submit} disabled={submitting || missingDriver}>
+          <Button onClick={submit} disabled={submitting || missingDriver || slotInvalid || dateInvalid}>
             {submitting ? "Đang xử lý..." : "Xác nhận đã giao"}
           </Button>
         </DialogFooter>

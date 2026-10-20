@@ -83,8 +83,12 @@ export function groupCatalog(
   const groups = new Map<string, PermissionResourceGroup>()
   for (const entry of entries) {
     const group = groups.get(entry.resource)
+    const descriptions = entry.description
+      ? { [entry.action]: entry.description }
+      : {}
     if (group) {
       group.actions.push(entry.action)
+      Object.assign(group.descriptions, descriptions)
     } else {
       const nav = RESOURCE_NAV_LABELS[entry.resource]
       groups.set(entry.resource, {
@@ -92,6 +96,7 @@ export function groupCatalog(
         label: nav?.label ?? entry.label ?? entry.resource,
         hint: nav?.hint,
         actions: [entry.action],
+        descriptions,
       })
     }
   }

@@ -1,28 +1,41 @@
 "use client";
 
 // Chi tiết một lần giao của shipper: người nhận, số tiền phải thu, nhật trình, và các nút theo trạng thái
-// (đang đi giao, đã giao, giao không thành; sau khi giao bằng QR: mã QR, kiểm tra tiền về, đổi sang tiền mặt).
+// (đã lấy hàng, đang đi giao, đã giao, giao không thành; sau khi giao bằng QR: mã QR, kiểm tra tiền về, đổi sang tiền mặt).
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { shipmentApi } from "@/lib/api/shipment";
-import { personName, SHIPMENT_STATUS_LABELS, type Shipment, type ShipmentQrPayment } from "@/types/order-flow";
+import {
+  type Shipment,
+  type ShipmentQrPayment,
+} from "@/types/order-flow";
 import { ShipmentNoteDialog } from "../../shipments/components/shipment-detail-sheet";
 import {
   formatVND,
   isOnTheRoad,
   reportShipmentError,
   ShipmentStatusBadge,
+  ShipmentTimeline,
 } from "../../shipments/components/shipment-ui";
 import { DeliverDialog } from "./deliver-dialog";
 
-type DetailState = { status: "loading" } | { status: "error" } | { status: "ready"; shipment: Shipment };
+type DetailState =
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "ready"; shipment: Shipment };
 
 /** Thao tác đang mở dialog. */
-type OpenAction = "outForDelivery" | "deliver" | "fail" | "payCash" | null;
+type OpenAction = "pickUp" | "outForDelivery" | "deliver" | "fail" | "payCash" | null;
 
 interface DeliverySheetProps {
   /** Lần giao đang mở; `null` = đóng. Trang đặt `key` theo id nên mỗi lần mở là state mới. */
@@ -38,7 +51,13 @@ function loadingText(state: DetailState): string {
 }
 
 /** Một dòng thông tin "nhãn: giá trị". */
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="grid grid-cols-[7rem_1fr] gap-2 text-sm">
       <span className="text-muted-foreground">{label}</span>
@@ -71,12 +90,20 @@ function QrPaymentPanel({
   }
   return (
     <div className="space-y-3 rounded-md border p-3">
-      <p className="text-sm font-medium">Khách quét mã để chuyển {formatVND(payment.amount)}</p>
+      <p className="text-sm font-medium">
+        Khách quét mã để chuyển {formatVND(payment.amount)}
+      </p>
       {payment.qrUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- ảnh VietQR từ dịch vụ ngoài
-        <img src={payment.qrUrl} alt="Mã QR chuyển khoản" className="mx-auto w-60 max-w-full" />
+        <img
+          src={payment.qrUrl}
+          alt="Mã QR chuyển khoản"
+          className="mx-auto w-60 max-w-full"
+        />
       )}
-      <p className="text-center text-xs text-muted-foreground">Nội dung chuyển khoản: {payment.reference}</p>
+      <p className="text-center text-xs text-muted-foreground">
+        Nội dung chuyển khoản: {payment.reference}
+      </p>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={onCheck} disabled={checking}>
           {checking ? "Đang kiểm tra..." : "Kiểm tra tiền về"}
@@ -89,7 +116,11 @@ function QrPaymentPanel({
   );
 }
 
-export function DeliverySheet({ shipmentId, onClose, onChanged }: DeliverySheetProps) {
+export function DeliverySheet({
+  shipmentId,
+  onClose,
+  onChanged,
+}: DeliverySheetProps) {
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [action, setAction] = useState<OpenAction>(null);
   // Tải lại sheet sau một thao tác ghi; thao tác ghi còn báo trang tải lại danh sách.
@@ -140,7 +171,11 @@ export function DeliverySheet({ shipmentId, onClose, onChanged }: DeliverySheetP
   };
 
   /** Chạy một thao tác ghi: thành công → báo; dữ liệu cũ → cũng tải lại; lỗi khác → giữ dialog để thử lại. */
-  const run = (call: () => Promise<unknown>, success: string, fallback: string) =>
+  const run = (
+    call: () => Promise<unknown>,
+    success: string,
+    fallback: string,
+  ) =>
     call().then(
       () => {
         toast.success(success);
@@ -154,12 +189,19 @@ export function DeliverySheet({ shipmentId, onClose, onChanged }: DeliverySheetP
   const shipment = state.status === "ready" ? state.shipment : null;
 
   return (
-    <Sheet open={shipmentId !== null} onOpenChange={(open) => !open && onClose()}>
+    <Sheet
+      open={shipmentId !== null}
+      onOpenChange={(open) => !open && onClose()}
+    >
       <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Đơn {shipment?.order.code ?? ""}</SheetTitle>
           <SheetDescription>
-            {shipment ? <ShipmentStatusBadge status={shipment.status} /> : loadingText(state)}
+            {shipment ? (
+              <ShipmentStatusBadge status={shipment.status} />
+            ) : (
+              loadingText(state)
+            )}
           </SheetDescription>
         </SheetHeader>
 
@@ -169,31 +211,52 @@ export function DeliverySheet({ shipmentId, onClose, onChanged }: DeliverySheetP
               <Field label="Người nhận">{shipment.recipientName}</Field>
               <Field label="Điện thoại">
                 {shipment.recipientPhone && (
-                  <a href={`tel:${shipment.recipientPhone}`} className="text-primary underline">
+                  <a
+                    href={`tel:${shipment.recipientPhone}`}
+                    className="text-primary underline"
+                  >
                     {shipment.recipientPhone}
                   </a>
                 )}
               </Field>
               <Field label="Địa chỉ">{shipment.deliveryAddress}</Field>
               <Field label="Hẹn giao">
-                {[shipment.scheduledDate?.slice(0, 10), shipment.scheduledSlot].filter(Boolean).join(" · ")}
+                {[shipment.scheduledDate?.slice(0, 10), shipment.scheduledSlot]
+                  .filter(Boolean)
+                  .join(" · ")}
               </Field>
-              <Field label="Lắp đặt">{shipment.requiresInstallation ? "Có" : "Không"}</Field>
+              <Field label="Lắp đặt">
+                {shipment.requiresInstallation ? "Có" : "Không"}
+              </Field>
               <Field label="Còn phải thu">
-                <span className="font-semibold">{formatVND(shipment.order.amountDue)}</span>
+                <span className="font-semibold">
+                  {formatVND(shipment.order.amountDue)}
+                </span>
               </Field>
               <Field label="Ghi chú">{shipment.note}</Field>
             </div>
 
+            {/* Mới được gán: tới kho lấy hàng rồi xác nhận thì đơn mới sang ĐVVC đã lấy hàng (chốt 2026-10-15). */}
+            {shipment.status === "CREATED" && (
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => setAction("pickUp")}>Xác nhận đã lấy hàng</Button>
+              </div>
+            )}
+
             {isOnTheRoad(shipment.status) && (
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => setAction("deliver")}>Đã giao</Button>
-                <Button variant="outline" onClick={() => setAction("outForDelivery")}>
-                  Đang đi giao
+                <Button onClick={() => setAction("deliver")}>Giao hàng thành công</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAction("outForDelivery")}
+                >
+                  Cập nhật trạng thái đơn hàng
                 </Button>
-                <Button variant="destructive" onClick={() => setAction("fail")}>
-                  Giao không thành
-                </Button>
+                {shipment.status !== "FAILED" && (
+                  <Button variant="destructive" onClick={() => setAction("fail")}>
+                    Giao hàng thất bại
+                  </Button>
+                )}
               </div>
             )}
 
@@ -209,19 +272,8 @@ export function DeliverySheet({ shipmentId, onClose, onChanged }: DeliverySheetP
             <Separator />
 
             <div className="space-y-3">
-              <p className="text-sm font-medium">Nhật trình</p>
-              <ol className="space-y-3 border-l pl-4">
-                {shipment.events.map((event) => (
-                  <li key={event.id} className="text-sm">
-                    <p className="font-medium">{SHIPMENT_STATUS_LABELS[event.status]}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(event.occurredAt).toLocaleString("vi-VN")}
-                      {event.createdBy && ` · ${personName(event.createdBy)}`}
-                    </p>
-                    {event.note && <p className="mt-1">{event.note}</p>}
-                  </li>
-                ))}
-              </ol>
+              <p className="text-sm font-medium">Trạng thái đơn hàng</p>
+              <ShipmentTimeline shipment={shipment} />
             </div>
 
             <DeliverDialog
@@ -238,6 +290,22 @@ export function DeliverySheet({ shipmentId, onClose, onChanged }: DeliverySheetP
               onNeedsReload={afterWrite}
             />
             <ShipmentNoteDialog
+              key={`pickup-${action === "pickUp"}`}
+              open={action === "pickUp"}
+              title="Xác nhận đã lấy hàng"
+              description="Xác nhận đã nhận đủ hàng của đơn tại kho. Đơn chuyển sang ĐVVC đã lấy hàng; tồn kho chưa bị trừ."
+              confirmLabel="Đã lấy hàng"
+              placeholder="Ghi chú (vd. thùng 2 móp góc)"
+              onClose={() => setAction(null)}
+              onConfirm={(note) =>
+                run(
+                  () => shipmentApi.pickUp(shipment.id, note),
+                  `Đã lấy hàng đơn ${shipment.order.code}`,
+                  "Xác nhận lấy hàng thất bại, vui lòng thử lại",
+                )
+              }
+            />
+            <ShipmentNoteDialog
               key={`out-${action === "outForDelivery"}`}
               open={action === "outForDelivery"}
               title="Đang đi giao"
@@ -247,7 +315,11 @@ export function DeliverySheet({ shipmentId, onClose, onChanged }: DeliverySheetP
               onClose={() => setAction(null)}
               onConfirm={(note) =>
                 run(
-                  () => shipmentApi.addEvent(shipment.id, { status: "OUT_FOR_DELIVERY", note }),
+                  () =>
+                    shipmentApi.addEvent(shipment.id, {
+                      status: "OUT_FOR_DELIVERY",
+                      note,
+                    }),
                   "Đã ghi nhật trình",
                   "Ghi nhật trình thất bại, vui lòng thử lại",
                 )
@@ -257,7 +329,7 @@ export function DeliverySheet({ shipmentId, onClose, onChanged }: DeliverySheetP
               key={`fail-${action === "fail"}`}
               open={action === "fail"}
               title="Giao không thành"
-              description="Đơn giữ trạng thái Đang vận chuyển; hàng quay về qua phiếu hoàn hàng. Người phụ trách đơn sẽ được báo."
+              description="Đơn giữ trạng thái Đang vận chuyển, bạn vẫn giao lại được trong lần thử tiếp. Người phụ trách đơn và chủ shop sẽ được báo; đơn chỉ chuyển Hoàn trả khi shop xác nhận hàng đã về."
               confirmLabel="Xác nhận giao không thành"
               placeholder="Lý do (bắt buộc), vd. khách không nghe máy"
               requireNote

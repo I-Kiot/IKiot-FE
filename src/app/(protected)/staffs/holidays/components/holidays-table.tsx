@@ -2,9 +2,7 @@
 
 import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -12,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -21,10 +18,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { cn } from "@/lib/utils";
 import { getVietnamDateString } from "@/app/(protected)/staffs/shared/vietnam-datetime";
 import { holidaysColumns } from "./holidays-columns";
-import { HolidaysEmpty } from "./holidays-empty";
 import { useHolidays } from "./holidays-provider";
 
 const currentYear = Number(getVietnamDateString().slice(0, 4));
@@ -60,9 +59,8 @@ export function HolidaysTable() {
     },
   });
 
-  const rangeStart =
-    total === 0 ? 0 : (listQuery.page - 1) * listQuery.limit + 1;
-  const rangeEnd = Math.min(listQuery.page * listQuery.limit, total);
+
+  const columnCount = table.getVisibleLeafColumns().length;
 
   return (
     <div className="space-y-4">
@@ -132,17 +130,11 @@ export function HolidaysTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {isInitialLoading ? (
-              Array.from({ length: 6 }).map((_, rowIndex) => (
-                <TableRow key={rowIndex}>
-                  {holidaysColumns.map((_, cellIndex) => (
-                    <TableCell key={cellIndex}>
-                      <Skeleton className="h-5 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows.length ? (
+            {isInitialLoading && <DataTableLoading columnCount={columnCount} />}
+            {!isInitialLoading && table.getRowModel().rows.length === 0 && (
+              <DataTableEmpty columnCount={columnCount} />
+            )}
+            {!isInitialLoading && (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
@@ -152,65 +144,21 @@ export function HolidaysTable() {
                   ))}
                 </TableRow>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={holidaysColumns.length}>
-                  <HolidaysEmpty />
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 py-2">
-        <div className="flex items-center gap-2">
-          <Label className="text-sm font-medium">Hiển thị</Label>
-          <Select
-            value={String(listQuery.limit)}
-            onValueChange={(value) => updatePageSize(Number(value))}
-          >
-            <SelectTrigger className="w-20 cursor-pointer">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 50].map((limit) => (
-                <SelectItem key={limit} value={String(limit)}>
-                  {limit}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <span className="text-sm text-muted-foreground">
-          {total === 0
-            ? "Không có ngày lễ"
-            : `Hiển thị ${rangeStart}–${rangeEnd} / ${total} ngày lễ`}
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="hidden text-sm font-medium sm:block">
-            Trang {listQuery.page} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="cursor-pointer"
-            disabled={listQuery.page <= 1 || isFetching}
-            onClick={() => updatePage(listQuery.page - 1)}
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="cursor-pointer"
-            disabled={listQuery.page >= totalPages || isFetching}
-            onClick={() => updatePage(listQuery.page + 1)}
-          >
-            Tiếp
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={listQuery.page}
+        pageCount={totalPages}
+        pageSize={listQuery.limit}
+        total={total}
+        unit="ngày lễ"
+        disabled={isFetching}
+        onPageChange={updatePage}
+        onPageSizeChange={updatePageSize}
+      />
     </div>
   );
 }

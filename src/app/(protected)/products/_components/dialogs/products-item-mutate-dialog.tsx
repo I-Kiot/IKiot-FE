@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { CurrencySuffix } from "@/app/(protected)/exchange/shared/form-fields";
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Pencil, Plus, ShoppingBag, X } from 'lucide-react'
+import { Pencil, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { uploadImage } from '@/lib/api/upload'
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,7 @@ import type { ProductItem } from '@/types/product'
 import { productApi } from '@/lib/api/product'
 import { productItemFormSchema, type ProductItemFormValues } from '../../_types/product.types'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
+import { ProductItemImagesField, toItemImagePayload } from '../product-item-images-field'
 
 const EMPTY_VALUES: ProductItemFormValues = {
   useParentNameForItem: true,
@@ -75,6 +76,7 @@ export function ProductsItemMutateDialog(props: Props) {
   const { open, onOpenChange, onSuccess } = props
   const isEdit = props.mode === 'edit'
   const existingItem = props.mode === 'edit' ? props.item : undefined
+  // Còn ảnh đang tải lên thì khoá nút Lưu, tránh lưu thiếu ảnh.
   const [uploading, setUploading] = useState(false)
 
   const form = useForm<ProductItemFormValues>({
@@ -99,7 +101,7 @@ export function ProductsItemMutateDialog(props: Props) {
         vat: existingItem.vat != null ? String(existingItem.vat) : '',
         warrantyPeriod: existingItem.warrantyPeriod ?? '',
         description: existingItem.description ?? '',
-        images: existingItem.images ?? [],
+        images: toItemImagePayload(existingItem.images),
         productDetails: existingItem.productDetails?.map((d) => ({ name: d.name, value: d.value })) ?? [],
         // Not used in edit mode (only create needs the parent/custom choice),
         // but the schema requires a value.
@@ -111,21 +113,6 @@ export function ProductsItemMutateDialog(props: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isEdit, existingItem, form])
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const url = await uploadImage(file)
-      form.setValue('images', [{ url, isThumbnail: true }])
-      toast.success('Tải ảnh lên thành công')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Tải ảnh lên thất bại')
-    } finally {
-      setUploading(false)
-    }
-  }
 
   async function onSubmit(data: ProductItemFormValues) {
     if (props.mode === 'create' && !data.useParentNameForItem && !data.itemProductName?.trim()) {
@@ -146,6 +133,7 @@ export function ProductsItemMutateDialog(props: Props) {
       costPrice: parsePriceAmount(data.costPrice),
       retailPrice: parsePriceAmount(data.retailPrice),
       vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
+      images: toItemImagePayload(data.images),
       productDetails: data.productDetails?.filter((d) => d.name.trim() && d.value.trim()),
     }
     try {
@@ -251,54 +239,12 @@ export function ProductsItemMutateDialog(props: Props) {
             )}
 
             {/* === Tải ảnh phiên bản === */}
-            <div className="space-y-2">
-              <FormLabel>Hình ảnh phiên bản</FormLabel>
-              <div className="flex items-center gap-4">
-                <div className="size-20 rounded-lg border bg-muted flex items-center justify-center overflow-hidden relative shrink-0">
-                  {form.watch('images')?.[0]?.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={form.watch('images')?.[0]?.url}
-                      alt="Variant preview"
-                      className="object-cover size-full"
-                    />
-                  ) : (
-                    <ShoppingBag className="size-8 text-muted-foreground" />
-                  )}
-                  {uploading && (
-                    <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                      <span className="animate-spin size-4 border-2 border-primary border-t-transparent rounded-full" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="cursor-pointer max-w-xs"
-                    />
-                    {form.watch('images')?.[0]?.url && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => form.setValue('images', [])}
-                        disabled={uploading}
-                        className="cursor-pointer text-destructive border-destructive/20 hover:bg-destructive/10"
-                      >
-                        Xóa ảnh
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Hỗ trợ định dạng JPG, PNG. Dung lượng tối đa 5MB.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <ProductItemImagesField
+              value={form.watch('images') ?? []}
+              onChange={(images) => form.setValue('images', images, { shouldDirty: true })}
+              getLatest={() => form.getValues('images') ?? []}
+              onBusyChange={setUploading}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -338,18 +284,21 @@ export function ProductsItemMutateDialog(props: Props) {
                     <FormLabel>
                       Giá vốn (đ) <span className="text-destructive">*</span>
                     </FormLabel>
-                    <FormControl>
+                    <div className="relative">
+                      <FormControl>
                       <Input
                         inputMode="numeric"
                         placeholder="0"
-                        className="tabular-nums"
+                        className="tabular-nums pr-7"
                         value={field.value ?? ''}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, '')
                           field.onChange(digits ? formatPriceAmount(digits) : '')
                         }}
                       />
-                    </FormControl>
+                      </FormControl>
+                      <CurrencySuffix />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -362,18 +311,21 @@ export function ProductsItemMutateDialog(props: Props) {
                     <FormLabel>
                       Giá bán (đ) <span className="text-destructive">*</span>
                     </FormLabel>
-                    <FormControl>
+                    <div className="relative">
+                      <FormControl>
                       <Input
                         inputMode="numeric"
                         placeholder="0"
-                        className="tabular-nums"
+                        className="tabular-nums pr-7"
                         value={field.value ?? ''}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, '')
                           field.onChange(digits ? formatPriceAmount(digits) : '')
                         }}
                       />
-                    </FormControl>
+                      </FormControl>
+                      <CurrencySuffix />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -509,7 +461,7 @@ export function ProductsItemMutateDialog(props: Props) {
               >
                 Hủy
               </Button>
-              <Button type="submit" className="cursor-pointer">
+              <Button type="submit" disabled={uploading} className="cursor-pointer">
                 {isEdit ? (
                   <>
                     <Pencil className="mr-2 h-4 w-4" />

@@ -6,6 +6,7 @@ import type {
   ConfirmOrderPayload,
   CreateOrderJourneyPayload,
   HandOverReadyOrder,
+  OrderAlerts,
   OrderDetail,
   OrderItemCustomization,
   OrderJourneyQuery,
@@ -14,7 +15,9 @@ import type {
   PackResult,
   Paginated,
   Shipment,
-  UpdateDraftOrderPayload,
+  ConfirmRemittancePayload,
+  OrderPriority,
+  UpdateOrderPayload,
 } from '@/types/order-flow';
 
 type Envelope<T> = { success: boolean; data: T };
@@ -28,6 +31,14 @@ export const orderJourneyApi = {
     return { data: res.data.data, pagination: res.data.pagination };
   },
 
+  /** Counts behind the sidebar warning and the banner over the list. */
+  getAlerts: async (branchId?: string): Promise<OrderAlerts> => {
+    const res = await client.get<Envelope<OrderAlerts>>('/orders/alerts', {
+      params: { branchId },
+    });
+    return res.data.data;
+  },
+
   getById: async (id: string): Promise<OrderDetail> => {
     const res = await client.get<Envelope<OrderDetail>>(`/orders/${id}`);
     return res.data.data;
@@ -39,9 +50,21 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** Before the order ships (A-8). */
-  updateDraft: async (id: string, payload: UpdateDraftOrderPayload): Promise<OrderDetail> => {
+  /** A-8: edit before the order ships. Lines only while CONFIRMED; a deposit that would drift from the money taken answers ORDER_DEPOSIT_CHANGED (see `DepositChange`). */
+  update: async (id: string, payload: UpdateOrderPayload): Promise<OrderDetail> => {
     const res = await client.patch<Envelope<OrderDetail>>(`/orders/${id}`, payload);
+    return res.data.data;
+  },
+
+  /** A-8: re-tag the order's priority without opening the edit form. */
+  setPriority: async (id: string, priority: OrderPriority): Promise<OrderDetail> => {
+    const res = await client.patch<Envelope<OrderDetail>>(`/orders/${id}/priority`, { priority });
+    return res.data.data;
+  },
+
+  /** A-10: the owner received all the cash the shipper collected - RECEIVED → COMPLETED. */
+  confirmRemittance: async (id: string, payload: ConfirmRemittancePayload): Promise<OrderDetail> => {
+    const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/confirm-remittance`, payload);
     return res.data.data;
   },
 

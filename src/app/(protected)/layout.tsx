@@ -8,6 +8,7 @@ import { useSidebarConfig } from "@/hooks/use-sidebar-config";
 import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { useNotificationSocket } from "@/hooks/use-notification-socket";
+import { useTabBadge } from "@/hooks/use-tab-badge";
 import { useAuthStore } from "@/store/auth-store";
 import {
   canOpenCheckout,
@@ -45,6 +46,13 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // `/shipments/<id>` is where a shipment notification lands. It only looks the shipment up and
+  // redirects (to /shipper for its driver, to /shipments for everyone else), and the API 404s one the
+  // caller cannot see - so it must not need `shipments:read`, which a plain shipper does not hold.
+  if (/^\/shipments\/[^/]+$/.test(pathname)) {
+    return <>{children}</>;
+  }
+
   // Same list the sidebar draws: account-kind config narrowed by this role's permissions.
   const allowedUrls = getAllowedSidebarUrls(user.role);
 
@@ -66,6 +74,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   useNotificationSocket();
+  useTabBadge();
   const { config } = useSidebarConfig();
   const pathname = usePathname();
 
@@ -99,7 +108,9 @@ export default function DashboardLayout({
                 collapsible={config.collapsible}
                 side={config.side}
               />
-              <SidebarInset>
+              {/* min-w-0: con của flex mặc định không hẹp hơn nội dung, nên bảng rộng sẽ đẩy cả trang
+                  rộng ra thay vì cuộn ngang trong khung của nó. Nhánh sidebar bên phải dưới đây cũng vậy. */}
+              <SidebarInset className="min-w-0">
                 <SiteHeader />
                 <div className="flex flex-1 flex-col">
                   <div className="@container/main flex flex-1 flex-col gap-2">
@@ -112,7 +123,7 @@ export default function DashboardLayout({
             </>
           ) : (
             <>
-              <SidebarInset>
+              <SidebarInset className="min-w-0">
                 <SiteHeader />
                 <div className="flex flex-1 flex-col">
                   <div className="@container/main flex flex-1 flex-col gap-2">

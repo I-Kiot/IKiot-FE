@@ -264,6 +264,15 @@ export const ERROR_MESSAGES = {
   ORDER_NOT_CONFIRMABLE: "Chỉ xác nhận được đơn nháp hoặc đơn chờ xác nhận",
   ORDER_NOT_DRAFT: "Chỉ sửa được đơn nháp",
   ORDER_SOURCE_LOCATION_INVALID: "Kho xuất không hợp lệ",
+  ORDER_NOT_EDITABLE: "Đơn này không sửa được nữa (đã đóng gói thì không đổi hàng, đã giao đi thì không sửa)",
+  ORDER_ITEM_IN_PRODUCTION: "Dòng hàng này đã nằm trong yêu cầu sản xuất - gỡ khỏi yêu cầu trước khi bỏ",
+  ORDER_DEPOSIT_CHANGED: "Tiền cọc sau khi sửa sẽ khác số đã thu - hãy giữ nguyên số tiền cọc",
+  ORDER_DEPOSIT_EXCEEDS_TOTAL: "Tiền cọc vượt quá tổng tiền đơn",
+  ORDER_REFUND_AMOUNT_REQUIRED: "Đơn có tiền cọc - hãy nhập số tiền hoàn cho khách (0 nếu giữ lại)",
+  ORDER_REFUND_EXCEEDS_DEPOSIT: "Số tiền hoàn vượt quá tiền cọc còn giữ",
+  ORDER_REMITTANCE_AMOUNT_MISMATCH: "Số tiền nhận không khớp với số shipper đã thu",
+  ORDER_REMITTANCE_NOT_PENDING: "Đơn này không có tiền mặt nào đang chờ shipper nộp lại",
+  ORDER_SHIP_INSUFFICIENT_STOCK: "Không đủ hàng để chuyển đơn sang đang vận chuyển",
   // Yêu cầu sản xuất
   PRODUCTION_REQUEST_CUSTOM_LINE_REQUIRED: "Hàng làm riêng phải gắn với dòng đơn tương ứng",
   PRODUCTION_REQUEST_EMPTY: "Yêu cầu sản xuất chưa có dòng nào",
@@ -272,6 +281,31 @@ export const ERROR_MESSAGES = {
   PRODUCTION_REQUEST_NOT_FOUND: "Không tìm thấy yêu cầu sản xuất",
   PRODUCTION_REQUEST_STATUS_INVALID: "Không chuyển được yêu cầu sản xuất sang trạng thái này",
   SUPPLIER_NOT_WORKSHOP: "Nhà cung cấp được chọn không phải xưởng",
+  SUPPLIER_TYPE_LOCKED: "Không đổi được loại nhà cung cấp đã có phiếu nhập hoặc yêu cầu sản xuất",
+  IMPORT_WORKSHOP_VIA_PRODUCTION_REQUEST: "Hàng của xưởng nhập qua yêu cầu sản xuất, không nhập bằng phiếu nhập thường",
+  PRODUCTION_REQUEST_DUPLICATE_ITEM: "Mặt hàng này đã có trong yêu cầu sản xuất",
+  PRODUCTION_REQUEST_ORDER_ITEM_INVALID: "Dòng đơn không hợp lệ: khác mặt hàng, không thuộc cửa hàng hoặc đã giao đi",
+  PRODUCTION_REQUEST_LOCATION_DENIED: "Bạn chỉ thao tác được yêu cầu sản xuất giao về nơi mình làm việc",
+  PRODUCTION_REQUEST_HAS_RECEIPTS: "Yêu cầu đã nhận hàng, không huỷ được",
+  PRODUCTION_REQUEST_RECEIVE_EMPTY: "Phải nhận ít nhất một dòng với số lượng lớn hơn 0",
+  PRODUCTION_REQUEST_CODE_UNAVAILABLE: "Không tạo được mã yêu cầu sản xuất, vui lòng thử lại",
+  PRODUCTION_REQUEST_ITEM_NOT_PRODUCIBLE: "Chỉ đặt xưởng được sản phẩm thường (không phải combo hay dịch vụ)",
+  PRODUCTION_REQUEST_LINE_FIXED_BY_ORDER: "Dòng làm cho đơn hàng đi theo yêu cầu của dòng đơn - không đổi thuộc tính hay giá ở YCSX",
+  PRODUCT_ATTRIBUTE_DUPLICATE: "Hai thuộc tính của hàng hoá trùng tên",
+  PRODUCT_ATTRIBUTE_NOT_FOUND: "Thuộc tính không thuộc hàng hoá này - tải lại trang rồi thử lại",
+  PRODUCT_ATTRIBUTE_VALUE_REQUIRED: "Giá trị thuộc tính không được để trống",
+  PRODUCTION_REQUEST_ITEM_NOT_MANUFACTURABLE: "Mặt hàng này không sản xuất được, hãy tạo đơn nhập hàng từ nhà cung cấp",
+  PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Đóng yêu cầu khi chưa nhận đủ phải ghi lý do",
+  // Nhân viên xưởng & phiếu giao xưởng (2026-10-09)
+  WORKSHOP_STAFF_NOT_LINKED: "Tài khoản chưa được gắn với xưởng nào",
+  USER_WORKSHOP_INVALID: "Xưởng đã chọn không phải xưởng của cửa hàng",
+  PRODUCTION_DELIVERY_NOT_FOUND: "Không tìm thấy phiếu giao",
+  PRODUCTION_DELIVERY_STATUS_INVALID: "Phiếu giao không còn ở trạng thái chờ nhận, hoặc yêu cầu còn phiếu giao chờ nhận",
+  PRODUCTION_DELIVERY_EMPTY: "Phiếu giao phải có ít nhất một mặt hàng",
+  PRODUCTION_DELIVERY_QTY_EXCEEDS: "Số giao vượt số còn lại của yêu cầu (đã tính các phiếu đang chờ nhận)",
+  PRODUCTION_DELIVERY_RECEIVE_EXCEEDS: "Số nhận vượt số xưởng ghi trên phiếu giao",
+  PRODUCTION_DELIVERY_ITEM_MISMATCH: "Mặt hàng không có trên phiếu giao này",
+  PRODUCTION_DELIVERY_CODE_UNAVAILABLE: "Không tạo được mã phiếu giao, vui lòng thử lại",
   // Đóng hàng & giao hàng
   FULFILLMENT_ALREADY_EXISTS: "Đơn này đã có phiếu đóng hàng",
   FULFILLMENT_LOCATION_DENIED: "Bạn không thao tác được ở kho này",
@@ -291,6 +325,7 @@ export const ERROR_MESSAGES = {
   SHIPMENT_PROOF_REQUIRED: "Cần ít nhất một ảnh bằng chứng giao hàng",
   SHIPMENT_STATUS_INVALID: "Lần giao không ở trạng thái phù hợp",
   SHIPMENT_TRACKING_TAKEN: "Mã vận đơn đã tồn tại",
+  SHIPMENT_ALREADY_OPEN: "Đơn đã được giao cho shipper / đơn vị vận chuyển rồi",
   SHIPMENT_ORDER_NOT_PACKED: "Đơn chưa đóng gói nên chưa giao cho đơn vị vận chuyển được",
   SHIPMENT_DRIVER_REQUIRED: "Giao nội bộ cần chọn shipper",
   SHIPMENT_DRIVER_INVALID: "Shipper phải là chủ shop, người phụ trách đơn, hoặc nhân viên có quyền giao hàng",
@@ -380,4 +415,29 @@ export function shortStockLinesOf(error: unknown): ShortStockLine[] {
   const body = getApiErrorBody(error);
   if (body?.code !== "INSUFFICIENT_STOCK" || !Array.isArray(body.errors)) return [];
   return body.errors.filter(isShortStockLine);
+}
+
+/** A money difference the backend explains alongside its code: `{ held, amount, difference }`. */
+export interface MoneyGap {
+  held: number;
+  amount: number;
+  difference: number;
+}
+
+function moneyGapAt(error: unknown, code: ApiErrorCode, key: string): MoneyGap | null {
+  const body = getApiErrorBody(error) as (ApiErrorBody & Record<string, unknown>) | undefined;
+  if (body?.code !== code) return null;
+  const gap = body[key] as Partial<MoneyGap> | undefined;
+  if (typeof gap?.held !== "number" || typeof gap.amount !== "number") return null;
+  return { held: gap.held, amount: gap.amount, difference: gap.amount - gap.held };
+}
+
+/** `ORDER_DEPOSIT_CHANGED` (A-8): the edit would move the deposit off the money already taken. */
+export function depositChangeOf(error: unknown): MoneyGap | null {
+  return moneyGapAt(error, "ORDER_DEPOSIT_CHANGED", "deposit");
+}
+
+/** `ORDER_REMITTANCE_AMOUNT_MISMATCH` (A-10): what the owner counted is not what the shipper collected. */
+export function remittanceGapOf(error: unknown): MoneyGap | null {
+  return moneyGapAt(error, "ORDER_REMITTANCE_AMOUNT_MISMATCH", "remittance");
 }

@@ -8,8 +8,10 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getCachedUser } from "@/lib/auth";
 import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import {
+  personName,
   SHIPMENT_STATUS_LABELS,
   type CarrierType,
+  type Shipment,
   type ShipmentStatus,
   type ShipmentSummary,
 } from "@/types/order-flow";
@@ -21,6 +23,7 @@ const STALE_CODES = new Set([
   "SHIPMENT_STATUS_INVALID",
   "SHIPMENT_ORDER_NOT_PACKED",
   "SHIPMENT_FULFILLMENT_NOT_HANDED_OVER",
+  "SHIPMENT_ALREADY_OPEN",
 ]);
 
 /** Hiện lỗi của một thao tác giao hàng; trả về `true` nếu màn hình cần tải lại vì dữ liệu đã cũ. */
@@ -41,14 +44,14 @@ export function formatVND(value: number): string {
   return VND.format(value);
 }
 
-const STATUS_VARIANT: Record<ShipmentStatus, "info" | "warning" | "success" | "error" | "secondary"> = {
+const STATUS_VARIANT: Record<ShipmentStatus, "info" | "warning" | "success" | "error" | "secondary" | "muted"> = {
   CREATED: "secondary",
   PICKED_UP: "info",
   IN_TRANSIT: "warning",
   OUT_FOR_DELIVERY: "warning",
   DELIVERED: "success",
   FAILED: "error",
-  RETURNED: "secondary",
+  RETURNED: "muted",
   CANCELLED: "secondary",
 };
 
@@ -57,14 +60,17 @@ export function ShipmentStatusBadge({ status }: { status: ShipmentStatus }) {
   return <Badge variant={STATUS_VARIANT[status]}>{SHIPMENT_STATUS_LABELS[status]}</Badge>;
 }
 
-/** Lần giao đang trên đường (đơn đã Đang vận chuyển): chỉ lúc này mới ghi "Đang đi giao" hay báo giao không thành. */
+/**
+ * Lần giao đang trên đường (đơn đã Đang vận chuyển): chỉ lúc này mới ghi "Đang đi giao", báo giao không thành
+ * hay giao xong. FAILED vẫn tính: hàng chưa về shop nên shipper còn giao lại được, tới khi shop xác nhận hàng đã hoàn về.
+ */
 export function isOnTheRoad(status: ShipmentStatus): boolean {
-  return status === "IN_TRANSIT" || status === "OUT_FOR_DELIVERY";
+  return status === "IN_TRANSIT" || status === "OUT_FOR_DELIVERY" || status === "FAILED";
 }
 
 /** Lần giao đã kết thúc: chỉ xem. */
 export function isFinished(status: ShipmentStatus): boolean {
-  return status === "DELIVERED" || status === "FAILED" || status === "RETURNED" || status === "CANCELLED";
+  return status === "DELIVERED" || status === "RETURNED" || status === "CANCELLED";
 }
 
 /**
@@ -81,4 +87,39 @@ export function shipmentActions(shipment?: Pick<ShipmentSummary, "driver"> | nul
     canChangeDriver: allows(role, "shipments", "update"),
     canTrack: allows(role, "shipments", "update") || isDriver,
   };
+}
+
+/**
+ * Nhật trình của một lần giao, mới nhất lên đầu (kể cả khi BE đổi thứ tự trả về). Mốc "Đã giao" kèm
+ * ảnh bằng chứng shipper đã tải lên lúc xác nhận giao - ảnh nằm ở lần giao chứ không ở từng mốc, nên chỉ
+ * gắn vào đúng mốc DELIVERED.
+ */
+export function ShipmentTimeline({ shipment }: { shipment: Pick<Shipment, "events" | "proofPhotoUrls"> }) {
+  const events = [...shipment.events].sort(
+    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+  );
+  return (
+    <ol className="space-y-3 border-l pl-4">
+      {events.map((event) => (
+        <li key={event.id} className="text-sm">
+          <p className="font-medium">{SHIPMENT_STATUS_LABELS[event.status]}</p>
+          <p className="text-xs text-muted-foreground">
+            {new Date(event.occurredAt).toLocaleString("vi-VN")}
+            {event.createdBy && ` · ${personName(event.createdBy)}`}
+          </p>
+          {event.note && <p className="mt-1">{event.note}</p>}
+          {event.status === "DELIVERED" && shipment.proofPhotoUrls.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {shipment.proofPhotoUrls.map((url) => (
+                <a key={url} href={url} target="_blank" rel="noreferrer" title="Mở ảnh gốc">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- ảnh bằng chứng từ Cloudinary */}
+                  <img src={url} alt="Ảnh bằng chứng giao hàng" className="size-20 rounded-md border object-cover" />
+                </a>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
 }

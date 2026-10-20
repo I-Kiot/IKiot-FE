@@ -1,3 +1,5 @@
+import type { SupplierType } from './order-flow'
+
 // [Domain – Types]
 export interface Supplier {
   id: string
@@ -8,6 +10,8 @@ export interface Supplier {
   address: string
   creditLimit: number
   outstandingDebt: number
+  /** GOODS sells finished goods (supplier imports); WORKSHOP makes them to order (production requests, B-1). */
+  type: SupplierType
   createdAt?: string
   updatedAt?: string
 }
@@ -22,6 +26,7 @@ export interface SupplierPagination {
 export interface SupplierQueryParams {
   search?: string
   hasDebt?: 'true' | 'false'
+  type?: SupplierType
   page?: number
   limit?: number
 }
@@ -38,6 +43,8 @@ export interface SupplierCreatePayload {
   email?: string
   address?: string
   creditLimit?: number
+  /** Locked by the server once an import or a production request names the supplier (SUPPLIER_TYPE_LOCKED). */
+  type?: SupplierType
 }
 
 export type SupplierUpdatePayload = Partial<SupplierCreatePayload>

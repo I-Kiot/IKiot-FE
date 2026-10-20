@@ -1,6 +1,6 @@
 "use client";
 
-// Chi tiết một lần giao: người nhận, nhật trình, và các nút theo trạng thái (chuyển Đang vận chuyển, đổi
+// Chi tiết một lần giao: người nhận, trạng thái, và các nút theo trạng thái (chuyển Đang vận chuyển, đổi
 // shipper, đang đi giao, giao không thành) cùng dialog ghi chú của các nút đó.
 
 import { useEffect, useState } from "react";
@@ -19,7 +19,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { shipmentApi } from "@/lib/api/shipment";
-import { personName, SHIPMENT_STATUS_LABELS, type Shipment } from "@/types/order-flow";
+import { personName, type Shipment } from "@/types/order-flow";
 import { ChangeDriverDialog } from "./driver-dialogs";
 import {
   carrierLabel,
@@ -29,6 +29,7 @@ import {
   reportShipmentError,
   shipmentActions,
   ShipmentStatusBadge,
+  ShipmentTimeline,
 } from "./shipment-ui";
 
 type DetailState = { status: "loading" } | { status: "error" } | { status: "ready"; shipment: Shipment };
@@ -197,19 +198,22 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
             {!isFinished(shipment.status) && (
               <div className="flex flex-wrap gap-2">
                 {shipment.status === "PICKED_UP" && allowed.canShip && (
-                  <Button onClick={() => setAction("ship")}>Chuyển Đang vận chuyển</Button>
+                  <Button onClick={() => setAction("ship")}>Bắt đầu vận chuyển</Button>
                 )}
                 {isOnTheRoad(shipment.status) && allowed.canTrack && (
                   <>
                     <Button variant="outline" onClick={() => setAction("outForDelivery")}>
-                      Đang đi giao
+                      Cập nhật trạng thái đơn hàng
                     </Button>
-                    <Button variant="destructive" onClick={() => setAction("fail")}>
-                      Giao không thành
-                    </Button>
+                    {shipment.status !== "FAILED" && (
+                      <Button variant="destructive" onClick={() => setAction("fail")}>
+                        Giao hàng thất bại
+                      </Button>
+                    )}
                   </>
                 )}
-                {shipment.carrierType === "INTERNAL" && allowed.canChangeDriver && (
+                {/* Đang trên đường thì shipper đã cầm hàng: BE từ chối đổi, nên ẩn nút. */}
+                {shipment.carrierType === "INTERNAL" && allowed.canChangeDriver && !isOnTheRoad(shipment.status) && (
                   <Button variant="outline" onClick={() => setAction("changeDriver")}>
                     Đổi shipper
                   </Button>
@@ -220,19 +224,8 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
             <Separator />
 
             <div className="space-y-3">
-              <p className="text-sm font-medium">Nhật trình</p>
-              <ol className="space-y-3 border-l pl-4">
-                {shipment.events.map((event) => (
-                  <li key={event.id} className="text-sm">
-                    <p className="font-medium">{SHIPMENT_STATUS_LABELS[event.status]}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(event.occurredAt).toLocaleString("vi-VN")}
-                      {event.createdBy && ` · ${personName(event.createdBy)}`}
-                    </p>
-                    {event.note && <p className="mt-1">{event.note}</p>}
-                  </li>
-                ))}
-              </ol>
+              <p className="text-sm font-medium">Trạng thái đơn hàng</p>
+              <ShipmentTimeline shipment={shipment} />
             </div>
 
             <ShipmentNoteDialog
@@ -254,15 +247,15 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
               key={`out-${action === "outForDelivery"}`}
               open={action === "outForDelivery"}
               title="Đang đi giao"
-              description="Ghi nhật trình: shipper đang trên đường tới khách."
-              confirmLabel="Ghi nhật trình"
+              description="Ghi trạng thái: shipper đang trên đường tới khách."
+              confirmLabel="Ghi trạng thái"
               placeholder="vd. Còn 15 phút tới nơi"
               onClose={() => setAction(null)}
               onConfirm={(note) =>
                 run(
                   () => shipmentApi.addEvent(shipment.id, { status: "OUT_FOR_DELIVERY", note }),
-                  "Đã ghi nhật trình",
-                  "Ghi nhật trình thất bại, vui lòng thử lại",
+                  "Đã ghi trạng thái",
+                  "Ghi trạng thái thất bại, vui lòng thử lại",
                 )
               }
             />

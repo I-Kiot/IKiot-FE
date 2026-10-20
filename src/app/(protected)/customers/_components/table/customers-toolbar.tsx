@@ -2,6 +2,7 @@
 'use client'
 
 import { type Table } from '@tanstack/react-table'
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields"
 import { CalendarIcon, Coins, Funnel, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -110,21 +111,19 @@ export function CustomersToolbar({
 
         <div className="flex items-center gap-1.5">
           <Coins className="size-4 text-muted-foreground shrink-0" />
-          <Input
-            type="number"
+          <MoneyInput
             placeholder="Chi tiêu từ"
-            value={spendingFrom}
-            onChange={(e) => onSpendingFromChange(e.target.value)}
-            className="h-9 w-32 text-sm cursor-pointer [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={Number(spendingFrom) || 0}
+            onChange={(next) => onSpendingFromChange(next > 0 ? String(next) : "")}
+            className="h-9 w-32 text-sm cursor-pointer"
             title="Tổng chi tiêu từ"
           />
           <span className="text-muted-foreground text-sm">-</span>
-          <Input
-            type="number"
+          <MoneyInput
             placeholder="Đến"
-            value={spendingTo}
-            onChange={(e) => onSpendingToChange(e.target.value)}
-            className="h-9 w-32 text-sm cursor-pointer [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={Number(spendingTo) || 0}
+            onChange={(next) => onSpendingToChange(next > 0 ? String(next) : "")}
+            className="h-9 w-32 text-sm cursor-pointer"
             title="Tổng chi tiêu đến"
           />
           {(spendingFrom || spendingTo) && (

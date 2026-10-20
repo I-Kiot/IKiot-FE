@@ -35,6 +35,7 @@ export function useSuppliersMutations() {
         email: data.email || undefined,
         address: data.address || undefined,
         creditLimit: data.creditLimit,
+        type: data.type,
       })
       setSuppliers((prev) => [supplier, ...prev])
       toast.success('Thêm nhà cung cấp thành công')
@@ -57,6 +58,7 @@ export function useSuppliersMutations() {
         email: data.email || undefined,
         address: data.address || undefined,
         creditLimit: data.creditLimit,
+        type: data.type,
       })
       setSuppliers((prev) => prev.map((s) => (s.id === id ? updated : s)))
       toast.success('Cập nhật nhà cung cấp thành công')

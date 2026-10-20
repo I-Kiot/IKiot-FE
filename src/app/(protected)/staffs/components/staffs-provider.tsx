@@ -6,6 +6,7 @@ import { staffApi } from "@/lib/api/staff";
 import { parseLocationKey } from "@/lib/location-key";
 import { branchApi } from "@/lib/api/branch";
 import { warehouseApi } from "@/lib/api/warehouse";
+import { supplierApi } from "@/lib/api/supplier";
 import { getSessionRole } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -54,6 +55,8 @@ type StaffsContextType = {
   branchOptions: { value: string; label: string }[];
   warehouseOptions: { value: string; label: string }[];
   warehouseOptionsFailed: boolean;
+  /** Xưởng (NCC loại WORKSHOP) để gắn nhân viên xưởng; rỗng nếu shop chưa có xưởng hoặc tài khoản không xem được NCC. */
+  workshopOptions: { value: string; label: string }[];
   /** The global branch/warehouse switcher's current key ("all" | "branch-<id>" | "warehouse-<id>") - takes precedence over the manual filters below. */
   locationKey: string;
   open: StaffsDialogType | null;
@@ -137,6 +140,9 @@ export function StaffsProvider({
     { value: string; label: string }[]
   >([]);
   const [warehouseOptionsFailed, setWarehouseOptionsFailed] = useState(false);
+  const [workshopOptions, setWorkshopOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
   const [open, setOpen] = useState<StaffsDialogType | null>(null);
   const [currentRow, setCurrentRow] = useState<Staff | null>(null);
   const [assignManagerOpen, setAssignManagerOpen] = useState(false);
@@ -200,6 +206,18 @@ export function StaffsProvider({
       } catch {
         setWarehouseOptions([]);
         setWarehouseOptionsFailed(true);
+      }
+
+      try {
+        const response = await supplierApi.getList({ type: "WORKSHOP", limit: 100 });
+        setWorkshopOptions(
+          (response.data ?? []).map((workshop) => ({
+            value: workshop.id,
+            label: workshop.supplierName,
+          })),
+        );
+      } catch {
+        setWorkshopOptions([]);
       }
     }
 
@@ -442,6 +460,7 @@ useEffect(() => {
         branchOptions,
         warehouseOptions,
         warehouseOptionsFailed,
+        workshopOptions,
         locationKey,
         open,
         setOpen,

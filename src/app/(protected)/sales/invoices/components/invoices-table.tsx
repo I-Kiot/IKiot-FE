@@ -24,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -41,60 +40,74 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
 
-import { orderApi } from "@/lib/api/order";
+import { invoiceApi } from "@/lib/api/invoice";
+import { INVOICE_STATUSES, type InvoiceDto } from "@/types/invoice";
 import { useAuthStore } from "@/store/auth-store";
-import { type Invoice, invoicesColumns as columns } from "./invoices-columns";
+import {
+  type Invoice,
+  invoicesColumns as columns,
+  STATUS_MAP,
+} from "./invoices-columns";
+import { FULFILLMENT_TYPE_LABELS, type FulfillmentType } from "@/types/order-flow";
 import { InvoicesExpandedPanel } from "./invoices-expanded-panel";
 
-function mapBEOrderToInvoice(order: any): Invoice {
-  const customerObj = order.customerId || {};
-  const userObj = order.userId || {};
+function mapInvoice(dto: InvoiceDto): Invoice {
+  const lines = dto.lines.map((line) => {
+    const gross = line.quantity * line.unitPrice;
+    return {
+      productItemId: line.orderItemId ?? line.id,
+      productName: line.description,
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      // The invoice stores each line net; what was knocked off is the difference.
+      discountAmount: line.quantity > 0 ? Math.max(0, (gross - Math.abs(line.amount)) / line.quantity) : 0,
+    };
+  });
 
   return {
-    id: order.id,
-    invoiceCode: order.paymentReference || `HD-${order.id.slice(-6).toUpperCase()}`,
-    tenantId: order.tenantId,
-    branchId: order.branchId,
-    customerId: customerObj.id || "",
+    id: dto.id,
+    // PENDING invoices have no number yet; the order's code stands in so the row is still findable.
+    invoiceCode: dto.invoiceNumber ?? dto.order.code,
+    invoiceNumber: dto.invoiceNumber,
+    type: dto.type,
+    orderId: dto.order.id,
+    orderCode: dto.order.code,
+    reason: dto.reason,
+    tenantId: "",
+    branchId: dto.branch?.id ?? "",
+    customerId: dto.customer.id,
     customer: {
-      code: customerObj.id ? `KH-${customerObj.id.slice(-6).toUpperCase()}` : "KH00000",
-      name: customerObj.name || "Khách lẻ",
-      phone: customerObj.phone || "-",
-      gender: "MALE",
-      address: "-",
+      code: dto.customer.customerCode ?? "-",
+      name: dto.customer.name,
+      phone: dto.customer.phone || "-",
+      gender: (dto.customer.gender as Invoice["customer"]["gender"]) || "OTHER",
+      address: dto.customer.address || "-",
     },
-    status: order.status || "COMPLETED",
-    userId: userObj.id || "",
-    seller: {
-      name: userObj.name || "Nhân viên",
-      email: userObj.email || "",
-      role: userObj.role || "BRANCH_STAFF",
-    },
-    paymentMethod: order.paymentMethod || "CASH",
-    grandTotal: order.grandTotal || 0,
-    customerPay: order.customerPay ?? order.grandTotal ?? 0,
-    change: order.change ?? 0,
-    note: order.note || "",
-    items: (order.items || []).map((item: any) => ({
-      productItemId: item.productItemId,
-      productName: item.productName || "Sản phẩm",
-      quantity: item.quantity || 1,
-      unitPrice: item.unitPrice || 0,
-      discountAmount: item.discountAmount || 0,
-    })),
-    discountType: order.discountType || null,
-    discountValue: order.discountValue || 0,
-    appliedPromotions: order.appliedPromotions || null,
-    createdAt: order.createdAt,
-    updatedAt: order.updatedAt,
+    status: dto.status,
+    kind: dto.kind,
+    fulfillmentType: dto.order.fulfillmentType as FulfillmentType,
+    userId: dto.seller?.id ?? "",
+    seller: { name: dto.seller?.name ?? "-", email: "", role: "" },
+    paymentMethod: (dto.order.paymentMethod as Invoice["paymentMethod"]) ?? null,
+    grandTotal: dto.total,
+    customerPay: dto.order.customerPay,
+    change: dto.order.change,
+    note: dto.order.note || "",
+    items: lines,
+    createdAt: dto.issuedAt ?? dto.createdAt,
+    updatedAt: dto.updatedAt,
   };
 }
 
 export function InvoicesTable() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  // Filtered on the server, like the order list: the 100-row window then holds only what is asked for.
+  const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentType | "all">("all");
   const [loading, setLoading] = useState(true);
   const locationKey = useAuthStore((state) => state.locationKey);
 
@@ -106,21 +119,28 @@ export function InvoicesTable() {
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
   useEffect(() => {
+    let stale = false;
     setLoading(true);
-    orderApi
-      .getList({ limit: 100 })
+    invoiceApi
+      .getList({
+        limit: 100,
+        ...(fulfillmentFilter !== "all" ? { fulfillmentType: fulfillmentFilter } : {}),
+      })
       .then((res) => {
-        const mapped = (res.data || []).map(mapBEOrderToInvoice);
-        setInvoices(mapped);
+        if (stale) return;
+        setInvoices(res.data.map(mapInvoice));
       })
       .catch((err) => {
-        console.error("Failed to fetch orders:", err);
-        toast.error("Không thể tải danh sách hóa đơn");
+        console.error("Failed to fetch invoices:", err);
+        if (!stale) toast.error("Không thể tải danh sách hóa đơn");
       })
       .finally(() => {
-        setLoading(false);
+        if (!stale) setLoading(false);
       });
-  }, [locationKey]);
+    return () => {
+      stale = true;
+    };
+  }, [locationKey, fulfillmentFilter]);
 
   const COLUMN_LABELS: Record<string, string> = {
     invoiceCode: "Mã hóa đơn",
@@ -132,6 +152,7 @@ export function InvoicesTable() {
     customerPay: "Khách đã trả",
     paymentMethod: "Thanh toán",
     status: "Trạng thái",
+    fulfillmentType: "Hình thức giao",
   };
 
   const customGlobalFilter = (row: any, columnId: string, filterValue: string) => {
@@ -171,45 +192,52 @@ export function InvoicesTable() {
     },
   });
 
-  // Auto-expand invoice row from URL query parameter (id)
-  useEffect(() => {
-    if (invoices.length > 0) {
-      const searchParams = new URLSearchParams(window.location.search);
-      const invoiceId = searchParams.get("id") || searchParams.get("invoiceId");
-      if (invoiceId) {
-        const index = invoices.findIndex((inv) => inv.id === invoiceId);
-        if (index !== -1) {
-          const pageSize = table.getState().pagination.pageSize || 10;
-          const pageIndex = Math.floor(index / pageSize);
-          table.setPageIndex(pageIndex);
-          // Wait for pagination re-render before setting expanded state
-          const t = setTimeout(() => setExpanded({ [invoiceId]: true }), 0);
-          return () => clearTimeout(t);
-        }
-      }
-    }
-  }, [invoices, table]);
+  // An invoice named by `?id=` or by the global search's "open-item" event: drop a fulfilment filter
+  // that would hide it, then expand its row once it has loaded.
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  // Listen to custom 'open-item' event for instant opening when already on the same page
+  const requestOpen = (invoiceId: string) => {
+    setOpenId(invoiceId);
+    invoiceApi
+      .getById(invoiceId)
+      .then((dto) =>
+        setFulfillmentFilter((current) =>
+          current === "all" || current === dto.order.fulfillmentType ? current : "all",
+        ),
+      )
+      .catch(() => setOpenId(null));
+  };
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const invoiceId = searchParams.get("id") || searchParams.get("invoiceId");
+    if (invoiceId) requestOpen(invoiceId);
+  }, []);
+
   useEffect(() => {
     const handleOpenItem = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail?.type === "/sales/invoices" && customEvent.detail?.id) {
-        const invoiceId = customEvent.detail.id;
-        const index = invoices.findIndex((inv) => inv.id === invoiceId);
-        if (index !== -1) {
-          const pageSize = table.getState().pagination.pageSize || 10;
-          const pageIndex = Math.floor(index / pageSize);
-          table.setPageIndex(pageIndex);
-          // Wait for pagination re-render before setting expanded state
-          setTimeout(() => setExpanded({ [invoiceId]: true }), 0);
-        }
+        requestOpen(customEvent.detail.id);
       }
     };
-
     window.addEventListener("open-item", handleOpenItem);
     return () => window.removeEventListener("open-item", handleOpenItem);
-  }, [invoices, table]);
+  }, []);
+
+  useEffect(() => {
+    if (!openId) return;
+    const index = invoices.findIndex((inv) => inv.id === openId);
+    if (index === -1) return;
+    const pageSize = table.getState().pagination.pageSize || 10;
+    table.setPageIndex(Math.floor(index / pageSize));
+    // Wait for pagination re-render before setting expanded state
+    const t = setTimeout(() => {
+      setExpanded({ [openId]: true });
+      setOpenId(null);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [invoices, openId, table]);
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const hasSelected = selectedRows.length > 0;
@@ -231,6 +259,8 @@ export function InvoicesTable() {
 
   const statusFilter = table.getColumn("status")?.getFilterValue() as string;
   const paymentMethodFilter = table.getColumn("paymentMethod")?.getFilterValue() as string;
+
+  const columnCount = table.getVisibleLeafColumns().length;
 
   return (
     <div className="space-y-4">
@@ -261,9 +291,11 @@ export function InvoicesTable() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="COMPLETED">Đã hoàn thành</SelectItem>
-              <SelectItem value="CANCELLED">Đã hủy</SelectItem>
-              <SelectItem value="RETURNED">Trả hàng</SelectItem>
+              {INVOICE_STATUSES.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {STATUS_MAP[value].label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -291,6 +323,28 @@ export function InvoicesTable() {
               <SelectItem value="BANK_TRANSFER">Chuyển khoản</SelectItem>
               <SelectItem value="MOMO">Ví MoMo</SelectItem>
               <SelectItem value="VNPAY">Ví VNPay</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={fulfillmentFilter}
+            onValueChange={(value) => {
+              setFulfillmentFilter(value as FulfillmentType | "all");
+              // The selection belongs to rows that are about to be replaced.
+              setRowSelection({});
+              setExpanded({});
+            }}
+          >
+            <SelectTrigger className="cursor-pointer w-full md:w-44 h-9 text-sm">
+              <SelectValue placeholder="Hình thức giao" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả hình thức giao</SelectItem>
+              {(Object.keys(FULFILLMENT_TYPE_LABELS) as FulfillmentType[]).map((value) => (
+                <SelectItem key={value} value={value}>
+                  {FULFILLMENT_TYPE_LABELS[value]}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -379,17 +433,11 @@ export function InvoicesTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, idx) => (
-                <TableRow key={idx}>
-                  {columns.map((col, cIdx) => (
-                    <TableCell key={cIdx}>
-                      <Skeleton className="h-5 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows?.length ? (
+            {loading && <DataTableLoading columnCount={columnCount} />}
+            {!loading && table.getRowModel().rows.length === 0 && (
+              <DataTableEmpty columnCount={columnCount} />
+            )}
+            {!loading && (
               table.getRowModel().rows.map((row, index, rows) => (
                 <Fragment key={row.id}>
                   {/* Master Data Row */}
@@ -434,7 +482,7 @@ export function InvoicesTable() {
                     >
                       <div
                         className={cn(
-                          "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                          "sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out",
                           row.getIsExpanded()
                             ? "grid-rows-[1fr]"
                             : "grid-rows-[0fr]",
@@ -452,73 +500,23 @@ export function InvoicesTable() {
                   </TableRow>
                 </Fragment>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  Không tìm thấy hóa đơn nào phù hợp.
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Pagination Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 text-xs font-medium">
-        <div className="flex items-center gap-2">
-          <Label className="text-muted-foreground">Hiển thị</Label>
-          <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => table.setPageSize(Number(value))}
-          >
-            <SelectTrigger className="w-18 h-8 cursor-pointer text-xs">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`} className="text-xs">
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="text-muted-foreground">
-          Đã chọn {table.getFilteredSelectedRowModel().rows.length} /{" "}
-          {table.getFilteredRowModel().rows.length} hóa đơn
-        </div>
-
-        <div className="flex items-center gap-4">
-          <span className="text-muted-foreground">
-            Trang{" "}
-            <strong className="text-foreground font-semibold">
-              {table.getState().pagination.pageIndex + 1} /{" "}
-              {table.getPageCount()}
-            </strong>
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="cursor-pointer h-8 px-2 text-xs"
-            >
-              Trước
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="cursor-pointer h-8 px-2 text-xs"
-            >
-              Tiếp
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit="hóa đơn"
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize);
+          table.setPageIndex(0);
+        }}
+      />
     </div>
   );
 }

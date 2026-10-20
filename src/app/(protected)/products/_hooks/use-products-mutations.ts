@@ -9,6 +9,7 @@ import { productApi } from '@/lib/api/product'
 import { parsePriceAmount, getDeleteProductErrorMessage } from '../_constants/product.constants'
 import { useAuthStore } from '@/store/auth-store'
 import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
+import { toItemImagePayload } from '../_components/product-item-images-field'
 
 function extractErrorMessage(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -40,7 +41,12 @@ export function useProductsMutations() {
         brandId: data.brandId ?? undefined,
         categoryId: data.categoryId ?? undefined,
         status: data.status,
+        isManufacturable: data.isManufacturable,
         images: data.images,
+        // Mỗi dòng thuộc tính của phiên bản đầu tiên định nghĩa luôn thuộc tính của sản phẩm (kèm đơn vị).
+        attributes: data.productDetails
+          ?.filter((d) => d.name.trim() && d.value.trim())
+          .map((d) => ({ name: d.name.trim(), unit: d.unit?.trim() || undefined })),
         items: [
           {
             productName: itemProductName,
@@ -52,8 +58,11 @@ export function useProductsMutations() {
             vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
             warrantyPeriod: data.warrantyPeriod,
             description: data.description,
-            images: data.itemImages?.length ? data.itemImages : data.images,
-            productDetails: data.productDetails?.filter((d) => d.name.trim() && d.value.trim()),
+            // Phiên bản không có ảnh riêng thì dùng ảnh hàng hóa; ảnh đầu tiên là ảnh đại diện.
+            images: toItemImagePayload(data.itemImages?.length ? data.itemImages : data.images),
+            productDetails: data.productDetails
+              ?.filter((d) => d.name.trim() && d.value.trim())
+              .map((d) => ({ name: d.name.trim(), value: d.value.trim() })),
           },
         ],
       })
@@ -87,7 +96,12 @@ export function useProductsMutations() {
         brandId: data.brandId ?? undefined,
         categoryId: data.categoryId ?? undefined,
         status: data.status,
+        isManufacturable: data.isManufacturable,
         images: data.images,
+        // Chỉ gửi khi form đã nạp danh sách thuộc tính - gửi mảng rỗng sẽ xoá hết thuộc tính.
+        attributes: data.attributes
+          ?.filter((a) => a.name.trim())
+          .map((a) => ({ id: a.id, name: a.name.trim(), unit: a.unit?.trim() || undefined })),
       })
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...product } : p)))
       toast.success('Cập nhật hàng hóa thành công')

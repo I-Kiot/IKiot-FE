@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ImageAttachments } from "@/components/image-attachments";
+import { CustomizationChips } from "../../shared/customization-chips";
 import {
   ORDER_ITEM_STATUS_LABELS,
   type OrderDetailLine,
@@ -8,52 +10,14 @@ import {
 } from "@/types/order-flow";
 import { formatVND, orderedLines, stockDisplay } from "../../shared/order-display";
 
-/** "181 × 60 × 75 cm · Gỗ sồi · Trắng" plus each named spec - the customer's own measurements. */
+/** Thứ khách đặt riêng: mỗi thay đổi một chip (giá trị gốc gạch ngang), ghi chú và ảnh - cùng cách màn tạo đơn và YCSX hiện. */
 function CustomizationDetails({ customization }: { customization: OrderItemCustomization }) {
-  const size = [customization.lengthCm, customization.widthCm, customization.heightCm]
-    .map((value) => (value === null || value === undefined ? "?" : `${value}`))
-    .join(" × ");
-  const hasSize = [customization.lengthCm, customization.widthCm, customization.heightCm].some(
-    (value) => value !== null && value !== undefined,
-  );
-  const summary = [
-    hasSize ? `${size} cm` : null,
-    customization.material,
-    customization.color,
-    customization.fabricCode ? `Mã vải ${customization.fabricCode}` : null,
-  ].filter(Boolean);
-
   return (
-    <div className="mt-2 space-y-1 rounded-md border border-dashed bg-muted/30 p-2 text-xs">
-      {summary.length > 0 && <p className="font-medium">{summary.join(" · ")}</p>}
-      {customization.specs.length > 0 && (
-        <ul className="space-y-0.5">
-          {customization.specs.map((spec, index) => (
-            <li key={`${spec.name}-${index}`}>
-              <span className="text-muted-foreground">{spec.name}:</span>{" "}
-              <span className="whitespace-nowrap">
-                {spec.value}
-                {spec.unit ? ` ${spec.unit}` : ""}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {customization.note && <p className="text-muted-foreground">{customization.note}</p>}
+    <div className="mt-2 flex flex-col gap-1.5 text-xs">
+      <CustomizationChips customization={customization} />
+      {customization.note && <p className="text-muted-foreground">Ghi chú cho xưởng: {customization.note}</p>}
       {customization.attachmentUrls.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-1">
-          {customization.attachmentUrls.map((url) => (
-            <a
-              key={url}
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary underline-offset-2 hover:underline"
-            >
-              Ảnh mẫu / bản vẽ
-            </a>
-          ))}
-        </div>
+        <ImageAttachments value={customization.attachmentUrls} onChange={() => undefined} disabled />
       )}
     </div>
   );

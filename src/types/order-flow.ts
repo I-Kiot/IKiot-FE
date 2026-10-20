@@ -154,6 +154,15 @@ export const PRODUCTION_REQUEST_STATUS_LABELS: Record<ProductionRequestStatus, s
   CANCELLED: "Đã huỷ",
 };
 
+/** Phiếu giao của xưởng (2026-10-09): Chờ nhận → Đã nhận (nơi nhận xác nhận, tồn tăng) / Đã huỷ. */
+export type ProductionDeliveryStatus = "PENDING" | "RECEIVED" | "CANCELLED";
+
+export const PRODUCTION_DELIVERY_STATUS_LABELS: Record<ProductionDeliveryStatus, string> = {
+  PENDING: "Chờ nhận",
+  RECEIVED: "Đã nhận",
+  CANCELLED: "Đã huỷ",
+};
+
 export type FulfillmentStatus =
   | "PENDING"
   | "PICKING"
@@ -165,12 +174,12 @@ export type FulfillmentStatus =
   | "CANCELLED";
 
 export const FULFILLMENT_STATUS_LABELS: Record<FulfillmentStatus, string> = {
-  PENDING: "Chờ lấy hàng",
+  PENDING: "Chờ xử lý lấy hàng",
   PICKING: "Đang lấy hàng",
-  PICKED: "Đã lấy hàng",
+  PICKED: "Đã lấy đủ hàng",
   PACKING: "Đang đóng gói",
-  PACKED: "Đã đóng gói",
-  HANDED_OVER: "Đã bàn giao",
+  PACKED: "Đã đóng gói xong",
+  HANDED_OVER: "Đã bàn giao vận chuyển",
   EXCEPTION: "Có sự cố",
   CANCELLED: "Đã huỷ",
 };
@@ -186,13 +195,13 @@ export type ShipmentStatus =
   | "CANCELLED";
 
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
-  CREATED: "Mới tạo",
-  PICKED_UP: "Đã lấy hàng",
+  CREATED: "Chờ shipper lấy hàng",
+  PICKED_UP: "ĐVVC đã lấy hàng",
   IN_TRANSIT: "Đang vận chuyển",
-  OUT_FOR_DELIVERY: "Đang giao",
-  DELIVERED: "Đã giao",
-  FAILED: "Giao thất bại",
-  RETURNED: "Đã hoàn",
+  OUT_FOR_DELIVERY: "Đang giao đến người nhận",
+  DELIVERED: "Đã giao đến người nhận",
+  FAILED: "Giao hàng thất bại",
+  RETURNED: "Đã hoàn hàng",
   CANCELLED: "Đã huỷ",
 };
 
@@ -236,6 +245,10 @@ export type ImportSource = "SUPPLIER" | "WORKSHOP";
 // ─── Orders (track A BE / track D FE) ───────────────────────────────────────
 
 export interface OrderItemSpec {
+  /** Thuộc tính của sản phẩm mà khách đổi; không có = thông số ghi tự do. */
+  attributeId?: string | null;
+  /** Giá trị của SKU mẫu (BE chụp lại khi lưu) - để hiện "Óc chó → Trắng". */
+  baseValue?: string | null;
   name: string;
   value: string;
   unit?: string | null;
@@ -306,6 +319,7 @@ export interface OrderListItem {
   branch: LocationRef;
   customer: { id: string; name: string; phone: string | null };
   assignee: UserRef | null;
+  driver: UserRef | null;
   createdBy: UserRef | null;
   confirmedBy: UserRef | null;
   confirmedAt: string | null;
@@ -342,6 +356,16 @@ export interface OrderListItem {
   stockSummary: StockCheckStatus | null;
   /** The list keeps each order's lines (POS reads them off the same route). */
   items: OrderLine[];
+  /** Status of the newest shipment; a failed delivery leaves the order SHIPPING, so this is what tells them apart. */
+  latestShipmentStatus: ShipmentStatus | null;
+}
+
+/** Order still SHIPPING whose newest delivery attempt failed - waits for a return ticket. */
+export function isDeliveryFailed(order: {
+  status: OrderStatus;
+  latestShipmentStatus: ShipmentStatus | null;
+}): boolean {
+  return order.status === "SHIPPING" && order.latestShipmentStatus === "FAILED";
 }
 
 export interface OrderDetail extends Omit<OrderListItem, "items" | "itemCount" | "stockSummary"> {
@@ -361,7 +385,20 @@ export const ORDER_SORTS = ["createdAt", "requestedDeliveryDate", "priority"] as
 /** Each has one fixed direction: newest first, soonest delivery first, most urgent first. */
 export type OrderSort = (typeof ORDER_SORTS)[number];
 
+/** What needs someone's eye on an order that has not shipped (BE `attention` filter). */
+export type OrderAttention = "SHORT" | "DUE_SOON";
+
+/** `GET /orders/alerts`. */
+export interface OrderAlerts {
+  /** Orders with a line partly or wholly out on the shelf. */
+  short: number;
+  /** Orders whose requested delivery date is today, within `dueSoonDays`, or already past. */
+  dueSoon: number;
+  dueSoonDays: number;
+}
+
 export interface OrderJourneyQuery extends PageQuery {
+  attention?: OrderAttention;
   status?: OrderStatus;
   channel?: OrderChannel;
   assigneeId?: string;
@@ -373,6 +410,8 @@ export interface OrderJourneyQuery extends PageQuery {
   from?: string;
   to?: string;
   sort?: OrderSort;
+  /** Leave out the till's sales (`TAKEAWAY`). POS lists through the same `GET /orders`, so the backend only drops them when asked - every journey screen sends `true`. */
+  excludePos?: boolean;
 }
 
 export interface CreateOrderLinePayload {
@@ -409,8 +448,33 @@ export interface CreateOrderJourneyPayload {
   note?: string;
 }
 
-/** `PATCH /orders/:id` (A-8) takes the same fields as create. */
-export type UpdateDraftOrderPayload = CreateOrderJourneyPayload;
+/** A line on `PATCH /orders/:id` (A-8): with `id`, that line changed in place (same product); without, a new line. A line left out is removed. Specs go through `setCustomization`, never here. */
+export interface UpdateOrderLinePayload extends Omit<CreateOrderLinePayload, "customization"> {
+  id?: string;
+}
+
+/** `PATCH /orders/:id` (A-8): the create's fields but the branch, every one optional - a field left out is left as it is. `items` is the whole new list, and only while CONFIRMED. `discountType: null` clears a manual discount. */
+export interface UpdateOrderPayload
+  extends Partial<Omit<CreateOrderJourneyPayload, "branchId" | "items" | "discountType">> {
+  items?: UpdateOrderLinePayload[];
+  discountType?: "ORDER" | null;
+}
+
+/** @deprecated The A-8 edit is not a draft edit; use `UpdateOrderPayload`. */
+export type UpdateDraftOrderPayload = UpdateOrderPayload;
+
+/** `ORDER_DEPOSIT_CHANGED` (409): the edit would move the deposit off the money already taken. */
+export interface DepositChange {
+  held: number;
+  amount: number;
+  difference: number;
+}
+
+/** `POST /orders/:id/confirm-remittance` (A-10): the cash the owner counted from the shipper - all of it. */
+export interface ConfirmRemittancePayload {
+  amount: number;
+  note?: string;
+}
 
 export interface ConfirmOrderPayload {
   assigneeId?: string;
@@ -420,17 +484,50 @@ export interface ConfirmOrderPayload {
 
 // ─── Production requests & imports (track B) ────────────────────────────────
 
+/** Giá trị một thuộc tính của SKU (Màu: Óc chó). `attributeId` null = dòng ghi tự do. */
+export interface SkuAttributeValue {
+  attributeId: string | null;
+  name: string | null;
+  value: string | null;
+}
+
 export interface ProductionRequestLine {
   id: string;
   productItemId: string;
+  productId: string;
   sku: string | null;
   productName: string;
+  /** Giá bán hiện tại của SKU. */
+  retailPrice: number;
+  /** Thuộc tính của SKU - xưởng làm đúng bộ này. */
+  attributes: SkuAttributeValue[];
+  imageUrl: string | null;
   quantity: number;
   receivedQuantity: number;
+  /** Xưởng đã báo giao (phiếu Chờ nhận) nhưng nơi nhận chưa đếm. */
+  pendingDeliveryQuantity: number;
   note: string | null;
-  orderItem: { id: string; orderId: string; orderCode: string | null; isCustom: boolean } | null;
+  /** Ảnh gửi xưởng của dòng này (bản thiết kế, ảnh mẫu). */
+  attachmentUrls: string[];
+  /** The order line the piece is made for - always set for a custom piece. */
+  orderItem: {
+    id: string;
+    orderId: string;
+    orderCode: string | null;
+    isCustom: boolean;
+    /** Thứ khách đặt riêng cho dòng đơn: đổi gì so với mẫu, ảnh, ghi chú. */
+    customization: { note: string | null; attachmentUrls: string[]; specs: OrderItemSpec[] } | null;
+  } | null;
 }
 
+/** One receipt against a request: the WORKSHOP import it wrote (`/stock-movements`). */
+export interface ProductionReceipt {
+  stockMovementId: string;
+  receivedAt: string | null;
+  receivedBy: PersonRef | null;
+}
+
+/** `GET /production-requests/:id` (contract §3, BE track B). People come with a nested `profile`. */
 export interface ProductionRequest {
   id: string;
   code: string;
@@ -440,18 +537,101 @@ export interface ProductionRequest {
   expectedReadyDate: string | null;
   sentAt: string | null;
   note: string | null;
-  createdBy: UserRef | null;
-  statusUpdatedBy: UserRef | null;
+  /** COMPLETED with a line never fully delivered: closed short by hand. */
+  closedShort: boolean;
+  createdBy: PersonRef | null;
+  statusUpdatedBy: PersonRef | null;
   statusUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
   items: ProductionRequestLine[];
+  receipts: ProductionReceipt[];
+  /** Phiếu giao của xưởng theo YCSX này, cũ trước. */
+  deliveries: ProductionDeliverySummary[];
+}
+
+/** Một phiếu giao trong `ProductionRequest.deliveries`. */
+export interface ProductionDeliverySummary {
+  id: string;
+  code: string;
+  status: ProductionDeliveryStatus;
+  note: string | null;
+  createdAt: string;
+  createdBy: PersonRef | null;
+  receivedAt: string | null;
+  receivedBy: PersonRef | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  stockMovementId: string | null;
+  items: {
+    productionRequestItemId: string;
+    quantity: number;
+    receivedQuantity: number | null;
+    defectQuantity: number | null;
+  }[];
+}
+
+/** `GET /production-deliveries` · `/workshop/deliveries`: một phiếu giao kèm YCSX của nó. */
+export interface ProductionDelivery {
+  id: string;
+  code: string;
+  status: ProductionDeliveryStatus;
+  note: string | null;
+  productionRequestId: string;
+  productionRequest: {
+    id: string;
+    code: string;
+    status: ProductionRequestStatus;
+    expectedReadyDate: string | null;
+    supplier: { id: string; supplierName: string };
+    location: LocationRef & { type: "BRANCH" | "WAREHOUSE" };
+  };
+  createdAt: string;
+  createdBy: PersonRef;
+  receivedAt: string | null;
+  receivedBy: PersonRef | null;
+  cancelledAt: string | null;
+  cancelledBy: PersonRef | null;
+  cancelReason: string | null;
+  stockMovementId: string | null;
+  items: {
+    id: string;
+    productionRequestItemId: string;
+    productItemId: string;
+    sku: string | null;
+    productName: string;
+    /** Số xưởng ghi là giao. */
+    quantity: number;
+    receivedQuantity: number | null;
+    defectQuantity: number | null;
+    orderedQuantity: number;
+    /** Tổng đã nhận của dòng YCSX (mọi lần). */
+    totalReceivedQuantity: number;
+  }[];
+}
+
+export interface ProductionDeliveryQuery extends PageQuery {
+  status?: ProductionDeliveryStatus;
+  locationId?: string;
+  productionRequestId?: string;
+}
+
+export interface WorkshopProductionRequestQuery extends PageQuery {
+  status?: Exclude<ProductionRequestStatus, "DRAFT">;
+  locationId?: string;
+}
+
+export interface CreateProductionDeliveryPayload {
+  items: { productionRequestItemId: string; quantity: number }[];
+  note?: string;
 }
 
 export interface ProductionRequestQuery extends PageQuery {
   status?: ProductionRequestStatus;
   supplierId?: string;
   locationId?: string;
+  /** Requests with a line for this SKU. */
+  productItemId?: string;
 }
 
 export interface ProductionRequestLinePayload {
@@ -459,31 +639,100 @@ export interface ProductionRequestLinePayload {
   quantity: number;
   orderItemId?: string;
   note?: string;
+  /** Thuộc tính đổi so với SKU: dòng chuyển sang SKU đúng bộ đó (có sẵn, hoặc BE tạo mới). */
+  attributeValues?: { attributeId: string; value: string }[];
+  /** Chỉ gửi khi tick "Cập nhật giá mới": giá bán của SKU kết quả. */
+  retailPrice?: number;
+  /** Ảnh gửi xưởng, đã tải qua POST /uploads. */
+  attachmentUrls?: string[];
 }
 
 export interface CreateProductionRequestPayload {
   supplierId: string;
   locationId: string;
+  /** `YYYY-MM-DD`. */
   expectedReadyDate?: string;
   note?: string;
   items: ProductionRequestLinePayload[];
 }
 
+/** SENT = the workshop has been called; CANCELLED only before anything arrived; COMPLETED by hand = close a partly delivered request short (`note` required). */
 export interface UpdateProductionRequestStatusPayload {
   status: "SENT" | "COMPLETED" | "CANCELLED";
   note?: string;
 }
 
-export interface Shortage {
-  locationId: string;
-  locationName: string;
+/** `POST /production-requests/:id/receive` (B-5): what arrived this time. Good units open a lot at the request's location; defects go to its damaged-goods location. */
+export interface ReceiveProductionPayload {
+  items: {
+    productionRequestItemId: string;
+    /** Arrived this time, defects included. */
+    receivedQuantity: number;
+    defectQuantity?: number;
+    /** The workshop's price per unit; blank = the SKU's cost price. */
+    unitCost?: number;
+  }[];
+  /** Defaults to the receiving location's damaged-goods location. */
+  defectLocationId?: string;
+  note?: string;
+}
+
+/** One row of the production list (`GET /production-list`): a (location, SKU), worked out when read. */
+export interface ProductionListRow {
+  key: string;
+  location: (LocationRef & { type: "BRANCH" | "WAREHOUSE" }) | null;
   productItemId: string;
   sku: string | null;
   productName: string;
-  available: number;
-  waitingQuantity: number;
+  variantLabel: string | null;
+  /** false = chỉ nhập từ nhà cung cấp, không đặt xưởng được. */
+  isManufacturable: boolean;
+  isCustom: boolean;
+  /** The order line a custom row is made for. */
+  customOrderItemId: string | null;
+  customization: OrderItemCustomization | null;
+  stock: number;
+  demandQuantity: number;
+  /** Sent to the workshop, not yet delivered. */
   onOrderQuantity: number;
+  /** On a draft request, not yet sent. */
+  draftQuantity: number;
+  /** Still short and not ordered at all. */
   shortQuantity: number;
+  orders: {
+    orderId: string;
+    orderCode: string;
+    orderItemId: string;
+    quantity: number;
+    priority: OrderPriority;
+    requestedDeliveryDate: string | null;
+    assignee: PersonRef | null;
+    status: OrderStatus;
+  }[];
+  requests: {
+    id: string;
+    code: string;
+    status: ProductionRequestStatus;
+    supplierName: string;
+    quantity: number;
+    receivedQuantity: number;
+    expectedReadyDate: string | null;
+  }[];
+}
+
+export interface ProductionListQuery extends PageQuery {
+  locationId?: string;
+  /** One SKU - where a shortage notification links to. */
+  productItemId?: string;
+  /** Only rows still short after stock and every open request. */
+  onlyShort?: boolean;
+  /** Only rows with a request still open. */
+  hasOpenRequest?: boolean;
+}
+
+/** The list is paged like every list, plus how many rows need ordering whatever the filter. */
+export interface ProductionListPage extends Paginated<ProductionListRow> {
+  summary: { shortRows: number };
 }
 
 // ─── Fulfillment & delivery (track C) ───────────────────────────────────────
@@ -620,6 +869,42 @@ export interface ShipmentSummary {
   createdAt: string;
 }
 
+/** Khoản shipper đã thu / đang chờ thu ở một lần giao (`GET /shipments/mine/history`). */
+export interface ShipmentCollection {
+  method: string;
+  amount: number;
+  /** PAID = đã thu; PENDING = QR đã tạo, chờ tiền về. */
+  status: string;
+}
+
+/** Một dòng lịch sử giao của tôi. */
+export interface ShipmentHistoryItem extends ShipmentSummary {
+  collection: ShipmentCollection | null;
+}
+
+/** Số liệu các thẻ trên tab lịch sử; chịu khoảng ngày nhưng không chịu bộ lọc trạng thái / tìm kiếm. */
+export interface ShipmentHistorySummary {
+  /** Cần giao: mọi lần giao chưa kết thúc, không phụ thuộc khoảng ngày. */
+  active: number;
+  delivered: number;
+  failed: number;
+  returned: number;
+  cancelled: number;
+  collectedTotal: number;
+}
+
+export interface ShipmentHistoryQuery extends PageQuery {
+  /** `ACTIVE` = cần giao (chưa kết thúc). */
+  status?: ShipmentStatus | "ACTIVE";
+  /** `YYYY-MM-DD`, theo ngày giao (giờ Việt Nam). */
+  from?: string;
+  to?: string;
+}
+
+export interface ShipmentHistoryPage extends Paginated<ShipmentHistoryItem> {
+  summary: ShipmentHistorySummary;
+}
+
 /** `GET /shipments/:id` và kết quả mọi thao tác ghi – kèm nhật trình. */
 export interface Shipment extends ShipmentSummary {
   events: ShipmentEvent[];
@@ -674,6 +959,12 @@ export interface HandOverReadyOrder {
   recipientName: string | null;
   recipientPhone: string | null;
   deliveryAddress: string | null;
+  /** `YYYY-MM-DD`; đơn đã có ngày hẹn thì dialog giao hàng dùng luôn, không cho chọn lại. */
+  requestedDeliveryDate: string | null;
+  /** Phí giao hàng đã nhập khi tạo đơn; ghi lại thành `shippingCost` của lần giao. */
+  shippingFee: number;
+  /** Shipper của lần giao mới nhất. Đơn còn PACKED mà đã có shipper = đã gán, đang chờ shipper tới lấy hàng. */
+  driver: UserRef | null;
 }
 
 /** Cách shipper thu số còn phải thu khi giao: tiền mặt, chuyển khoản QR, hoặc không còn gì phải thu (đã cọc đủ). */

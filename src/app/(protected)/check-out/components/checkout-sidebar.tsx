@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import {
   UserPlus,
   X,
@@ -64,6 +65,8 @@ interface CheckoutSidebarProps {
   onOpenNewCustomerModal: () => void;
   onOpenPromotionPicker: () => void;
   onClearPromotion: () => void;
+  /** "Nơi bán" selector, drawn right under the payment block. */
+  branchSelect?: React.ReactNode;
 }
 
 const formatVND = (value: number) =>
@@ -95,6 +98,7 @@ export function CheckoutSidebar({
   onOpenNewCustomerModal,
   onOpenPromotionPicker,
   onClearPromotion,
+  branchSelect,
 }: CheckoutSidebarProps) {
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerResults, setCustomerResults] = useState<Customer[]>([]);
@@ -350,21 +354,30 @@ export function CheckoutSidebar({
               Giảm giá đơn
             </span>
             <div className="flex items-center gap-1.5 flex-1 max-w-[180px]">
-              <Input
-                type="number"
-                value={discount}
-                disabled={hasPromotionApplied}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  const clean = isNaN(val) || val < 0 ? 0 : val;
-                  if (discountType === "percent") {
+              {discountType === "percent" ? (
+                // Giảm theo % là con số 0-100, không phải tiền: không chèn dấu chấm ngăn cách.
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={discount}
+                  disabled={hasPromotionApplied}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    const clean = isNaN(val) || val < 0 ? 0 : val;
                     onDiscountChange(clean > 100 ? 100 : clean);
-                  } else {
-                    onDiscountChange(clean > subtotal ? subtotal : clean);
-                  }
-                }}
-                className="h-9 text-right font-semibold tabular-nums text-base"
-              />
+                  }}
+                  className="h-9 text-right font-semibold tabular-nums text-base"
+                />
+              ) : (
+                <MoneyInput
+                  value={discount}
+                  max={subtotal}
+                  disabled={hasPromotionApplied}
+                  onChange={onDiscountChange}
+                  className="h-9 text-right font-semibold tabular-nums text-base"
+                />
+              )}
               <div className="flex border rounded-md overflow-hidden shrink-0">
                 <button
                   type="button"
@@ -470,13 +483,9 @@ export function CheckoutSidebar({
               </div>
               <div className="relative">
                 <Coins className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="number"
+                <MoneyInput
                   value={customerPay}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    onCustomerPayChange(isNaN(val) || val < 0 ? 0 : val);
-                  }}
+                  onChange={onCustomerPayChange}
                   className="pl-8 h-10 text-right font-bold tabular-nums text-base text-foreground focus-visible:ring-primary"
                 />
               </div>
@@ -517,6 +526,8 @@ export function CheckoutSidebar({
               </span>
             </div>
           )}
+
+          {branchSelect}
 
           {/* Order Note */}
           <div className="space-y-1 pt-1">

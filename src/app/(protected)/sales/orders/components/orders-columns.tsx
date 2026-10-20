@@ -2,9 +2,11 @@ import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { OrderListItem } from "@/types/order-flow";
+import { FULFILLMENT_TYPE_LABELS, type OrderListItem } from "@/types/order-flow";
 import {
+  daysUntilPlainDate,
   formatDateTime,
   formatPlainDate,
   formatVND,
@@ -17,11 +19,17 @@ export const ORDERS_COLUMN_LABELS: Record<string, string> = {
   code: "Mã đơn",
   customer: "Khách hàng",
   status: "Trạng thái",
+  fulfillmentType: "Hình thức giao",
   priority: "Ưu tiên",
   stockSummary: "Tồn kho",
   assignee: "Phụ trách",
+  driver: "Người giao hàng",
   requestedDeliveryDate: "Hẹn giao",
+  products: "Sản phẩm",
+  deliveryAddress: "Địa chỉ nhận hàng",
   grandTotal: "Tổng tiền",
+  deposit: "Tiền cọc",
+  amountDue: "Còn thu",
   createdAt: "Ngày tạo",
 };
 
@@ -62,9 +70,18 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
     accessorKey: "status",
     header: ORDERS_COLUMN_LABELS.status,
     cell: ({ row }) => {
-      const display = orderStatusDisplay(row.original.status);
+      const display = orderStatusDisplay(row.original.status, row.original.latestShipmentStatus);
       return <Badge variant={display.variant}>{display.label}</Badge>;
     },
+  },
+  {
+    accessorKey: "fulfillmentType",
+    header: ORDERS_COLUMN_LABELS.fulfillmentType,
+    cell: ({ row }) => (
+      <span className="text-sm">
+        {FULFILLMENT_TYPE_LABELS[row.original.fulfillmentType] ?? row.original.fulfillmentType}
+      </span>
+    ),
   },
   {
     accessorKey: "priority",
@@ -93,31 +110,99 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
     ),
   },
   {
-    accessorKey: "requestedDeliveryDate",
-    header: ORDERS_COLUMN_LABELS.requestedDeliveryDate,
+    id: "driver",
+    header: ORDERS_COLUMN_LABELS.driver,
+    // Only meaningful while the goods are on the road.
     cell: ({ row }) => (
       <span className="text-sm">
-        {formatPlainDate(row.original.requestedDeliveryDate)}
+        {row.original.status === "SHIPPING" ? (row.original.driver?.name ?? "-") : "-"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "requestedDeliveryDate",
+    header: ORDERS_COLUMN_LABELS.requestedDeliveryDate,
+    // Within 10 days the date is replaced by a countdown; further out it stays a date.
+    cell: ({ row }) => {
+      const value = row.original.requestedDeliveryDate;
+      const days = value ? daysUntilPlainDate(value) : null;
+      if (value && days !== null && days <= 10) {
+        const overdue = days < 0;
+        return (
+          <span
+            className={cn("text-sm", overdue && "text-destructive")}
+            title={formatPlainDate(value)}
+          >
+            {days === 0
+              ? "Hôm nay"
+              : overdue
+                ? `Quá hạn ${-days} ngày`
+                : `Còn ${days} ngày`}
+          </span>
+        );
+      }
+      return <span className="text-sm">{formatPlainDate(value)}</span>;
+    },
+  },
+  {
+    id: "products",
+    header: ORDERS_COLUMN_LABELS.products,
+    cell: ({ row }) => {
+      const items = row.original.items;
+      const quantity = items.reduce((sum, item) => sum + item.quantity, 0);
+      if (items.length === 0) return <span className="text-muted-foreground">-</span>;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="default" className="cursor-default">
+              {quantity} sản phẩm
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <ul className="space-y-0.5">
+              {items.map((item) => (
+                <li key={item.id}>
+                  {item.productName ?? item.sku ?? "-"}
+                  {item.variantLabel ? ` (${item.variantLabel})` : ""} × {item.quantity}
+                </li>
+              ))}
+            </ul>
+          </TooltipContent>
+        </Tooltip>
+      );
+    },
+  },
+  {
+    id: "deliveryAddress",
+    header: ORDERS_COLUMN_LABELS.deliveryAddress,
+    cell: ({ row }) => (
+      <span className="line-clamp-2 max-w-64 text-sm" title={row.original.deliveryAddress ?? undefined}>
+        {row.original.deliveryAddress ?? "-"}
       </span>
     ),
   },
   {
     accessorKey: "grandTotal",
     header: ORDERS_COLUMN_LABELS.grandTotal,
-    // The total, and under it what is still to collect when a deposit was taken.
-    cell: ({ row }) => {
-      const { grandTotal, amountDue, deposit } = row.original;
-      return (
-        <div className="flex flex-col">
-          <span className="font-medium">{formatVND(grandTotal)}</span>
-          {deposit && (
-            <span className="text-xs text-muted-foreground">
-              {amountDue > 0 ? `Còn thu ${formatVND(amountDue)}` : "Đã cọc đủ"}
-            </span>
-          )}
-        </div>
-      );
-    },
+    cell: ({ row }) => (
+      <span className="font-medium">{formatVND(row.original.grandTotal)}</span>
+    ),
+  },
+  {
+    id: "deposit",
+    header: ORDERS_COLUMN_LABELS.deposit,
+    cell: ({ row }) => (
+      <span className="text-sm">
+        {row.original.deposit ? formatVND(row.original.deposit.amount) : "-"}
+      </span>
+    ),
+  },
+  {
+    id: "amountDue",
+    header: ORDERS_COLUMN_LABELS.amountDue,
+    cell: ({ row }) => (
+      <span className="text-sm font-medium">{formatVND(row.original.amountDue)}</span>
+    ),
   },
   {
     accessorKey: "createdAt",

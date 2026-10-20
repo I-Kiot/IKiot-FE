@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { CurrencySuffix } from "@/app/(protected)/exchange/shared/form-fields";
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Pencil, Plus, ShoppingBag, X } from 'lucide-react'
@@ -33,17 +34,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Checkbox } from '@/components/ui/checkbox'
 import type { Product } from '@/types/product'
 import { productFormSchema, type ProductFormValues } from '../../_types/product.types'
 import { useProducts } from '../../_context/products-provider'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
 import { CascadeSelect } from '@/components/ui/cascade-select'
+import { ProductItemImagesField } from '../product-item-images-field'
+import { productApi } from '@/lib/api/product'
 
 const EMPTY_VALUES: ProductFormValues = {
   name: '',
   brandId: null,
   categoryId: null,
   status: 'ACTIVE',
+  isManufacturable: false,
   images: [],
   itemImages: [],
   useParentNameForItem: true,
@@ -74,6 +79,8 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
     categories,
   } = useProducts()
   const [uploading, setUploading] = useState(false)
+  // Còn ảnh phiên bản đang tải lên thì khoá nút Lưu, tránh lưu thiếu ảnh.
+  const [itemImagesUploading, setItemImagesUploading] = useState(false)
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -84,6 +91,14 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
     control: form.control,
     name: 'productDetails',
   })
+  const {
+    fields: attributeFields,
+    append: appendAttribute,
+    remove: removeAttribute,
+    replace: replaceAttributes,
+  } = useFieldArray({ control: form.control, name: 'attributes' })
+  // Sửa hàng hoá: danh sách thuộc tính chỉ có ở GET /products/:id, nên nạp riêng khi mở form.
+  const [attributesLoaded, setAttributesLoaded] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -93,15 +108,32 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
         brandId: currentRow.brandId ?? null,
         categoryId: currentRow.categoryId ?? null,
         status: currentRow.status,
+        isManufacturable: currentRow.isManufacturable ?? false,
         images: currentRow.images ?? [],
         // Not used in edit mode (BE doesn't allow editing productName here),
         // but the schema requires a value.
         useParentNameForItem: true,
+        attributes: undefined,
       })
+      setAttributesLoaded(false)
+      let cancelled = false
+      productApi
+        .getById(currentRow.id)
+        .then((detail) => {
+          if (cancelled) return
+          replaceAttributes(
+            (detail.attributes ?? []).map((a) => ({ id: a.id, name: a.name, unit: a.unit ?? '' })),
+          )
+          setAttributesLoaded(true)
+        })
+        .catch(() => toast.error('Không tải được thuộc tính của hàng hoá'))
+      return () => {
+        cancelled = true
+      }
     } else {
       form.reset(EMPTY_VALUES)
     }
-  }, [open, isEdit, currentRow, form])
+  }, [open, isEdit, currentRow, form, replaceAttributes])
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -110,22 +142,6 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
     try {
       const url = await uploadImage(file)
       form.setValue('images', [{ url, isThumbnail: true }])
-      toast.success('Tải ảnh lên thành công')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Tải ảnh lên thất bại')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const handleItemImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const url = await uploadImage(file)
-      form.setValue('itemImages', [{ url, isThumbnail: true }])
       toast.success('Tải ảnh lên thành công')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err) {
@@ -316,10 +332,34 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                     <SelectContent>
                       <SelectItem value="ACTIVE">Đang kinh doanh</SelectItem>
                       <SelectItem value="INACTIVE">Ngừng kinh doanh</SelectItem>
-                      {/* <SelectItem value="DISCONTINUED">Ngừng sản xuất</SelectItem> */}
+                      <SelectItem value="DISCONTINUED">Ngừng sản xuất</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Bật = đặt xưởng sản xuất được (Tạo yêu cầu sản xuất); tắt = chỉ nhập từ nhà cung cấp */}
+            <FormField
+              control={form.control}
+              name="isManufacturable"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-3">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                      className="mt-0.5 cursor-pointer"
+                    />
+                  </FormControl>
+                  <div className="space-y-1">
+                    <FormLabel className="cursor-pointer">Có thể sản xuất</FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Cho phép đặt xưởng làm mặt hàng này qua yêu cầu sản xuất. Tắt thì chỉ nhập
+                      từ nhà cung cấp.
+                    </p>
+                  </div>
                 </FormItem>
               )}
             />
@@ -379,54 +419,13 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                 )}
 
                 {/* Ảnh riêng cho phiên bản */}
-                <div className="space-y-2">
-                  <FormLabel>Hình ảnh phiên bản</FormLabel>
-                  <div className="flex items-center gap-4">
-                    <div className="size-20 rounded-lg border bg-muted flex items-center justify-center overflow-hidden relative shrink-0">
-                      {form.watch('itemImages')?.[0]?.url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={form.watch('itemImages')?.[0]?.url}
-                          alt="Item preview"
-                          className="object-cover size-full"
-                        />
-                      ) : (
-                        <ShoppingBag className="size-8 text-muted-foreground" />
-                      )}
-                      {uploading && (
-                        <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                          <span className="animate-spin size-4 border-2 border-primary border-t-transparent rounded-full" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleItemImageUpload}
-                          disabled={uploading}
-                          className="cursor-pointer max-w-xs"
-                        />
-                        {form.watch('itemImages')?.[0]?.url && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => form.setValue('itemImages', [])}
-                            disabled={uploading}
-                            className="cursor-pointer text-destructive border-destructive/20 hover:bg-destructive/10"
-                          >
-                            Xóa ảnh
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Nếu để trống, ảnh hàng hóa sẽ được dùng thay thế.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <ProductItemImagesField
+                  value={form.watch('itemImages') ?? []}
+                  onChange={(images) => form.setValue('itemImages', images, { shouldDirty: true })}
+                  getLatest={() => form.getValues('itemImages') ?? []}
+                  onBusyChange={setItemImagesUploading}
+                  hint="Nếu để trống, ảnh hàng hóa sẽ được dùng thay thế."
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -466,18 +465,21 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                         <FormLabel>
                           Giá vốn (đ) <span className="text-destructive">*</span>
                         </FormLabel>
-                        <FormControl>
+                        <div className="relative">
+                          <FormControl>
                           <Input
                             inputMode="numeric"
                             placeholder="0"
-                            className="tabular-nums"
+                            className="tabular-nums pr-7"
                             value={field.value ?? ''}
                             onChange={(e) => {
                               const digits = e.target.value.replace(/\D/g, '')
                               field.onChange(digits ? formatPriceAmount(digits) : '')
                             }}
                           />
-                        </FormControl>
+                          </FormControl>
+                          <CurrencySuffix />
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -490,18 +492,21 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                         <FormLabel>
                           Giá bán (đ) <span className="text-destructive">*</span>
                         </FormLabel>
-                        <FormControl>
+                        <div className="relative">
+                          <FormControl>
                           <Input
                             inputMode="numeric"
                             placeholder="0"
-                            className="tabular-nums"
+                            className="tabular-nums pr-7"
                             value={field.value ?? ''}
                             onChange={(e) => {
                               const digits = e.target.value.replace(/\D/g, '')
                               field.onChange(digits ? formatPriceAmount(digits) : '')
                             }}
                           />
-                        </FormControl>
+                          </FormControl>
+                          <CurrencySuffix />
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -590,7 +595,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                       variant="outline"
                       size="sm"
                       className="cursor-pointer h-7 text-xs"
-                      onClick={() => appendDetail({ name: '', value: '' })}
+                      onClick={() => appendDetail({ name: '', value: '', unit: '' })}
                     >
                       <Plus className="mr-1 size-3.5" />
                       Thêm thuộc tính
@@ -598,7 +603,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                   </div>
                   {detailFields.length === 0 && (
                     <p className="text-xs text-muted-foreground">
-                      VD: Màu sắc - Đỏ, Dung lượng - 512GB
+                      VD: Màu - Óc chó, Kích thước - 140 (đơn vị cm). Đây là thuộc tính của hàng hoá; các phiên bản sau chỉ nhập giá trị.
                     </p>
                   )}
                   <div className="space-y-2">
@@ -613,6 +618,11 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                           placeholder="Giá trị (VD: Đỏ)"
                           className="flex-1"
                           {...form.register(`productDetails.${index}.value`)}
+                        />
+                        <Input
+                          placeholder="Đơn vị (VD: cm)"
+                          className="w-28"
+                          {...form.register(`productDetails.${index}.unit`)}
                         />
                         <Button
                           type="button"
@@ -631,6 +641,54 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
               </>
             )}
 
+            {isEdit && (
+              <div className="space-y-2">
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <FormLabel>Thuộc tính hàng hoá</FormLabel>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer h-7 text-xs"
+                    disabled={!attributesLoaded}
+                    onClick={() => appendAttribute({ name: '', unit: '' })}
+                  >
+                    <Plus className="mr-1 size-3.5" />
+                    Thêm thuộc tính
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {attributesLoaded
+                    ? 'Mỗi phiên bản nhập giá trị cho các thuộc tính này. Xoá một thuộc tính sẽ xoá giá trị của nó trên mọi phiên bản.'
+                    : 'Đang tải thuộc tính...'}
+                </p>
+                {attributeFields.map((field, index) => (
+                  <div key={field.id} className="flex gap-2">
+                    <Input
+                      placeholder="Tên thuộc tính (VD: Màu)"
+                      className="flex-1"
+                      {...form.register(`attributes.${index}.name`)}
+                    />
+                    <Input
+                      placeholder="Đơn vị (VD: cm)"
+                      className="w-28"
+                      {...form.register(`attributes.${index}.unit`)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 cursor-pointer text-muted-foreground hover:text-destructive"
+                      onClick={() => removeAttribute(index)}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <DialogFooter>
               <Button
                 type="button"
@@ -640,7 +698,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
               >
                 Hủy
               </Button>
-              <Button type="submit" className="cursor-pointer">
+              <Button type="submit" disabled={uploading || itemImagesUploading} className="cursor-pointer">
                 {isEdit ? (
                   <>
                     <Pencil className="mr-2 h-4 w-4" />

@@ -14,20 +14,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DataTableEmpty } from '@/components/data-table/data-table-empty'
+import { DataTableLoading } from '@/components/data-table/data-table-loading'
 import { useRoles } from '../../_context/roles-provider'
-import { actionLabel } from '../../_types/role.types'
+import { itemState, usePermissionSections } from '../../_hooks/use-permission-sections'
+import { permissionKey } from '../../_types/role.types'
 
-/** Nhiều nhất bao nhiêu chip quyền hiện trên một dòng trước khi gộp thành "+N". */
-const PERMISSION_CHIP_LIMIT = 4
+const COLUMN_COUNT = 4
 
 export function RolesTable() {
   const { roles, catalog, isLoading, setOpen, setCurrentRow } = useRoles()
   const [query, setQuery] = useState('')
 
-  const labelOf = useMemo(
-    () => new Map(catalog.map((group) => [group.resource, group.label])),
-    [catalog],
-  )
+  const { sections } = usePermissionSections(catalog)
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -75,35 +74,21 @@ export function RolesTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && roles.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground py-10 text-center">
-                  Đang tải...
-                </TableCell>
-              </TableRow>
-            )}
+            {isLoading && roles.length === 0 && <DataTableLoading columnCount={COLUMN_COUNT} />}
 
-            {!isLoading && visible.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground py-10 text-center">
-                  Không có vai trò nào khớp &quot;{query}&quot;
-                </TableCell>
-              </TableRow>
-            )}
+            {!isLoading && visible.length === 0 && <DataTableEmpty columnCount={COLUMN_COUNT} />}
 
             {visible.map((role) => {
-              // Gom theo tài nguyên: "Hàng hóa (4)" đọc được, còn 20 chip
-              // "products:create, products:read, ..." thì không.
-              const byResource = new Map<string, number>()
-              for (const grant of role.permissions) {
-                byResource.set(
-                  grant.resource,
-                  (byResource.get(grant.resource) ?? 0) + 1,
-                )
-              }
-              const chips = [...byResource.entries()]
-              const shown = chips.slice(0, PERMISSION_CHIP_LIMIT)
-              const hidden = chips.length - shown.length
+              // Gom theo các nhóm của màn chọn quyền (Nhân viên bán hàng, Quản lý, ...): đọc bảng là biết vai
+              // trò thiên về việc gì, cùng cách người dùng đã tick lúc tạo.
+              const granted = new Set(role.permissions.map((grant) => permissionKey(grant.resource, grant.action)))
+              const chips = sections
+                .map((section) => ({
+                  section,
+                  // Đếm theo ô của màn chọn quyền (đủ mọi mã mới tính), cùng con số người dùng thấy lúc tick.
+                  on: section.items.filter((item) => itemState(item.keys, granted) === true),
+                }))
+                .filter((chip) => chip.on.length > 0)
 
               return (
                 <TableRow key={role.id}>
@@ -123,21 +108,20 @@ export function RolesTable() {
                       </span>
                     ) : (
                       <div className="flex flex-wrap gap-1">
-                        {shown.map(([resource, count]) => (
-                          <Badge
-                            key={resource}
-                            variant="outline"
-                            title={role.permissions
-                              .filter((grant) => grant.resource === resource)
-                              .map((grant) => actionLabel(grant.action))
-                              .join(', ')}
-                          >
-                            {labelOf.get(resource) ?? resource} ({count})
-                          </Badge>
-                        ))}
-                        {hidden > 0 && (
-                          <Badge variant="secondary">+{hidden} nhóm</Badge>
-                        )}
+                        {chips.map(({ section, on }) => {
+                          const Icon = section.icon
+                          return (
+                            <Badge
+                              key={section.id}
+                              variant="outline"
+                              className="gap-1"
+                              title={on.map((item) => item.label).join(', ')}
+                            >
+                              <Icon className="size-3" />
+                              {section.title} {on.length}/{section.items.length}
+                            </Badge>
+                          )
+                        })}
                       </div>
                     )}
                   </TableCell>

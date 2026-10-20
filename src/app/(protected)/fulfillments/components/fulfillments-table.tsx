@@ -8,8 +8,10 @@ import { useMemo } from "react";
 import { flexRender, getCoreRowModel, type PaginationState, useReactTable } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PackableOrder, Paginated } from "@/types/order-flow";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { fulfillmentsColumns } from "./fulfillments-columns";
-import { FulfillmentsPagination } from "./fulfillments-pagination";
 
 /** Trang và số đơn mỗi trang đang xem - trang cha giữ, đổi là tải lại. */
 export type PackListQuery = { page: number; limit: number };
@@ -19,14 +21,6 @@ export type PackListState =
   | { status: "loading" }
   | { status: "error" }
   | { status: "ready"; result: Paginated<PackableOrder> };
-
-/** Câu hiện thay cho các dòng khi chưa có gì để vẽ; `null` = vẽ các dòng. */
-function placeholderOf(state: PackListState, rowCount: number): string | null {
-  if (state.status === "loading") return "Đang tải...";
-  if (state.status === "error") return "Không tải được danh sách đơn chờ đóng gói - bấm Tải lại để thử lại";
-  if (rowCount === 0) return "Không có đơn nào chờ đóng gói";
-  return null;
-}
 
 interface FulfillmentsTableProps {
   state: PackListState;
@@ -61,8 +55,8 @@ export function FulfillmentsTable({ state, query, onQueryChange, canPack, onPack
     },
   });
 
-  const colSpan = columns.length;
-  const placeholder = placeholderOf(state, table.getRowModel().rows.length);
+  const columnCount = columns.length;
+  const rows = table.getRowModel().rows;
 
   return (
     <div className="space-y-4">
@@ -80,27 +74,37 @@ export function FulfillmentsTable({ state, query, onQueryChange, canPack, onPack
             ))}
           </TableHeader>
           <TableBody>
-            {placeholder !== null ? (
+            {state.status === "loading" && <DataTableLoading columnCount={columnCount} />}
+            {state.status === "error" && (
               <TableRow>
-                <TableCell colSpan={colSpan} className="py-8 text-center text-muted-foreground">
-                  {placeholder}
+                <TableCell colSpan={columnCount} className="py-8 text-center text-muted-foreground">
+                  Không tải được danh sách đơn chờ đóng gói - bấm Tải lại để thử lại
                 </TableCell>
               </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
+            )}
+            {state.status === "ready" && rows.length === 0 && <DataTableEmpty columnCount={columnCount} />}
+            {state.status === "ready" &&
+              rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
                 </TableRow>
-              ))
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>
 
       {result && result.pagination.total > 0 && (
-        <FulfillmentsPagination table={table} total={result.pagination.total} />
+        <DataTablePagination
+          page={query.page}
+          pageCount={result.pagination.totalPages}
+          pageSize={query.limit}
+          total={result.pagination.total}
+          unit="đơn"
+          onPageChange={(page) => onQueryChange({ page, limit: query.limit })}
+          onPageSizeChange={(limit) => onQueryChange({ page: 1, limit })}
+        />
       )}
     </div>
   );

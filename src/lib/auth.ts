@@ -3,6 +3,7 @@
  */
 
 import axios from "axios";
+import type { LocationRef } from "@/types/location";
 
 const AUTH_TOKEN_KEY = "auth_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -71,8 +72,19 @@ export interface User {
   phoneNumber?: string;
   status?: string;
   tenantId?: string;
+  /** The account's posting, as the backend sends it (`User.locationId` + the `location` relation). Null for an owner or admin, who are posted nowhere. */
+  locationId?: string | null;
+  location?: LocationRef | null;
+  /**
+   * `location` split by its type - derived in `normalizeSessionUser`, never sent by the
+   * backend. Kept because ~40 screens read the posting through these two names; deriving
+   * them in that one place is what keeps those screens and the backend's shape in step.
+   */
   branchId?: string;
   warehouseId?: string;
+  /** Nhân viên xưởng (2026-10-09): xưởng (NCC loại WORKSHOP) tài khoản này thuộc về; null với người khác. */
+  workshopId?: string | null;
+  workshop?: { id: string; supplierName: string } | null;
   profile?: {
     firstName?: string;
     lastName?: string;
@@ -163,15 +175,12 @@ export function getSessionRole(): string | undefined {
   return getCachedUser()?.role;
 }
 
+// The access token carries only `sub`, so the posting comes from the cached profile alone - see `normalizeSessionUser`.
 export function getSessionBranchId(): string | undefined {
-  const fromJwt = getJwtPayload()?.branchId;
-  if (typeof fromJwt === "string" && fromJwt) return fromJwt;
   return getCachedUser()?.branchId;
 }
 
 export function getSessionWarehouseId(): string | undefined {
-  const fromJwt = getJwtPayload()?.warehouseId;
-  if (typeof fromJwt === "string" && fromJwt) return fromJwt;
   return getCachedUser()?.warehouseId;
 }
 

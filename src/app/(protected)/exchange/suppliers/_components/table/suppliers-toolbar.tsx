@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Supplier } from '@/types/supplier'
-import { COLUMN_LABELS } from '../../_constants/supplier.constants'
+import { COLUMN_LABELS, SUPPLIER_TYPE_LABELS } from '../../_constants/supplier.constants'
 
 type SuppliersToolbarProps = {
   table: Table<Supplier>
@@ -27,6 +27,7 @@ type SuppliersToolbarProps = {
 
 export function SuppliersToolbar({ table }: SuppliersToolbarProps) {
   const debtFilter = table.getColumn('outstandingDebt')?.getFilterValue() as string
+  const typeFilter = table.getColumn('type')?.getFilterValue() as string
 
   return (
     <div className="flex items-center justify-between">
@@ -40,6 +41,22 @@ export function SuppliersToolbar({ table }: SuppliersToolbarProps) {
             className="pl-9 h-9"
           />
         </div>
+
+        <Select
+          value={typeFilter || 'all'}
+          onValueChange={(value) =>
+            table.getColumn('type')?.setFilterValue(value === 'all' ? undefined : value)
+          }
+        >
+          <SelectTrigger className="cursor-pointer w-44 h-9 text-sm">
+            <SelectValue placeholder="Loại" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả loại</SelectItem>
+            <SelectItem value="GOODS">{SUPPLIER_TYPE_LABELS.GOODS}</SelectItem>
+            <SelectItem value="WORKSHOP">{SUPPLIER_TYPE_LABELS.WORKSHOP}</SelectItem>
+          </SelectContent>
+        </Select>
 
         <Select
           value={debtFilter || 'all'}

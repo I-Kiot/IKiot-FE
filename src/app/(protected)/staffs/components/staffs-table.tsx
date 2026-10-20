@@ -19,8 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -36,6 +34,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { cn } from "@/lib/utils";
 import { getSessionRole } from "@/lib/auth";
 import {
@@ -43,7 +44,6 @@ import {
   canFilterStaffByWarehouse,
 } from "@/components/sidebar/constants/role-permissions";
 import { staffsColumns as columns } from "./staffs-columns";
-import { StaffsEmpty } from "./staffs-empty";
 import { StaffsExpandedPanel } from "./staffs-expanded-panel";
 import { useStaffs } from "./staffs-provider";
 
@@ -115,9 +115,8 @@ export function StaffsTable() {
     },
   });
 
-  const rangeStart =
-    total === 0 ? 0 : (listQuery.page - 1) * listQuery.limit + 1;
-  const rangeEnd = Math.min(listQuery.page * listQuery.limit, total);
+
+  const columnCount = table.getVisibleLeafColumns().length;
 
   return (
     <div className="space-y-4">
@@ -258,17 +257,11 @@ export function StaffsTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {isInitialLoading ? (
-              Array.from({ length: 6 }).map((_, index) => (
-                <TableRow key={index}>
-                  {columns.map((_, cellIndex) => (
-                    <TableCell key={cellIndex}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows?.length ? (
+            {isInitialLoading && <DataTableLoading columnCount={columnCount} />}
+            {!isInitialLoading && table.getRowModel().rows.length === 0 && (
+              <DataTableEmpty columnCount={columnCount} />
+            )}
+            {!isInitialLoading && (
               table.getRowModel().rows.map((row, index, rows) => (
                 <Fragment key={row.id}>
                   <TableRow
@@ -302,7 +295,7 @@ export function StaffsTable() {
                     >
                       <div
                         className={cn(
-                          "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                          "sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out",
                           row.getIsExpanded()
                             ? "grid-rows-[1fr]"
                             : "grid-rows-[0fr]",
@@ -320,68 +313,21 @@ export function StaffsTable() {
                   </TableRow>
                 </Fragment>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length}>
-                  <StaffsEmpty />
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex items-center space-x-2">
-          <Label className="text-sm font-medium">Hiển thị</Label>
-          <Select
-            value={`${listQuery.limit}`}
-            onValueChange={(value) => updatePageSize(Number(value))}
-          >
-            <SelectTrigger className="w-20 cursor-pointer">
-              <SelectValue placeholder={listQuery.limit} />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="hidden sm:block text-sm text-muted-foreground">
-          {total === 0
-            ? "Không có nhân viên"
-            : `Hiển thị ${rangeStart}–${rangeEnd} / ${total} nhân viên`}
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="hidden sm:block text-sm font-medium">
-            Trang{" "}
-            <strong>
-              {listQuery.page} / {totalPages || 1}
-            </strong>
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => updatePage(listQuery.page - 1)}
-            disabled={listQuery.page <= 1 || isFetching}
-            className="cursor-pointer"
-          >
-            Trước
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => updatePage(listQuery.page + 1)}
-            disabled={listQuery.page >= totalPages || isFetching}
-            className="cursor-pointer"
-          >
-            Tiếp
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        page={listQuery.page}
+        pageCount={totalPages}
+        pageSize={listQuery.limit}
+        total={total}
+        unit="nhân viên"
+        disabled={isFetching}
+        onPageChange={updatePage}
+        onPageSizeChange={updatePageSize}
+      />
     </div>
   );
 }

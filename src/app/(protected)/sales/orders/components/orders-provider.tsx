@@ -10,11 +10,13 @@ import { parseLocationKey } from "@/lib/location-key";
 import { useAuthStore } from "@/store/auth-store";
 import {
   ORDER_STATUSES,
+  type OrderAttention,
   type OrderJourneyQuery,
   type OrderListItem,
   type OrderPriority,
   type OrderSort,
   type OrderStatus,
+  type RemittanceStatus,
   type StockCheckStatus,
 } from "@/types/order-flow";
 
@@ -26,6 +28,10 @@ export interface OrdersListQuery {
   status: OrderStatus | "all";
   priority: OrderPriority | "all";
   stockSummary: StockCheckStatus | "all";
+  /** Banner shortcuts: only orders short on the shelf / with a near delivery date. */
+  attention: OrderAttention | "all";
+  /** D-9: orders whose cash is still with the shipper (`PENDING`), or already handed back. */
+  cashRemittanceStatus: RemittanceStatus | "all";
   sort: OrderSort;
   /** Only orders the signed-in account is in charge of. */
   mineOnly: boolean;
@@ -38,6 +44,8 @@ const DEFAULT_LIST_QUERY: OrdersListQuery = {
   status: "all",
   priority: "all",
   stockSummary: "all",
+  attention: "all",
+  cashRemittanceStatus: "all",
   sort: "createdAt",
   mineOnly: false,
 };
@@ -86,7 +94,10 @@ type OrdersProviderProps = {
 };
 
 /** State and fetching for the order list (D-1, `GET /orders`): filters, sort and paging all run on the server. */
-export function OrdersProvider({ children, enabled = true }: OrdersProviderProps) {
+export function OrdersProvider({
+  children,
+  enabled = true,
+}: OrdersProviderProps) {
   // `?status=` mở danh sách đã lọc sẵn (các dòng "Tình trạng đơn" trên dashboard trỏ vào đây).
   // Chỉ đọc lúc mở trang; sau đó bộ lọc trên màn hình là nguồn duy nhất.
   const searchParams = useSearchParams();
@@ -110,7 +121,9 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
   useEffect(() => {
     const timer = setTimeout(() => {
       setListQuery((prev) =>
-        prev.search === keywordInput ? prev : { ...prev, search: keywordInput, page: 1 },
+        prev.search === keywordInput
+          ? prev
+          : { ...prev, search: keywordInput, page: 1 },
       );
     }, 400);
     return () => clearTimeout(timer);
@@ -126,10 +139,19 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
       search: listQuery.search || undefined,
       status: listQuery.status === "all" ? undefined : listQuery.status,
       priority: listQuery.priority === "all" ? undefined : listQuery.priority,
-      stockSummary: listQuery.stockSummary === "all" ? undefined : listQuery.stockSummary,
+      stockSummary:
+        listQuery.stockSummary === "all" ? undefined : listQuery.stockSummary,
+      cashRemittanceStatus:
+        listQuery.cashRemittanceStatus === "all"
+          ? undefined
+          : listQuery.cashRemittanceStatus,
+      attention:
+        listQuery.attention === "all" ? undefined : listQuery.attention,
       sort: listQuery.sort,
       assigneeId: listQuery.mineOnly ? getSessionUserId() : undefined,
       branchId: scope?.locationType === "BRANCH" ? scope.locationId : undefined,
+      // Till sales share the route but are not part of the journey (contract §2).
+      excludePos: true,
     };
   }, [listQuery, locationKey]);
 
@@ -199,6 +221,7 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
 
 export function useOrders() {
   const context = React.useContext(OrdersContext);
-  if (!context) throw new Error("useOrders must be used within <OrdersProvider>");
+  if (!context)
+    throw new Error("useOrders must be used within <OrdersProvider>");
   return context;
 }

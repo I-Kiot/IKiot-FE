@@ -18,6 +18,7 @@ import {
   PackageCheck,
   Truck,
   BarChart3,
+  Factory,
 } from "lucide-react";
 import { type NavItem } from "./types";
 
@@ -88,7 +89,9 @@ export const sidebarItems = {
       { title: "Nhập hàng", url: "/exchange/imports" },
       { title: "Chuyển kho", url: "/exchange/exports" },
       { title: "Điều chỉnh tồn kho", url: "/exchange/adjustments" },
+      { title: "Danh sách cần sản xuất", url: "/exchange/production-list" },
       { title: "Yêu cầu sản xuất", url: "/exchange/production-requests" },
+      { title: "Phiếu xưởng giao", url: "/exchange/production-deliveries" },
     ],
   },
   // `giaoDichBranch` (a BRANCH_MANAGER-only variant without "Nhập hàng") lived here until
@@ -100,6 +103,7 @@ export const sidebarItems = {
     url: "/#",
     icon: ShoppingCart,
     items: [
+      { title: "Tạo đơn hàng", url: "/sales/orders/new" },
       { title: "Danh sách đơn", url: "/sales/orders" },
       { title: "Hoàn hàng", url: "/order-returns" },
       { title: "Hoá đơn", url: "/sales/invoices" },
@@ -111,7 +115,7 @@ export const sidebarItems = {
     url: "/#",
     icon: PackageCheck,
     items: [
-      { title: "Đóng hàng", url: "/fulfillments" },
+      { title: "Đóng đơn", url: "/fulfillments" },
       { title: "Giao hàng", url: "/shipments" },
     ],
   },
@@ -120,6 +124,12 @@ export const sidebarItems = {
     title: "Đơn giao của tôi",
     url: "/shipper",
     icon: Truck,
+  },
+  /** Nhân viên xưởng (2026-10-09): YCSX gửi cho xưởng mình + phiếu giao. Chỉ STAFF gắn xưởng. */
+  xuongCuaToi: {
+    title: "Xưởng của tôi",
+    url: "/workshop",
+    icon: Factory,
   },
 
   // CRM

@@ -218,9 +218,9 @@ export function CustomersExpandedPanel({
                         <TableCell>
                           <Badge
                             variant="secondary"
-                            className={cn('text-xs', ORDER_STATUS_MAP[order.status].className)}
+                            className={cn('text-xs', (ORDER_STATUS_MAP[order.status]?.className ?? ''))}
                           >
-                            {ORDER_STATUS_MAP[order.status].label}
+                            {ORDER_STATUS_MAP[order.status]?.label ?? order.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums text-xs">
