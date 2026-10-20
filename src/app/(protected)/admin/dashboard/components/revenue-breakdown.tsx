@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard } from "./admin-dashboard-provider";
-import { formatNumber } from "../../../dashboard/shared/format";
+import { formatNumber } from "@/lib/stats-format";
 
 const PALETTE = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 

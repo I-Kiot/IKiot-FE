@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard } from "./admin-dashboard-provider";
-import { formatVND } from "../../../dashboard/shared/format";
+import { formatVND } from "@/lib/stats-format";
 
 const STATUS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   PAID: { label: "Thành công", variant: "default" },

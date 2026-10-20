@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
-import { formatVND, formatNumber } from "../shared/format"
+import { formatVND, formatNumber } from "@/lib/stats-format"
 
 function initialsOf(name: string): string {
   return name

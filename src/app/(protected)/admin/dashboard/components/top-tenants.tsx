@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard } from "./admin-dashboard-provider";
-import { formatVND, formatNumber } from "../../../dashboard/shared/format";
+import { formatVND, formatNumber } from "@/lib/stats-format";
 
 export function TopTenants() {
   const { data, isLoading } = useAdminDashboard();

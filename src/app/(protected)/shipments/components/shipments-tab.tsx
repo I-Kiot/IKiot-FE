@@ -174,11 +174,17 @@ function ShipmentsToolbar({
 interface ShipmentsTabProps {
   reloadKey: number;
   onOpen: (shipment: ShipmentSummary) => void;
+  /** Lọc sẵn khi mở trang (link "Giao thất bại" trên dashboard gửi FAILED). */
+  initialStatus?: ShipmentStatus;
 }
 
 /** Bảng lần giao kèm thanh lọc, phân trang ở server. */
-export function ShipmentsTab({ reloadKey, onOpen }: ShipmentsTabProps) {
-  const [query, setQuery] = useState<ShipmentListQuery>({ page: 1, limit: SHIPMENT_PAGE_SIZE });
+export function ShipmentsTab({ reloadKey, onOpen, initialStatus }: ShipmentsTabProps) {
+  const [query, setQuery] = useState<ShipmentListQuery>({
+    page: 1,
+    limit: SHIPMENT_PAGE_SIZE,
+    status: initialStatus,
+  });
   const state = usePagedList(loadShipments, query, setQuery, reloadKey);
 
   return (

@@ -21,7 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, RefreshCw, Wallet } from 'lucide-react'
-import { formatVND, PAYMENT_METHOD_LABELS } from '../dashboard/shared/format'
+import { formatVND, PAYMENT_METHOD_LABELS } from '@/lib/stats-format'
 import {
   useCashflow,
   type CashflowRange,

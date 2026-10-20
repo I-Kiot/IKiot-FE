@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useDashboard } from "./dashboard-provider"
-import { COMPARISON_LABELS, formatCompactVND, formatInstantShort, formatNumber, formatVND } from "../shared/format"
+import { COMPARISON_LABELS, formatCompactVND, formatInstantShort, formatNumber, formatVND } from "@/lib/stats-format"
 
 function DeltaBadge({ pct }: { pct: number | null }) {
   if (pct === null) {

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartStyle, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
-import { formatCompactVND, paymentMethodLabel } from "../shared/format"
+import { formatCompactVND, paymentMethodLabel } from "@/lib/stats-format"
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]
 

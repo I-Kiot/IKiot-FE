@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useDashboard } from "./dashboard-provider"
-import { ORDER_STATUS_LABELS, formatNumber, formatVND } from "../shared/format"
+import { ORDER_STATUS_LABELS, formatNumber, formatVND } from "@/lib/stats-format"
 
 const STATUS_COLOR: Record<string, string> = {
   COMPLETED: "bg-emerald-500",

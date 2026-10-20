@@ -4,7 +4,7 @@ import { Store } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
-import { formatNumber, formatVND } from "../shared/format"
+import { formatNumber, formatVND } from "@/lib/stats-format"
 
 /** Revenue share per branch - only meaningful when the viewer sees more than one. */
 export function BranchRevenue() {

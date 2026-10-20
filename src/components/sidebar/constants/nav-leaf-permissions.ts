@@ -18,6 +18,7 @@ const LEAF_NAV_PERMISSION: Record<string, readonly [string, string]> = {
   // "Sổ thu chi" is one of them (`/stats/cashflow` + `/stats/cashflow/transactions`), not
   // the `cash_flows` module, so `cash_flows:read` is the wrong gate for it.
   "/dashboard": ["reports", "read"],
+  "/reports": ["reports", "read"],
   "/cashflow": ["reports", "read"],
   // "/shipper" (Đơn giao của tôi) cố ý không có ở đây: shipper có thể là chủ shop hay người phụ
   // trách đơn - không cần `shipments:deliver` (chốt 2026-10-06) - và `GET /shipments/mine` chỉ trả

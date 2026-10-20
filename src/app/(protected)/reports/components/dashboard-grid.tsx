@@ -1,15 +1,12 @@
-// [Dashboard – layout switch by active location]
+// [Báo cáo chi tiết – bố cục theo địa điểm đang chọn]
 'use client'
 
 import { Warehouse } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDashboard } from './dashboard-provider'
 import { DashboardToolbar } from './dashboard-toolbar'
-import { MetricsOverview } from './metrics-overview'
 import { RevenueComparison } from './revenue-comparison'
-import { SalesChart } from './sales-chart'
 import { RevenueByStaff } from './recent-transactions'
-import { TopProducts } from './top-products'
 import { TopCustomers } from './top-customers'
 import { BranchRevenue } from './branch-revenue'
 import { OrderStatusChart } from './order-status-chart'
@@ -44,10 +41,8 @@ export function DashboardGrid() {
     <div className="@container/main space-y-6">
       <DashboardToolbar />
 
-      {/* Headline: this period at a glance, then the calendar milestones, then the trend. */}
-      <MetricsOverview />
+      {/* Các mốc thời gian cố định (hôm nay, tuần, tháng...) - KPI và xu hướng theo kỳ đã nằm ở dashboard. */}
       <RevenueComparison />
-      <SalesChart />
 
       {/* Detail is split by question so no tab is a wall of cards. */}
       <Tabs defaultValue="sales" className="space-y-6">
@@ -60,7 +55,6 @@ export function DashboardGrid() {
         <TabsContent value="sales" className="space-y-6">
           <div className="grid grid-cols-1 gap-6 @5xl:grid-cols-2">
             <RevenueBreakdown />
-            <TopProducts />
             {showBranches && <BranchRevenue />}
             <TopCustomers />
             <RevenueByStaff />

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard } from "./admin-dashboard-provider";
-import { formatNumber, generateDateBuckets } from "../../../dashboard/shared/format";
+import { formatNumber, generateDateBuckets } from "@/lib/stats-format";
 
 const chartConfig = { count: { label: "Cửa hàng mới", color: "var(--primary)" } };
 

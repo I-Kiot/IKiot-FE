@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
-import { formatCompactVND, formatNumber } from "../shared/format"
+import { formatCompactVND, formatNumber } from "@/lib/stats-format"
 
 // Monday first, as the working week reads in Vietnam; values are Postgres DOW (0 = Sunday).
 const WEEKDAYS = [

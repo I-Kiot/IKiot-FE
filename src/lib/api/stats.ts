@@ -14,25 +14,99 @@ export interface StatsOverview {
   orderCount: number;
   customerCount: number;
   aov: number;
+  /** Doanh thu − phí ship − phí sàn − giá vốn. Ước tính: dòng chưa có giá vốn tính là 0. */
+  grossProfit: number;
+  /** Số dòng hàng chưa có giá vốn - > 0 thì lợi nhuận đang bị thổi lên. */
+  linesMissingCost: number;
   changePct: {
     revenue: number | null;
     orderCount: number | null;
     customerCount: number | null;
     aov: number | null;
+    grossProfit: number | null;
   };
   period: { fromDate: string; toDate: string };
   previousPeriod: { fromDate: string; toDate: string };
 }
 
 export interface RevenueSeriesPoint {
+  /** `YYYY-MM-DDTHH` (giờ), `YYYY-MM-DD` (ngày) hoặc `YYYY-MM` (tháng), theo giờ Việt Nam. */
   bucket: string;
   revenue: number;
   orderCount: number;
 }
 
+export type RevenueGroupBy = 'hour' | 'day' | 'month';
+
 export interface RevenueSeries {
-  groupBy: 'day' | 'month';
+  groupBy: RevenueGroupBy;
   series: RevenueSeriesPoint[];
+}
+
+/** Nhóm tình trạng đơn trên dashboard (`GET /stats/order-pipeline`). */
+export type OrderPipelineKey =
+  | 'PENDING_CONFIRMATION'
+  | 'PROCESSING'
+  | 'AWAITING_SHIPMENT'
+  | 'SHIPPING'
+  | 'DELIVERY_FAILED';
+
+export interface OrderPipelineStage {
+  key: OrderPipelineKey;
+  /** Các trạng thái đơn nhóm này gom lại. */
+  statuses: string[];
+  count: number;
+}
+
+export interface OrderPipeline {
+  stages: OrderPipelineStage[];
+}
+
+export type StockAgingLevel = 'NORMAL' | 'WARNING' | 'ATTENTION' | 'STALE';
+
+export interface StockAlertItem {
+  inventoryId: string;
+  productItemId: string;
+  productName: string;
+  sku: string | null;
+  locationId: string;
+  locationName: string;
+  locationType: LocationType;
+  /** Tồn trên kệ = tồn − đã đóng gói cho đơn. */
+  shelf: number;
+  minStock: number;
+  /** Số ngày chưa bán; null khi kệ trống. */
+  daysIdle: number | null;
+  agingLevel: StockAgingLevel | null;
+}
+
+export interface StockAlerts {
+  lowStockThreshold: number;
+  counts: {
+    outOfStock: number;
+    lowStock: number;
+    belowMin: number;
+    aging: { warning: number; attention: number; stale: number };
+  };
+  items: {
+    outOfStock: StockAlertItem[];
+    lowStock: StockAlertItem[];
+    belowMin: StockAlertItem[];
+    aging: StockAlertItem[];
+  };
+}
+
+export interface SlowProductItem {
+  productItemId: string;
+  productName: string;
+  sku: string | null;
+  shelf: number;
+  quantity: number;
+  revenue: number;
+}
+
+export interface SlowProducts {
+  products: SlowProductItem[];
 }
 
 export interface RevenueByPaymentMethodItem {
@@ -274,8 +348,17 @@ export const statsApi = {
   getOverview: (params?: StatsDateRangeParams) =>
     getStats<StatsOverview>('/stats/overview', params),
 
-  getRevenue: (params?: StatsDateRangeParams & { groupBy?: 'day' | 'month' }) =>
+  getRevenue: (params?: StatsDateRangeParams & { groupBy?: RevenueGroupBy }) =>
     getStats<RevenueSeries>('/stats/revenue', params),
+
+  getOrderPipeline: (params?: { branchId?: string }) =>
+    getStats<OrderPipeline>('/stats/order-pipeline', params),
+
+  getStockAlerts: (params?: { branchId?: string; warehouseId?: string; lowStockThreshold?: number }) =>
+    getStats<StockAlerts>('/stats/stock-alerts', params),
+
+  getSlowProducts: (params?: StatsDateRangeParams & { limit?: number }) =>
+    getStats<SlowProducts>('/stats/slow-products', params),
 
   getRevenueByPaymentMethod: (params?: StatsDateRangeParams) =>
     getStats<RevenueByPaymentMethod>('/stats/revenue-by-payment-method', params),
