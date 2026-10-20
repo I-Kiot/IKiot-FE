@@ -117,8 +117,8 @@ export function usePermissionSections(groups: PermissionResourceGroup[]) {
 
 /**
  * Bật / tắt một loạt ô. Bật: thêm mã của ô và `requires`. Tắt: chỉ gỡ những mã không còn ô nào khác (đang
- * bật, ngoài các ô vừa tắt) cần đến - một mã có thể thuộc nhiều ô ("Tạo đơn" và "Xem khách hàng" cùng chứa
- * `customers:read`), tắt ô này không được làm hỏng ô kia.
+ * bật, ngoài các ô vừa tắt) cần đến - một mã có thể thuộc nhiều ô ("Tạo đơn" và "Xem đơn của chi nhánh mình" cùng chứa
+ * `orders:read`), tắt ô này không được làm hỏng ô kia.
  */
 export function toggleItems(
   selected: Set<string>,

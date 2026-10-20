@@ -75,10 +75,10 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
         items: [
           { keys: ['orders:read'], label: 'Xem đơn của chi nhánh mình' },
           {
-            keys: ['orders:create', 'customers:create', 'promotions:calculate', 'promotions:apply'],
+            keys: ['orders:create', 'promotions:calculate', 'promotions:apply'],
             label: 'Tạo đơn',
-            hint: 'Đơn tạo tay và bán tại quầy - gồm chọn / thêm khách và áp khuyến mãi',
-            requires: ['orders:read', 'customers:read', 'promotions:read'],
+            hint: 'Đơn tạo tay và bán tại quầy - gồm áp khuyến mãi. Xem / thêm khách là quyền mặc định của mọi nhân viên',
+            requires: ['orders:read', 'promotions:read'],
           },
           { keys: ['orders:pay_offline'], label: 'Thu tiền mặt tại quầy', requires: ORDERS_READ },
           {
@@ -92,8 +92,7 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
       {
         title: 'Khách hàng, khuyến mãi & hoàn hàng',
         items: [
-          { keys: ['customers:read'], label: 'Xem danh sách khách hàng' },
-          { keys: ['customers:update'], label: 'Sửa thông tin khách hàng', requires: ['customers:read'] },
+          { keys: ['customers:update'], label: 'Sửa thông tin khách hàng' },
           { keys: ['promotions:read'], label: 'Xem danh sách khuyến mãi' },
           { keys: ['returns:read'], label: 'Xem phiếu hoàn hàng' },
         ],
@@ -190,7 +189,7 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
             label: 'Quản lý khuyến mãi',
             requires: ['promotions:read'],
           },
-          { keys: ['customers:delete'], label: 'Xoá khách hàng', requires: ['customers:read'] },
+          { keys: ['customers:delete'], label: 'Xoá khách hàng' },
         ],
       },
       {
