@@ -6,8 +6,10 @@ import { ArrowRight, Play, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DotPattern } from "@/components/dot-pattern";
+import { useLandingSession } from "../hooks/use-landing-session";
 
 export function HeroSection() {
+  const { user, homeHref } = useLandingSession();
   return (
     <section
       id="hero"
@@ -45,8 +47,8 @@ export function HeroSection() {
           {/* CTA Buttons */}
           <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" className="text-base cursor-pointer" asChild>
-              <Link href="/sign-up">
-                Bắt đầu dùng thử
+              <Link href={user ? homeHref : "/sign-up"}>
+                {user ? "Vào trang quản lý" : "Bắt đầu dùng thử"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>

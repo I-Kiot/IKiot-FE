@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Image3D } from "@/components/image-3d";
+import { useLandingSession } from "../hooks/use-landing-session";
 
 const firstGroupFeatures = [
   {
@@ -80,6 +81,7 @@ const secondGroupFeatures = [
 ];
 
 export function FeaturesSection() {
+  const { user, homeHref } = useLandingSession();
   return (
     <section id="features" className="py-24 sm:py-32 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -145,8 +147,8 @@ export function FeaturesSection() {
 
             <div className="flex flex-col sm:flex-row gap-4 pe-4 pt-2">
               <Button size="lg" className="cursor-pointer" asChild>
-                <a href="/sign-up" className="flex items-center">
-                  Dùng thử ngay
+                <a href={user ? homeHref : "/sign-up"} className="flex items-center">
+                  {user ? "Vào trang quản lý" : "Dùng thử ngay"}
                   <ArrowRight className="ms-2 size-4" aria-hidden="true" />
                 </a>
               </Button>

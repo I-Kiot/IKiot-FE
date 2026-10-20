@@ -5,8 +5,10 @@ import { ArrowRight, TrendingUp, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useLandingSession } from "../hooks/use-landing-session";
 
 export function CTASection() {
+  const { user, homeHref } = useLandingSession();
   return (
     <section className="py-16 lg:py-24 bg-muted/80">
       <div className="container mx-auto px-4 lg:px-8">
@@ -61,9 +63,9 @@ export function CTASection() {
                   className="cursor-pointer px-8 py-6 text-lg font-medium"
                   asChild
                 >
-                  <Link href="/sign-up">
+                  <Link href={user ? homeHref : "/sign-up"}>
                     <Package className="me-2 size-5" />
-                    Bắt đầu dùng thử miễn phí
+                    {user ? "Vào trang quản lý" : "Bắt đầu dùng thử miễn phí"}
                   </Link>
                 </Button>
                 <Button
