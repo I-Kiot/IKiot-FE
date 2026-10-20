@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -37,9 +38,12 @@ export default function OrdersPage() {
         }
       />
       {canView ? (
-        <OrdersProvider>
-          <OrdersTable />
-        </OrdersProvider>
+        // Suspense vì OrdersProvider đọc `useSearchParams` (lọc sẵn từ link dashboard) - Next bắt buộc khi build.
+        <Suspense>
+          <OrdersProvider>
+            <OrdersTable />
+          </OrdersProvider>
+        </Suspense>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-16 text-center">
           <h2 className="text-lg font-semibold">Không có quyền truy cập</h2>

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
-import { formatVND, formatNumber } from "../shared/format"
+import { formatVND, formatNumber } from "@/lib/stats-format"
 
 const LOW_STOCK_THRESHOLD_OPTIONS = [5, 10, 20, 50]
 

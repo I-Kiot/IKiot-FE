@@ -1,21 +1,23 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import { getSessionUserId } from "@/lib/auth";
 import { parseLocationKey } from "@/lib/location-key";
 import { useAuthStore } from "@/store/auth-store";
-import type {
-  OrderAttention,
-  OrderJourneyQuery,
-  OrderListItem,
-  OrderPriority,
-  OrderSort,
-  OrderStatus,
-  RemittanceStatus,
-  StockCheckStatus,
+import {
+  ORDER_STATUSES,
+  type OrderAttention,
+  type OrderJourneyQuery,
+  type OrderListItem,
+  type OrderPriority,
+  type OrderSort,
+  type OrderStatus,
+  type RemittanceStatus,
+  type StockCheckStatus,
 } from "@/types/order-flow";
 
 /** The list's own filters; "all" = not sent. */
@@ -80,14 +82,29 @@ function errorMessage(error: unknown): string {
   );
 }
 
+/** Trạng thái lấy từ URL; giá trị lạ (gõ tay, link cũ) coi như không lọc. */
+function statusFromUrl(value: string | null): OrderStatus | "all" {
+  const known = ORDER_STATUSES.find((status) => status === value);
+  return known ?? "all";
+}
+
 type OrdersProviderProps = {
   children: React.ReactNode;
   enabled?: boolean;
 };
 
 /** State and fetching for the order list (D-1, `GET /orders`): filters, sort and paging all run on the server. */
-export function OrdersProvider({ children, enabled = true }: OrdersProviderProps) {
-  const [listQuery, setListQuery] = useState<OrdersListQuery>(DEFAULT_LIST_QUERY);
+export function OrdersProvider({
+  children,
+  enabled = true,
+}: OrdersProviderProps) {
+  // `?status=` mở danh sách đã lọc sẵn (các dòng "Tình trạng đơn" trên dashboard trỏ vào đây).
+  // Chỉ đọc lúc mở trang; sau đó bộ lọc trên màn hình là nguồn duy nhất.
+  const searchParams = useSearchParams();
+  const [listQuery, setListQuery] = useState<OrdersListQuery>(() => ({
+    ...DEFAULT_LIST_QUERY,
+    status: statusFromUrl(searchParams.get("status")),
+  }));
   const [keywordInput, setKeywordInput] = useState("");
   const [result, setResult] = useState<ListResult | null>(null);
   const locationKey = useAuthStore((state) => state.locationKey);
@@ -104,7 +121,9 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
   useEffect(() => {
     const timer = setTimeout(() => {
       setListQuery((prev) =>
-        prev.search === keywordInput ? prev : { ...prev, search: keywordInput, page: 1 },
+        prev.search === keywordInput
+          ? prev
+          : { ...prev, search: keywordInput, page: 1 },
       );
     }, 400);
     return () => clearTimeout(timer);
@@ -120,10 +139,14 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
       search: listQuery.search || undefined,
       status: listQuery.status === "all" ? undefined : listQuery.status,
       priority: listQuery.priority === "all" ? undefined : listQuery.priority,
-      stockSummary: listQuery.stockSummary === "all" ? undefined : listQuery.stockSummary,
+      stockSummary:
+        listQuery.stockSummary === "all" ? undefined : listQuery.stockSummary,
       cashRemittanceStatus:
-        listQuery.cashRemittanceStatus === "all" ? undefined : listQuery.cashRemittanceStatus,
-      attention: listQuery.attention === "all" ? undefined : listQuery.attention,
+        listQuery.cashRemittanceStatus === "all"
+          ? undefined
+          : listQuery.cashRemittanceStatus,
+      attention:
+        listQuery.attention === "all" ? undefined : listQuery.attention,
       sort: listQuery.sort,
       assigneeId: listQuery.mineOnly ? getSessionUserId() : undefined,
       branchId: scope?.locationType === "BRANCH" ? scope.locationId : undefined,
@@ -198,6 +221,7 @@ export function OrdersProvider({ children, enabled = true }: OrdersProviderProps
 
 export function useOrders() {
   const context = React.useContext(OrdersContext);
-  if (!context) throw new Error("useOrders must be used within <OrdersProvider>");
+  if (!context)
+    throw new Error("useOrders must be used within <OrdersProvider>");
   return context;
 }

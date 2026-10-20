@@ -3,12 +3,14 @@
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
+  ORDER_PAYMENT_STATUS_LABELS,
   ORDER_PRIORITY_LABELS,
   SHIPMENT_STATUS_LABELS,
   isDeliveryFailed,
   type ShipmentStatus,
   ORDER_STATUS_LABELS,
   STOCK_CHECK_STATUS_LABELS,
+  type OrderPaymentStatus,
   type OrderPriority,
   type OrderStatus,
   type StockCheckStatus,
@@ -36,6 +38,15 @@ const ORDER_STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   PENDING: "outline",
 };
 
+/** Còn nợ = warning, đủ = success, đã trả lại tiền = secondary. */
+const PAYMENT_STATUS_VARIANT: Record<OrderPaymentStatus, BadgeVariant> = {
+  UNPAID: "outline",
+  PARTIALLY_PAID: "warning",
+  PAID: "success",
+  PARTIALLY_REFUNDED: "secondary",
+  REFUNDED: "secondary",
+};
+
 const PRIORITY_VARIANT: Record<OrderPriority, BadgeVariant> = {
   NORMAL: "outline",
   HIGH: "warning",
@@ -59,6 +70,13 @@ export function orderStatusDisplay(
   return {
     label: ORDER_STATUS_LABELS[status] ?? status,
     variant: ORDER_STATUS_VARIANT[status] ?? "outline",
+  };
+}
+
+export function paymentStatusDisplay(status: OrderPaymentStatus): BadgeDisplay {
+  return {
+    label: ORDER_PAYMENT_STATUS_LABELS[status] ?? status,
+    variant: PAYMENT_STATUS_VARIANT[status] ?? "outline",
   };
 }
 

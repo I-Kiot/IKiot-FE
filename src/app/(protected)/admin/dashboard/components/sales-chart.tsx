@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard, type AdminRange } from "./admin-dashboard-provider";
-import { formatCompactVND, generateDateBuckets } from "../../../dashboard/shared/format";
+import { formatCompactVND, generateDateBuckets } from "@/lib/stats-format";
 
 const chartConfig = {
   revenue: { label: "Doanh thu", color: "var(--primary)" },

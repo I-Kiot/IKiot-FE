@@ -20,11 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet } from 'lucide-react'
 import { DataTableEmpty } from '@/components/data-table/data-table-empty'
 import { DataTableLoading } from '@/components/data-table/data-table-loading'
 import { DataTablePagination } from '@/components/data-table/data-table-pagination'
-import { formatVND, PAYMENT_METHOD_LABELS } from '../dashboard/shared/format'
+import { formatVND, PAYMENT_METHOD_LABELS } from '@/lib/stats-format'
 import {
   useCashflow,
   type CashflowRange,

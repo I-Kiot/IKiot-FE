@@ -17,6 +17,7 @@ import {
   Vault,
   PackageCheck,
   Truck,
+  BarChart3,
   Factory,
 } from "lucide-react";
 import { type NavItem } from "./types";
@@ -27,6 +28,12 @@ export const sidebarItems = {
     title: "Tổng quan",
     url: "/dashboard",
     icon: LayoutDashboard,
+  },
+  // Phân tích sâu tách khỏi dashboard tổng quan (2026-10-20).
+  baoCao: {
+    title: "Báo cáo",
+    url: "/reports",
+    icon: BarChart3,
   },
   soThuChi: {
     title: "Sổ thu chi",
