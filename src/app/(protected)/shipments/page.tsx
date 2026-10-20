@@ -1,6 +1,6 @@
 "use client";
 
-// Màn Giao hàng (C-9): tab "Chờ giao" (đơn đã đóng gói, giao cho vận chuyển) và tab "Lần giao" (theo dõi,
+// Màn Giao hàng (C-9): tab "Chờ vận chuyển" (đơn đã đóng gói, giao cho vận chuyển) và tab "Theo dõi đơn hàng" (theo dõi,
 // chuyển Đang vận chuyển, đổi shipper, nhật trình, giao không thành). Trang giữ state chung và mở dialog.
 
 import { Suspense, useCallback, useState } from "react";
@@ -30,11 +30,12 @@ export default function ShipmentsPage() {
 }
 
 function ShipmentsScreen() {
-  // `?tab=shipments&status=FAILED` (link "Giao thất bại" trên dashboard) mở thẳng tab Lần giao đã lọc.
+  // `?tab=shipments&status=FAILED` (link "Giao thất bại" trên dashboard) mở thẳng tab Theo dõi đã lọc;
+  // `?open=<id>` mở sẵn chi tiết một lần giao.
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "shipments" ? "shipments" : "ready";
   const initialStatus = shipmentStatusFromUrl(searchParams.get("status"));
-  // Một khoá tải lại chung: thao tác ở một chỗ đổi dữ liệu ở cả hai tab (đơn rời "Chờ giao", lần giao hiện ở "Lần giao") và ở sheet.
+  // Một khoá tải lại chung: thao tác ở một chỗ đổi dữ liệu ở cả hai tab (đơn rời "Chờ vận chuyển", lần giao hiện ở "Theo dõi") và ở sheet.
   const [reloadKey, setReloadKey] = useState(0);
   const [handOverOrder, setHandOverOrder] = useState<HandOverReadyOrder | null>(null);
   const [openShipmentId, setOpenShipmentId] = useState<string | null>(searchParams.get("open"));
@@ -90,5 +91,3 @@ function ShipmentsScreen() {
     </div>
   );
 }
-
-

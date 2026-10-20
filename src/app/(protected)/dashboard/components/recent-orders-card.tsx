@@ -21,7 +21,8 @@ export function RecentOrdersCard() {
   const router = useRouter();
   const { branchId, liveVersion } = useOverview();
   const load = useCallback(
-    () => orderJourneyApi.getList({ page: 1, limit: RECENT_LIMIT, sort: "createdAt", branchId }),
+    // Bỏ đơn bán tại quầy, như trang Đơn hàng: chúng nằm ngoài hành trình đơn nên trang chi tiết không dành cho chúng.
+    () => orderJourneyApi.getList({ page: 1, limit: RECENT_LIMIT, sort: "createdAt", branchId, excludePos: true }),
     [branchId],
   );
   const { data, isLoading, failed } = useAsyncData(load, liveVersion);
