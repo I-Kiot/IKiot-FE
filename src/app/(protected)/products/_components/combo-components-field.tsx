@@ -45,6 +45,14 @@ export function toComboRows(components: ComboComponent[] | undefined): ComboComp
   }))
 }
 
+/** Khớp `MAX_COMBO_COMPONENT_QUANTITY` của BE. */
+const MAX_COMBO_COMPONENT_QUANTITY = 999
+
+/** Có món nào có số lượng ngoài 1…999 (để trống = 0) - form chặn lưu khi đúng. */
+export function hasInvalidQuantity(rows: ComboComponentRow[]): boolean {
+  return rows.some((row) => !(row.quantity >= 1 && row.quantity <= MAX_COMBO_COMPONENT_QUANTITY))
+}
+
 export function toComboPayload(rows: ComboComponentRow[]): ComboComponentPayload[] {
   return rows.map(({ componentItemId, quantity }) => ({ componentItemId, quantity }))
 }
@@ -69,7 +77,12 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
     const timer = setTimeout(async () => {
       setLoading(true)
       try {
-        const rows = await productApi.listItems({ search: search.trim() || undefined, limit: 20 })
+        // Lọc hàng đã ngừng ở BE để giới hạn 20 dòng áp lên hàng chọn được.
+        const rows = await productApi.listItems({
+          search: search.trim() || undefined,
+          limit: 20,
+          excludeDiscontinued: true,
+        })
         if (!cancelled) setOptions(rows)
       } catch {
         if (!cancelled) setOptions([])
@@ -84,9 +97,8 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
   }, [open, search])
 
   const chosen = new Set(value.map((row) => row.componentItemId))
-  const selectable = options.filter(
-    (option) => option.id !== selfId && !chosen.has(option.id) && option.itemType !== 'SERVICE',
-  )
+  // Hàng đã ngừng kinh doanh đã bị lọc ở BE (`excludeDiscontinued`). Dịch vụ (VD: lắp đặt) được làm món combo.
+  const selectable = options.filter((option) => option.id !== selfId && !chosen.has(option.id))
 
   function add(option: ProductItemListEntry) {
     onChange([
@@ -104,9 +116,7 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
     setSearch('')
   }
 
-  function setQuantity(index: number, raw: string) {
-    const digits = raw.replace(/\D/g, '')
-    const quantity = Math.max(1, Number(digits || 1))
+  function setQuantity(index: number, quantity: number) {
     onChange(value.map((row, i) => (i === index ? { ...row, quantity } : row)))
   }
 
@@ -166,13 +176,7 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
                 </span>
                 <span className="text-xs text-muted-foreground">{row.sku}</span>
               </div>
-              <Input
-                inputMode="numeric"
-                aria-label="Số lượng"
-                className="w-20 tabular-nums"
-                value={row.quantity}
-                onChange={(e) => setQuantity(index, e.target.value)}
-              />
+              <QuantityInput value={row.quantity} onCommit={(quantity) => setQuantity(index, quantity)} />
               <Button
                 type="button"
                 variant="ghost"
@@ -187,5 +191,50 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Ô số lượng giữ chuỗi người đang gõ, để xoá trắng rồi gõ lại được (ép về 1 ngay khi rỗng làm
+ * "1" → xoá → gõ "4" thành 14). Ô trống đẩy lên 0 - form thấy không hợp lệ và chặn lưu
+ * (`hasInvalidQuantity`), nên không bao giờ lưu một số người dùng không còn thấy. Rời ô khi còn
+ * trống thì trả lại số hợp lệ gần nhất.
+ */
+function QuantityInput({ value, onCommit }: { value: number; onCommit: (quantity: number) => void }) {
+  const [draft, setDraft] = useState(value >= 1 ? String(value) : '')
+  const [lastValue, setLastValue] = useState(value)
+  const [lastValid, setLastValid] = useState(value >= 1 ? value : 1)
+  // Giá trị đổi từ ngoài (nạp lại form) thì hiện theo - điều chỉnh state lúc render, không dùng effect.
+  if (value !== lastValue) {
+    setLastValue(value)
+    setDraft(value >= 1 ? String(value) : '')
+    if (value >= 1) setLastValid(value)
+  }
+
+  const commit = (quantity: number) => {
+    setLastValue(quantity)
+    if (quantity >= 1) setLastValid(quantity)
+    onCommit(quantity)
+  }
+
+  return (
+    <Input
+      inputMode="numeric"
+      aria-label="Số lượng"
+      aria-invalid={!(Number(draft) >= 1)}
+      className="w-20 tabular-nums"
+      value={draft}
+      onChange={(e) => {
+        // Tối đa 3 chữ số = MAX_COMBO_COMPONENT_QUANTITY (999) ở BE.
+        const digits = e.target.value.replace(/\D/g, '').slice(0, 3)
+        setDraft(digits)
+        commit(Number(digits) || 0)
+      }}
+      onBlur={() => {
+        if (Number(draft) >= 1) return
+        setDraft(String(lastValid))
+        commit(lastValid)
+      }}
+    />
   )
 }
