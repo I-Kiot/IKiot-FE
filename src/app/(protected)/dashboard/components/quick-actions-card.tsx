@@ -35,17 +35,17 @@ export function QuickActionsCard() {
 
   return (
     <WidgetCard title="Thao tác nhanh" icon={Zap} tone="amber">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-1 xl:grid-cols-6">
         {visible.map((action) => {
           const Icon = action.icon;
           return (
             <Link
               key={action.href}
               href={action.href}
-              className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border border-transparent p-2 text-center transition-colors hover:border-border hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+              className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border border-transparent p-1.5 text-center transition-colors hover:border-border hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
             >
-              <span className={`flex size-10 items-center justify-center rounded-lg ${TONE_TILE[action.tone]}`}>
-                <Icon className="size-5" aria-hidden />
+              <span className={`flex size-8 items-center justify-center rounded-lg ${TONE_TILE[action.tone]}`}>
+                <Icon className="size-4" aria-hidden />
               </span>
               <span className="text-xs font-medium leading-tight">{action.label}</span>
             </Link>

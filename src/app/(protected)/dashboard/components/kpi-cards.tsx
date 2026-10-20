@@ -74,7 +74,7 @@ export function KpiCards() {
     return (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-[124px] w-full rounded-xl" />
+          <Skeleton key={index} className="h-[92px] w-full rounded-xl" />
         ))}
       </div>
     );
@@ -91,10 +91,10 @@ export function KpiCards() {
       {metricsOf(data).map((metric) => {
         const Icon = metric.icon;
         return (
-          <Card key={metric.key} className="gap-3 p-5">
+          <Card key={metric.key} className="gap-1.5 px-4 py-3">
             <div className="flex items-center gap-3">
-              <span className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${TONE_TILE[metric.tone]}`}>
-                <Icon className="size-5" aria-hidden />
+              <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${TONE_TILE[metric.tone]}`}>
+                <Icon className="size-4" aria-hidden />
               </span>
               <span className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
                 {metric.title}
@@ -110,7 +110,7 @@ export function KpiCards() {
                 )}
               </span>
             </div>
-            <p className="truncate text-2xl font-semibold tabular-nums" title={metric.value}>
+            <p className="truncate text-xl font-semibold tabular-nums" title={metric.value}>
               {metric.value}
             </p>
             <ChangeBadge change={metric.change} previousLabel={resolved.previousLabel} />

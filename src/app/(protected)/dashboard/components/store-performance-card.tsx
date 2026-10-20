@@ -58,15 +58,15 @@ export function StorePerformanceCard() {
     body = <WidgetMessage>Không tải được hiệu suất cửa hàng.</WidgetMessage>;
   } else {
     body = (
-      <div className={`space-y-3 transition-opacity ${isLoading ? "opacity-60" : ""}`}>
+      <div className={`space-y-2 transition-opacity ${isLoading ? "opacity-60" : ""}`}>
         <p className="text-xs text-muted-foreground">
           Trên {formatNumber(data.totalCount)} đơn tạo trong kỳ
         </p>
         <div className="grid grid-cols-3 gap-2">
           {ratesOf(data).map((rate) => (
-            <div key={rate.label} className="rounded-lg border p-3" title={`${formatNumber(rate.count)} ${rate.hint}`}>
+            <div key={rate.label} className="rounded-lg border px-2.5 py-1.5" title={`${formatNumber(rate.count)} ${rate.hint}`}>
               <p className="text-xs text-muted-foreground">{rate.label}</p>
-              <p className={`text-xl font-semibold tabular-nums ${rate.value === null ? "text-muted-foreground" : TONE_TEXT[rate.tone]}`}>
+              <p className={`text-lg font-semibold tabular-nums ${rate.value === null ? "text-muted-foreground" : TONE_TEXT[rate.tone]}`}>
                 {rate.value === null ? "—" : `${rate.value}%`}
               </p>
               <p className="text-xs tabular-nums text-muted-foreground">{formatNumber(rate.count)} đơn</p>

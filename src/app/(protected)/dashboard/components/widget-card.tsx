@@ -24,13 +24,14 @@ interface WidgetCardProps {
 
 export function WidgetCard({ title, icon: Icon, tone, viewAll, actions, className, children }: WidgetCardProps) {
   return (
-    <Card className={`gap-4 ${className ?? ""}`}>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+    // min-h-0 + nội dung tự cuộn: trên màn rộng dashboard vừa một màn hình, thẻ nào dài thì cuộn trong thẻ.
+    <Card className={`min-h-0 gap-3 py-4 ${className ?? ""}`}>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${TONE_TILE[tone]}`}>
+          <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${TONE_TILE[tone]}`}>
             <Icon className="size-4" aria-hidden />
           </span>
-          <CardTitle className="truncate text-base">{title}</CardTitle>
+          <CardTitle className="truncate text-sm">{title}</CardTitle>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {actions}
@@ -45,12 +46,12 @@ export function WidgetCard({ title, icon: Icon, tone, viewAll, actions, classNam
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1">{children}</CardContent>
+      <CardContent className="min-h-0 flex-1 overflow-y-auto px-4">{children}</CardContent>
     </Card>
   );
 }
 
 /** Dòng thông báo trong một widget khi không tải được hoặc không có gì để hiện. */
 export function WidgetMessage({ children }: { children: ReactNode }) {
-  return <p className="py-6 text-center text-sm text-muted-foreground">{children}</p>;
+  return <p className="py-4 text-center text-sm text-muted-foreground">{children}</p>;
 }
