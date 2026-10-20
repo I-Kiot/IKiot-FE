@@ -243,10 +243,24 @@ export function ProductsExpandedPanel({
                       <span className="text-xs text-muted-foreground">
                         Tên phiên bản
                       </span>
-                      <span className="block min-w-0 truncate font-medium">
-                        {item.productName}
+                      <span className="flex min-w-0 items-center gap-2 font-medium">
+                        <span className="truncate">{item.productName}</span>
+                        {item.itemType === "COMBO" && (
+                          <Badge variant="secondary">Combo</Badge>
+                        )}
                       </span>
                     </div>
+                    {/* Combo không có tồn riêng: hiện số món thay cho tồn (chi tiết ở sheet). */}
+                    {item.itemType === "COMBO" ? (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs text-muted-foreground">
+                        Thành phần
+                      </span>
+                      <span className="font-semibold">
+                        {item.comboComponents?.length ?? 0} món
+                      </span>
+                    </div>
+                    ) : (
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs text-muted-foreground">
                         Tồn kho
@@ -264,6 +278,7 @@ export function ProductsExpandedPanel({
                         {item.stock ?? 0}
                       </span>
                     </div>
+                    )}
                     {item.warrantyPeriod && (
                       <div className="flex flex-col gap-0.5">
                         <span className="text-xs text-muted-foreground">

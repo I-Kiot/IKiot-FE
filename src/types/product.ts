@@ -27,6 +27,30 @@ export interface ProductAttribute {
   position?: number;
 }
 
+/** PRODUCT có tồn riêng; COMBO bán theo bộ, tồn tính qua thành phần; SERVICE không có hàng. Chốt lúc tạo. */
+export type ProductItemType = "PRODUCT" | "COMBO" | "SERVICE";
+
+/** Một thành phần của combo. `componentItem` có thể lại là COMBO (combo lồng nhau) - mở tiếp bằng `productId`. */
+export interface ComboComponent {
+  quantity: number;
+  componentItem: {
+    id: string;
+    productId: string;
+    sku: string;
+    productName: string;
+    itemType: ProductItemType;
+    retailPrice: number;
+    /** Ảnh của phiên bản, không có thì ảnh hàng hoá; null = chưa có ảnh nào. */
+    thumbnailUrl: string | null;
+  };
+}
+
+/** Thành phần gửi lên khi tạo / sửa combo - luôn là toàn bộ danh sách. */
+export interface ComboComponentPayload {
+  componentItemId: string;
+  quantity: number;
+}
+
 export interface StockDetail {
   inventoryId: string;
   stock: number;
@@ -58,6 +82,8 @@ export interface ProductItem {
   images?: ProductImage[];
   productDetails?: ProductDetail[];
   suppliers?: ProductItemSupplier[];
+  itemType?: ProductItemType;
+  comboComponents?: ComboComponent[];
   // Tồn tại địa điểm đang xem (tổng của stockDetails). Khi không lọc địa điểm thì bằng
   // stockAllLocations.
   stock?: number;
@@ -139,6 +165,9 @@ export interface ProductItemListEntry {
   productName: string;
   productCode: string;
   sku: string;
+  itemType: ProductItemType;
+  /** Ảnh của phiên bản, không có thì ảnh hàng hoá; null = chưa có ảnh nào. */
+  thumbnailUrl: string | null;
   // Chỉ có khi request kèm `branchIds`; 0 = chi nhánh chưa có hàng, không phải không bán.
   stock?: number;
 }
@@ -169,6 +198,9 @@ export interface ProductItemCreatePayload {
   images?: ProductImage[];
   productDetails?: ProductDetail[];
   initialStock?: InitialStock[];
+  itemType?: ProductItemType;
+  /** Bắt buộc khi itemType = COMBO, không được gửi với loại khác. */
+  comboComponents?: ComboComponentPayload[];
 }
 
 export interface ProductItemUpdatePayload {
@@ -183,6 +215,8 @@ export interface ProductItemUpdatePayload {
   warrantyPeriod?: string;
   images?: ProductImage[];
   productDetails?: ProductDetail[];
+  /** Chỉ với combo; thay toàn bộ danh sách thành phần. Loại (itemType) không đổi được sau khi tạo. */
+  comboComponents?: ComboComponentPayload[];
 }
 
 export interface ProductCreatePayload {

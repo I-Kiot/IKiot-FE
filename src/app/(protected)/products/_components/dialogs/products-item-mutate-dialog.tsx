@@ -33,11 +33,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import type { ProductItem } from '@/types/product'
+import type { ProductItem, ProductItemType } from '@/types/product'
 import { productApi } from '@/lib/api/product'
+import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
 import { productItemFormSchema, type ProductItemFormValues } from '../../_types/product.types'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
 import { ProductItemImagesField, toItemImagePayload } from '../product-item-images-field'
+import {
+  ComboComponentsField,
+  toComboPayload,
+  toComboRows,
+  type ComboComponentRow,
+} from '../combo-components-field'
+import { ItemTypeSelect } from '../item-type-select'
 
 const EMPTY_VALUES: ProductItemFormValues = {
   useParentNameForItem: true,
@@ -78,6 +86,10 @@ export function ProductsItemMutateDialog(props: Props) {
   const existingItem = props.mode === 'edit' ? props.item : undefined
   // Còn ảnh đang tải lên thì khoá nút Lưu, tránh lưu thiếu ảnh.
   const [uploading, setUploading] = useState(false)
+  // Loại phiên bản chỉ chọn lúc tạo; khi sửa đọc từ phiên bản.
+  const [itemType, setItemType] = useState<ProductItemType>('PRODUCT')
+  const [comboRows, setComboRows] = useState<ComboComponentRow[]>([])
+  const isCombo = (isEdit ? existingItem?.itemType : itemType) === 'COMBO'
 
   const form = useForm<ProductItemFormValues>({
     resolver: zodResolver(productItemFormSchema),
@@ -108,8 +120,11 @@ export function ProductsItemMutateDialog(props: Props) {
         useParentNameForItem: true,
         itemProductName: existingItem.productName,
       })
+      setComboRows(toComboRows(existingItem.comboComponents))
     } else {
       form.reset(EMPTY_VALUES)
+      setItemType('PRODUCT')
+      setComboRows([])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isEdit, existingItem, form])
@@ -121,6 +136,10 @@ export function ProductsItemMutateDialog(props: Props) {
     }
     if (isEdit && !data.itemProductName?.trim()) {
       form.setError('itemProductName', { message: 'Tên phiên bản là bắt buộc' })
+      return
+    }
+    if (isCombo && comboRows.length === 0) {
+      toast.error('Combo phải có ít nhất một món')
       return
     }
 
@@ -135,6 +154,7 @@ export function ProductsItemMutateDialog(props: Props) {
       vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
       images: toItemImagePayload(data.images),
       productDetails: data.productDetails?.filter((d) => d.name.trim() && d.value.trim()),
+      comboComponents: isCombo ? toComboPayload(comboRows) : undefined,
     }
     try {
       let result: ProductItem
@@ -148,13 +168,16 @@ export function ProductsItemMutateDialog(props: Props) {
         const productName = useParentNameForItem
           ? props.productName
           : (itemProductName?.trim() || props.productName)
-        result = await productApi.createItem(props.productId, { ...payload, productName })
+        result = await productApi.createItem(props.productId, { ...payload, productName, itemType })
         toast.success('Thêm phiên bản thành công')
       }
       onSuccess(result)
       onOpenChange(false)
-    } catch {
-      toast.error(isEdit ? 'Cập nhật phiên bản thất bại' : 'Thêm phiên bản thất bại')
+    } catch (error) {
+      toast.error(
+        messageForCode(getApiErrorBody(error)?.code) ??
+          (isEdit ? 'Cập nhật phiên bản thất bại' : 'Thêm phiên bản thất bại'),
+      )
     }
   }
 
@@ -236,6 +259,12 @@ export function ProductsItemMutateDialog(props: Props) {
                   </FormItem>
                 )}
               />
+            )}
+
+            {/* === Loại phiên bản + thành phần combo === */}
+            {!isEdit && <ItemTypeSelect value={itemType} onChange={setItemType} />}
+            {isCombo && (
+              <ComboComponentsField value={comboRows} onChange={setComboRows} selfId={existingItem?.id} />
             )}
 
             {/* === Tải ảnh phiên bản === */}

@@ -17,6 +17,15 @@ const productAttributeEntrySchema = z.object({
   unit: z.string().optional(),
 })
 
+// Một món của combo trên form (khớp ComboComponentRow của combo-components-field).
+const comboComponentRowSchema = z.object({
+  componentItemId: z.string(),
+  quantity: z.number().int().min(1),
+  sku: z.string(),
+  productName: z.string(),
+  itemType: z.enum(['PRODUCT', 'COMBO', 'SERVICE']),
+})
+
 // Schema cho form tạo/chỉnh sửa Product (item fields optional - validate thủ công khi create)
 export const productFormSchema = z.object({
   name: z.string().min(1, 'Tên hàng hóa là bắt buộc'),
@@ -51,6 +60,9 @@ export const productFormSchema = z.object({
   description: z.string().optional(),
   productDetails: z.array(productDetailEntrySchema).optional(),
   attributes: z.array(productAttributeEntrySchema).optional(),
+  // Loại phiên bản đầu tiên; COMBO thì comboComponents bắt buộc (kiểm thủ công khi tạo).
+  itemType: z.enum(['PRODUCT', 'COMBO', 'SERVICE']).optional(),
+  comboComponents: z.array(comboComponentRowSchema).optional(),
 })
 
 export type ProductFormValues = z.infer<typeof productFormSchema>
