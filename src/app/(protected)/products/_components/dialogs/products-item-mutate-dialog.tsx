@@ -41,6 +41,7 @@ import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.co
 import { ProductItemImagesField, toItemImagePayload } from '../product-item-images-field'
 import {
   ComboComponentsField,
+  hasInvalidQuantity,
   toComboPayload,
   toComboRows,
   type ComboComponentRow,
@@ -140,6 +141,10 @@ export function ProductsItemMutateDialog(props: Props) {
     }
     if (isCombo && comboRows.length === 0) {
       toast.error('Combo phải có ít nhất một món')
+      return
+    }
+    if (isCombo && hasInvalidQuantity(comboRows)) {
+      toast.error('Số lượng mỗi món trong combo phải từ 1 đến 999')
       return
     }
 

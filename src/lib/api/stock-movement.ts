@@ -86,6 +86,8 @@ type ApiProductItem = {
   images?: ApiProductImage[];
   productDetails?: Array<{ name?: string; value?: string }>;
   suppliers?: Array<string | { id?: string }>;
+  /** PRODUCT | COMBO | SERVICE - chỉ PRODUCT có tồn kho. */
+  itemType?: string;
 };
 
 type ApiProduct = {
@@ -329,7 +331,10 @@ function mapApiProductsToItemOptions(
   products: ApiProduct[],
 ): StockMovementProductItemOption[] {
   return products.flatMap((product) =>
-    asArray<ApiProductItem>(product.items ?? product.productItems).map(
+    asArray<ApiProductItem>(product.items ?? product.productItems)
+      // Combo / dịch vụ không có tồn riêng (tồn đi theo từng món) - BE cũng từ chối chúng trên phiếu kho.
+      .filter((item) => !item.itemType || item.itemType === "PRODUCT")
+      .map(
       (item) => ({
         id: item.id,
         productId: product.id,

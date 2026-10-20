@@ -41,7 +41,7 @@ import { useProducts } from '../../_context/products-provider'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
 import { CascadeSelect } from '@/components/ui/cascade-select'
 import { ProductItemImagesField } from '../product-item-images-field'
-import { ComboComponentsField } from '../combo-components-field'
+import { ComboComponentsField, hasInvalidQuantity } from '../combo-components-field'
 import { ItemTypeSelect } from '../item-type-select'
 import { productApi } from '@/lib/api/product'
 
@@ -173,6 +173,9 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
       }
       if (data.itemType === 'COMBO' && !data.comboComponents?.length) {
         toast.error('Combo phải có ít nhất một món')
+        hasErrors = true
+      } else if (data.itemType === 'COMBO' && hasInvalidQuantity(data.comboComponents ?? [])) {
+        toast.error('Số lượng mỗi món trong combo phải từ 1 đến 999')
         hasErrors = true
       }
       if (hasErrors) return

@@ -178,6 +178,8 @@ export interface ProductItemListParams {
   // Comma-separated branch IDs. Không lọc danh sách - chỉ gắn thêm `stock` của (các) chi
   // nhánh đó vào từng biến thể, 0 khi chi nhánh chưa từng nhập mặt hàng.
   branchIds?: string;
+  /** true = bỏ phiên bản của hàng đã ngừng kinh doanh (lọc ở BE, trước `limit`). */
+  excludeDiscontinued?: boolean;
 }
 
 export interface InitialStock {
