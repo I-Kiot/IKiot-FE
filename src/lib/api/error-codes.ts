@@ -294,6 +294,9 @@ export const ERROR_MESSAGES = {
   PRODUCT_ATTRIBUTE_DUPLICATE: "Hai thuộc tính của hàng hoá trùng tên",
   PRODUCT_ATTRIBUTE_NOT_FOUND: "Thuộc tính không thuộc hàng hoá này - tải lại trang rồi thử lại",
   PRODUCT_ATTRIBUTE_VALUE_REQUIRED: "Giá trị thuộc tính không được để trống",
+  PRODUCT_COMBO_INVALID:
+    "Thành phần combo không hợp lệ: cần ít nhất một món, không trùng món, không chứa chính nó (kể cả qua combo khác), không lồng quá 5 tầng và không dùng hàng đã ngừng kinh doanh",
+  PRODUCT_ITEM_IN_COMBO: "Mặt hàng đang là thành phần của một combo còn bán - gỡ khỏi combo trước",
   PRODUCTION_REQUEST_ITEM_NOT_MANUFACTURABLE: "Mặt hàng này không sản xuất được, hãy tạo đơn nhập hàng từ nhà cung cấp",
   PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Đóng yêu cầu khi chưa nhận đủ phải ghi lý do",
   // Nhân viên xưởng & phiếu giao xưởng (2026-10-09)

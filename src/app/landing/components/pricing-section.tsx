@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useLandingSession } from "../hooks/use-landing-session";
 import {
   listPlans,
   groupPlansByTier,
@@ -17,6 +18,7 @@ const formatVnd = (amount: number) =>
   amount === 0 ? "Miễn phí" : `${amount.toLocaleString("vi-VN")}đ`;
 
 export function PricingSection() {
+  const { user, homeHref } = useLandingSession();
   const [isYearly, setIsYearly] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,9 @@ export function PricingSection() {
     [plans],
   );
 
+  // Đã đăng nhập: gói trả phí mua ở trang "Gói dịch vụ" trong app, gói dùng thử thì vào thẳng trang quản lý.
   const signUpHref = (plan: Plan) => {
+    if (user) return plan.price === 0 ? homeHref : "/pricing";
     if (plan.price === 0) return "/sign-up";
     const yearly = isYearly && plan.billingCycle !== "YEARLY";
     return `/sign-up?plan=${yearly ? `${plan.planCode}_YEARLY` : plan.planCode}`;
@@ -177,8 +181,8 @@ export function PricingSection() {
                         >
                           <Link href={signUpHref(plan)}>
                             {isTrial
-                              ? "Bắt đầu dùng thử"
-                              : `Đăng ký gói ${plan.planName}`}
+                              ? user ? "Vào trang quản lý" : "Bắt đầu dùng thử"
+                              : user ? `Chọn gói ${plan.planName}` : `Đăng ký gói ${plan.planName}`}
                           </Link>
                         </Button>
                       </div>

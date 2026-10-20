@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, LayoutDashboard, ChevronDown, X, Moon, Sun } from "lucide-react";
+import { Menu, LayoutDashboard, ChevronDown, X, Moon, Sun, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -28,6 +28,7 @@ import { Logo } from "@/components/logo";
 import { MegaMenu } from "@/components/landing/mega-menu";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useTheme } from "@/hooks/use-theme";
+import { useLandingSession } from "../hooks/use-landing-session";
 
 const navigationItems = [
   { name: "Trang chủ", href: "#hero" },
@@ -74,6 +75,7 @@ export function LandingNavbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [solutionsOpen, setSolutionsOpen] = useState(false);
   const { setTheme, theme } = useTheme();
+  const { user, displayName, homeHref, logout } = useLandingSession();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -126,18 +128,32 @@ export function LandingNavbar() {
         {/* Desktop CTA */}
         <div className="hidden xl:flex items-center space-x-2">
           <ModeToggle variant="ghost" />
-          <Button variant="outline" asChild className="cursor-pointer">
-            <Link href="/dashboard" target="_blank" rel="noopener noreferrer">
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              Bảng điều khiển
-            </Link>
-          </Button>
-          <Button variant="ghost" asChild className="cursor-pointer">
-            <Link href="/sign-in">Đăng nhập</Link>
-          </Button>
-          <Button asChild className="cursor-pointer">
-            <Link href="/sign-up">Bắt đầu ngay</Link>
-          </Button>
+          {user ? (
+            <>
+              <span className="max-w-64 truncate px-2 text-sm text-muted-foreground">
+                Xin chào, <span className="font-medium text-foreground">{displayName}</span>
+              </span>
+              <Button asChild className="cursor-pointer">
+                <Link href={homeHref}>
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Vào trang quản lý
+                </Link>
+              </Button>
+              <Button variant="ghost" className="cursor-pointer" onClick={() => logout()}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Đăng xuất
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" asChild className="cursor-pointer">
+                <Link href="/sign-in">Đăng nhập</Link>
+              </Button>
+              <Button asChild className="cursor-pointer">
+                <Link href="/sign-up">Bắt đầu ngay</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu */}
@@ -256,19 +272,31 @@ export function LandingNavbar() {
               {/* Footer Actions */}
               <div className="border-t p-6 space-y-4">
                 {/* Primary Actions */}
-                <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    asChild
-                    className="w-full cursor-pointer"
-                  >
-                    <Link href="/dashboard">
-                      <LayoutDashboard className="size-4" />
-                      Bảng điều khiển
-                    </Link>
-                  </Button>
-
+                {user ? (
+                  <div className="space-y-3">
+                    <p className="truncate text-sm text-muted-foreground">
+                      Xin chào, <span className="font-medium text-foreground">{displayName}</span>
+                    </p>
+                    <Button asChild size="lg" className="w-full cursor-pointer">
+                      <Link href={homeHref}>
+                        <LayoutDashboard className="size-4" />
+                        Vào trang quản lý
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full cursor-pointer"
+                      onClick={() => {
+                        setIsOpen(false);
+                        logout();
+                      }}
+                    >
+                      <LogOut className="size-4" />
+                      Đăng xuất
+                    </Button>
+                  </div>
+                ) : (
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
@@ -282,7 +310,7 @@ export function LandingNavbar() {
                       <Link href="/sign-up">Đăng ký</Link>
                     </Button>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </SheetContent>

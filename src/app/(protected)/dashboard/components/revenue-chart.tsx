@@ -4,9 +4,12 @@
 // doanh thu kỳ liền trước (nét đứt) để thấy lúc nào bán tăng hay giảm.
 
 import { useCallback, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { Area, Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
-import { ChartLine } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ChartLine, ChevronRight } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RecentOrdersTable } from "./recent-orders-card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -53,9 +56,13 @@ function rowsOf(current: RevenueSeries, previous: RevenueSeries, range: Resolved
   });
 }
 
-export function RevenueChart() {
+type TrendTab = "revenue" | "orders";
+
+/** `showOrdersTab`: thêm tab "Đơn hàng gần đây" (chỉ khi người xem có quyền đọc đơn) - đơn gần đây ở chung thẻ để dashboard không phải cuộn. */
+export function RevenueChart({ showOrdersTab = false }: { showOrdersTab?: boolean }) {
   const { resolved, branchId } = useOverview();
   const [showPrevious, setShowPrevious] = useState(true);
+  const [tab, setTab] = useState<TrendTab>("revenue");
 
   // Kỳ này và kỳ trước được tải cùng nhau, nên hai đường luôn thuộc cùng một lần chọn kỳ.
   const load = useCallback(async () => {
@@ -81,10 +88,10 @@ export function RevenueChart() {
   // Vùng biểu đồ có ba trạng thái: lần đầu đang tải, lỗi, và có số liệu (mờ đi khi đang tải lại).
   let chartArea: ReactNode;
   if (!data && isLoading) {
-    chartArea = <Skeleton className="h-[280px] w-full" />;
+    chartArea = <Skeleton className="h-full min-h-[140px] w-full" />;
   } else if (failed) {
     chartArea = (
-      <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-full min-h-[140px] items-center justify-center text-sm text-muted-foreground">
         Không tải được biểu đồ doanh thu.
       </div>
     );
@@ -92,7 +99,7 @@ export function RevenueChart() {
     chartArea = (
         <ChartContainer
           config={chartConfig}
-          className={`h-[280px] w-full transition-opacity ${isLoading ? "opacity-60" : ""}`}
+          className={`aspect-auto h-full min-h-[140px] w-full transition-opacity ${isLoading ? "opacity-60" : ""}`}
           aria-label={`Biểu đồ doanh thu theo ${unit}`}
         >
           <ComposedChart data={rows} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
@@ -171,41 +178,70 @@ export function RevenueChart() {
     );
   }
 
+  const showingOrders = showOrdersTab && tab === "orders";
+
   return (
-    <Card className="h-full">
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
-        <div className="flex items-center gap-3">
-          <span className={`flex size-9 items-center justify-center rounded-lg ${TONE_TILE.orange}`}>
-            <ChartLine className="size-5" aria-hidden />
+    // Thẻ co giãn theo chỗ còn lại (h-full + flex-col): trên màn rộng dashboard vừa một màn hình.
+    <Card className="flex h-full min-h-0 flex-col gap-3 py-4">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2 space-y-0 px-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${TONE_TILE.orange}`}>
+            <ChartLine className="size-4" aria-hidden />
           </span>
-          <div>
-            <CardTitle>Doanh thu theo {unit}</CardTitle>
-            <CardDescription>
-              {formatDayVi(resolved.fromDate)}
-              {resolved.toDate !== resolved.fromDate ? ` – ${formatDayVi(resolved.toDate)}` : ""} · đơn đã hoàn tất
-            </CardDescription>
+          {showOrdersTab ? (
+            <Tabs value={tab} onValueChange={(value) => setTab(value as TrendTab)}>
+              <TabsList className="h-8">
+                <TabsTrigger value="revenue" className="cursor-pointer text-xs">
+                  Doanh thu theo {unit}
+                </TabsTrigger>
+                <TabsTrigger value="orders" className="cursor-pointer text-xs">
+                  Đơn hàng gần đây
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : (
+            <CardTitle className="text-sm">Doanh thu theo {unit}</CardTitle>
+          )}
+        </div>
+        {showingOrders ? (
+          <Link
+            href="/sales/orders"
+            className="flex items-center gap-0.5 rounded-sm text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            Xem tất cả
+            <ChevronRight className="size-3.5" aria-hidden />
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Switch id="show-previous" checked={showPrevious} onCheckedChange={setShowPrevious} className="cursor-pointer" />
+            <Label htmlFor="show-previous" className="cursor-pointer text-xs text-muted-foreground">
+              So với {resolved.previousLabel}
+            </Label>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Switch id="show-previous" checked={showPrevious} onCheckedChange={setShowPrevious} className="cursor-pointer" />
-          <Label htmlFor="show-previous" className="cursor-pointer text-sm text-muted-foreground">
-            So với {resolved.previousLabel}
-          </Label>
-        </div>
+        )}
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-x-8 gap-y-2">
-          <div>
-            <p className="text-xs text-muted-foreground">Tổng doanh thu</p>
-            <p className="text-lg font-semibold tabular-nums">{formatVND(totalRevenue)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Số đơn</p>
-            <p className="text-lg font-semibold tabular-nums">{formatNumber(totalOrders)}</p>
-          </div>
+      {showingOrders ? (
+        <CardContent className="min-h-0 flex-1 overflow-y-auto px-4">
+          <RecentOrdersTable />
+        </CardContent>
+      ) : (
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-2 px-4">
+        {/* Tổng của kỳ trên một dòng, kèm kỳ đang xem - chỗ dành cho biểu đồ. */}
+        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+          <p className="text-xs text-muted-foreground">
+            Tổng doanh thu{" "}
+            <span className="text-base font-semibold text-foreground tabular-nums">{formatVND(totalRevenue)}</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Số đơn <span className="text-base font-semibold text-foreground tabular-nums">{formatNumber(totalOrders)}</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {formatDayVi(resolved.fromDate)}
+            {resolved.toDate !== resolved.fromDate ? ` – ${formatDayVi(resolved.toDate)}` : ""} · đơn đã hoàn tất
+          </p>
         </div>
 
-        {chartArea}
+        <div className="min-h-0 flex-1">{chartArea}</div>
 
         {/* Chú thích bằng chữ + mẫu nét, không chỉ dựa vào màu. */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
@@ -225,6 +261,7 @@ export function RevenueChart() {
           )}
         </div>
       </CardContent>
+      )}
     </Card>
   );
 }

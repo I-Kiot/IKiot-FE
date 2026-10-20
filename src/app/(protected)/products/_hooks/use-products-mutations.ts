@@ -10,6 +10,7 @@ import { parsePriceAmount, getDeleteProductErrorMessage } from '../_constants/pr
 import { useAuthStore } from '@/store/auth-store'
 import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
 import { toItemImagePayload } from '../_components/product-item-images-field'
+import { toComboPayload } from '../_components/combo-components-field'
 
 function extractErrorMessage(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -63,6 +64,9 @@ export function useProductsMutations() {
             productDetails: data.productDetails
               ?.filter((d) => d.name.trim() && d.value.trim())
               .map((d) => ({ name: d.name.trim(), value: d.value.trim() })),
+            itemType: data.itemType,
+            comboComponents:
+              data.itemType === 'COMBO' ? toComboPayload(data.comboComponents ?? []) : undefined,
           },
         ],
       })

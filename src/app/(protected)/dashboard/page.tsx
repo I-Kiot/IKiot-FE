@@ -15,7 +15,6 @@ import { RevenueChart } from "./components/revenue-chart";
 import { OrderPipelineCard } from "./components/order-pipeline-card";
 import { StockAlertsCard } from "./components/stock-alerts-card";
 import { ProductPerformanceCard } from "./components/product-performance-card";
-import { RecentOrdersCard } from "./components/recent-orders-card";
 import { QuickActionsCard } from "./components/quick-actions-card";
 import { NotificationsCard } from "./components/notifications-card";
 import { StorePerformanceCard } from "./components/store-performance-card";
@@ -46,41 +45,39 @@ function WarehouseLayout() {
   );
 }
 
+/**
+ * Từ xl trở lên cả dashboard vừa một màn hình (2026-10-20): khung cao bằng phần còn lại của màn
+ * hình, các thẻ chia nhau chiều cao và tự cuộn bên trong. Màn hẹp hơn thì xếp chồng và cuộn trang
+ * như cũ. Đơn gần đây là một tab của thẻ doanh thu thay vì một hàng riêng.
+ */
 function SalesLayout() {
   const canSeeOrders = allows(getSessionRole(), "orders", "read");
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-4 xl:min-h-0 xl:flex-1">
       <KpiCards />
 
-      {/* Hàng 2: xu hướng (2/3) + lối tắt (1/3). */}
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <RevenueChart />
-        </div>
-        <QuickActionsCard />
-      </div>
-
-      {/* Hàng 3: ba thẻ vận hành (2/3) + thông báo (1/3). */}
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="grid gap-6 md:grid-cols-2 xl:col-span-2 2xl:grid-cols-3">
-          <OrderPipelineCard />
-          <StockAlertsCard />
-          <div className="md:col-span-2 2xl:col-span-1">
+      <div className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-3 xl:grid-rows-[minmax(0,1fr)]">
+        {/* Trái (2/3): xu hướng ở trên, ba thẻ vận hành ở dưới. */}
+        <div className="flex min-w-0 flex-col gap-4 xl:col-span-2 xl:min-h-0">
+          <div className="h-[340px] min-w-0 xl:h-auto xl:min-h-0 xl:flex-[4]">
+            <RevenueChart showOrdersTab={canSeeOrders} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3 xl:min-h-0 xl:flex-[3] *:min-h-0">
+            <OrderPipelineCard />
+            <StockAlertsCard />
             <ProductPerformanceCard />
           </div>
         </div>
-        <NotificationsCard />
-      </div>
 
-      {/* Hàng 4: đơn gần đây (2/3) + hiệu suất (1/3). Không có quyền xem đơn thì bảng nhường chỗ. */}
-      <div className="grid gap-6 xl:grid-cols-3">
-        {canSeeOrders && (
-          <div className="min-w-0 xl:col-span-2">
-            <RecentOrdersCard />
+        {/* Phải (1/3): lối tắt, hiệu suất, thông báo lấp phần còn lại. */}
+        <div className="flex min-w-0 flex-col gap-4 xl:min-h-0">
+          <QuickActionsCard />
+          <StorePerformanceCard />
+          <div className="flex min-h-0 flex-col xl:flex-1 *:flex-1">
+            <NotificationsCard />
           </div>
-        )}
-        <StorePerformanceCard />
+        </div>
       </div>
     </div>
   );
@@ -94,7 +91,8 @@ function DashboardBody() {
 export default function DashboardPage() {
   return (
     <OverviewProvider>
-      <div className="@container/main flex-1 space-y-6 px-4 pb-8 lg:px-6">
+      {/* xl: cao bằng màn hình trừ header (3rem là py-6 của khung ngoài), giống trang chat. */}
+      <div className="@container/main flex flex-1 flex-col gap-4 px-4 pb-8 lg:px-6 xl:h-[calc(100dvh-var(--header-height)-3rem)] xl:flex-none xl:overflow-y-auto xl:pb-0">
         <DashboardHeader />
         <DashboardBody />
       </div>

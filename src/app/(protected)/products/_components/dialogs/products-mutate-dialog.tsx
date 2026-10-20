@@ -41,6 +41,8 @@ import { useProducts } from '../../_context/products-provider'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
 import { CascadeSelect } from '@/components/ui/cascade-select'
 import { ProductItemImagesField } from '../product-item-images-field'
+import { ComboComponentsField } from '../combo-components-field'
+import { ItemTypeSelect } from '../item-type-select'
 import { productApi } from '@/lib/api/product'
 
 const EMPTY_VALUES: ProductFormValues = {
@@ -62,6 +64,8 @@ const EMPTY_VALUES: ProductFormValues = {
   warrantyPeriod: '',
   description: '',
   productDetails: [],
+  itemType: 'PRODUCT',
+  comboComponents: [],
 }
 
 type ProductsMutateDialogProps = {
@@ -165,6 +169,10 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
       }
       if (!data.useParentNameForItem && !data.itemProductName?.trim()) {
         form.setError('itemProductName', { message: 'Tên phiên bản là bắt buộc' })
+        hasErrors = true
+      }
+      if (data.itemType === 'COMBO' && !data.comboComponents?.length) {
+        toast.error('Combo phải có ít nhất một món')
         hasErrors = true
       }
       if (hasErrors) return
@@ -373,6 +381,17 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                 <p className="text-xs text-muted-foreground -mt-2">
                   Mỗi hàng hóa cần ít nhất một phiên bản. Bạn có thể thêm nhiều phiên bản sau.
                 </p>
+
+                <ItemTypeSelect
+                  value={form.watch('itemType') ?? 'PRODUCT'}
+                  onChange={(type) => form.setValue('itemType', type, { shouldDirty: true })}
+                />
+                {form.watch('itemType') === 'COMBO' && (
+                  <ComboComponentsField
+                    value={form.watch('comboComponents') ?? []}
+                    onChange={(rows) => form.setValue('comboComponents', rows, { shouldDirty: true })}
+                  />
+                )}
 
                 {/* Tên phiên bản: dùng tên hàng hóa hoặc đặt tên riêng */}
                 <FormField

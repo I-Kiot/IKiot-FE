@@ -13,7 +13,8 @@ import { useNotificationInboxStore } from "@/store/notification-inbox-store";
 import type { AppNotification } from "@/lib/api/notification";
 import { WidgetCard, WidgetMessage } from "./widget-card";
 
-const SHOWN = 4;
+// Thẻ cuộn bên trong (dashboard vừa một màn hình), nên hiện được nhiều hơn.
+const SHOWN = 8;
 
 export function NotificationsCard() {
   const router = useRouter();

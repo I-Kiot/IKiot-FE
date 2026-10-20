@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ImageGalleryDialog } from "../image-gallery-dialog";
+import { ComboComponentsTree } from "../combo-components-tree";
 import {
   formatVND,
   safeImageSrc,
@@ -268,6 +269,18 @@ export function ProductsItemDetailSheet({
               </div>
             </Section>
 
+            {/* Combo không có tồn riêng - đơn tách thành từng món và trừ kho theo món. */}
+            {item.itemType === "COMBO" ? (
+            <Section title="Thành phần combo">
+              <div className="px-3 py-2">
+                {item.comboComponents?.length ? (
+                  <ComboComponentsTree components={item.comboComponents} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Chưa có thành phần</p>
+                )}
+              </div>
+            </Section>
+            ) : (
             <Section title="Tồn kho">
               <div className="px-4">
                 <InfoRow label="Tổng tồn kho">
@@ -333,6 +346,7 @@ export function ProductsItemDetailSheet({
                 </div>
               )}
             </Section>
+            )}
 
             {item.description && (
               <Section title="Mô tả">

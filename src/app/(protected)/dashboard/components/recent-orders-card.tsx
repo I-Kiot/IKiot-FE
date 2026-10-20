@@ -5,7 +5,6 @@
 
 import { useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ReceiptText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,11 +12,12 @@ import { orderJourneyApi } from "@/lib/api/order-journey";
 import { formatDateTime, formatVND, orderStatusDisplay, paymentStatusDisplay } from "../../sales/orders/shared/order-display";
 import { useAsyncData } from "../hooks/use-async-data";
 import { useOverview } from "./overview-provider";
-import { WidgetCard, WidgetMessage } from "./widget-card";
+import { WidgetMessage } from "./widget-card";
 
 const RECENT_LIMIT = 5;
 
-export function RecentOrdersCard() {
+/** Bảng đơn gần đây, nằm trong tab "Đơn hàng gần đây" của thẻ doanh thu (link "Xem tất cả" ở header thẻ đó). */
+export function RecentOrdersTable() {
   const router = useRouter();
   const { branchId, liveVersion } = useOverview();
   const load = useCallback(
@@ -44,16 +44,16 @@ export function RecentOrdersCard() {
     body = <WidgetMessage>Chưa có đơn hàng nào.</WidgetMessage>;
   } else {
     body = (
-      <div className={`-mx-6 overflow-x-auto transition-opacity ${isLoading ? "opacity-60" : ""}`}>
+      <div className={`-mx-4 overflow-x-auto transition-opacity ${isLoading ? "opacity-60" : ""}`}>
         <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="pl-6">Mã đơn</TableHead>
+              <TableHead className="pl-4">Mã đơn</TableHead>
               <TableHead>Khách hàng</TableHead>
               <TableHead>Thời gian đặt</TableHead>
               <TableHead className="text-right">Tổng tiền</TableHead>
               <TableHead>Trạng thái</TableHead>
-              <TableHead className="pr-6">Thanh toán</TableHead>
+              <TableHead className="pr-4">Thanh toán</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -74,14 +74,14 @@ export function RecentOrdersCard() {
                   }}
                   aria-label={`Mở đơn ${order.code}`}
                 >
-                  <TableCell className="pl-6 font-medium">{order.code}</TableCell>
+                  <TableCell className="pl-4 font-medium">{order.code}</TableCell>
                   <TableCell className="max-w-[180px] truncate">{order.customer.name}</TableCell>
                   <TableCell className="tabular-nums text-muted-foreground">{formatDateTime(order.createdAt)}</TableCell>
                   <TableCell className="text-right font-medium tabular-nums">{formatVND(order.grandTotal)}</TableCell>
                   <TableCell>
                     <Badge variant={status.variant}>{status.label}</Badge>
                   </TableCell>
-                  <TableCell className="pr-6">
+                  <TableCell className="pr-4">
                     <Badge variant={payment.variant}>{payment.label}</Badge>
                   </TableCell>
                 </TableRow>
@@ -93,9 +93,5 @@ export function RecentOrdersCard() {
     );
   }
 
-  return (
-    <WidgetCard title="Đơn hàng gần đây" icon={ReceiptText} tone="orange" viewAll={{ href: "/sales/orders" }}>
-      {body}
-    </WidgetCard>
-  );
+  return body;
 }
