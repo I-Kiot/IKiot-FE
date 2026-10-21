@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { PageFooter } from "@/components/layouts/page-footer";
 import {
   Select,
   SelectContent,
@@ -29,7 +30,8 @@ type Props = {
 };
 
 // Thanh phân trang dùng chung cho mọi bảng (client, server hay bảng thô): chọn số dòng mỗi trang,
-// "Hiển thị a–b / N", "Trang x / y" và hai nút Trước / Tiếp.
+// "Hiển thị a–b / N", "Trang x / y" và hai nút Trước / Tiếp. Luôn nằm ở chân trang (PageFooter), không phụ thuộc
+// số dòng của bảng.
 export function DataTablePagination({
   page,
   pageCount,
@@ -53,7 +55,8 @@ export function DataTablePagination({
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 py-4">
+    <PageFooter>
+    <div className="flex items-center justify-between gap-2 py-3">
       <div className="flex items-center gap-2">
         <Label className="text-sm font-medium">Hiển thị</Label>
         <Select
@@ -104,5 +107,6 @@ export function DataTablePagination({
         </Button>
       </div>
     </div>
+    </PageFooter>
   );
 }

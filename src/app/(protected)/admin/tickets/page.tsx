@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getSocket } from "@/lib/socket";
+import { PageFooter } from "@/components/layouts/page-footer";
 import { toast } from "sonner";
 import {
   LifeBuoy,
@@ -400,8 +401,9 @@ export default function AdminTicketsPage() {
           </TableBody>
         </Table>
 
-        {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t bg-muted/20">
+        {/* Pagination Footer (chân trang cố định) */}
+        <PageFooter>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Hiển thị:</span>
             <Select
@@ -427,7 +429,7 @@ export default function AdminTicketsPage() {
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground mr-2 font-medium">
-              Trang {pagination.page} / {pagination.totalPages}
+              Trang {pagination.page} / {Math.max(pagination.totalPages, 1)}
             </span>
             <Button
               variant="outline"
@@ -449,6 +451,7 @@ export default function AdminTicketsPage() {
             </Button>
           </div>
         </div>
+        </PageFooter>
       </div>
 
       {/* Ticket Dialogue Dialogue / Conversation Modal */}

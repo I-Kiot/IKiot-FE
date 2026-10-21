@@ -205,9 +205,10 @@ html {
   animation-play-state: paused;
 }
 
-/* Custom Border Thickness overrides */
-.border-thick .border,
-.border-thick [data-slot="sidebar"] {
+/* Custom Border Thickness overrides.
+   Không áp lên [data-slot="sidebar"]: đó là khung bao ngoài của sidebar (chỉ giữ chỗ cho layout), viền 2px ở
+   đó làm sidebar rộng thêm 4px và đẩy khung nội dung xuống / sang phải, để lại khe hở quanh trang. */
+.border-thick .border {
   border-width: 2px !important;
 }
 .border-thick .border-t { border-top-width: 2px !important; }

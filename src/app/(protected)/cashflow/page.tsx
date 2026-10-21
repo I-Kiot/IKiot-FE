@@ -245,18 +245,17 @@ export default function CashflowPage() {
         </CardContent>
       </Card>
 
-      {pagination && pagination.total > 0 && (
-        <DataTablePagination
-          page={page}
-          pageCount={pagination.totalPages}
-          pageSize={pageSize}
-          total={pagination.total}
-          unit="giao dịch"
-          disabled={isLoading}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
-        />
-      )}
+      {/* Luôn hiện (chân trang cố định), kể cả khi chưa có giao dịch nào. */}
+      <DataTablePagination
+        page={page}
+        pageCount={pagination?.totalPages ?? 1}
+        pageSize={pageSize}
+        total={pagination?.total ?? 0}
+        unit="giao dịch"
+        disabled={isLoading}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
     </div>
   )
 }

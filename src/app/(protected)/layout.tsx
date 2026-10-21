@@ -15,6 +15,7 @@ import {
   getAllowedSidebarUrls,
 } from "@/components/sidebar/utils/get-sidebar";
 import { UnauthorizedPage } from "@/components/unauthorized";
+import { PageFooterProvider, PageFooterSlot } from "@/components/layouts/page-footer";
 
 function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
@@ -111,6 +112,7 @@ export default function DashboardLayout({
               {/* min-w-0: con của flex mặc định không hẹp hơn nội dung, nên bảng rộng sẽ đẩy cả trang
                   rộng ra thay vì cuộn ngang trong khung của nó. Nhánh sidebar bên phải dưới đây cũng vậy. */}
               <SidebarInset className="min-w-0">
+                <PageFooterProvider>
                 <SiteHeader />
                 <div className="flex flex-1 flex-col">
                   <div className="@container/main flex flex-1 flex-col gap-2">
@@ -119,11 +121,14 @@ export default function DashboardLayout({
                     </div>
                   </div>
                 </div>
+                <PageFooterSlot />
+                </PageFooterProvider>
               </SidebarInset>
             </>
           ) : (
             <>
               <SidebarInset className="min-w-0">
+                <PageFooterProvider>
                 <SiteHeader />
                 <div className="flex flex-1 flex-col">
                   <div className="@container/main flex flex-1 flex-col gap-2">
@@ -132,6 +137,8 @@ export default function DashboardLayout({
                     </div>
                   </div>
                 </div>
+                <PageFooterSlot />
+                </PageFooterProvider>
               </SidebarInset>
               <AppSidebar
                 variant={config.variant}

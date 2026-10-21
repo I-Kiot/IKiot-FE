@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
+import { PageFooter } from "@/components/layouts/page-footer";
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -295,8 +296,8 @@ export default function AuditLogsPage() {
       </div>
 
       {/* Pagination Footer */}
-      {!loading && logs.length > 0 && (
-        <div className="flex items-center justify-between space-x-2 py-4">
+      <PageFooter>
+        <div className="flex items-center justify-between space-x-2 py-3">
           <div className="flex items-center space-x-2">
             <Label htmlFor="page-size" className="text-sm font-medium">
               Hiển thị
@@ -331,7 +332,7 @@ export default function AuditLogsPage() {
             <div className="flex items-center space-x-2 text-sm">
               <p className="font-medium text-xs text-muted-foreground">Trang</p>
               <strong className="text-xs">
-                {currentPage} / {totalPages}
+                {currentPage} / {Math.max(totalPages, 1)}
               </strong>
             </div>
             <div className="flex items-center space-x-2">
@@ -350,7 +351,7 @@ export default function AuditLogsPage() {
                 onClick={() =>
                   setCurrentPage(Math.min(currentPage + 1, totalPages))
                 }
-                disabled={currentPage === totalPages}
+                disabled={currentPage >= totalPages}
                 className="cursor-pointer h-8 text-xs"
               >
                 Sau
@@ -358,7 +359,7 @@ export default function AuditLogsPage() {
             </div>
           </div>
         </div>
-      )}
+      </PageFooter>
     </div>
   );
 }
