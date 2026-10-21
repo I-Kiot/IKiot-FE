@@ -78,6 +78,11 @@ export default function DashboardLayout({
   useTabBadge();
   const { config } = useSidebarConfig();
   const pathname = usePathname();
+  // Cuộn xảy ra trong khung nội dung (không còn là cả cửa sổ), nên chuyển trang phải tự đưa nó về đầu.
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [pathname]);
 
   if (pathname === "/check-out") {
     return (
@@ -111,33 +116,37 @@ export default function DashboardLayout({
               />
               {/* min-w-0: con của flex mặc định không hẹp hơn nội dung, nên bảng rộng sẽ đẩy cả trang
                   rộng ra thay vì cuộn ngang trong khung của nó. Nhánh sidebar bên phải dưới đây cũng vậy. */}
-              <SidebarInset className="min-w-0">
+              <SidebarInset className="h-svh min-w-0 overflow-hidden">
                 <PageFooterProvider>
-                <SiteHeader />
-                <div className="flex flex-1 flex-col">
-                  <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                      {children}
+                  <SiteHeader />
+                  {/* Chỉ vùng này cuộn: header ở trên và chân trang (phân trang) ở dưới đứng yên, thanh cuộn
+                      không chạy lên tới vùng header. */}
+                  <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                    <div className="@container/main flex flex-1 flex-col gap-2">
+                      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                        {children}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <PageFooterSlot />
+                  <PageFooterSlot />
                 </PageFooterProvider>
               </SidebarInset>
             </>
           ) : (
             <>
-              <SidebarInset className="min-w-0">
+              <SidebarInset className="h-svh min-w-0 overflow-hidden">
                 <PageFooterProvider>
-                <SiteHeader />
-                <div className="flex flex-1 flex-col">
-                  <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                      {children}
+                  <SiteHeader />
+                  {/* Chỉ vùng này cuộn: header ở trên và chân trang (phân trang) ở dưới đứng yên, thanh cuộn
+                      không chạy lên tới vùng header. */}
+                  <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                    <div className="@container/main flex flex-1 flex-col gap-2">
+                      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                        {children}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <PageFooterSlot />
+                  <PageFooterSlot />
                 </PageFooterProvider>
               </SidebarInset>
               <AppSidebar

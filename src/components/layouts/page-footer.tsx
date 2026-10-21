@@ -29,9 +29,9 @@ export function PageFooterSlot({ className }: { className?: string }) {
       ref={ctx?.setSlot}
       data-slot="page-footer"
       className={cn(
-        // mt-auto: trang ngắn thì đẩy xuống đáy; sticky bottom-0: trang dài thì luôn thấy khi cuộn.
+        // Nằm dưới vùng cuộn của khung nội dung (cao bằng màn hình) nên luôn dính đáy, trang ngắn hay dài.
         // empty:hidden: trang không có phân trang thì không hiện đường kẻ.
-        "bg-background sticky bottom-0 z-10 mt-auto border-t px-4 empty:hidden lg:px-6",
+        "bg-background shrink-0 border-t px-4 empty:hidden lg:px-6",
         className,
       )}
     />
