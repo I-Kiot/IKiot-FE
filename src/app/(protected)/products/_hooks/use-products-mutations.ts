@@ -28,6 +28,15 @@ export function useProductsMutations() {
       .catch(() => toast.error('Tải danh sách hàng hóa thất bại'))
   }, [locationKey])
 
+  // Sau khi nhập file: hàng mới không đi qua handleAdd nên phải tải lại cả danh sách.
+  async function reload(): Promise<void> {
+    try {
+      setProducts((await productApi.getList()).data)
+    } catch {
+      toast.error('Tải danh sách hàng hóa thất bại')
+    }
+  }
+
   async function handleAdd(
     data: ProductFormValues,
     onDuplicateCode?: (message: string) => void,
@@ -196,5 +205,5 @@ export function useProductsMutations() {
     }
   }
 
-  return { products, isLoading, handleAdd, handleEdit, handleDelete, handleDeleteMany }
+  return { products, isLoading, reload, handleAdd, handleEdit, handleDelete, handleDeleteMany }
 }

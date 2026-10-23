@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Plus, Trash2 } from 'lucide-react'
+import { Download, Plus, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useProducts } from '../_context/products-provider'
 import { getCachedUser } from '@/lib/auth'
@@ -29,6 +29,17 @@ export function ProductsButtonGroup() {
         <Download className="mr-2 size-4" />
         Xuất file
       </Button>
+      {canWrite && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={() => setOpen('import')}
+        >
+          <Upload className="mr-2 size-4" />
+          Nhập file
+        </Button>
+      )}
       {canWrite && (
         <Button size="sm" className="cursor-pointer" onClick={() => setOpen('add')}>
           <Plus className="mr-2 size-4" />
