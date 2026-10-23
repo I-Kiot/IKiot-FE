@@ -167,4 +167,26 @@ export const productApi = {
   removeItem: async (itemId: string): Promise<void> => {
     await client.delete(`/products/items/${itemId}`);
   },
+
+  // GET /products/import/template - file .xlsx mẫu, dropdown lấy từ danh mục/thương hiệu/NCC của cửa hàng.
+  downloadImportTemplate: async (): Promise<Blob> => {
+    const res = await client.get<Blob>("/products/import/template", {
+      responseType: "blob",
+    });
+    return res.data;
+  },
+
+  // POST /products/import - cả file hợp lệ mới tạo; lỗi 400 kèm `errors` theo dòng (xem importErrorsOf).
+  importFile: async (
+    file: File,
+  ): Promise<{ productCount: number; itemCount: number; productIds: string[] }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await client.post<{
+      data: { productCount: number; itemCount: number; productIds: string[] };
+    }>("/products/import", formData, {
+      headers: { "Content-Type": undefined },
+    });
+    return res.data.data;
+  },
 };

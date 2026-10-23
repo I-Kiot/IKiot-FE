@@ -1,7 +1,7 @@
 // [UI Types – Product]
 import { z } from 'zod'
 
-export type ProductsDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'crossBranchSearch'
+export type ProductsDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'crossBranchSearch' | 'import'
 
 const productDetailEntrySchema = z.object({
   name: z.string(),
