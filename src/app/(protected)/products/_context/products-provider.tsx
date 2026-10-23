@@ -21,6 +21,8 @@ type ProductsContextType = {
   screen: ProductScreen
   products: Product[]
   isLoading: boolean
+  /** Tải lại danh sách từ BE - sau khi nhập file, khi hàng mới không đi qua handleAdd. */
+  reloadProducts: () => Promise<void>
   open: ProductsDialogType | null
   setOpen: (str: ProductsDialogType | null) => void
   currentRow: Product | null
@@ -56,7 +58,7 @@ export function ProductsProvider({
   screen: ProductScreen
   children: React.ReactNode
 }) {
-  const { products, isLoading, handleAdd, handleEdit, handleDelete, handleDeleteMany } =
+  const { products, isLoading, reload, handleAdd, handleEdit, handleDelete, handleDeleteMany } =
     useProductsMutations(screen)
   const [open, setOpen] = useState<ProductsDialogType | null>(null)
   const [currentRow, setCurrentRow] = useState<Product | null>(null)
@@ -136,6 +138,7 @@ export function ProductsProvider({
         screen,
         products,
         isLoading,
+        reloadProducts: reload,
         open,
         setOpen,
         currentRow,

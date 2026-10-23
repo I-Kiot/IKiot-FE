@@ -19,6 +19,8 @@ export type ProductScreen = {
   showChainStock: boolean
   /** Nút "Tìm ở chi nhánh khác". Tìm theo hàng có tồn nên chỉ có ở màn hàng hoá; combo không có tồn riêng để tìm. */
   crossBranchSearch: boolean
+  /** Nút "Nhập file". File mẫu chỉ tạo hàng hoá thường (một dòng không liệt kê được thành phần), nên màn combo không có. */
+  importFile: boolean
 }
 
 export const PRODUCTS_SCREEN: ProductScreen = {
@@ -31,6 +33,7 @@ export const PRODUCTS_SCREEN: ProductScreen = {
   showStock: true,
   showChainStock: true,
   crossBranchSearch: true,
+  importFile: true,
 }
 
 export const COMBOS_SCREEN: ProductScreen = {
@@ -43,6 +46,7 @@ export const COMBOS_SCREEN: ProductScreen = {
   showStock: true,
   showChainStock: false,
   crossBranchSearch: false,
+  importFile: false,
 }
 
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
