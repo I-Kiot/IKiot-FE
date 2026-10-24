@@ -30,6 +30,12 @@ export interface ProductAttribute {
 /** PRODUCT có tồn riêng; COMBO bán theo bộ, tồn tính qua thành phần; SERVICE không có hàng. Chốt lúc tạo. */
 export type ProductItemType = "PRODUCT" | "COMBO" | "SERVICE";
 
+/**
+ * Loại của cả sản phẩm, cố định lúc tạo. Mọi phiên bản có itemType bằng đúng loại này - BE tự gán.
+ * `/products` liệt kê PRODUCT + SERVICE, `/combos` liệt kê COMBO.
+ */
+export type ProductType = "PRODUCT" | "COMBO" | "SERVICE";
+
 /** Một thành phần của combo. `componentItem` có thể lại là COMBO (combo lồng nhau) - mở tiếp bằng `productId`. */
 export interface ComboComponent {
   quantity: number;
@@ -40,6 +46,7 @@ export interface ComboComponent {
     productName: string;
     itemType: ProductItemType;
     retailPrice: number;
+    costPrice: number;
     /** Ảnh của phiên bản, không có thì ảnh hàng hoá; null = chưa có ảnh nào. */
     thumbnailUrl: string | null;
   };
@@ -105,6 +112,7 @@ export interface Product {
   categoryName?: string;
   /** Đặt xưởng sản xuất được; false = chỉ nhập từ NCC. */
   isManufacturable?: boolean;
+  productType?: ProductType;
   images?: ProductImage[];
   attributes?: ProductAttribute[];
   items?: ProductItem[];
@@ -130,6 +138,8 @@ export interface ProductQueryParams {
   supplierId?: string;
   locationId?: string;
   locationType?: LocationType;
+  /** Không gửi = mọi loại. BE không có mặc định - mỗi màn tự nói nó liệt kê loại nào. */
+  productType?: ProductType[];
   page?: number;
   limit?: number;
 }
@@ -166,6 +176,7 @@ export interface ProductItemListEntry {
   productCode: string;
   sku: string;
   itemType: ProductItemType;
+  costPrice: number;
   /** Ảnh của phiên bản, không có thì ảnh hàng hoá; null = chưa có ảnh nào. */
   thumbnailUrl: string | null;
   // Chỉ có khi request kèm `branchIds`; 0 = chi nhánh chưa có hàng, không phải không bán.
@@ -180,6 +191,8 @@ export interface ProductItemListParams {
   branchIds?: string;
   /** true = bỏ phiên bản của hàng đã ngừng kinh doanh (lọc ở BE, trước `limit`). */
   excludeDiscontinued?: boolean;
+  /** Chỉ phiên bản của sản phẩm thuộc các loại này; không gửi = mọi loại. */
+  productType?: ProductType[];
 }
 
 export interface InitialStock {
@@ -194,7 +207,8 @@ export interface ProductItemCreatePayload {
   barcode?: string;
   description?: string;
   retailPrice: number;
-  costPrice: number;
+  /** Bắt buộc với hàng thường; combo không gửi - BE tự tính từ giá vốn các món. */
+  costPrice?: number;
   vat?: number;
   warrantyPeriod?: string;
   images?: ProductImage[];
@@ -227,6 +241,8 @@ export interface ProductCreatePayload {
   categoryId?: string | null;
   status: ProductStatus;
   isManufacturable?: boolean;
+  /** Mặc định PRODUCT. Phiên bản lấy itemType theo đây, nên không cần gửi itemType. */
+  productType?: ProductType;
   images?: ProductImage[];
   attributes?: ProductAttribute[];
   items: ProductItemCreatePayload[];

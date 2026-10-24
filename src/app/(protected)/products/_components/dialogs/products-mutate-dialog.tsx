@@ -41,8 +41,8 @@ import { useProducts } from '../../_context/products-provider'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
 import { CascadeSelect } from '@/components/ui/cascade-select'
 import { ProductItemImagesField } from '../product-item-images-field'
-import { ComboComponentsField, hasInvalidQuantity } from '../combo-components-field'
-import { ItemTypeSelect } from '../item-type-select'
+import { ComboComponentsField, ComboCostField, hasInvalidQuantity } from '../combo-components-field'
+import { ProductTypeSelect } from '../product-type-select'
 import { productApi } from '@/lib/api/product'
 
 const EMPTY_VALUES: ProductFormValues = {
@@ -64,7 +64,7 @@ const EMPTY_VALUES: ProductFormValues = {
   warrantyPeriod: '',
   description: '',
   productDetails: [],
-  itemType: 'PRODUCT',
+  productType: 'PRODUCT',
   comboComponents: [],
 }
 
@@ -81,6 +81,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
     handleEdit,
     brands,
     categories,
+    screen,
   } = useProducts()
   const [uploading, setUploading] = useState(false)
   // Còn ảnh phiên bản đang tải lên thì khoá nút Lưu, tránh lưu thiếu ảnh.
@@ -135,9 +136,11 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
         cancelled = true
       }
     } else {
-      form.reset(EMPTY_VALUES)
+      form.reset({ ...EMPTY_VALUES, productType: screen.createTypes[0] })
     }
-  }, [open, isEdit, currentRow, form, replaceAttributes])
+  }, [open, isEdit, currentRow, form, replaceAttributes, screen])
+
+  const productType = (isEdit ? currentRow?.productType : form.watch('productType')) ?? 'PRODUCT'
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -163,7 +166,8 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
         form.setError('retailPrice', { message: 'Giá bán là bắt buộc' })
         hasErrors = true
       }
-      if (!data.costPrice?.trim()) {
+      // Combo: giá vốn BE tự tính từ các món.
+      if (data.productType !== 'COMBO' && !data.costPrice?.trim()) {
         form.setError('costPrice', { message: 'Giá vốn là bắt buộc' })
         hasErrors = true
       }
@@ -171,10 +175,10 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
         form.setError('itemProductName', { message: 'Tên phiên bản là bắt buộc' })
         hasErrors = true
       }
-      if (data.itemType === 'COMBO' && !data.comboComponents?.length) {
+      if (data.productType === 'COMBO' && !data.comboComponents?.length) {
         toast.error('Combo phải có ít nhất một món')
         hasErrors = true
-      } else if (data.itemType === 'COMBO' && hasInvalidQuantity(data.comboComponents ?? [])) {
+      } else if (data.productType === 'COMBO' && hasInvalidQuantity(data.comboComponents ?? [])) {
         toast.error('Số lượng mỗi món trong combo phải từ 1 đến 999')
         hasErrors = true
       }
@@ -193,11 +197,11 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Chỉnh sửa hàng hóa' : 'Thêm hàng hóa mới'}</DialogTitle>
+          <DialogTitle>{isEdit ? `Chỉnh sửa ${screen.noun}` : `Thêm ${screen.noun} mới`}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? 'Cập nhật thông tin hàng hóa. Nhấn Lưu khi hoàn tất.'
-              : 'Điền thông tin hàng hóa mới. Nhấn Lưu khi hoàn tất.'}
+              ? `Cập nhật thông tin ${screen.noun}. Nhấn Lưu khi hoàn tất.`
+              : `Điền thông tin ${screen.noun} mới. Nhấn Lưu khi hoàn tất.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -351,45 +355,53 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
               )}
             />
 
-            {/* Bật = đặt xưởng sản xuất được (Tạo yêu cầu sản xuất); tắt = chỉ nhập từ nhà cung cấp */}
-            <FormField
-              control={form.control}
-              name="isManufacturable"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start gap-3">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                      className="mt-0.5 cursor-pointer"
-                    />
-                  </FormControl>
-                  <div className="space-y-1">
-                    <FormLabel className="cursor-pointer">Có thể sản xuất</FormLabel>
-                    <p className="text-xs text-muted-foreground">
-                      Cho phép đặt xưởng làm mặt hàng này qua yêu cầu sản xuất. Tắt thì chỉ nhập
-                      từ nhà cung cấp.
-                    </p>
-                  </div>
-                </FormItem>
-              )}
-            />
+            {/* Bật = đặt xưởng sản xuất được (Tạo yêu cầu sản xuất); tắt = chỉ nhập từ nhà cung cấp.
+                Chỉ hàng hoá có tồn mới đặt xưởng được - combo và dịch vụ không có. */}
+            {productType === 'PRODUCT' && (
+              <FormField
+                control={form.control}
+                name="isManufacturable"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start gap-3">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                        className="mt-0.5 cursor-pointer"
+                      />
+                    </FormControl>
+                    <div className="space-y-1">
+                      <FormLabel className="cursor-pointer">Có thể sản xuất</FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Cho phép đặt xưởng làm mặt hàng này qua yêu cầu sản xuất. Tắt thì chỉ nhập
+                        từ nhà cung cấp.
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
 
             {!isEdit && (
               <>
                 <Separator />
-                <p className="text-sm font-medium">
-                  Phiên bản đầu tiên <span className="text-destructive">*</span>
-                </p>
-                <p className="text-xs text-muted-foreground -mt-2">
-                  Mỗi hàng hóa cần ít nhất một phiên bản. Bạn có thể thêm nhiều phiên bản sau.
-                </p>
+                {productType !== 'COMBO' && (
+                  <>
+                    <p className="text-sm font-medium">
+                      Phiên bản đầu tiên <span className="text-destructive">*</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground -mt-2">
+                      Mỗi hàng hóa cần ít nhất một phiên bản. Bạn có thể thêm nhiều phiên bản sau.
+                    </p>
+                  </>
+                )}
 
-                <ItemTypeSelect
-                  value={form.watch('itemType') ?? 'PRODUCT'}
-                  onChange={(type) => form.setValue('itemType', type, { shouldDirty: true })}
+                <ProductTypeSelect
+                  value={productType}
+                  options={screen.createTypes}
+                  onChange={(type) => form.setValue('productType', type, { shouldDirty: true })}
                 />
-                {form.watch('itemType') === 'COMBO' && (
+                {productType === 'COMBO' && (
                   <ComboComponentsField
                     value={form.watch('comboComponents') ?? []}
                     onChange={(rows) => form.setValue('comboComponents', rows, { shouldDirty: true })}
@@ -479,33 +491,37 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="costPrice"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Giá vốn (đ) <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <div className="relative">
-                          <FormControl>
-                          <Input
-                            inputMode="numeric"
-                            placeholder="0"
-                            className="tabular-nums pr-7"
-                            value={field.value ?? ''}
-                            onChange={(e) => {
-                              const digits = e.target.value.replace(/\D/g, '')
-                              field.onChange(digits ? formatPriceAmount(digits) : '')
-                            }}
-                          />
-                          </FormControl>
-                          <CurrencySuffix />
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {productType === 'COMBO' ? (
+                    <ComboCostField rows={form.watch('comboComponents') ?? []} />
+                  ) : (
+                    <FormField
+                      control={form.control}
+                      name="costPrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Giá vốn (đ) <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <div className="relative">
+                            <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              placeholder="0"
+                              className="tabular-nums pr-7"
+                              value={field.value ?? ''}
+                              onChange={(e) => {
+                                const digits = e.target.value.replace(/\D/g, '')
+                                field.onChange(digits ? formatPriceAmount(digits) : '')
+                              }}
+                            />
+                            </FormControl>
+                            <CurrencySuffix />
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   <FormField
                     control={form.control}
                     name="retailPrice"
@@ -729,7 +745,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                 ) : (
                   <>
                     <Plus className="mr-2 h-4 w-4" />
-                    Thêm hàng hóa
+                    Thêm {screen.noun}
                   </>
                 )}
               </Button>

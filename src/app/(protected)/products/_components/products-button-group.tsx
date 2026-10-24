@@ -7,7 +7,7 @@ import { getCachedUser } from '@/lib/auth'
 import { canCreateProduct, canDeleteProduct } from '@/components/sidebar/constants/role-permissions'
 
 export function ProductsButtonGroup() {
-  const { setOpen, selectedIds } = useProducts()
+  const { setOpen, selectedIds, screen } = useProducts()
   const role = getCachedUser()?.role
   const canWrite = canCreateProduct(role)
   const canDelete = canDeleteProduct(role)
@@ -32,7 +32,7 @@ export function ProductsButtonGroup() {
       {canWrite && (
         <Button size="sm" className="cursor-pointer" onClick={() => setOpen('add')}>
           <Plus className="mr-2 size-4" />
-          Thêm hàng hóa
+          Thêm {screen.noun}
         </Button>
       )}
     </div>

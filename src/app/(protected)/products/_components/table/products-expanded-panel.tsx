@@ -45,7 +45,7 @@ export function ProductsExpandedPanel({
   isExpanded,
   isLastRow,
 }: ProductsExpandedPanelProps) {
-  const { setOpen, setCurrentRow } = useProducts();
+  const { setOpen, setCurrentRow, screen } = useProducts();
   const locationKey = useAuthStore((s) => s.locationKey);
   const role = getCachedUser()?.role;
   const canEdit = canUpdateProduct(role);
@@ -331,7 +331,7 @@ export function ProductsExpandedPanel({
               }}
             >
               <Trash2 className="mr-2 size-4" />
-              Xóa hàng hóa
+              Xóa {screen.noun}
             </Button>
           ) : (
             <span />
@@ -400,6 +400,7 @@ export function ProductsExpandedPanel({
         mode="create"
         productId={product.id}
         productName={product.name}
+        productType={product.productType ?? 'PRODUCT'}
         open={addOpen}
         onOpenChange={setAddOpen}
         onSuccess={handleItemAdded}

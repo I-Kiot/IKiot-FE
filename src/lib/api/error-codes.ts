@@ -300,6 +300,7 @@ export const ERROR_MESSAGES = {
   PRODUCT_COMBO_COMPONENT_DISCONTINUED:
     "Combo có món thuộc hàng hoá đã ngừng kinh doanh - bỏ món đó khỏi combo (hoặc kinh doanh lại hàng hoá) trước",
   PRODUCT_ITEM_NOT_STOCKABLE: "Combo và dịch vụ không có tồn kho riêng - hãy nhập / chuyển từng món của combo",
+  PRODUCT_ITEM_TYPE_MISMATCH: "Phiên bản phải cùng loại với sản phẩm (hàng hoá / combo / dịch vụ)",
   PRODUCTION_REQUEST_ITEM_NOT_MANUFACTURABLE: "Mặt hàng này không sản xuất được, hãy tạo đơn nhập hàng từ nhà cung cấp",
   PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Đóng yêu cầu khi chưa nhận đủ phải ghi lý do",
   // Nhân viên xưởng & phiếu giao xưởng (2026-10-09)

@@ -29,7 +29,7 @@ export function ProductsDeleteDialog({
   currentRow,
   selectedIds,
 }: ProductsDeleteDialogProps) {
-  const { handleDelete, handleDeleteMany } = useProducts()
+  const { handleDelete, handleDeleteMany, screen } = useProducts()
 
   async function onConfirm() {
     const success =
@@ -47,12 +47,12 @@ export function ProductsDeleteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Xóa hàng hóa</DialogTitle>
+          <DialogTitle>Xóa {screen.noun}</DialogTitle>
           <DialogDescription>
             {isBulk ? (
               <>
                 Bạn có chắc muốn xóa{' '}
-                <strong className="text-foreground">{selectedIds.length} hàng hóa</strong> đã chọn?{' '}
+                <strong className="text-foreground">{selectedIds.length} {screen.noun}</strong> đã chọn?{' '}
                 Hành động này không thể hoàn tác.
               </>
             ) : (
