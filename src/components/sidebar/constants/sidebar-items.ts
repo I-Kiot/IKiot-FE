@@ -76,6 +76,7 @@ export const sidebarItems = {
     icon: Package,
     items: [
       { title: "Danh sách", url: "/products" },
+      { title: "Combo", url: "/combos" },
       { title: "Danh mục", url: "/categories" },
       { title: "Thương hiệu", url: "/brands" },
     ],

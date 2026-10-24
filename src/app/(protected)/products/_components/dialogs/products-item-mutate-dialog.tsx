@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import type { ProductItem, ProductItemType } from '@/types/product'
+import type { ProductItem, ProductType } from '@/types/product'
 import { productApi } from '@/lib/api/product'
 import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
 import { productItemFormSchema, type ProductItemFormValues } from '../../_types/product.types'
@@ -41,12 +41,12 @@ import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.co
 import { ProductItemImagesField, toItemImagePayload } from '../product-item-images-field'
 import {
   ComboComponentsField,
+  ComboCostField,
   hasInvalidQuantity,
   toComboPayload,
   toComboRows,
   type ComboComponentRow,
 } from '../combo-components-field'
-import { ItemTypeSelect } from '../item-type-select'
 
 const EMPTY_VALUES: ProductItemFormValues = {
   useParentNameForItem: true,
@@ -69,6 +69,8 @@ type Props =
       mode: 'create'
       productId: string
       productName: string
+      /** Loại của sản phẩm cha - phiên bản mới luôn cùng loại (BE tự gán itemType theo nó). */
+      productType: ProductType
       open: boolean
       onOpenChange: (open: boolean) => void
       onSuccess: (item: ProductItem) => void
@@ -87,10 +89,9 @@ export function ProductsItemMutateDialog(props: Props) {
   const existingItem = props.mode === 'edit' ? props.item : undefined
   // Còn ảnh đang tải lên thì khoá nút Lưu, tránh lưu thiếu ảnh.
   const [uploading, setUploading] = useState(false)
-  // Loại phiên bản chỉ chọn lúc tạo; khi sửa đọc từ phiên bản.
-  const [itemType, setItemType] = useState<ProductItemType>('PRODUCT')
   const [comboRows, setComboRows] = useState<ComboComponentRow[]>([])
-  const isCombo = (isEdit ? existingItem?.itemType : itemType) === 'COMBO'
+  // Loại theo sản phẩm cha, không chọn ở đây.
+  const isCombo = (isEdit ? existingItem?.itemType : props.productType) === 'COMBO'
 
   const form = useForm<ProductItemFormValues>({
     resolver: zodResolver(productItemFormSchema),
@@ -124,7 +125,6 @@ export function ProductsItemMutateDialog(props: Props) {
       setComboRows(toComboRows(existingItem.comboComponents))
     } else {
       form.reset(EMPTY_VALUES)
-      setItemType('PRODUCT')
       setComboRows([])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,6 +137,10 @@ export function ProductsItemMutateDialog(props: Props) {
     }
     if (isEdit && !data.itemProductName?.trim()) {
       form.setError('itemProductName', { message: 'Tên phiên bản là bắt buộc' })
+      return
+    }
+    if (!isCombo && !data.costPrice?.trim()) {
+      form.setError('costPrice', { message: 'Giá vốn là bắt buộc' })
       return
     }
     if (isCombo && comboRows.length === 0) {
@@ -154,7 +158,8 @@ export function ProductsItemMutateDialog(props: Props) {
       // Để trống: tạo mới thì BE tự sinh, sửa thì giữ nguyên mã hiện có.
       productCode: data.productCode?.trim() || undefined,
       sku: data.sku?.trim() || undefined,
-      costPrice: parsePriceAmount(data.costPrice),
+      // Combo: BE tự tính từ các món, không gửi.
+      costPrice: isCombo ? undefined : parsePriceAmount(data.costPrice),
       retailPrice: parsePriceAmount(data.retailPrice),
       vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
       images: toItemImagePayload(data.images),
@@ -173,7 +178,7 @@ export function ProductsItemMutateDialog(props: Props) {
         const productName = useParentNameForItem
           ? props.productName
           : (itemProductName?.trim() || props.productName)
-        result = await productApi.createItem(props.productId, { ...payload, productName, itemType })
+        result = await productApi.createItem(props.productId, { ...payload, productName })
         toast.success('Thêm phiên bản thành công')
       }
       onSuccess(result)
@@ -266,8 +271,7 @@ export function ProductsItemMutateDialog(props: Props) {
               />
             )}
 
-            {/* === Loại phiên bản + thành phần combo === */}
-            {!isEdit && <ItemTypeSelect value={itemType} onChange={setItemType} />}
+            {/* === Thành phần combo (phiên bản của combo luôn là combo) === */}
             {isCombo && (
               <ComboComponentsField value={comboRows} onChange={setComboRows} selfId={existingItem?.id} />
             )}
@@ -310,33 +314,37 @@ export function ProductsItemMutateDialog(props: Props) {
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="costPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Giá vốn (đ) <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <div className="relative">
-                      <FormControl>
-                      <Input
-                        inputMode="numeric"
-                        placeholder="0"
-                        className="tabular-nums pr-7"
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, '')
-                          field.onChange(digits ? formatPriceAmount(digits) : '')
-                        }}
-                      />
-                      </FormControl>
-                      <CurrencySuffix />
-                    </div>
-                    <FormMessage />
-                  </FormItem>
+              {isCombo ? (
+                <ComboCostField rows={comboRows} />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="costPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Giá vốn (đ) <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                        <Input
+                          inputMode="numeric"
+                          placeholder="0"
+                          className="tabular-nums pr-7"
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '')
+                            field.onChange(digits ? formatPriceAmount(digits) : '')
+                          }}
+                        />
+                        </FormControl>
+                        <CurrencySuffix />
+                      </div>
+                      <FormMessage />
+                    </FormItem>
                 )}
               />
+              )}
               <FormField
                 control={form.control}
                 name="retailPrice"

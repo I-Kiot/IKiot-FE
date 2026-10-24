@@ -24,6 +24,7 @@ const comboComponentRowSchema = z.object({
   sku: z.string(),
   productName: z.string(),
   itemType: z.enum(['PRODUCT', 'COMBO', 'SERVICE']),
+  costPrice: z.number(),
 })
 
 // Schema cho form tạo/chỉnh sửa Product (item fields optional - validate thủ công khi create)
@@ -60,8 +61,8 @@ export const productFormSchema = z.object({
   description: z.string().optional(),
   productDetails: z.array(productDetailEntrySchema).optional(),
   attributes: z.array(productAttributeEntrySchema).optional(),
-  // Loại phiên bản đầu tiên; COMBO thì comboComponents bắt buộc (kiểm thủ công khi tạo).
-  itemType: z.enum(['PRODUCT', 'COMBO', 'SERVICE']).optional(),
+  // Loại sản phẩm, chỉ chọn lúc tạo; mọi phiên bản theo loại này. COMBO thì comboComponents bắt buộc (kiểm thủ công khi tạo).
+  productType: z.enum(['PRODUCT', 'COMBO', 'SERVICE']).optional(),
   comboComponents: z.array(comboComponentRowSchema).optional(),
 })
 
@@ -77,7 +78,8 @@ export const productItemFormSchema = z.object({
   sku: z.string().optional(),
   barcode: z.string().optional(),
   retailPrice: z.string().min(1, 'Giá bán là bắt buộc'),
-  costPrice: z.string().min(1, 'Giá vốn là bắt buộc'),
+  // Bắt buộc với hàng thường (kiểm thủ công khi lưu); combo thì BE tự tính từ các món.
+  costPrice: z.string().optional(),
   vat: z.string().optional(),
   warrantyPeriod: z.string().optional(),
   description: z.string().optional(),

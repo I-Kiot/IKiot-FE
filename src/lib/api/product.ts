@@ -61,6 +61,8 @@ export const productApi = {
     const mergedParams = {
       ...locationParams,
       ...params,
+      // BE nhận danh sách cách nhau bằng dấu phẩy; axios mặc định gửi mảng thành productType[]=...
+      productType: params?.productType?.join(","),
     };
 
     const res = await client.get<{
@@ -80,7 +82,7 @@ export const productApi = {
   ): Promise<ProductItemListEntry[]> => {
     const res = await client.get<{ data: ApiDoc<Omit<ProductItemListEntry, "id">>[] }>(
       "/products/items",
-      { params },
+      { params: { ...params, productType: params?.productType?.join(",") } },
     );
     return res.data.data.map(mapId);
   },

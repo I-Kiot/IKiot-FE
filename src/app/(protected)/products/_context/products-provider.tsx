@@ -14,10 +14,12 @@ import { productApi } from '@/lib/api/product'
 import type { Brand } from '@/types/brand'
 import type { Category } from '@/types/category'
 import type { Supplier } from '@/types/supplier'
+import type { ProductScreen } from '../_constants/product-screen'
 
 type LocationOption = { value: string; label: string }
 
 type ProductsContextType = {
+  screen: ProductScreen
   products: Product[]
   isLoading: boolean
   open: ProductsDialogType | null
@@ -49,9 +51,15 @@ type ProductsContextType = {
 
 const ProductsContext = React.createContext<ProductsContextType | null>(null)
 
-export function ProductsProvider({ children }: { children: React.ReactNode }) {
+export function ProductsProvider({
+  screen,
+  children,
+}: {
+  screen: ProductScreen
+  children: React.ReactNode
+}) {
   const { products, isLoading, handleAdd, handleEdit, handleDelete, handleDeleteMany } =
-    useProductsMutations()
+    useProductsMutations(screen)
   const [open, setOpen] = useState<ProductsDialogType | null>(null)
   const [currentRow, setCurrentRow] = useState<Product | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -80,7 +88,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
   // the flat item list instead.
   useEffect(() => {
     productApi
-      .listItems({ limit: 500 })
+      .listItems({ limit: 500, productType: screen.listTypes })
       .then((items) => {
         const index = new Map<string, string>()
         for (const item of items) {
@@ -91,7 +99,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         setSkuSearchIndex(index)
       })
       .catch(() => setSkuSearchIndex(new Map()))
-  }, [])
+  }, [screen.listTypes])
 
   // Only needed inside stock-location pickers/labels (mutate dialog, item dialogs,
   // detail sheet) - fetched on first open instead of on every products page mount.
@@ -130,6 +138,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
   return (
     <ProductsContext.Provider
       value={{
+        screen,
         products,
         isLoading,
         open,

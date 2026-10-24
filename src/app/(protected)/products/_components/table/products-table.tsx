@@ -34,13 +34,17 @@ import { ProductsToolbar } from './products-toolbar'
 import { ProductsExpandedPanel } from './products-expanded-panel'
 
 export function ProductsTable() {
-  const { products, isLoading, setSelectedIds, selectionVersion, brands, categories, skuSearchIndex } =
+  const { screen, products, isLoading, setSelectedIds, selectionVersion, brands, categories, skuSearchIndex } =
     useProducts()
   const locationKey = useAuthStore((state) => state.locationKey)
   const isLocationScoped = parseLocationKey(locationKey) !== null
   const columns = useMemo(
-    () => getProductsColumns(brands, categories, isLocationScoped),
-    [brands, categories, isLocationScoped],
+    () =>
+      getProductsColumns(brands, categories, isLocationScoped).filter(
+        // Combo không có tồn riêng - con số luôn 0 và chỉ gây hiểu nhầm.
+        (column) => screen.showStock || column.id !== 'stock',
+      ),
+    [brands, categories, isLocationScoped, screen.showStock],
   )
 
   const [sorting, setSorting] = useState<SortingState>([{ id: 'status', desc: false }])
@@ -178,7 +182,7 @@ export function ProductsTable() {
         pageCount={table.getPageCount()}
         pageSize={table.getState().pagination.pageSize}
         total={table.getFilteredRowModel().rows.length}
-        unit="hàng hóa"
+        unit={screen.noun}
         onPageChange={(page) => table.setPageIndex(page - 1)}
         onPageSizeChange={(pageSize) => {
           table.setPageSize(pageSize)

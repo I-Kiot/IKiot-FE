@@ -11,22 +11,23 @@ import { useAuthStore } from '@/store/auth-store'
 import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
 import { toItemImagePayload } from '../_components/product-item-images-field'
 import { toComboPayload } from '../_components/combo-components-field'
+import type { ProductScreen } from '../_constants/product-screen'
 
 function extractErrorMessage(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message
 }
 
-export function useProductsMutations() {
+export function useProductsMutations(screen: ProductScreen) {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const locationKey = useAuthStore((state) => state.locationKey)
 
   useEffect(() => {
     productApi
-      .getList()
+      .getList({ productType: screen.listTypes })
       .then((res) => setProducts(res.data))
-      .catch(() => toast.error('Tải danh sách hàng hóa thất bại'))
-  }, [locationKey])
+      .catch(() => toast.error(`Tải danh sách ${screen.noun} thất bại`))
+  }, [locationKey, screen])
 
   async function handleAdd(
     data: ProductFormValues,
@@ -42,7 +43,9 @@ export function useProductsMutations() {
         brandId: data.brandId ?? undefined,
         categoryId: data.categoryId ?? undefined,
         status: data.status,
-        isManufacturable: data.isManufacturable,
+        // Combo và dịch vụ không đặt xưởng được - YCSX chỉ nhận hàng có tồn.
+        isManufacturable: data.productType === 'PRODUCT' && data.isManufacturable,
+        productType: data.productType,
         images: data.images,
         // Mỗi dòng thuộc tính của phiên bản đầu tiên định nghĩa luôn thuộc tính của sản phẩm (kèm đơn vị).
         attributes: data.productDetails
@@ -55,7 +58,8 @@ export function useProductsMutations() {
             sku: data.sku?.trim() || undefined,
             barcode: data.barcode,
             retailPrice: parsePriceAmount(data.retailPrice),
-            costPrice: parsePriceAmount(data.costPrice),
+            // Combo: BE tự tính giá vốn từ các món.
+            costPrice: data.productType === 'COMBO' ? undefined : parsePriceAmount(data.costPrice),
             vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
             warrantyPeriod: data.warrantyPeriod,
             description: data.description,
@@ -64,9 +68,9 @@ export function useProductsMutations() {
             productDetails: data.productDetails
               ?.filter((d) => d.name.trim() && d.value.trim())
               .map((d) => ({ name: d.name.trim(), value: d.value.trim() })),
-            itemType: data.itemType,
+            // itemType do BE gán theo productType.
             comboComponents:
-              data.itemType === 'COMBO' ? toComboPayload(data.comboComponents ?? []) : undefined,
+              data.productType === 'COMBO' ? toComboPayload(data.comboComponents ?? []) : undefined,
           },
         ],
       })
@@ -75,11 +79,11 @@ export function useProductsMutations() {
         { ...product, totalStock: 0, totalStockAllLocations: 0 },
         ...prev,
       ])
-      toast.success('Thêm hàng hóa thành công')
+      toast.success(`Thêm ${screen.noun} thành công`)
       return true
     } catch (err) {
       const code = getApiErrorBody(err)?.code
-      const message = messageForCode(code) ?? 'Thêm hàng hóa thất bại'
+      const message = messageForCode(code) ?? `Thêm ${screen.noun} thất bại`
       if (code === 'UNIQUE_VIOLATION') onDuplicateCode?.(message)
       toast.error(message)
       return false

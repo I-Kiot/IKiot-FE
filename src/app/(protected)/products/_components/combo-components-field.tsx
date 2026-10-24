@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/command'
 import { productApi } from '@/lib/api/product'
 import { ItemThumbnail } from './item-thumbnail'
+import { formatPriceAmount } from '../_constants/product.constants'
 import type {
   ComboComponent,
   ComboComponentPayload,
@@ -31,6 +32,8 @@ export interface ComboComponentRow {
   sku: string
   productName: string
   itemType: ProductItemType
+  /** Giá vốn một đơn vị của món - chỉ để hiển thị và tính xem trước; BE tự tính lại khi lưu. */
+  costPrice: number
   thumbnailUrl?: string | null
 }
 
@@ -41,8 +44,32 @@ export function toComboRows(components: ComboComponent[] | undefined): ComboComp
     sku: componentItem.sku,
     productName: componentItem.productName,
     itemType: componentItem.itemType,
+    costPrice: componentItem.costPrice,
     thumbnailUrl: componentItem.thumbnailUrl,
   }))
+}
+
+const vnd = (amount: number) => formatPriceAmount(Math.round(amount)) || '0'
+
+/** Giá vốn combo = tổng (số lượng × giá vốn từng món). Khớp `comboCostOf` của BE; BE mới là nơi quyết định số lưu. */
+export function comboCostOf(rows: ComboComponentRow[]): number {
+  const total = rows.reduce((sum, row) => sum + (row.quantity >= 1 ? row.quantity : 0) * row.costPrice, 0)
+  return Math.round(total * 100) / 100
+}
+
+/** Ô giá vốn của combo: chỉ đọc, bằng tổng giá vốn các món - không cho tự điền. */
+export function ComboCostField({ rows }: { rows: ComboComponentRow[] }) {
+  return (
+    <div className="space-y-2">
+      <Label>Giá vốn tự tính (đ)</Label>
+      <div className="relative">
+        <Input readOnly tabIndex={-1} className="tabular-nums pr-7" value={vnd(comboCostOf(rows))} />
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+          ₫
+        </span>
+      </div>
+    </div>
+  )
 }
 
 /** Khớp `MAX_COMBO_COMPONENT_QUANTITY` của BE. */
@@ -109,6 +136,7 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
         sku: option.sku,
         productName: option.productName,
         itemType: option.itemType,
+        costPrice: option.costPrice,
         thumbnailUrl: option.thumbnailUrl,
       },
     ])
@@ -174,7 +202,9 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
                   {row.productName}
                   {row.itemType === 'COMBO' && <Badge variant="secondary">Combo</Badge>}
                 </span>
-                <span className="text-xs text-muted-foreground">{row.sku}</span>
+                <span className="text-xs text-muted-foreground">
+                  {row.sku} · Giá vốn {vnd(row.costPrice)} đ
+                </span>
               </div>
               <QuantityInput value={row.quantity} onCommit={(quantity) => setQuantity(index, quantity)} />
               <Button
