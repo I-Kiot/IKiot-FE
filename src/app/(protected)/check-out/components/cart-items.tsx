@@ -25,6 +25,8 @@ interface CartItem {
   imageUrl?: string;
   stock: number;
   stockAllLocations: number;
+  /** Số bán được ngay (tồn trên kệ; combo = số bộ): trần của số lượng trong giỏ. */
+  availableStock: number;
 }
 
 interface CartItemsProps {
@@ -117,7 +119,7 @@ export function CartItems({
                       <span>SKU: {item.sku}</span>
                       <span>|</span>
                       <span>
-                        Tồn CN: {item.stock ?? 0} / Tổng:{" "}
+                        Tồn CN: {item.availableStock ?? 0} / Tổng:{" "}
                         {item.stockAllLocations ?? 0}
                       </span>
                     </div>
@@ -159,6 +161,7 @@ export function CartItems({
                       onClick={() =>
                         onQuantityChange(item.productItemId, item.quantity + 1)
                       }
+                      disabled={item.quantity >= item.availableStock}
                     >
                       <Plus className="size-4" />
                     </Button>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Search, Sparkles, AlertCircle, ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useCheckoutProducts, type CheckoutLocation } from "../_hooks/use-checkout-products";
@@ -25,6 +26,8 @@ interface Product {
   stock: number;
   /** Tổng tồn ở mọi kho/chi nhánh. */
   stockAllLocations: number;
+  /** Số bán được ngay (tồn trên kệ; combo = số bộ). Quầy chặn thêm giỏ theo số này. */
+  availableStock: number;
   status: string;
   imageUrl?: string;
 }
@@ -115,6 +118,7 @@ export function ProductSearch({
             vat: item.vat || 0,
             stock: item.stock || 0,
             stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
+            availableStock: item.availableStock ?? item.stock ?? 0,
             status: product.status,
             imageUrl: (
               item.images?.find((img) => img.isThumbnail) ||
@@ -147,6 +151,7 @@ export function ProductSearch({
         vat: item.vat || 0,
         stock: item.stock || 0,
         stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
+        availableStock: item.availableStock ?? item.stock ?? 0,
         status: product.status,
         imageUrl: (
           item.images?.find((img) => img.isThumbnail) ||
@@ -192,7 +197,7 @@ export function ProductSearch({
         p.sku.toLowerCase() === lowerQuery,
     );
 
-    if (exactMatch && exactMatch.status === "ACTIVE" && (allowOutOfStock || exactMatch.stock > 0)) {
+    if (exactMatch && exactMatch.status === "ACTIVE" && (allowOutOfStock || exactMatch.availableStock > 0)) {
       onProductSelect(exactMatch);
       setQuery("");
       setIsOpen(false);
@@ -241,6 +246,12 @@ export function ProductSearch({
     if (product.status !== "ACTIVE") {
       return; // Do not add inactive products
     }
+    // Quầy chỉ bán hàng có trên kệ (combo: đủ cả bộ). Click, Enter và nút "Mua nhanh" đều đi qua đây;
+    // trước đây chỉ làm mờ dòng nên bấm vào vẫn thêm được và đến lúc thanh toán BE mới từ chối.
+    if (!allowOutOfStock && product.availableStock <= 0) {
+      toast.warning(`${product.name} đã hết hàng`);
+      return;
+    }
     onProductSelect(product);
     setQuery("");
     setIsOpen(false);
@@ -275,7 +286,7 @@ export function ProductSearch({
             ) : results.length > 0 ? (
               results.map((product, index) => {
                 const isSelected = index === selectedIndex;
-                const isOutOfStock = product.stock <= 0;
+                const isOutOfStock = product.availableStock <= 0;
                 const isInactive = product.status !== "ACTIVE";
 
                 return (
@@ -340,7 +351,7 @@ export function ProductSearch({
                         ) : (
                           <span className="text-sm px-2 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 rounded font-medium">
                             {hasBranchScope
-                              ? `Tồn CN: ${product.stock} / Tổng: ${product.stockAllLocations}`
+                              ? `Tồn CN: ${product.availableStock} / Tổng: ${product.stockAllLocations}`
                               : `Tồn: ${product.stockAllLocations}`}
                           </span>
                         )}
