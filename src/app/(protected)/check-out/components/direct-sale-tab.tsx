@@ -39,6 +39,8 @@ interface CartItem {
   imageUrl?: string;
   stock: number;
   stockAllLocations: number;
+  /** Số bán được ngay (tồn trên kệ; combo = số bộ): số lượng trong giỏ không được vượt quá. */
+  availableStock: number;
 }
 
 interface InvoiceState {
@@ -232,8 +234,14 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     );
 
     if (existingIndex > -1) {
+      const current = activeInvoice.items[existingIndex];
+      // Chọn lại món đã có thì +1, nhưng không vượt số có trên kệ.
+      if (current.quantity + 1 > current.availableStock) {
+        toast.warning(`${product.name} chỉ còn ${current.availableStock} trên kệ`);
+        return;
+      }
       const updatedItems = [...activeInvoice.items];
-      updatedItems[existingIndex].quantity += 1;
+      updatedItems[existingIndex] = { ...current, quantity: current.quantity + 1 };
       updateActiveInvoice({ items: updatedItems });
       toast.success(`Đã tăng số lượng ${product.name}`);
     } else {
@@ -249,6 +257,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         imageUrl: product.imageUrl,
         stock: product.stock,
         stockAllLocations: product.stockAllLocations,
+        availableStock: product.availableStock,
       };
       updateActiveInvoice({ items: [...activeInvoice.items, newItem] });
       toast.success(`Đã thêm ${product.name} vào giỏ hàng`);
@@ -260,6 +269,12 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     productItemId: string,
     quantity: number,
   ) => {
+    const target = activeInvoice.items.find((item) => item.productItemId === productItemId);
+    // Gõ số lượng lớn hơn số trên kệ thì kéo về đúng số trên kệ (và báo), không để giỏ vượt tồn.
+    if (target && quantity > target.availableStock) {
+      toast.warning(`${target.name} chỉ còn ${target.availableStock} trên kệ`);
+      quantity = target.availableStock;
+    }
     const updated = activeInvoice.items.map((item) =>
       item.productItemId === productItemId ? { ...item, quantity } : item,
     );

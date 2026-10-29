@@ -97,6 +97,10 @@ export interface ProductItem {
   // Tồn của biến thể này ở TẤT CẢ chi nhánh/kho, không phụ thuộc bộ lọc địa điểm. BE luôn
   // trả về số - 0 nghĩa là cả chuỗi chưa có, không phải "chưa nạp".
   stockAllLocations?: number;
+  // Số có thể bán ngay tại địa điểm đang xem: tồn trên kệ = tồn − hàng đã đóng gói cho đơn khác.
+  // Với combo là số bộ còn bán được (món khan nhất quyết định). Quầy chặn thêm giỏ theo số này,
+  // không theo `stock`, vì BE chỉ trừ được phần trên kệ.
+  availableStock?: number;
   stockDetails?: StockDetail[];
   createdAt?: string;
   updatedAt?: string;
