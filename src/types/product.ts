@@ -49,6 +49,12 @@ export interface ComboComponent {
     costPrice: number;
     /** Ảnh của phiên bản, không có thì ảnh hàng hoá; null = chưa có ảnh nào. */
     thumbnailUrl: string | null;
+    /** Tồn của thành phần tại địa điểm đang xem (combo lồng: số bộ). Dịch vụ luôn 0. */
+    stock?: number;
+    /** Số bán được ngay = tồn trên kệ. Combo lồng: số bộ combo con còn bán được. */
+    availableStock?: number;
+    /** Tồn toàn chuỗi (cùng nghĩa với `availableStock` nhưng qua mọi chi nhánh/kho). */
+    stockAllLocations?: number;
   };
 }
 
