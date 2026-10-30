@@ -15,8 +15,12 @@ export type ProductScreen = {
   title: string
   description: string
   breadcrumb: string
-  /** Combo không giữ tồn riêng (tồn nằm ở từng món) nên màn combo bỏ cột tồn và tìm liên chi nhánh. */
+  /** Cột "Tồn kho" và bộ lọc tồn. Combo không giữ tồn riêng: con số của nó là số bộ mà các thành phần đủ cho (BE tính). */
   showStock: boolean
+  /** Dòng phụ "Toàn chuỗi" dưới số tồn khi đang xem theo một chi nhánh / kho. Màn combo không hiện: chỉ có số bộ của chi nhánh đang xem. */
+  showChainStock: boolean
+  /** Nút "Tìm ở chi nhánh khác". Tìm theo hàng có tồn nên chỉ có ở màn hàng hoá; combo không có tồn riêng để tìm. */
+  crossBranchSearch: boolean
 }
 
 export const PRODUCTS_SCREEN: ProductScreen = {
@@ -27,6 +31,8 @@ export const PRODUCTS_SCREEN: ProductScreen = {
   description: 'Quản lý danh sách hàng hóa, giá bán và tồn kho',
   breadcrumb: 'Danh sách',
   showStock: true,
+  showChainStock: true,
+  crossBranchSearch: true,
 }
 
 export const COMBOS_SCREEN: ProductScreen = {
@@ -36,7 +42,9 @@ export const COMBOS_SCREEN: ProductScreen = {
   title: 'Combo',
   description: 'Quản lý các bộ sản phẩm bán theo giá trọn bộ',
   breadcrumb: 'Combo',
-  showStock: false,
+  showStock: true,
+  showChainStock: false,
+  crossBranchSearch: false,
 }
 
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {

@@ -130,7 +130,7 @@ export function ProductsToolbar({ table }: ProductsToolbarProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        {screen.showStock && (
+        {screen.crossBranchSearch && (
           <Button
             variant="outline"
             size="sm"

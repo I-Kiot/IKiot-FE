@@ -23,6 +23,7 @@ import { productApi } from "@/lib/api/product";
 import { inventoryApi } from "@/lib/api/inventory";
 import Image from "next/image";
 import { ProductsEmpty } from "../products-empty";
+import { ComboStockList } from "../combo-stock-list";
 import { ProductsItemMutateDialog } from "../dialogs/products-item-mutate-dialog";
 import { ProductsItemDetailSheet } from "../dialogs/products-item-detail-sheet";
 import { ImageGalleryDialog } from "../image-gallery-dialog";
@@ -250,20 +251,20 @@ export function ProductsExpandedPanel({
                         )}
                       </span>
                     </div>
-                    {/* Combo không có tồn riêng: hiện số món thay cho tồn (chi tiết ở sheet). */}
-                    {item.itemType === "COMBO" ? (
+                    {/* Combo: số bộ bán được = thành phần khan nhất quyết định (BE tính); chi tiết từng thành phần ở khối dưới. */}
+                    {item.itemType === "COMBO" && (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-muted-foreground">
+                          Thành phần
+                        </span>
+                        <span className="font-semibold">
+                          {item.comboComponents?.length ?? 0} món
+                        </span>
+                      </div>
+                    )}
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs text-muted-foreground">
-                        Thành phần
-                      </span>
-                      <span className="font-semibold">
-                        {item.comboComponents?.length ?? 0} món
-                      </span>
-                    </div>
-                    ) : (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-muted-foreground">
-                        Tồn kho
+                        {item.itemType === "COMBO" ? "Tồn kho (số bộ)" : "Tồn kho"}
                       </span>
                       <span
                         className={cn(
@@ -278,7 +279,6 @@ export function ProductsExpandedPanel({
                         {item.stock ?? 0}
                       </span>
                     </div>
-                    )}
                     {item.warrantyPeriod && (
                       <div className="flex flex-col gap-0.5">
                         <span className="text-xs text-muted-foreground">
@@ -306,6 +306,14 @@ export function ProductsExpandedPanel({
                         </div>
                       </div>
                     )}
+                    {item.itemType === "COMBO" && item.comboComponents?.length ? (
+                      <div className="col-span-full flex flex-col gap-1.5">
+                        <span className="text-xs text-muted-foreground">
+                          Tồn kho thành phần
+                        </span>
+                        <ComboStockList components={item.comboComponents} />
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 <Separator />

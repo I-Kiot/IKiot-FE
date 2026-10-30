@@ -40,11 +40,10 @@ export function ProductsTable() {
   const isLocationScoped = parseLocationKey(locationKey) !== null
   const columns = useMemo(
     () =>
-      getProductsColumns(brands, categories, isLocationScoped).filter(
-        // Combo không có tồn riêng - con số luôn 0 và chỉ gây hiểu nhầm.
+      getProductsColumns(brands, categories, isLocationScoped && screen.showChainStock).filter(
         (column) => screen.showStock || column.id !== 'stock',
       ),
-    [brands, categories, isLocationScoped, screen.showStock],
+    [brands, categories, isLocationScoped, screen.showStock, screen.showChainStock],
   )
 
   const [sorting, setSorting] = useState<SortingState>([{ id: 'status', desc: false }])
