@@ -7,12 +7,15 @@ import {
   type OrderDetail,
 } from "@/types/order-flow";
 import { formatDateTime, formatVND } from "../../shared/order-display";
+import { isStorePickup } from "@/lib/order-pickup";
 import { InfoRow } from "./order-info-card";
 
 /** The money: totals, deposit, what the shipper collects (journey GĐ1 – Bước 1, 7). */
 export function OrderPaymentCard({ order }: { order: OrderDetail }) {
   const { collection } = order;
   const discount = order.discountValue;
+  // Khách tới lấy trả tại quầy chứ không qua shipper.
+  const pickup = isStorePickup(order);
 
   return (
     <Card>
@@ -39,13 +42,15 @@ export function OrderPaymentCard({ order }: { order: OrderDetail }) {
           }
         />
         <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
-          <span className="text-sm font-medium">Còn phải thu khi giao</span>
+          <span className="text-sm font-medium">
+            {pickup ? "Còn phải thu khi khách lấy hàng" : "Còn phải thu khi giao"}
+          </span>
           <span className="text-base font-semibold">{formatVND(order.amountDue)}</span>
         </div>
 
         {collection && (
           <div className="space-y-2 pt-2">
-            <p className="text-sm font-semibold">Thu tiền khi giao</p>
+            <p className="text-sm font-semibold">{pickup ? "Thu tiền tại quầy" : "Thu tiền khi giao"}</p>
             <InfoRow
               label="Hình thức"
               value={COLLECTION_METHOD_LABELS[collection.method] ?? collection.method}
