@@ -15,6 +15,7 @@ import { getCachedUser, getSessionRole } from "@/lib/auth";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { orderReturnApi } from "@/lib/api/order-return";
 import { shipmentApi } from "@/lib/api/shipment";
+import { isStorePickup } from "@/lib/order-pickup";
 import { isDeliveryFailed, type OrderDetail } from "@/types/order-flow";
 import { PackOrderDialog } from "../../../../fulfillments/components/pack-order-dialog";
 import { HandOverDialog } from "../../../../shipments/components/hand-over-dialog";
@@ -133,8 +134,10 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
 
   const showPack = order.status === "CONFIRMED" && permissions.canPack;
   // Đã gán shipper thì không giao lần nữa; chờ shipper (hoặc người bấm hộ) xác nhận đã lấy hàng.
+  // Đơn khách tới lấy không đi qua vận chuyển (xem `pickup` bên dưới).
+  const pickup = isStorePickup(order);
   const showHandOver =
-    order.status === "PACKED" && !awaitingPickUp && permissions.canHandOver;
+    order.status === "PACKED" && !pickup && !awaitingPickUp && permissions.canHandOver;
   const showAwaitingPickUp = order.status === "PACKED" && awaitingPickUp !== undefined;
   const showPickUp = showAwaitingPickUp && permissions.canActOnDelivery(awaitingPickUp);
   const showShip = order.status === "PICKED_UP" && permissions.canShip;
