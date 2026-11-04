@@ -43,7 +43,7 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   ...CARDS.map((card) => ({ value: card.status, label: card.label })),
 ];
 
-/** `YYYY-MM-DD` of `days` ago in the browser's calendar. */
+/** `YYYY-MM-DD` của `days` ngày trước, theo lịch của trình duyệt. */
 function daysAgoIso(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() - days);

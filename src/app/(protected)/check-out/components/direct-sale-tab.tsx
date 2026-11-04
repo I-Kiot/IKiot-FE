@@ -55,7 +55,7 @@ interface InvoiceState {
   paymentMethod: "CASH" | "SEPAY";
   customerPay: number;
   note: string;
-  /** Promotions manually assigned via the "Gán giảm giá" picker - at most 2, and if 2, both stackable. */
+  /** Khuyến mãi gán tay qua picker "Gán giảm giá": tối đa 2, và nếu có 2 thì cả hai phải cộng dồn được. */
   selectedPromotionIds: string[];
 }
 
@@ -108,19 +108,15 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     return () => mediaQuery.removeEventListener("change", handleMediaChange);
   }, []);
 
-  // Resolve the active branch the same way for the promotion preview and the final order payload
+  // Chi nhánh bán được xác định giống nhau cho preview khuyến mãi và payload đơn cuối.
   const resolveBranchId = (): string => salesBranchId;
 
-  // Discount preview for the active invoice's manually assigned promotion(s).
-  // Tagged with the signature (cart + selected promotion ids) it was computed for,
-  // so a stale result (still in flight while the cart, selection, or tab changes)
-  // is simply ignored at render time instead of being cleared with a synchronous
-  // setState inside the effect.
+  // Preview giảm giá cho khuyến mãi gán tay của hóa đơn đang chọn.
+  // Kèm signature (giỏ + id khuyến mãi) lúc tính; kết quả cũ còn đang bay sẽ bị bỏ qua khi render, không xoá bằng setState trong effect.
   const [promotionResult, setPromotionResult] = useState<
     (PromotionCalculateResponse & { signature: string }) | null
   >(null);
 
-  // Modals state
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isPromotionPickerOpen, setIsPromotionPickerOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -134,12 +130,10 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     receiptSnapshot: any;
   } | null>(null);
 
-  // Active invoice getter
   const activeInvoice = useMemo(() => {
     return invoices.find((inv) => inv.id === activeTabId) || invoices[0];
   }, [invoices, activeTabId]);
 
-  // Update helper for active invoice state
   const updateActiveInvoice = (updates: Partial<InvoiceState>) => {
     setInvoices((prev) =>
       prev.map((inv) =>
@@ -148,8 +142,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     );
   };
 
-  // Signature identifying which cart (items + customer) the active invoice has -
-  // used both to key the promotion calculation and to feed the picker dialog.
+  // Signature của giỏ (items + khách) trên hóa đơn đang chọn; dùng để khoá tính khuyến mãi và truyền vào picker.
   const cartSignature = useMemo(() => {
     if (activeInvoice.items.length === 0) return null;
     const itemsKey = activeInvoice.items
@@ -158,17 +151,14 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     return `${itemsKey}|${activeInvoice.selectedCustomer?.id ?? ""}`;
   }, [activeInvoice.items, activeInvoice.selectedCustomer]);
 
-  // Signature the current promotionResult is valid for - includes the selected promotion
-  // ids, so switching the selection (or clearing it) invalidates a stale result too.
+  // Signature mà promotionResult hiện tại hợp lệ; gồm id khuyến mãi nên đổi (hoặc bỏ) lựa chọn cũng làm kết quả cũ mất hiệu lực.
   const promotionSignature = useMemo(() => {
     if (!cartSignature || activeInvoice.selectedPromotionIds.length === 0) return null;
     return `${cartSignature}|${[...activeInvoice.selectedPromotionIds].sort().join(",")}`;
   }, [cartSignature, activeInvoice.selectedPromotionIds]);
 
-  // Recompute the discount for the active invoice's manually assigned promotion(s) whenever
-  // the cart or the selection changes (debounced). If a previously eligible promotion no
-  // longer qualifies (e.g. cart edited below its minOrderValue), the backend rejects the
-  // whole selection - drop it and let the user reassign.
+  // Tính lại giảm giá khi giỏ hoặc lựa chọn khuyến mãi đổi (debounce). Nếu khuyến mãi không còn đủ điều kiện (vd giỏ dưới minOrderValue),
+  // BE từ chối cả lựa chọn: bỏ chọn để người dùng gán lại.
   useEffect(() => {
     if (!promotionSignature) return;
 
@@ -205,14 +195,12 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [promotionSignature, branches, salesBranchId]);
 
-  // Ignore a promotion result computed for a different cart/selection (stale tab switch,
-  // in-flight edit, or a selection that was just cleared).
+  // Bỏ qua kết quả tính cho giỏ/lựa chọn khác (đổi tab, đang sửa, hoặc vừa bỏ chọn).
   const activePromotionResult =
     promotionResult?.signature === promotionSignature ? promotionResult : null;
   const promotionDiscount = activePromotionResult?.totalDiscount ?? 0;
   const hasPromotionApplied = activeInvoice.selectedPromotionIds.length > 0;
 
-  // Add new tab
   const handleTabAdd = () => {
     if (invoices.length >= 10) {
       toast.warning("Hệ thống chỉ cho phép tối đa 10 hóa đơn nháp cùng lúc.");
@@ -228,23 +216,20 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     toast.success(`Đã mở ${nextName}`);
   };
 
-  // Close tab
   const handleTabClose = (id: string) => {
-    if (invoices.length === 1) return; // Keep at least one
+    if (invoices.length === 1) return;
 
     const index = invoices.findIndex((inv) => inv.id === id);
     const updated = invoices.filter((inv) => inv.id !== id);
     setInvoices(updated);
 
     if (activeTabId === id) {
-      // Switch active tab to previous or first
       const nextActiveIndex = index > 0 ? index - 1 : 0;
       setActiveTabId(updated[nextActiveIndex].id);
     }
     toast.info("Đã xóa hóa đơn nháp.");
   };
 
-  // Add product to cart
   const handleProductSelect = (product: any) => {
     const existingIndex = activeInvoice.items.findIndex(
       (item) => item.productItemId === product.id,
@@ -281,7 +266,6 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     }
   };
 
-  // Item modifications
   const handleItemQuantityChange = (
     productItemId: string,
     quantity: number,
@@ -326,7 +310,6 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     toast.info("Đã xóa sản phẩm khỏi giỏ hàng.");
   };
 
-  // Calculation details
   const subtotal = useMemo(() => {
     return activeInvoice.items.reduce(
       (acc, item) =>
@@ -335,8 +318,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     );
   }, [activeInvoice.items]);
 
-  // Assigned promotion(s) and the manual order-level discount are mutually exclusive:
-  // once the user assigns a promotion, it wins and the manual discount is ignored.
+  // Khuyến mãi gán và giảm giá tay cấp đơn loại trừ nhau: khi đã gán khuyến mãi thì nó thắng, giảm giá tay bị bỏ qua.
   const grandTotal = useMemo(() => {
     const calculatedDiscount = hasPromotionApplied
       ? promotionDiscount
@@ -355,7 +337,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     promotionDiscount,
   ]);
 
-  // Keep paid amount updated when grand total drops
+  // Kéo tiền khách đưa theo tổng khi tổng giảm, hoặc khi không phải tiền mặt.
   useEffect(() => {
     if (
       activeInvoice.paymentMethod !== "CASH" ||
@@ -365,7 +347,6 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     }
   }, [grandTotal]);
 
-  // Complete checkout order
   const handleCheckoutSubmit = () => {
     if (activeInvoice.items.length === 0) {
       toast.error("Không thể thanh toán đơn hàng trống!");
@@ -383,8 +364,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
       return;
     }
 
-    // Snapshot of the cart the promotion preview was calculated for - captured now
-    // because the invoice resets as soon as order creation succeeds below.
+    // Chụp giỏ lúc preview khuyến mãi được tính, phải lấy ngay vì hóa đơn reset ngay khi tạo đơn thành công.
     const promotionToApply =
       hasPromotionApplied && activePromotionResult
         ? {
@@ -419,21 +399,9 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
           : (subtotal * activeInvoice.discount) / 100;
     }
 
-    // What goes on the wire is deliberately narrower than what the receipt below prints.
-    // `POST /orders` computes the money itself: the total from the lines, and - when the
-    // sale carries promotions - the discount from the engine, which it then spreads across
-    // the lines. So the client names the promotions and nothing else.
-    //
-    // `discountType: "PROMOTION"` is now **rejected outright** (`@IsIn(['ORDER'])`, 400):
-    // sending `appliedPromotions` is what makes a sale a promotion sale, and asking the
-    // till to also declare a total it doesn't compute is how the screen and the stored
-    // order ended up able to disagree. `ORDER` - the cashier's own typed-in whole-order
-    // discount - is still sent, with its value.
-    //
-    // `grandTotal`, `items[].unitPrice` and `items[].productName` are gone for the same
-    // reason: the server prices from the catalogue. They were being dropped silently by
-    // `whitelist: true` anyway, which made the payload read as though the till set the
-    // price when it never did.
+    // Payload chỉ gửi những gì BE cần: POST /orders tự tính tổng từ các dòng và giảm giá từ engine khuyến mãi.
+    // `discountType: "PROMOTION"` bị BE từ chối (@IsIn(['ORDER']), 400); gửi `appliedPromotions` đã đủ để thành đơn khuyến mãi.
+    // `ORDER` (giảm giá tay cả đơn) vẫn gửi kèm giá trị. Không gửi `grandTotal`, `unitPrice`, `productName`: server tự định giá từ catalogue.
     const payload = {
       customerId: activeInvoice.selectedCustomer?.id,
       branchId: resolvedBranchId,
@@ -486,8 +454,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         const orderId = createdOrder.id || (createdOrder as any).id || "";
         const receipt = buildReceipt(createdOrder, orderId);
 
-        // Commit promotion usage/log now that the order exists - best-effort: the order
-        // is already paid, so a logging failure here shouldn't block the checkout flow.
+        // Ghi nhận lượt dùng khuyến mãi sau khi đơn đã tạo, best-effort: đơn đã thu tiền nên lỗi ghi log không chặn luồng thanh toán.
         if (promotionToApply && orderId) {
           promotionApi.apply({ ...promotionToApply, orderId }).catch((error) => {
             console.error("Lỗi khi ghi nhận khuyến mãi cho đơn hàng:", error);
@@ -522,7 +489,6 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     });
   };
 
-  // Reset/Cancel order cart
   const handleCancelOrder = () => {
     if (
       confirm(
@@ -536,20 +502,16 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     }
   };
 
-  // Global Keyboard Shortcuts
   useEffect(() => {
     const handleShortcuts = (e: KeyboardEvent) => {
-      // Ctrl + I to add a new tab
       if (e.ctrlKey && e.key.toLowerCase() === "i") {
         e.preventDefault();
         handleTabAdd();
       }
-      // F9 to checkout order
       if (e.key === "F9") {
         e.preventDefault();
         handleCheckoutSubmit();
       }
-      // F4 to select exact amount
       if (e.key === "F4") {
         e.preventDefault();
         updateActiveInvoice({ customerPay: grandTotal });
@@ -564,13 +526,10 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
 
   return (
     <div className="h-full w-full flex flex-col gap-4 p-4 overflow-hidden bg-background">
-      {/* Main Resizable Layout: Left Column Cart + Search | Right Column Billing Sidebar */}
       <ResizablePanelGroup direction={direction} className="flex-1 min-h-0 gap-4">
-        {/* Left Side: Search + Active Tab + Cart Items list */}
         <ResizablePanel defaultSize={65} minSize={30}>
           <div className="h-full flex flex-col gap-4 min-h-0">
             <div className="flex flex-col gap-3 bg-card p-4 rounded-xl border shadow-sm shrink-0">
-              {/* Tabs Control */}
               <CheckoutTabs
                 tabs={invoices.map((inv) => ({
                   id: inv.id,
@@ -582,14 +541,12 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
                 onTabClose={handleTabClose}
               />
 
-              {/* Product Autocomplete Lookup */}
               <ProductSearch
                 onProductSelect={handleProductSelect}
                 location={salesBranchId ? { id: salesBranchId, type: "BRANCH" } : null}
               />
             </div>
 
-            {/* Cart items list - scrollable wrapper */}
             <div className="flex-1 min-h-0 overflow-y-auto">
               <CartItems
                 items={activeInvoice.items}
@@ -604,7 +561,6 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
 
         <ResizableHandle withHandle className="hidden lg:flex" />
 
-        {/* Right Side: Billing details card */}
         <ResizablePanel defaultSize={35} minSize={25}>
           <div className="h-full min-h-0">
             <CheckoutSidebar
@@ -651,7 +607,6 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      {/* Quick modal forms */}
       <CustomerDialog
         open={isCustomerModalOpen}
         onOpenChange={setIsCustomerModalOpen}

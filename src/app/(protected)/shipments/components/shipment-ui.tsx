@@ -61,8 +61,8 @@ export function ShipmentStatusBadge({ status }: { status: ShipmentStatus }) {
 }
 
 /**
- * Lần giao đang trên đường (đơn đã Đang vận chuyển): chỉ lúc này mới ghi "Đang đi giao", báo giao không thành
- * hay giao xong. FAILED vẫn tính: hàng chưa về shop nên shipper còn giao lại được, tới khi shop xác nhận hàng đã hoàn về.
+ * Lần giao đang trên đường (đơn Đang vận chuyển): chỉ lúc này mới ghi "Đang đi giao". FAILED vẫn tính vì hàng chưa về shop,
+ * nên shipper còn giao lại được tới khi shop xác nhận hàng đã hoàn về.
  */
 export function isOnTheRoad(status: ShipmentStatus): boolean {
   return status === "IN_TRANSIT" || status === "OUT_FOR_DELIVERY" || status === "FAILED";
@@ -74,8 +74,8 @@ export function isFinished(status: ShipmentStatus): boolean {
 }
 
 /**
- * Nút nào được hiện cho người đang đăng nhập. Chỉ để ẩn nút người dùng chắc chắn không bấm được – luật
- * thật (người phụ trách đơn, đứng đúng kho) do BE quyết định, sai thì BE trả `ORDER_STEP_DENIED`.
+ * Nút nào hiện cho người đăng nhập, chỉ để ẩn nút chắc chắn không bấm được. Luật thật (người phụ trách đơn, đúng kho)
+ * do BE quyết; sai thì BE trả `ORDER_STEP_DENIED`.
  */
 export function shipmentActions(shipment?: Pick<ShipmentSummary, "driver"> | null) {
   const user = getCachedUser();
@@ -90,9 +90,8 @@ export function shipmentActions(shipment?: Pick<ShipmentSummary, "driver"> | nul
 }
 
 /**
- * Nhật trình của một lần giao, mới nhất lên đầu (kể cả khi BE đổi thứ tự trả về). Mốc "Đã giao" kèm
- * ảnh bằng chứng shipper đã tải lên lúc xác nhận giao - ảnh nằm ở lần giao chứ không ở từng mốc, nên chỉ
- * gắn vào đúng mốc DELIVERED.
+ * Nhật trình của một lần giao, mới nhất lên đầu. Ảnh bằng chứng nằm ở lần giao chứ không ở từng mốc,
+ * nên chỉ gắn vào mốc DELIVERED.
  */
 export function ShipmentTimeline({ shipment }: { shipment: Pick<Shipment, "events" | "proofPhotoUrls"> }) {
   const events = [...shipment.events].sort(

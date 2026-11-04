@@ -102,12 +102,10 @@ export function CartItems({
                 key={item.productItemId}
                 className="group hover:bg-muted/30 transition-colors duration-150"
               >
-                {/* Ordinal Index */}
                 <TableCell className="text-center font-medium font-mono text-muted-foreground text-base">
                   {index + 1}
                 </TableCell>
 
-                {/* Product details */}
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-bold text-lg text-foreground">
@@ -126,7 +124,6 @@ export function CartItems({
                   </div>
                 </TableCell>
 
-                {/* Quantity editor */}
                 <TableCell>
                   <div className="flex items-center justify-center gap-1">
                     <Button
@@ -168,7 +165,6 @@ export function CartItems({
                   </div>
                 </TableCell>
 
-                {/* Unit Price editor */}
                 <TableCell>
                   <div className="flex justify-end">
                     <MoneyInput
@@ -179,12 +175,11 @@ export function CartItems({
                   </div>
                 </TableCell>
 
-                {/* Unit Discount editor */}
                 <TableCell>
                   <div className="flex justify-end">
                     <MoneyInput
                       value={item.discountAmount}
-                      // Clamp discount amount to item unit price
+                      // Giảm giá không vượt đơn giá.
                       max={item.unitPrice}
                       onChange={(val) => onDiscountChange(item.productItemId, val)}
                       className="w-24 h-9 text-right text-base font-bold text-red-500 tabular-nums px-1.5 focus-visible:ring-primary"
@@ -192,12 +187,10 @@ export function CartItems({
                   </div>
                 </TableCell>
 
-                {/* Row Total */}
                 <TableCell className="text-right font-bold text-lg tabular-nums text-foreground">
                   {formatVND(rowTotal)}
                 </TableCell>
 
-                {/* Delete button */}
                 <TableCell>
                   <Button
                     type="button"

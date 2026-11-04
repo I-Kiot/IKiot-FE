@@ -59,12 +59,8 @@ export function OrderQrDialog({
 
     const socket = getSocket();
 
-    // The old server broadcast to an `order:<id>` room the client joined itself; the
-    // rewrite only puts sockets into rooms it chose, so this arrives on `tenant:<id>`
-    // with the order id in the payload. Matching on it is not optional: every till in
-    // the shop now receives every `order:paid`, so an unfiltered handler would close
-    // this dialog - and report the sale as settled - the moment *another* cashier's
-    // customer paid.
+    // Event order:paid đi tới room tenant:<id> kèm orderId trong payload. BẮT BUỘC lọc theo orderId: mọi máy POS trong shop đều nhận,
+    // không lọc thì báo đã thu tiền khi khách khác vừa trả.
     const handlePaid = (payload?: { orderId?: string }) => {
       if (payload?.orderId && payload.orderId !== orderId) return;
       if (paidOfflineRef.current) return;
@@ -131,7 +127,6 @@ export function OrderQrDialog({
         <div className="space-y-4 py-2">
           {status === "pending" && (
             <>
-              {/* QR Image */}
               <div className="flex justify-center">
                 <div className="rounded-xl border-2 border-border p-2 bg-white shadow-sm">
                   <img
@@ -142,7 +137,6 @@ export function OrderQrDialog({
                 </div>
               </div>
 
-              {/* Amount */}
               <div className="text-center">
                 <div className="text-3xl font-extrabold text-primary tabular-nums">
                   {formatVND(grandTotal)}
@@ -152,7 +146,6 @@ export function OrderQrDialog({
                 </p>
               </div>
 
-              {/* Reference code */}
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted border">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground">Nội dung chuyển khoản</p>
@@ -171,7 +164,6 @@ export function OrderQrDialog({
                 </Button>
               </div>
 
-              {/* Socket listening indicator */}
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
                 <span>Đang chờ xác nhận thanh toán...</span>

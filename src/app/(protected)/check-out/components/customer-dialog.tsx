@@ -66,7 +66,7 @@ export function CustomerDialog({
 
   const onSubmit = async (data: CustomerFormValues) => {
     try {
-      // 1. Call POST /customers to create the customer
+      // 1. Tạo khách qua POST /customers.
       const createdCustomer = await customerApi.create({
         name: data.name,
         phone: data.phone,
@@ -74,7 +74,7 @@ export function CustomerDialog({
         gender: data.gender,
       });
 
-      // 2. Call GET /customers/:id to retrieve the details (as requested by user flow)
+      // 2. Lấy chi tiết qua GET /customers/:id theo luồng người dùng yêu cầu.
       const fetchedCustomer = await customerApi.getById(createdCustomer.id);
 
       onCustomerAdded(fetchedCustomer);

@@ -1,4 +1,3 @@
-// [Table – Orchestrator Shipment]
 "use client";
 
 // Bảng phân trang ở server dùng chung cho hai tab của màn Giao hàng: hook tải dữ liệu (`usePagedList`),
@@ -19,7 +18,6 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { cn } from "@/lib/utils";
 import type { Paginated } from "@/types/order-flow";
 
-// ─── Tải dữ liệu ────────────────────────────────────────────────────────────
 
 /** Tình trạng danh sách: đang tải lần đầu, tải lỗi, hoặc đã có một trang. */
 export type PagedState<T> =
@@ -31,11 +29,9 @@ export type PagedState<T> =
 export type PageParams = { page: number; limit: number };
 
 /**
- * Tải trang `query` mỗi khi query hoặc `reloadKey` đổi. `load` phải ổn định (khai báo ngoài component).
- * - Response của lần gọi cũ về sau thì bỏ, không đè lên trang đang xem.
- * - Trang hiện tại rỗng mà không phải trang 1 (vd. vừa xử lý dòng cuối của trang cuối) → lùi về trang
- *   cuối còn dữ liệu; effect tự chạy lại.
- * Mỗi nhánh của `.then()` chỉ gọi một setter (lint cấm setState trong useEffect).
+ * Tải trang `query` khi query hoặc `reloadKey` đổi. `load` phải ổn định (khai báo ngoài component).
+ * Response cũ về sau thì bỏ. Trang rỗng mà không phải trang 1 thì lùi về trang cuối còn dữ liệu; effect tự chạy lại.
+ * Mỗi nhánh `.then()` chỉ gọi một setter (lint cấm setState trong useEffect).
  */
 export function usePagedList<T, Q extends PageParams>(
   load: (query: Q) => Promise<Paginated<T>>,
@@ -68,7 +64,6 @@ export function usePagedList<T, Q extends PageParams>(
   return state;
 }
 
-// ─── Bảng ───────────────────────────────────────────────────────────────────
 
 interface PagedTableProps<T extends { id: string }, Q extends PageParams> {
   state: PagedState<T>;

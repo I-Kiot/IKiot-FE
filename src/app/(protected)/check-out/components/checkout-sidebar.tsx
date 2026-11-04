@@ -40,15 +40,15 @@ interface Customer {
 interface CheckoutSidebarProps {
   totalQuantity: number;
   subtotal: number;
-  /** Fully computed total (subtotal - discount/promotion + VAT) - the single source of truth for display and payment. */
+  /** Tổng đã tính đủ (tạm tính - giảm giá/khuyến mãi + VAT), nguồn duy nhất cho hiển thị và thanh toán. */
   grandTotal: number;
   discount: number;
   discountType: "cash" | "percent";
-  /** Ids of the manually assigned promotions. When non-empty, the manual discount input below is locked (mutually exclusive). */
+  /** Id khuyến mãi đã gán. Khi có, ô giảm giá tay bên dưới bị khoá vì hai cách loại trừ nhau. */
   selectedPromotionIds: string[];
-  /** Resolved discount amount for the currently assigned promotion(s), from the last successful calculate call. */
+  /** Số tiền giảm của khuyến mãi đang gán, lấy từ lần calculate thành công gần nhất. */
   promotionDiscount: number;
-  /** Names of the promotions currently assigned, for display next to the discount amount. */
+  /** Tên khuyến mãi đang gán, hiển thị cạnh số tiền giảm. */
   promotionNames: string[];
   paymentMethod: "CASH" | "SEPAY";
   /** Tài khoản của shop chưa liên kết SePay: khoá "Chuyển khoản" (BE cũng từ chối). */
@@ -110,7 +110,6 @@ export function CheckoutSidebar({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Search customer records dynamically from backend
   useEffect(() => {
     if (!customerQuery.trim()) {
       setCustomerResults([]);
@@ -141,7 +140,6 @@ export function CheckoutSidebar({
     };
   }, [customerQuery]);
 
-  // Click outside to close customer search dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -157,19 +155,16 @@ export function CheckoutSidebar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Set the search text to empty when a customer is chosen/reset
   useEffect(() => {
     if (selectedCustomer) {
       setCustomerQuery("");
     }
   }, [selectedCustomer]);
 
-  // Billing math - grandTotal is fully computed by the parent (subtotal, discount/promotion,
-  // VAT all folded in already); this component only derives display-only values from it.
+  // Billing: grandTotal đã được parent tính đủ (tạm tính, giảm giá/khuyến mãi, VAT); component này chỉ suy ra giá trị hiển thị.
   const hasPromotionApplied = selectedPromotionIds.length > 0;
   const changeDue = Math.max(0, customerPay - grandTotal);
 
-  // Quick cash triggers
   const handleQuickCash = (amount: number) => {
     onCustomerPayChange(amount);
   };
@@ -182,7 +177,6 @@ export function CheckoutSidebar({
     Math.ceil(grandTotal / 500000) * 500000,
   ].filter((v) => v >= grandTotal && v > 0);
 
-  // Ensure suggestions are unique and reasonable
   const uniqueCashSuggestions = Array.from(new Set(cashSuggestions)).slice(
     0,
     4,
@@ -200,7 +194,6 @@ export function CheckoutSidebar({
       </CardHeader>
 
       <CardContent className="space-y-4 pb-4 flex-1 overflow-y-auto scrollbar-thin">
-        {/* Customer Select */}
         <div className="space-y-1.5 relative">
           <Label className="font-semibold text-base text-muted-foreground">
             Khách hàng
@@ -291,7 +284,6 @@ export function CheckoutSidebar({
 
         <Separator className="my-2" />
 
-        {/* Pricing Math Details */}
         <div className="space-y-3 text-base">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">
@@ -302,7 +294,7 @@ export function CheckoutSidebar({
             </span>
           </div>
 
-          {/* Assigned promotion(s) - mutually exclusive with the manual discount below */}
+          {/* Khuyến mãi đã gán, loại trừ với ô giảm giá tay bên dưới. */}
           {hasPromotionApplied ? (
             <div className="flex justify-between items-start gap-4">
               <span className="text-muted-foreground font-medium shrink-0">
@@ -346,7 +338,7 @@ export function CheckoutSidebar({
             </button>
           )}
 
-          {/* Discount Input - locked while a promotion is assigned */}
+          {/* Ô giảm giá tay, khoá khi đã gán khuyến mãi. */}
           <div
             className={cn(
               "flex items-center justify-between gap-4",
@@ -420,7 +412,6 @@ export function CheckoutSidebar({
 
           <Separator className="my-2" />
 
-          {/* Grand total */}
           <div className="flex justify-between items-center pt-1">
             <span className="text-muted-foreground font-bold text-lg">
               Khách cần trả
@@ -430,7 +421,6 @@ export function CheckoutSidebar({
             </span>
           </div>
 
-          {/* Payment Method Selector */}
           <div className="space-y-1.5 pt-1">
             <Label className="font-semibold text-base text-muted-foreground">
               Phương thức thanh toán
@@ -527,7 +517,6 @@ export function CheckoutSidebar({
             </div>
           )}
 
-          {/* SEPAY hint */}
           {paymentMethod === "SEPAY" && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm">
               <QrCode className="size-4 shrink-0 mt-0.5" />
@@ -540,7 +529,6 @@ export function CheckoutSidebar({
 
           {branchSelect}
 
-          {/* Order Note */}
           <div className="space-y-1 pt-1">
             <Label className="font-semibold text-base text-muted-foreground flex items-center gap-1">
               <FileText className="size-3" /> Ghi chú đơn hàng

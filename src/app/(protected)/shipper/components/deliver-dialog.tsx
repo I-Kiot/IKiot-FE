@@ -35,9 +35,8 @@ interface DeliverDialogProps {
 }
 
 /**
- * Chỉ thu đủ 100% (chốt 2026-10-06): số thu luôn bằng số còn phải thu, không cho sửa. Đã cọc đủ thì
- * không có gì phải thu. Ảnh tải lên ngay khi chọn; nút xác nhận khoá khi chưa có ảnh hoặc đang tải.
- * Nơi gọi đặt `key` theo lần mở nên mỗi lần mở là form trống.
+ * Chỉ thu đủ 100% (chốt 2026-10-06), số thu không cho sửa; đã cọc đủ thì không còn gì thu. Ảnh tải lên ngay khi chọn, xác nhận khoá tới khi xong.
+ * Nơi gọi đặt `key` theo lần mở.
  */
 export function DeliverDialog({ shipment, open, onClose, onDelivered, onNeedsReload }: DeliverDialogProps) {
   const amountDue = shipment.order.amountDue;
