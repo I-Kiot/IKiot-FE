@@ -61,8 +61,7 @@ export default function UsersPage() {
   }
 
   const handleEditUser = (user: User) => {
-    // For now, just log the user to edit
-    // In a real app, you'd open an edit dialog
+    // Mock: chưa mở dialog sửa, mới log user.
     console.log("Edit user:", user)
   }
 

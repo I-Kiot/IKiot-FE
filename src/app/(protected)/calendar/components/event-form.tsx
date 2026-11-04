@@ -128,7 +128,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Event Title */}
           <div className="space-y-2">
             <Label htmlFor="title" className="flex items-center gap-2">
               <Type className="w-4 h-4" />
@@ -143,7 +142,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             />
           </div>
 
-          {/* Event Type */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -168,7 +166,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             </div>
           </div>
 
-          {/* Date and Time */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -215,7 +212,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             </div>
           </div>
 
-          {/* Duration and All Day */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Duration</Label>
@@ -254,7 +250,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             </div>
           </div>
 
-          {/* Location */}
           <div className="space-y-2">
             <Label htmlFor="location" className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
@@ -268,7 +263,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             />
           </div>
 
-          {/* Attendees */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Users className="w-4 h-4" />
@@ -306,7 +300,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             )}
           </div>
 
-          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -318,7 +311,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             />
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3 pt-6">
             <Button onClick={handleSave} className="flex-1 cursor-pointer">
               {event ? "Update Event" : "Create Event"}

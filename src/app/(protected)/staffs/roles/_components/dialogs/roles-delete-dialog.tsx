@@ -1,4 +1,3 @@
-// [Dialog – Delete Role]
 'use client'
 
 import { useState } from 'react'
@@ -29,9 +28,7 @@ export function RolesDeleteDialog({
   const { handleDelete } = useRoles()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Backend từ chối xóa vai trò còn người giữ (409). Nút bị chặn sẵn ở đây để lời từ chối
-  // không đến sau cú bấm, nhưng backend vẫn là chỗ quyết định - con số này đọc từ lần tải
-  // danh sách gần nhất và có thể đã cũ.
+  // Backend từ chối xóa vai trò còn người giữ (409). Nút chặn sẵn để khỏi bấm vô ích, nhưng backend vẫn quyết định vì con số này có thể đã cũ.
   const inUse = (currentRow?.userCount ?? 0) > 0
 
   async function onConfirm() {

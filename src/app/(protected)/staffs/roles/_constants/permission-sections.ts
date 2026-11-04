@@ -1,15 +1,10 @@
-// [Constants – Permission sections]
 //
-// Cách màn Vai trò bày danh mục quyền: theo *công việc của người giữ vai trò* (nhân viên bán hàng, quản
-// lý, vận chuyển & kho, xưởng), không theo bảng tài nguyên × hành động của backend. Đây chỉ là cách sắp
-// xếp - không phải vai trò cố định: chủ shop vẫn tick từng ô, tạo vai trò nào cũng được.
+// Màn Vai trò bày quyền theo công việc người giữ vai trò (bán hàng, quản lý, vận chuyển & kho, xưởng), không theo bảng tài nguyên × hành động của BE. Chỉ là cách sắp xếp; chủ shop vẫn tick từng mã.
 //
-// Một ô có thể bật nhiều mã (`keys`): "Quản lý sản phẩm" = tạo + sửa + xoá, vì không shop nào cho tạo mà
-// cấm sửa. Mã BE giữ nguyên - gộp ở đây không cần migration; khi BE gộp mã thật thì chỉ sửa file này.
-// `requires`: tick ô thì kéo theo quyền xem cần để mở màn hình (bỏ tick không gỡ chúng).
+// Một ô có thể bật nhiều mã (`keys`), ví dụ "Quản lý sản phẩm" = tạo + sửa + xoá. Mã BE giữ nguyên; khi BE gộp mã thật thì chỉ sửa file này.
+// `requires`: tick ô kéo theo quyền xem cần để mở màn hình (bỏ tick không gỡ chúng).
 //
-// Quyền có trong danh mục mà không có ở đây vẫn hiện ở nhóm "Khác" (`OTHER_SECTION_ID`) - một quyền mới
-// thêm ở BE không bao giờ biến mất khỏi màn hình.
+// Quyền có trong danh mục mà không có ở đây vẫn hiện ở nhóm "Khác" (`OTHER_SECTION_ID`), nên quyền mới của BE không biến mất.
 import type { LucideIcon } from 'lucide-react'
 import { Factory, ShieldCheck, ShoppingBag, Truck } from 'lucide-react'
 
@@ -39,16 +34,12 @@ export type PermissionSection = {
 export const OTHER_SECTION_ID = 'other'
 
 /**
- * Tài nguyên còn được hiện ở nhóm "Khác" (chốt 2026-10-16). Mọi mã chưa xếp nhóm của tài nguyên khác là quyền
- * BE không kiểm tra hoặc chỉ admin nền tảng dùng - ẩn khỏi màn hình. Mã ẩn mà vai trò đang có vẫn được giữ
- * nguyên khi lưu. Tài nguyên mới BE thêm vào thì nhớ xếp vào một nhóm hoặc thêm vào đây.
+ * Tài nguyên hiện ở nhóm "Khác" (chốt 2026-10-16). Mã chưa xếp nhóm là quyền BE không kiểm tra hoặc chỉ admin nền tảng dùng, nên ẩn; mã ẩn vẫn giữ khi lưu. Tài nguyên mới: xếp nhóm hoặc thêm vào đây.
  */
 export const OTHER_SECTION_RESOURCES = ['sales_channels', 'fulfillments', 'users']
 
 /**
- * Quyền mọi vai trò đều có: thiếu chúng thì việc chính của nhân viên hỏng, còn cho thêm thì không lộ gì
- * quan trọng. Không hiện thành ô; được thêm vào khi lưu vai trò. (BE nên đưa vào `STAFF_BASE_PERMISSIONS`
- * - khi đó bỏ khỏi đây.)
+ * Quyền nền mọi vai trò đều có: thiếu thì việc chính của nhân viên hỏng, thêm vào không lộ gì quan trọng. Không hiện thành ô, tự thêm khi lưu. Khi BE có `STAFF_BASE_PERMISSIONS` thì bỏ khỏi đây.
  */
 export const ALWAYS_ON_PERMISSIONS: { key: string; label: string }[] = [
   { key: 'inventory:read', label: 'xem tồn kho' },

@@ -1,4 +1,3 @@
-// [Component – Permission picker]
 'use client'
 
 import { useMemo, useState } from 'react'
@@ -41,10 +40,7 @@ function groupState(items: ResolvedItem[], selected: Set<string>) {
 }
 
 /**
- * Chọn quyền cho một vai trò, bày theo công việc: Nhân viên bán hàng / Quản lý / Vận chuyển & kho / Xưởng
- * (`_constants/permission-sections.ts`). Cột trái chọn nhóm và cho thấy mỗi nhóm đã chọn bao nhiêu; cột
- * phải là các quyền của nhóm, chia khối, mỗi quyền một dòng có tên rõ nghĩa. Ô "chọn cả khối / cả nhóm" có
- * trạng thái thứ ba (chọn một phần) để một cú bấm nhầm không xoá mất các quyền đã chọn lẻ.
+ * Chọn quyền cho vai trò, theo nhóm công việc (`_constants/permission-sections.ts`). Ô "chọn cả khối" có trạng thái một phần để một cú bấm nhầm không xoá mất quyền đã chọn lẻ.
  */
 export function PermissionPicker({ groups, value, onChange, disabled }: PermissionPickerProps) {
   const { sections, allItems, alwaysOn } = usePermissionSections(groups)

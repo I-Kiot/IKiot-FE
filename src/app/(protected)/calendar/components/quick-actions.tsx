@@ -36,7 +36,6 @@ export function QuickActions({
 
   return (
     <div className="space-y-4">
-      {/* Quick Stats */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">Overview</CardTitle>
@@ -54,7 +53,6 @@ export function QuickActions({
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
@@ -119,7 +117,6 @@ export function QuickActions({
         </CardContent>
       </Card>
 
-      {/* Upcoming Events */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">

@@ -1,4 +1,3 @@
-// [Context – UI State]
 'use client'
 
 import React, { useState } from 'react'
