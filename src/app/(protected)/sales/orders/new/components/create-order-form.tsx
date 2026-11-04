@@ -537,6 +537,12 @@ function OrderDraftForm({
                   onChange={(event) => setRecipientPhone(event.target.value)}
                 />
               </div>
+              {fulfillment === "STORE_PICKUP" && (
+                <p className="text-sm text-muted-foreground sm:col-span-2">
+                  Khách tới cửa hàng nhận hàng: không có phí giao hàng, không cần địa chỉ. Đơn đóng gói xong sẽ nằm ở
+                  &quot;Chờ khách lấy&quot; cho tới khi thu đủ tiền và giao tại quầy.
+                </p>
+              )}
               {fulfillment === "HOME_DELIVERY" && (
                 <>
                   <div className="space-y-1.5 sm:col-span-2">
