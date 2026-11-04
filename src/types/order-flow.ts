@@ -413,6 +413,34 @@ export interface OrderJourneyQuery extends PageQuery {
   excludePos?: boolean;
 }
 
+/** `POST /orders/:id/pickup/collect`: số tiền do server tính, client chỉ chọn cách thu. */
+export type PickupCollectMethod = Exclude<CollectionMethod, "NONE">;
+
+export interface PickupCollectPayload {
+  method: PickupCollectMethod;
+  note?: string;
+}
+
+/** Khoản QR đang chờ tiền về của đơn khách tới lấy. */
+export interface PickupQrPayment {
+  reference: string;
+  amount: number;
+  status: string;
+  qrUrl: string;
+}
+
+export interface PickupCollectResult {
+  order: OrderDetail;
+  /** Null khi thu tiền mặt (đã ghi luôn). */
+  payment: PickupQrPayment | null;
+}
+
+/** `POST /orders/:id/pickup/hand-over`: giao hàng cho khách tại quầy. */
+export interface PickupHandOverPayload {
+  receiverName?: string;
+  note?: string;
+}
+
 export interface CreateOrderLinePayload {
   productItemId: string;
   quantity: number;
