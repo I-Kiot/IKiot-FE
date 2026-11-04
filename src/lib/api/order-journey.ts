@@ -117,10 +117,10 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** Một trang đơn PACKED (đã đóng gói, chờ giao cho vận chuyển) trong phạm vi chi nhánh của người gọi. */
+  /** Một trang đơn PACKED giao tận nơi (đã đóng gói, chờ giao cho vận chuyển) trong phạm vi chi nhánh của người gọi. Đơn khách tới lấy không qua vận chuyển nên không có trong danh sách này. */
   listHandOverReady: async (page: number, limit: number): Promise<Paginated<HandOverReadyOrder>> => {
     const res = await client.get<Paginated<HandOverReadyOrder>>('/orders', {
-      params: { status: 'PACKED', page, limit },
+      params: { status: 'PACKED', fulfillmentType: 'HOME_DELIVERY', page, limit },
     });
     return { data: res.data.data, pagination: res.data.pagination };
   },
