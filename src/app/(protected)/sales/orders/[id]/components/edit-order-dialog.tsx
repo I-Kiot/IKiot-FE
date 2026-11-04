@@ -217,6 +217,11 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+              {typeLocked && (
+                <p className="text-xs text-muted-foreground">
+                  Đơn đã giao cho vận chuyển nên không đổi được hình thức nhận.
+                </p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label>{pickup ? "Ngày khách hẹn lấy hàng" : "Ngày khách hẹn giao"}</Label>
