@@ -387,6 +387,8 @@ export interface OrderAlerts {
   short: number;
   /** Đơn có ngày giao hẹn là hôm nay, trong `dueSoonDays` ngày tới, hoặc đã qua. */
   dueSoon: number;
+  /** Đơn khách tới lấy đã đóng gói mà quá ngày hẹn lấy: cần liên hệ khách. */
+  pickupOverdue: number;
   dueSoonDays: number;
 }
 
