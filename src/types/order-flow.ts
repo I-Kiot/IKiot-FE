@@ -379,7 +379,7 @@ export const ORDER_SORTS = ["createdAt", "requestedDeliveryDate", "priority"] as
 export type OrderSort = (typeof ORDER_SORTS)[number];
 
 /** Đơn chưa xuất cần được chú ý (bộ lọc `attention` của BE). */
-export type OrderAttention = "SHORT" | "DUE_SOON";
+export type OrderAttention = "SHORT" | "DUE_SOON" | "PICKUP_OVERDUE";
 
 /** `GET /orders/alerts`. */
 export interface OrderAlerts {
