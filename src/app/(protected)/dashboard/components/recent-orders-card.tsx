@@ -58,7 +58,7 @@ export function RecentOrdersTable() {
           </TableHeader>
           <TableBody>
             {data.data.map((order) => {
-              const status = orderStatusDisplay(order.status);
+              const status = orderStatusDisplay(order.status, null, order.fulfillmentType);
               const payment = paymentStatusDisplay(order.paymentStatus);
               return (
                 <TableRow
