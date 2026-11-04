@@ -1,5 +1,6 @@
 import { Ban, Check, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isStorePickup } from "@/lib/order-pickup";
 import { isDeliveryFailed, type OrderDetail, type OrderStatus } from "@/types/order-flow";
 import { formatDateTime } from "../../shared/order-display";
 
@@ -19,6 +20,15 @@ const STEPS: Step[] = [
   { status: "COMPLETED", label: "Hoàn thành" },
 ];
 
+// Khách tới lấy: không có shipper, cũng không có bước nhận tiền từ shipper. Bước "Chờ khách lấy" mượn khoá PICKED_UP
+// (đơn không bao giờ ở trạng thái đó) để vị trí tính từ trạng thái đạt tới vẫn đúng: PACKED xong thì bước kế là chờ khách.
+const PICKUP_STEPS: Step[] = [
+  { status: "CONFIRMED", label: "Xác nhận" },
+  { status: "PACKED", label: "Đóng đơn" },
+  { status: "PICKED_UP", label: "Chờ khách lấy" },
+  { status: "COMPLETED", label: "Đã giao cho khách" },
+];
+
 /** Thời điểm từng bước xảy ra, lấy từ các mốc thời gian của đơn. */
 function stepTime(order: OrderDetail, status: Step["status"]): string | null {
   switch (status) {
@@ -34,7 +44,10 @@ function stepTime(order: OrderDetail, status: Step["status"]): string | null {
     case "RECEIVED":
       return order.collection?.collectedAt ?? null;
     case "COMPLETED":
-      return order.collection?.remittanceConfirmedAt ?? null;
+      // Khách tới lấy: giao tại quầy là xong, mốc là lúc giao (BE ghi shippedAt).
+      return isStorePickup(order)
+        ? order.shippedAt
+        : (order.collection?.remittanceConfirmedAt ?? null);
     default:
       return null;
   }
@@ -57,7 +70,9 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
   // Cả đơn đã về sau giao thất bại: cùng track, nay đã hoàn tất.
   const returnedAfterFailure =
     order.status === "RETURNED" && order.latestShipmentStatus === "RETURNED";
-  const steps = (failed || returnedAfterFailure
+  const steps = (isStorePickup(order)
+    ? PICKUP_STEPS
+    : failed || returnedAfterFailure
     ? [
         ...STEPS.filter((step) => !["RECEIVED", "COMPLETED"].includes(step.status)),
         { status: "DELIVERY_FAILED", label: "Giao hàng không thành công" } satisfies Step,
