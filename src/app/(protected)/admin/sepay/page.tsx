@@ -43,9 +43,6 @@ import {
   type Tenant,
 } from "@/lib/api/tenant";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
 function ownerLabel(tenant: Tenant): string {
   const owner = tenant.tenantOwnerId;
   const name = [owner?.profile?.lastName, owner?.profile?.firstName]
@@ -63,9 +60,6 @@ function hasBankInfo(tenant: Tenant): boolean {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Stat card
-// ─────────────────────────────────────────────────────────────────────────────
 function StatCard({
   icon: Icon,
   label,
@@ -92,15 +86,11 @@ function StatCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────────────────────
 export default function AdminSepayPage() {
   const [tenants, setTenants] = React.useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
 
-  // Link dialog state
   const [dialogTenant, setDialogTenant] = React.useState<Tenant | null>(null);
   const [keyInput, setKeyInput] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
@@ -163,7 +153,7 @@ export default function AdminSepayPage() {
       toast.success(
         `Đã liên kết SePay cho cửa hàng "${dialogTenant.name}" thành công!`,
       );
-      // Optimistically mark as linked, then refetch for source of truth.
+      // Đánh dấu đã liên kết ngay (lạc quan), sau đó refetch để lấy dữ liệu thật từ server.
       setTenants((prev) =>
         prev.map((t) =>
           t.id === dialogTenant.id ? { ...t, hasSepayKey: true } : t,
@@ -208,7 +198,6 @@ export default function AdminSepayPage() {
         description="Thêm tài khoản ngân hàng của cửa hàng vào SePay của nền tảng; hệ thống tự đánh dấu 'Đã liên kết' khi thấy số tài khoản đó trên SePay (mỗi 10 phút, khi cửa hàng lưu tài khoản, hoặc khi bấm Đồng bộ). Webhook key riêng chỉ cần cho cửa hàng dùng webhook cũ."
       />
 
-      {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           icon={Store}
@@ -230,7 +219,6 @@ export default function AdminSepayPage() {
         />
       </div>
 
-      {/* Toolbar */}
       <div className="flex items-center justify-between gap-3">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -263,7 +251,6 @@ export default function AdminSepayPage() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="border rounded-xl overflow-hidden bg-background">
         <Table>
           <TableHeader className="bg-muted/40">
@@ -300,7 +287,6 @@ export default function AdminSepayPage() {
                 const linked = Boolean(tenant.hasSepayKey);
                 return (
                   <TableRow key={tenant.id} className="align-top">
-                    {/* Store */}
                     <TableCell>
                       <div className="font-medium">{tenant.name || "-"}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
@@ -308,7 +294,6 @@ export default function AdminSepayPage() {
                       </div>
                     </TableCell>
 
-                    {/* Bank info */}
                     <TableCell>
                       {bank ? (
                         <div className="text-xs space-y-0.5">
@@ -329,7 +314,6 @@ export default function AdminSepayPage() {
                       )}
                     </TableCell>
 
-                    {/* SePay status */}
                     <TableCell>
                       {linked ? (
                         <Badge
@@ -350,7 +334,6 @@ export default function AdminSepayPage() {
                       )}
                     </TableCell>
 
-                    {/* Action */}
                     <TableCell className="text-right">
                       <Button
                         size="sm"
@@ -376,7 +359,6 @@ export default function AdminSepayPage() {
         </Table>
       </div>
 
-      {/* Link dialog */}
       <Dialog
         open={Boolean(dialogTenant)}
         onOpenChange={(open) => {

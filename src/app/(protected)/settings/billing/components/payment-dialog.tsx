@@ -20,7 +20,7 @@ interface PaymentDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   invoice: InitiateUpgradeResult | null
-  /** Reloads the billing screen. Called once the activation event lands. */
+  /** Tải lại màn billing, được gọi khi sự kiện kích hoạt gói tới. */
   onActivated: () => void | Promise<void>
 }
 
@@ -45,7 +45,6 @@ export function PaymentDialog({
 
     const expiry = new Date(invoice.expiredAt).getTime()
 
-    // Countdown timer
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((expiry - Date.now()) / 1000))
       setSecondsLeft(remaining)
@@ -57,16 +56,13 @@ export function PaymentDialog({
     tick()
     intervalRef.current = setInterval(tick, 1000)
 
-    // The backend joins this socket to `tenant:<id>` itself, so there is nothing to
-    // subscribe to here - only something to listen for.
+    // Backend tự join socket vào tenant:<id>, nên phía client chỉ cần lắng nghe, không cần subscribe.
     const socket = getSocket()
 
     const handleActivated = async () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
       setPaymentState("paid")
-      // Was `fetchMe()`, which reloaded a profile that has never carried the subscription -
-      // the dialog said "thành công" while the plan card behind it still showed the old
-      // plan until the page was reloaded by hand.
+      // Trước đây gọi fetchMe() (profile không có subscription), nên card gói cũ không đổi tới khi reload tay.
       await onActivated()
       toast.success(`Nâng cấp lên gói ${invoice.plan.planName} thành công!`)
     }
@@ -125,7 +121,6 @@ export function PaymentDialog({
 
         {paymentState === "pending" && invoice && (
           <div className="space-y-4">
-            {/* QR Code */}
             <div className="flex justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -137,7 +132,6 @@ export function PaymentDialog({
 
             <Separator />
 
-            {/* Payment info */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Gói nâng cấp</span>
@@ -162,7 +156,6 @@ export function PaymentDialog({
 
             <Separator />
 
-            {/* Countdown + waiting indicator */}
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <Loader2 className="size-3.5 animate-spin" />

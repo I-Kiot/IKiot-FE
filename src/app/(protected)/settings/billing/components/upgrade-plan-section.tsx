@@ -26,7 +26,7 @@ const formatVnd = (amount: number) => `${amount.toLocaleString("vi-VN")}đ`;
 
 interface UpgradePlanSectionProps {
   subscription: CurrentSubscription | null;
-  /** Reloads the plan and invoices once a payment is confirmed. */
+  /** Tải lại gói và hoá đơn khi thanh toán được xác nhận. */
   onActivated: () => void | Promise<void>;
 }
 
@@ -183,7 +183,6 @@ export function UpgradePlanSection({
                 const isElevated =
                   isExactCurrent || (!!selected.isPopular && isUpgradeTier);
 
-                // Xác định hành động + nhãn nút
                 let label: string;
                 let action: "renew" | "upgrade" | null = null;
                 if (isExactCurrent) {
@@ -218,7 +217,6 @@ export function UpgradePlanSection({
                         : ""
                     }`}
                   >
-                    {/* Header */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-lg font-medium tracking-tight">
@@ -242,7 +240,6 @@ export function UpgradePlanSection({
                       </div>
                     </div>
 
-                    {/* Price */}
                     <div>
                       <div className="text-4xl font-bold mb-1">
                         {isFree ? "Miễn phí" : formatVnd(selected.price)}
@@ -256,7 +253,6 @@ export function UpgradePlanSection({
                       </div>
                     </div>
 
-                    {/* CTA */}
                     <div>
                       <Button
                         className={`w-full cursor-pointer my-2 ${
@@ -285,7 +281,6 @@ export function UpgradePlanSection({
                       </Button>
                     </div>
 
-                    {/* Features */}
                     <div>
                       <ul role="list" className="space-y-3 text-sm">
                         {features.map((feature) => (

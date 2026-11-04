@@ -1,4 +1,3 @@
-// [Page – Admin Subscription Plans]
 import { PageHeader } from "@/components/page-header";
 import { PlansTable } from "./_components/plans-table";
 

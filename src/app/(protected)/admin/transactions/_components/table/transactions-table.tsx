@@ -23,7 +23,6 @@ export function TransactionsTable() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [planFilter, setPlanFilter] = useState("all")
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -78,7 +77,6 @@ export function TransactionsTable() {
     }
   }, [])
 
-  // Reset page index when search or filter values change
   React.useEffect(() => {
     setCurrentPage(1)
   }, [globalFilter, statusFilter, planFilter])

@@ -105,9 +105,6 @@ interface ActiveSession {
   lastActive: string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Branch Expandable Row
-// ─────────────────────────────────────────────────────────────────────────────
 function BranchExpandableRow({
   branch,
   onDelete,
@@ -122,7 +119,6 @@ function BranchExpandableRow({
   const [loadingStaff, setLoadingStaff] = React.useState(false);
   const loadedRef = React.useRef(false);
 
-  // Edit state
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({
     name: branch.name,
@@ -241,7 +237,6 @@ function BranchExpandableRow({
         </TableCell>
       </TableRow>
 
-      {/* Expansion Panel Row */}
       <TableRow
         className={cn(
           "hover:bg-transparent transition-colors border-transparent",
@@ -492,9 +487,6 @@ function BranchExpandableRow({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Warehouse Expandable Row
-// ─────────────────────────────────────────────────────────────────────────────
 function WarehouseExpandableRow({
   warehouse,
   onDelete,
@@ -509,7 +501,6 @@ function WarehouseExpandableRow({
   const [loadingStaff, setLoadingStaff] = React.useState(false);
   const loadedRef = React.useRef(false);
 
-  // Edit state
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState({
     name: warehouse.name,
@@ -604,7 +595,6 @@ function WarehouseExpandableRow({
         </TableCell>
       </TableRow>
 
-      {/* Expansion Panel Row */}
       <TableRow
         className={cn(
           "hover:bg-transparent transition-colors border-transparent",
@@ -836,14 +826,11 @@ export default function SettingsPage() {
   const { config: sidebarConfig, updateConfig: updateSidebarConfig } =
     useSidebarConfig();
 
-  // Theme states
   const [selectedTheme, setSelectedTheme] = React.useState("twitter");
   const [selectedRadius, setSelectedRadius] = React.useState("1rem");
 
-  // API Loading state
   const [isLoading, setIsLoading] = React.useState(true);
 
-  // Store info state
   const [storeInfo, setStoreInfo] = React.useState({
     name: "",
     code: "",
@@ -858,10 +845,9 @@ export default function SettingsPage() {
     accountName: "",
   });
   const [isSavingStore, setIsSavingStore] = React.useState(false);
-  // Whether ADMIN has linked this tenant's bank account with SePay.
+  // ADMIN đã liên kết tài khoản ngân hàng của tenant này với SePay chưa.
   const [sepayLinked, setSepayLinked] = React.useState(false);
 
-  // Branches state
   const [branches, setBranches] = React.useState<Branch[]>([]);
   const [showAddBranch, setShowAddBranch] = React.useState(false);
   const [newBranch, setNewBranch] = React.useState({
@@ -871,7 +857,6 @@ export default function SettingsPage() {
     isDefault: false,
   });
 
-  // Warehouses state
   const [warehouses, setWarehouses] = React.useState<WarehouseItem[]>([]);
   const [showAddWarehouse, setShowAddWarehouse] = React.useState(false);
   const [newWarehouse, setNewWarehouse] = React.useState({
@@ -880,7 +865,6 @@ export default function SettingsPage() {
     phoneNumber: "",
   });
 
-  // Security state
   const [passwords, setPasswords] = React.useState({
     current: "",
     new: "",
@@ -910,7 +894,7 @@ export default function SettingsPage() {
     },
   ]);
 
-  // Load Theme variables from local storage on mount (avoid sync setState in effect lint error)
+  // Đọc biến theme từ localStorage khi mount (tránh setState đồng bộ trong effect vì lint báo lỗi).
   React.useEffect(() => {
     try {
       const savedTheme = localStorage.getItem("theme-preset");
@@ -926,16 +910,12 @@ export default function SettingsPage() {
     }
   }, []);
 
-  // Load backend profile & branches
   const loadData = React.useCallback(async (isInitial = false) => {
     try {
       if (isInitial) {
         setIsLoading(true);
       }
-      // The shop comes from `GET /tenant/me`, not from `GET /auth/me`: the latter answers
-      // the user row and its role and has never carried a `tenant` object, so every field
-      // in this block used to fall through its optional chain to "" - the whole "Thông tin
-      // cửa hàng" card rendered blank however many times somebody filled it in.
+      // Shop lấy từ GET /tenant/me, không phải /auth/me (không có object tenant), nên trước đây cả card "Thông tin cửa hàng" luôn trống.
       const [me, tenant] = await Promise.all([getMe(), getMyTenant()]);
       if (me || tenant) {
         setStoreInfo({
@@ -1004,7 +984,6 @@ export default function SettingsPage() {
     };
   }, [loadData]);
 
-  // Re-apply themes when theme mode changes
   React.useEffect(() => {
     if (selectedTheme) {
       applyTheme(selectedTheme, isDarkMode);
@@ -1031,7 +1010,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Store handlers
   const handleSaveStore = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!storeInfo.name || !storeInfo.phone || !storeInfo.address) {
@@ -1040,7 +1018,6 @@ export default function SettingsPage() {
     }
     setIsSavingStore(true);
     try {
-      // 1. Call API to update tenant info
       await client.put("/tenant/me", {
         name: storeInfo.name,
         phoneNumber: storeInfo.phone,
@@ -1053,7 +1030,6 @@ export default function SettingsPage() {
         },
       });
 
-      // 2. Call API to update user profile if email changed
       const me = await getMe();
       if (me && me.email !== storeInfo.email) {
         await client.patch("/auth/me", {
@@ -1072,15 +1048,13 @@ export default function SettingsPage() {
     }
   };
 
-  // Branch handlers
   const handleAddBranchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBranch.name || !newBranch.address) {
       toast.error("Vui lòng điền tên và địa chỉ chi nhánh!");
       return;
     }
-    // `CreateBranchDto` requires at least one phone number; this used to fall back to a
-    // made-up number (and a placeholder email) rather than ask for one.
+    // CreateBranchDto bắt buộc có ít nhất một số điện thoại; không còn tự điền số và email giả nữa.
     if (!/^0\d{9}$/.test(newBranch.phone.trim())) {
       toast.error("Vui lòng nhập số điện thoại chi nhánh hợp lệ (10 số)!");
       return;
@@ -1142,14 +1116,13 @@ export default function SettingsPage() {
     window.dispatchEvent(new Event("branches-updated"));
   };
 
-  // Warehouse handlers
   const handleAddWarehouseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWarehouse.name) {
       toast.error("Vui lòng điền tên kho tổng!");
       return;
     }
-    // `CreateWarehouseDto` requires at least one phone number, the same as a branch.
+    // CreateWarehouseDto cũng bắt buộc ít nhất một số điện thoại, giống chi nhánh.
     if (!/^0\d{9}$/.test(newWarehouse.phoneNumber.trim())) {
       toast.error("Vui lòng nhập số điện thoại kho tổng hợp lệ (10 số)!");
       return;
@@ -1202,7 +1175,6 @@ export default function SettingsPage() {
     window.dispatchEvent(new Event("branches-updated"));
   };
 
-  // Security handlers
   const handleUpdatePassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (!passwords.current || !passwords.new || !passwords.confirm) {
@@ -1275,7 +1247,6 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6">
-      {/* Header section of settings page */}
       <PageHeader
         breadcrumbs={[
           { label: "Trang chủ", href: "/dashboard" },
@@ -1287,7 +1258,6 @@ export default function SettingsPage() {
       />
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
-        {/* Left Navigation Sidebar */}
         <aside className="w-full md:w-64 shrink-0 md:sticky md:top-20 space-y-6">
           <nav className="space-y-6">
             {sidebarItems.map((group) => (
@@ -1325,9 +1295,7 @@ export default function SettingsPage() {
           </nav>
         </aside>
 
-        {/* Right Content Panel */}
         <main className="flex-1 w-full min-w-0 bg-card border rounded-xl shadow-xs overflow-hidden flex flex-col md:h-[calc(100vh-12rem)] md:max-h-[750px]">
-          {/* Header of Active Section */}
           <div className="flex items-center justify-between p-6 border-b bg-muted/10">
             <div>
               <h2 className="text-lg font-bold">
@@ -1357,7 +1325,6 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {/* Reset customizer options */}
             {(activeTab === "theme" || activeTab === "layout") && (
               <Button
                 variant="outline"
@@ -1372,11 +1339,9 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6">
-            {/* Tab 1: Store Info */}
             {activeTab === "store-info" && (
               <form onSubmit={handleSaveStore} className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-6 items-start">
-                  {/* Logo Section */}
                   <div className="flex flex-col items-center gap-3 w-full md:w-44 shrink-0">
                     <Label className="text-sm font-medium self-start md:self-center">
                       Logo Cửa hàng
@@ -1400,7 +1365,6 @@ export default function SettingsPage() {
                     </p>
                   </div>
 
-                  {/* Store Form Details */}
                   <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="store-name">
@@ -1586,7 +1550,6 @@ export default function SettingsPage() {
               </form>
             )}
 
-            {/* Tab 2: Branches Management */}
             {activeTab === "branches" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -1604,7 +1567,6 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {/* Add branch inline form */}
                 {showAddBranch && (
                   <Card className="border border-primary/20 bg-primary/5 animate-in slide-in-from-top-4 duration-200">
                     <CardHeader className="p-4 pb-2">
@@ -1700,7 +1662,6 @@ export default function SettingsPage() {
                   </Card>
                 )}
 
-                {/* Branch Table with Expandable Rows */}
                 <div className="border rounded-xl overflow-hidden bg-background">
                   <Table>
                     <TableHeader className="bg-muted/40">
@@ -1738,7 +1699,6 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Tab 3: Warehouses Management */}
             {activeTab === "warehouses" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -1756,7 +1716,6 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {/* Add warehouse inline form */}
                 {showAddWarehouse && (
                   <Card className="border border-primary/20 bg-primary/5 animate-in slide-in-from-top-4 duration-200">
                     <CardHeader className="p-4 pb-2">
@@ -1857,7 +1816,6 @@ export default function SettingsPage() {
                   </Card>
                 )}
 
-                {/* Warehouse Table with Expandable Rows */}
                 <div className="border rounded-xl overflow-hidden bg-background">
                   <Table>
                     <TableHeader className="bg-muted/40">
@@ -1894,10 +1852,8 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Tab 3: Security & Session */}
             {activeTab === "security" && (
               <div className="space-y-6">
-                {/* Change Password Card */}
                 <Card className="border border-border">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -2030,7 +1986,6 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
 
-                {/* Two Factor Auth Card */}
                 <Card className="border border-border">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -2051,7 +2006,6 @@ export default function SettingsPage() {
                   </CardHeader>
                 </Card>
 
-                {/* Active Sessions */}
                 <Card className="border border-border">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-bold">
@@ -2120,7 +2074,6 @@ export default function SettingsPage() {
 
             {activeTab === "notifications" && <NotificationSettings />}
 
-            {/* Tab 4: Theme Settings (Relocated Theme Customizer logic) */}
             {activeTab === "theme" && (
               <div className="border rounded-xl bg-card overflow-hidden">
                 <ThemeTab
@@ -2132,7 +2085,6 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Tab 5: Layout Settings (Relocated Layout Customizer logic) */}
             {activeTab === "layout" && (
               <div className="border rounded-xl bg-card overflow-hidden">
                 <LayoutTab />

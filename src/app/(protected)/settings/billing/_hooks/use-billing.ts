@@ -1,4 +1,3 @@
-// [Query – Billing]
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
@@ -10,15 +9,9 @@ import {
   type Invoice,
 } from '@/lib/api/subscription'
 
-/**
- * Everything the billing screen draws, plus the one call that redraws it.
- *
- * The two halves are fetched together because they change at the same moment: when a
- * payment settles the plan becomes ACTIVE *and* the pending invoice becomes PAID. The
- * screen used to read the plan off `user.subscription` in the auth store - a field
- * `GET /auth/me` stopped returning - so nothing here could update without an F5.
- *
- * `refresh` is what the payment dialog calls when the activation event arrives.
+ /**
+ * Dữ liệu màn billing (gói và hoá đơn) cùng hàm `refresh`. Hai phần đổi cùng lúc khi thanh toán xong,
+ * nên được fetch chung; payment dialog gọi `refresh` khi nhận sự kiện kích hoạt.
  */
 export function useBilling() {
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(
@@ -28,9 +21,7 @@ export function useBilling() {
   const [isLoading, setIsLoading] = useState(true)
 
   const refresh = useCallback(async () => {
-    // Settled, not `all`: this is a read-only screen, and a failing half should leave the
-    // last good render standing rather than blank the whole page. A staff account without
-    // `subscriptions:read` gets 403 on the plan and still sees its own invoice list.
+    // Dùng allSettled, không dùng all: staff thiếu quyền subscriptions:read bị 403 ở gói nhưng vẫn xem được hoá đơn.
     const [plan, list] = await Promise.allSettled([
       getCurrentSubscription(),
       listInvoices(),

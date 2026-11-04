@@ -84,7 +84,6 @@ export default function AccountSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               
-              {/* Profile Picture Section */}
               <div className="flex flex-col sm:flex-row items-center gap-6 pb-2">
                 <Avatar className="h-24 w-24 rounded-full border-4 border-background shadow-md">
                   <AvatarImage src={profileImage || undefined} alt="Avatar" />
@@ -133,7 +132,6 @@ export default function AccountSettings() {
 
               <Separator className="my-4" />
 
-              {/* Form Input fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -177,8 +175,7 @@ export default function AccountSettings() {
                     <FormItem>
                       <FormLabel>Địa chỉ email</FormLabel>
                       <FormControl>
-                        {/* Editable by every role: this email is the key used
-                            to sign in with Google. */}
+                        {/* Mọi vai trò đều sửa được: email này là khoá đăng nhập Google. */}
                         <Input
                           type="email"
                           placeholder="Nhập địa chỉ email"
@@ -325,7 +322,7 @@ export default function AccountSettings() {
             </CardContent>
           </Card>
 
-          {/* Đăng nhập và bảo mật Card - Only visible for Tenant Owner */}
+          {/* Chỉ hiện với Tenant Owner. */}
           {isTenantOwner && (
             <Card>
               <CardHeader>
@@ -334,7 +331,6 @@ export default function AccountSettings() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="divide-y divide-border pt-0">
-                {/* Mật khẩu Row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
                   <div className="flex gap-4 items-start">
                     <Key className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
@@ -359,7 +355,6 @@ export default function AccountSettings() {
                   </Button>
                 </div>
 
-                {/* Xác thực 2 lớp Row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 last:pb-0">
                   <div className="flex gap-4 items-start">
                     <Shield className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
@@ -387,7 +382,7 @@ export default function AccountSettings() {
             </Card>
           )}
 
-          {/* Danger Zone Card - Only visible for Tenant Owner */}
+          {/* Chỉ hiện với Tenant Owner. */}
           {isTenantOwner && (
             <Card>
               <CardHeader>
@@ -419,7 +414,6 @@ export default function AccountSettings() {
             </Card>
           )}
 
-          {/* Action buttons at the bottom - Always visible */}
           <div className="flex space-x-2 pt-2">
             <Button
               type="submit"
@@ -448,7 +442,6 @@ export default function AccountSettings() {
         </form>
       </Form>
 
-      {/* Cropper Modal Dialog */}
       <AvatarCropDialog
         open={isCropDialogOpen}
         onOpenChange={setIsCropDialogOpen}

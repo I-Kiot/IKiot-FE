@@ -1,4 +1,3 @@
-// [Page – Admin Users]
 import { PageHeader } from "@/components/page-header";
 import { UsersTable } from "./_components/table/users-table";
 

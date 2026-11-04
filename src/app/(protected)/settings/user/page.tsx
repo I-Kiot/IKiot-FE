@@ -63,7 +63,7 @@ export default function UserSettingsPage() {
 
   function onSubmit(data: UserFormValues) {
     console.log("Form submitted:", data)
-    // Here you would typically save the data
+    // Chưa có API lưu; hiện chỉ log dữ liệu.
   }
 
   const handleFileUpload = () => {
@@ -109,7 +109,6 @@ export default function UserSettingsPage() {
                 <CardDescription>Update your personal information and preferences</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-            {/* Profile Picture Section */}
             <div className="flex items-center gap-6 ">
               {useDefaultIcon ? (
                 <div className="flex h-20 w-20 items-center justify-center rounded-lg">
@@ -155,9 +154,7 @@ export default function UserSettingsPage() {
             </div>
 
             <Separator className="mb-10" />
-            {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* First Name */}
               <FormField
                 control={form.control}
                 name="firstName"
@@ -172,7 +169,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Last Name */}
               <FormField
                 control={form.control}
                 name="lastName"
@@ -187,7 +183,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Email */}
               <FormField
                 control={form.control}
                 name="email"
@@ -202,7 +197,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Company */}
               <FormField
                 control={form.control}
                 name="company"
@@ -217,7 +211,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Phone Number */}
               <FormField
                 control={form.control}
                 name="phone"
@@ -232,7 +225,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Location */}
               <FormField
                 control={form.control}
                 name="location"
@@ -247,7 +239,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Website */}
               <FormField
                 control={form.control}
                 name="website"
@@ -262,7 +253,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Language */}
               <FormField
                 control={form.control}
                 name="language"
@@ -289,7 +279,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Role */}
               <FormField
                 control={form.control}
                 name="role"
@@ -304,7 +293,6 @@ export default function UserSettingsPage() {
                 )}
               />
 
-              {/* Timezone */}
               <FormField
                 control={form.control}
                 name="timezone"
@@ -334,7 +322,6 @@ export default function UserSettingsPage() {
               />
             </div>
 
-            {/* Bio - Full Width */}
             <FormField
               control={form.control}
               name="bio"
@@ -353,7 +340,6 @@ export default function UserSettingsPage() {
               )}
             />
 
-            {/* Action Buttons */}
             <div className="flex justify-start gap-3">
               <Button type="submit" className="cursor-pointer">
                 Save Changes

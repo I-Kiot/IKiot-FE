@@ -23,7 +23,6 @@ export function UsersTable() {
   const [planFilter, setPlanFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -62,7 +61,6 @@ export function UsersTable() {
     }
   }, [tenants, pageSize])
 
-  // Reset page index when search or filter values change
   React.useEffect(() => {
     setCurrentPage(1)
   }, [globalFilter, planFilter, statusFilter])
@@ -119,7 +117,6 @@ export function UsersTable() {
         onStatusFilterChange={setStatusFilter}
       />
 
-      {/* Tenant list table */}
       <div className="rounded-xl border bg-card overflow-hidden shadow-xs">
         <Table>
           <TableHeader className="bg-muted/40">

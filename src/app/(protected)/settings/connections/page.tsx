@@ -8,7 +8,6 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Github, Slack, Twitter, Zap, Globe, Database, Apple, Chrome, Facebook, Instagram, Dribbble } from "lucide-react"
 export default function ConnectionSettings() {
-  // Controlled state for switches
   const [appleConnected, setAppleConnected] = useState(true)
   const [googleConnected, setGoogleConnected] = useState(false)
   const [githubConnected, setGithubConnected] = useState(true)
