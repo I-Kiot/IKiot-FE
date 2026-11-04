@@ -1,21 +1,12 @@
 /**
- * Hai khái niệm khác nhau cùng gọi là "vai trò" - đừng lẫn:
- *
- *  - **`UserRole`** là *loại tài khoản*, cố định trong code backend
- *    (`User.systemRole`): chủ cửa hàng, nhân viên, quản trị nền tảng. Tenant không sửa
- *    được. Dùng cho hiển thị và cho các gate ở FE.
- *  - **`Role`** (bên dưới) là *vai trò của cửa hàng*: một dòng trong bảng `Role` do chủ
- *    cửa hàng tự tạo, đặt tên và gắn quyền. Đây là thứ trang `/staffs/roles` quản lý và
- *    là thứ `User.roleId` trỏ tới.
+ * `UserRole` là loại tài khoản cố định ở BE (`User.systemRole`), dùng cho hiển thị và gate FE. `Role` là vai trò do chủ cửa hàng tạo và gắn quyền; `User.roleId` trỏ tới nó.
  */
 export type UserRole =
   | "ADMIN"
   | "TENANT_OWNER"
   | "STAFF"
   | "CUSTOMER"
-  // Hai giá trị của bản backend cũ. Không tài khoản mới nào mang chúng nữa, nhưng một
-  // user còn nằm trong localStorage từ trước có thể vẫn có - giữ lại để hiển thị đúng
-  // thay vì rơi ra chuỗi thô.
+  // Hai giá trị của backend cũ: tài khoản mới không còn mang, nhưng user cũ trong localStorage có thể vẫn có - giữ để hiển thị đúng.
   | "BRANCH_MANAGER"
   | "WAREHOUSE_MANAGER";
 

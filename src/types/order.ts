@@ -1,31 +1,17 @@
-// [Domain – Types]
 export type OrderStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'RETURNED';
 export type OrderPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOMO' | 'VNPAY' | 'SEPAY';
 
-/**
- * One line of a new order. **The price is not on it.** `OrderService.priceLines` reads
- * `retailPrice` off the variant, so a `unitPrice` sent from the till was either redundant
- * or a lie; `CreateOrderDto` doesn't declare it and `whitelist: true` dropped it in
- * silence. Same for `productName`, which the server copies off the product.
- */
+/** Một dòng của đơn mới. **Không có giá:** server lấy `retailPrice` từ biến thể; `unitPrice` gửi từ quầy bị `whitelist` bỏ im lặng. `productName` cũng do server điền. */
 export interface OrderItemPayload {
   productItemId: string;
   quantity: number;
-  /** A manual per-line discount. Ignored on a sale that carries `appliedPromotions`. */
+  /** Chiết khấu nhập tay cho dòng; bỏ qua khi đơn có `appliedPromotions`. */
   discountAmount?: number;
 }
 
 /**
- * The body of `POST /orders` - mirrors `CreateOrderDto`, which is narrower than it looks.
- *
- * `grandTotal` is **computed, never sent**: the old API stored whatever the client claimed,
- * so a crafted request could ring up a full basket for zero.
- *
- * `discountType` accepts **only `"ORDER"`** - the cashier's own whole-order discount.
- * A promotion sale is expressed by `appliedPromotions` alone, and the server prices it,
- * spreads it across the lines and records the total; sending `"PROMOTION"` is a 400.
- * The two are mutually exclusive, which is why they sit in a union here rather than as
- * three independent optional fields.
+ * Body của `POST /orders` (hẹp hơn vẻ ngoài). `grandTotal` do server tính, không gửi.
+ * `discountType` chỉ nhận `"ORDER"` (chiết khấu cả đơn của thu ngân); khuyến mãi đi qua `appliedPromotions`, gửi `"PROMOTION"` là 400. Hai cách loại trừ nhau nên là union.
  */
 export type OrderCreatePayload = {
   customerId?: string;

@@ -1,5 +1,4 @@
-// [Domain – Types] Invoices (BE `invoices/`): one SALE invoice per order - PENDING until the order is
-// COMPLETED, then ISSUED - and an ADJUSTMENT (negative total) for goods returned afterwards.
+// Hoá đơn (BE `invoices/`): mỗi đơn có một hoá đơn SALE - PENDING tới khi đơn COMPLETED, rồi ISSUED - và một ADJUSTMENT (tổng âm) cho hàng trả về sau đó.
 import type { FulfillmentType } from "@/types/order-flow";
 
 export const INVOICE_STATUSES = ["PENDING", "ISSUED", "CANCELLED"] as const;
@@ -7,7 +6,7 @@ export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
 export type InvoiceType = "SALE" | "ADJUSTMENT";
 
-/** COUNTER = rung up at the till (order `fulfillmentType` TAKEAWAY); ORDERED = an order taken to be fulfilled later. */
+/** COUNTER = lên đơn tại quầy (`fulfillmentType` TAKEAWAY); ORDERED = đơn nhận trước, giao sau. */
 export type InvoiceKind = "COUNTER" | "ORDERED";
 
 export interface InvoiceLineDto {
@@ -17,14 +16,14 @@ export interface InvoiceLineDto {
   quantity: number;
   unitPrice: number;
   vatRate: number;
-  /** Net of the line's discount; negative on an ADJUSTMENT. */
+  /** Thành tiền sau chiết khấu dòng; âm với ADJUSTMENT. */
   amount: number;
   position: number;
 }
 
 export interface InvoiceDto {
   id: string;
-  /** Null until ISSUED. */
+  /** Null cho tới khi ISSUED. */
   invoiceNumber: string | null;
   type: InvoiceType;
   status: InvoiceStatus;

@@ -56,11 +56,7 @@ export interface OpenSessionPayload {
 }
 
 export interface ShiftLogPayload {
-  /**
-   * `START` takes the drawer, `END` hands it back. The server defaults to `END`, which is
-   * why omitting it worked for the "báo cáo cuối ca" screen - but the sequence check wants
-   * a `START` first, and there was no way to express one from here.
-   */
+  /** `START` nhận két, `END` trả lại. Server mặc định `END`; chuỗi kiểm tra cần `START` trước nên FE phải gửi được nó. */
   type?: "START" | "END";
   amount: number;
   nextStaffId?: string;

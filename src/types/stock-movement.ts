@@ -80,7 +80,6 @@ export interface CreateExportPayload {
 
 export interface CreateAdjustPayload {
   movementType: "ADJUST";
-  /** Kho/chi nhánh cần điều chỉnh tồn kho */
   fromLocationId: string;
   fromLocationType: LocationType;
   note?: string;
@@ -127,7 +126,7 @@ export interface StockMovementQueryParams {
 export interface StockMovementSupplierOption {
   id: string;
   name: string;
-  /** A WORKSHOP's goods only arrive through a production request (B-5), never a plain import. */
+  /** Hàng của XƯỞNG chỉ về qua YCSX (B-5), không bao giờ nhập thường. */
   type?: "GOODS" | "WORKSHOP";
 }
 
@@ -141,7 +140,7 @@ export interface StockMovementProductItemOption {
   id: string;
   name: string;
   sku: string;
-  /** Product parent id - dùng để tải suppliers khi cần */
+  /** Id sản phẩm cha - dùng để tải suppliers khi cần. */
   productId?: string;
   costPrice?: number;
   retailPrice?: number;

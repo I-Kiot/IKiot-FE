@@ -1,4 +1,3 @@
-// [Domain – Types]
 export type PromotionStatus = 'ACTIVE' | 'INACTIVE'
 export type DiscountType = 'PERCENT' | 'FIXED_AMOUNT'
 export type ApplicableRuleType = 'all' | 'category' | 'product'
@@ -12,7 +11,7 @@ export interface ApplicableRule {
 export interface Promotion {
   id: string
   tenantId?: string
-  /** Empty/omitted = applies to all branches (tenant-wide). */
+  /** Rỗng/không gửi = áp dụng toàn chuỗi. */
   branchIds?: string[]
   promoName: string
   description?: string
@@ -106,7 +105,7 @@ export interface PromotionCalculateRequest {
   branchId?: string
   customerId?: string
   items: PromotionCalculateItem[]
-  /** User-chosen promotions to apply. Empty = no discount. At most 2, and if 2, both must be stackable. */
+  /** Khuyến mãi người dùng chọn để áp dụng. Rỗng = không giảm. Tối đa 2; nếu có 2 thì cả hai phải stackable. */
   promotionIds: string[]
 }
 
@@ -123,7 +122,7 @@ export interface PromotionCalculateResponse {
   grandTotal: number
 }
 
-/** One promotion in the "assign discount" picker, annotated for this specific cart. */
+/** Một khuyến mãi trong bộ chọn "gán giảm giá", đã đánh giá theo giỏ hàng này. */
 export interface PromotionCandidate {
   id: string
   promoName: string
@@ -135,9 +134,9 @@ export interface PromotionCandidate {
   branchIds?: string[]
   stackable: boolean
   eligible: boolean
-  /** Why it's ineligible, in Vietnamese, when eligible=false. */
+  /** Lý do không đủ điều kiện (chuỗi tiếng Việt từ BE), khi eligible=false. */
   reason: string | null
-  /** Discount if this promotion alone were applied. */
+  /** Mức giảm nếu chỉ áp riêng khuyến mãi này. */
   previewDiscount: number
 }
 

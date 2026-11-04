@@ -1,4 +1,3 @@
-// [Domain – Types]
 export type CustomerGender = 'MALE' | 'FEMALE' | 'OTHER'
 export type CustomerOrderStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'RETURNED'
 export type CustomerOrderPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOMO' | 'VNPAY'
@@ -32,14 +31,7 @@ export interface Customer {
   orders: CustomerOrder[]
 }
 
-/**
- * What `GET /customers` actually filters on (`QueryCustomerDto`).
- *
- * `gender`, `dateFrom` and `dateTo` used to be declared here as though the server honoured
- * them; it never has. The customers table applies all three **in the browser** over the
- * rows it already holds (see `customers-table.tsx`), so listing them here only invited
- * somebody to pass them and wonder why nothing narrowed.
- */
+/** Tham số `GET /customers` thực sự nhận (`QueryCustomerDto`). Gender và khoảng ngày được lọc ở trình duyệt (`customers-table.tsx`), không gửi lên server. */
 export interface CustomerQueryParams {
   page?: number
   limit?: number
