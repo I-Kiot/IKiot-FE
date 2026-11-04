@@ -320,6 +320,8 @@ export interface OrderListItem {
   shippedBy: UserRef | null;
   shippedAt: string | null;
   fulfillmentType: FulfillmentType;
+  /** Khách tới lấy, đã đóng gói, quá ngày hẹn lấy mà chưa tới. */
+  pickupOverdue: boolean;
   subtotal: number;
   shippingFee: number;
   channelFee: number;
