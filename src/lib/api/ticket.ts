@@ -38,7 +38,6 @@ export interface ListAllTicketsResponse {
   pagination: PaginationMeta;
 }
 
-// Tenant API
 export async function createTicket(payload: { title: string; description: string; priority: string }): Promise<{ success: boolean; data: Ticket }> {
   const response = await client.post("/tickets", payload);
   return response.data;
@@ -54,7 +53,6 @@ export async function replyMyTicket(id: string, message: string): Promise<{ succ
   return response.data;
 }
 
-// Shared API
 export async function getTicketDetail(id: string): Promise<Ticket> {
   const response = await client.get(`/tickets/${id}`);
   return response.data.data;
@@ -65,7 +63,6 @@ export async function deleteTicket(id: string): Promise<{ success: boolean; mess
   return response.data;
 }
 
-// Admin API
 export async function listAllTickets(params?: { page?: number; limit?: number }): Promise<ListAllTicketsResponse> {
   const response = await client.get("/admin/tickets", { params });
   return response.data;

@@ -35,10 +35,8 @@ type ApiMovementDetail = {
 };
 
 /**
- * One end of a movement as the API answers it: the Location row itself, `{ id, type, name }`
- * (`type` is `BRANCH` / `WAREHOUSE`). Requests go the other way with just the id -
- * `fromLocationId` / `toLocationId` - since the server reads the kind off the row rather
- * than taking it from the client.
+ * Một đầu của phiếu kho, dạng API trả về: dòng Location `{ id, type, name }` (`type` là `BRANCH` / `WAREHOUSE`).
+ * Request chỉ gửi id (`fromLocationId` / `toLocationId`), vì server tự đọc loại từ dòng.
  */
 type ApiLocationRef = LocationRef;
 
@@ -179,16 +177,9 @@ function mapMovement(raw: ApiMovement): StockMovement {
 }
 
 /**
- * The create body `POST /stock-movements` actually accepts.
- *
- * The screens keep each end's type beside its id (they need it to label and scope the
- * pickers), but `CreateStockMovementDto` takes only `fromLocationId` / `toLocationId` - the
- * server reads the kind off the Location row. The types are stripped here, once, rather
- * than at each of the call sites.
- *
- * A missing half is left off entirely rather than sent as `undefined`: IMPORT has no source
- * and ADJUST no destination, and the server decides which of those is legal for the
- * movement type.
+ * Body `POST /stock-movements` thực sự nhận. Màn hình giữ loại mỗi đầu bên cạnh id để hiển thị,
+ * nhưng `CreateStockMovementDto` chỉ nhận `fromLocationId` / `toLocationId`; loại được bỏ ở đây một lần duy nhất.
+ * Đầu nào thiếu thì bỏ hẳn khỏi body, không gửi `undefined`: IMPORT không có nguồn, ADJUST không có đích.
  */
 function toCreateBody<
   T extends {
@@ -768,10 +759,7 @@ export const stockMovementApi = {
       getProductLookup(),
       fetchInventoryAtLocation(locationId, locationType),
     ]);
-    // "Has stock here", not "has a row here". A row appears the first time a movement
-    // delivers goods and stays afterwards, so its presence only says the location once had
-    // some - and the adjustment picker uses this flag to keep a branch manager to the goods
-    // actually sitting in their branch right now.
+    // "Có tồn ở đây", không phải "có dòng ở đây": dòng còn lại sau khi từng giao hàng, nên chỉ cho biết kho từng có hàng. Picker điều chỉnh dùng cờ này để giữ quản lý chi nhánh ở đúng hàng đang có.
     return [...lookup.values()].map((item) => ({
       ...item,
       atLocation: (inventoryMap.get(item.id) ?? 0) > 0,

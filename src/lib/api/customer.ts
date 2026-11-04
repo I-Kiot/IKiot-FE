@@ -1,4 +1,3 @@
-// [API – Customer]
 import client from '@/lib/api/client'
 import type {
   Customer,

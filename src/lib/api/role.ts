@@ -1,4 +1,3 @@
-// [API – Role]
 import client from '@/lib/api/client'
 import type {
   PermissionCatalogEntry,
@@ -36,18 +35,12 @@ function mapRole(doc: RoleDoc): Role {
 }
 
 /**
- * Gom danh mục phẳng thành từng nhóm tài nguyên.
- *
- * Backend trả 150 cặp (resource, action) đã sắp xếp sẵn; một danh sách phẳng 150 dòng
- * checkbox thì không ai chọn nổi, nên giao diện làm việc trên ~30 nhóm.
+ * Gom danh mục phẳng thành nhóm tài nguyên. Backend trả 150 cặp (resource, action);
+ * danh sách phẳng 150 checkbox không ai chọn nổi, nên UI làm việc trên ~30 nhóm.
  */
 /**
- * Tên nhóm quyền theo đúng chữ trên thanh điều hướng, kèm đường dẫn menu để đối chiếu.
- *
- * Nhãn trong danh mục backend (`PermissionCatalog.label`) là tên nghiệp vụ chung
- * ("Sản phẩm", "Ca thu ngân", "Xuất/nhập kho"...) và lệch với sidebar ("Hàng hóa",
- * "Két tiền", "Giao dịch"), nên người phân quyền phải đoán quyền nào mở màn hình nào.
- * Tài nguyên không có trong bảng này giữ nhãn backend.
+ * Nhãn theo chữ trên thanh điều hướng, kèm đường dẫn menu để đối chiếu.
+ * Nhãn backend (`PermissionCatalog.label`) là tên nghiệp vụ chung, lệch với sidebar nên người phân quyền khó đoán màn hình. Tài nguyên không có trong bảng này giữ nhãn backend.
  */
 const RESOURCE_NAV_LABELS: Record<string, { label: string; hint: string }> = {
   reports: { label: 'Tổng quan & Sổ thu chi', hint: 'Quản lý › Tổng quan, Sổ thu chi' },

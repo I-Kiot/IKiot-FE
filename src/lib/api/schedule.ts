@@ -178,9 +178,7 @@ export const workingScheduleApi = {
     scheduleId: string,
     userId: string,
   ): Promise<WorkingSchedule> => {
-    // This endpoint answers one person's slice of the shift: `user` instead of
-    // `assignedUsers`. The mapper reads either, so there is nothing to reshape here -
-    // there used to be a block that moved `user` into the (never-sent) `userId` key.
+    // Endpoint này trả phần ca của một người: `user` thay vì `assignedUsers`. Mapper đọc được cả hai nên không cần biến đổi ở đây.
     const response = await client.get<ApiWorkingSchedule>(
       `/working-schedules/${scheduleId}/users/${userId}`,
     );

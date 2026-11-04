@@ -1,4 +1,3 @@
-// [API – Supplier]
 import client from '@/lib/api/client'
 import type {
   Supplier,
@@ -10,7 +9,7 @@ import type {
   SupplierPayDebtPayload,
 } from '@/types/supplier'
 
-// Backend trả về document Mongoose với `id`; FE dùng `id`.
+// Backend trả `id`; FE giữ nguyên.
 type SupplierDoc = Omit<Supplier, 'id'> & { id: string }
 
 function mapSupplier(doc: SupplierDoc): Supplier {

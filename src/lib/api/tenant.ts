@@ -66,30 +66,26 @@ export interface Tenant {
   createdAt: string;
   activeSubscription?: Subscription;
   invoices?: Invoice[];
-  /** Linked to SePay, by a webhook key or by the sync. The key itself is never exposed. */
+  /** Đã liên kết SePay, qua webhook key hoặc qua đồng bộ. Key không bao giờ được trả ra. */
   hasSepayKey?: boolean;
 }
 
 /**
- * Every shop on the platform - **admin only** (`GET /tenants`, `AdminOnlyGuard`).
- *
- * This used to call `GET /tenant/me`, which answers the caller's *own* shop as a single
- * object. The three admin screens that use this then mapped over it as though it were an
- * array, so the tenant pickers on `/admin/notifications`, `/admin/sepay` and
- * `/admin/users` have been empty. `/tenant/me` is `getMyTenant()` below.
+ * Mọi shop trên nền tảng, **chỉ ADMIN** (`GET /tenants`, `AdminOnlyGuard`).
+ * Trước đây gọi `GET /tenant/me` (trả một object là shop của chính người gọi) nên bộ chọn tenant ở ba màn admin luôn rỗng. `/tenant/me` là `getMyTenant()` bên dưới.
  */
 export async function listTenants(): Promise<Tenant[]> {
   const response = await client.get<{ data: Tenant[] }>("/tenants");
   return response.data.data ?? [];
 }
 
-/** The signed-in account's own shop (`GET /tenant/me`). */
+/** Shop của tài khoản đang đăng nhập (`GET /tenant/me`). */
 export async function getMyTenant(): Promise<Tenant> {
   const response = await client.get<{ data: Tenant }>("/tenant/me");
   return response.data.data;
 }
 
-/** ADMIN: save a per-shop SePay webhook key. */
+/** ADMIN: lưu SePay webhook key riêng cho từng shop. */
 export async function setSepayKey(
   tenantId: string,
   sepayWebhookApiKey: string,
@@ -103,7 +99,7 @@ export interface SepaySyncResult {
   unlinked: string[];
 }
 
-/** ADMIN: re-read the platform's SePay accounts now. */
+/** ADMIN: đọc lại tài khoản SePay của nền tảng ngay bây giờ. */
 export async function syncSepayAccounts(): Promise<SepaySyncResult> {
   const response = await client.post<{ data: SepaySyncResult }>(
     "/tenants/sepay-sync",

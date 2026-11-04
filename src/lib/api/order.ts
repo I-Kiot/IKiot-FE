@@ -1,4 +1,3 @@
-// [API – Order]
 import client from '@/lib/api/client';
 import type { Order, OrderCreatePayload, OrderCreateResponse, OrderStatus, OrderPaymentMethod } from '@/types/order';
 import { useAuthStore } from '@/store/auth-store';

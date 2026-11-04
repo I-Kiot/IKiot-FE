@@ -1,6 +1,5 @@
-// [API – Order journey] Track A routes (BE `orders/`), used by track D's screens.
-// Contract: Ikiot_BE/docs/api-contract-order-flow.md §2. The till keeps using `orderApi`
-// (`order.ts`), which posts to `/orders/pos` since A-2.
+// Route track A (BE `orders/`), dùng cho màn của track D. Hợp đồng: Ikiot_BE/docs/api-contract-order-flow.md §2.
+// Quầy bán vẫn dùng `orderApi` (`order.ts`), đã POST tới `/orders/pos` từ A-2.
 import client from '@/lib/api/client';
 import type {
   ConfirmOrderPayload,
@@ -31,7 +30,7 @@ export const orderJourneyApi = {
     return { data: res.data.data, pagination: res.data.pagination };
   },
 
-  /** Counts behind the sidebar warning and the banner over the list. */
+  /** Số đếm cho cảnh báo ở sidebar và banner phía trên danh sách. */
   getAlerts: async (branchId?: string): Promise<OrderAlerts> => {
     const res = await client.get<Envelope<OrderAlerts>>('/orders/alerts', {
       params: { branchId },
@@ -44,25 +43,25 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** A manual order is born CONFIRMED (contract §2, A-2); there is no draft. */
+  /** Đơn tay được tạo ở trạng thái CONFIRMED (hợp đồng §2, A-2), không có bản nháp. */
   create: async (payload: CreateOrderJourneyPayload): Promise<OrderDetail> => {
     const res = await client.post<Envelope<OrderDetail>>('/orders', payload);
     return res.data.data;
   },
 
-  /** A-8: edit before the order ships. Lines only while CONFIRMED; a deposit that would drift from the money taken answers ORDER_DEPOSIT_CHANGED (see `DepositChange`). */
+  /** A-8: sửa trước khi đơn giao. Chỉ sửa dòng khi CONFIRMED; đặt cọc lệch với tiền đã thu trả ORDER_DEPOSIT_CHANGED (xem `DepositChange`). */
   update: async (id: string, payload: UpdateOrderPayload): Promise<OrderDetail> => {
     const res = await client.patch<Envelope<OrderDetail>>(`/orders/${id}`, payload);
     return res.data.data;
   },
 
-  /** A-8: re-tag the order's priority without opening the edit form. */
+  /** A-8: đổi độ ưu tiên đơn mà không cần mở form sửa. */
   setPriority: async (id: string, priority: OrderPriority): Promise<OrderDetail> => {
     const res = await client.patch<Envelope<OrderDetail>>(`/orders/${id}/priority`, { priority });
     return res.data.data;
   },
 
-  /** A-10: the owner received all the cash the shipper collected - RECEIVED → COMPLETED. */
+  /** A-10: chủ shop đã nhận đủ tiền shipper thu - RECEIVED → COMPLETED. */
   confirmRemittance: async (id: string, payload: ConfirmRemittancePayload): Promise<OrderDetail> => {
     const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/confirm-remittance`, payload);
     return res.data.data;
@@ -80,7 +79,7 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** Turns a line custom on first call (new SKU of the same product); edits the specs after. */
+  /** Lần gọi đầu biến dòng thành custom (SKU mới của cùng sản phẩm); các lần sau sửa thông số. */
   setCustomization: async (
     id: string,
     itemId: string,

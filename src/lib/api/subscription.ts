@@ -1,8 +1,6 @@
 import client from "./client";
 
-/**
- * Assign free trial subscription to the registered tenant owner
- */
+/** Gán gói dùng thử miễn phí cho chủ shop vừa đăng ký. */
 export async function assignFreeTrial() {
   const response = await client.post("/subscription/free-trial", {});
   return response.data;
@@ -25,23 +23,19 @@ export interface Plan {
   isActive: boolean;
 }
 
-/**
- * List all active subscription plans (public endpoint)
- */
+/** Liệt kê mọi gói đang hoạt động (endpoint công khai). */
 export async function listPlans(): Promise<Plan[]> {
   const response = await client.get("/plans");
   return response.data.data;
 }
 
-/**
- * List every plan including inactive ones (ADMIN management table)
- */
+/** Liệt kê mọi gói kể cả gói đã tắt (bảng quản trị ADMIN). */
 export async function listAllPlans(): Promise<Plan[]> {
   const response = await client.get("/admin/plans");
   return response.data.data;
 }
 
-/** Fields a ADMIN may edit on a plan. */
+/** Các trường ADMIN được sửa trên gói. */
 export type UpdatePlanPayload = Partial<
   Pick<
     Plan,
@@ -59,9 +53,7 @@ export type UpdatePlanPayload = Partial<
   >
 >;
 
-/**
- * Update a plan's editable fields (ADMIN). planCode/billingCycle are immutable.
- */
+/** Sửa các trường của gói (ADMIN). planCode và billingCycle không đổi được. */
 export async function updatePlan(
   id: string,
   payload: UpdatePlanPayload,
@@ -70,9 +62,7 @@ export async function updatePlan(
   return response.data.data;
 }
 
-/**
- * Enable/disable a plan (ADMIN). Inactive plans drop off the public list.
- */
+/** Bật/tắt gói (ADMIN). Gói tắt sẽ không còn ở danh sách công khai. */
 export async function setPlanActive(
   id: string,
   isActive: boolean,
@@ -82,8 +72,7 @@ export async function setPlanActive(
 }
 
 /**
- * The fixed pricing tiers. Plans are grouped by base code; each tier can have a
- * monthly plan (planCode === tier) and an optional yearly variant (`${tier}_YEARLY`).
+ * Ba hạng giá cố định. Mỗi hạng có gói tháng (planCode = hạng) và gói năm tuỳ chọn (`${tier}_YEARLY`).
  */
 export const PLAN_TIER_ORDER = ["TRIAL", "PLUS", "PRO"] as const;
 export type PlanTier = (typeof PLAN_TIER_ORDER)[number];
@@ -94,14 +83,13 @@ export interface PlanTierGroup {
   yearly?: Plan;
 }
 
-/** Strip the _YEARLY suffix to get a plan's base tier code. */
+/** Bỏ hậu tố _YEARLY để lấy mã hạng gốc của gói. */
 export const basePlanTier = (planCode: string): string =>
   planCode.replace(/_YEARLY$/, "");
 
 /**
- * Groups a flat plan list into the fixed TRIAL/PLUS/PRO tiers, pairing each
- * tier's monthly and yearly variants. Shared by the landing and billing pages.
- * Tiers with no matching plan are omitted.
+ * Gom danh sách gói phẳng thành TRIAL/PLUS/PRO, ghép bản tháng và năm. Dùng chung cho trang landing và billing.
+ * Hạng không có gói nào thì bỏ qua.
  */
 export function groupPlansByTier(plans: Plan[]): PlanTierGroup[] {
   return PLAN_TIER_ORDER.map((tier) => ({
@@ -111,7 +99,7 @@ export function groupPlansByTier(plans: Plan[]): PlanTierGroup[] {
   })).filter((g) => g.monthly || g.yearly);
 }
 
-/** The tenant's live subscription, as `GET /subscription/current` returns it. */
+/** Gói đang dùng của tenant, theo `GET /subscription/current`. */
 export interface CurrentSubscription {
   id: string;
   planId: string;
@@ -123,7 +111,7 @@ export interface CurrentSubscription {
   endDate: string;
   trialEndDate: string | null;
   autoRenew: boolean;
-  /** Quotas frozen onto the subscription when the plan was bought - `-1` means unlimited. */
+  /** Quota đóng băng vào subscription lúc mua gói; `-1` nghĩa là không giới hạn. */
   currentQuotaSnapshot: {
     maxBranches: number | null;
     maxWarehouses: number | null;
@@ -133,15 +121,9 @@ export interface CurrentSubscription {
 }
 
 /**
- * The plan this shop is on right now.
- *
- * **Not on `/auth/me`.** The old Express backend joined the subscription into the profile
- * and the billing screen read `user.subscription`; the NestJS rewrite's `AuthService.me`
- * returns the user row and its role and nothing else, so that field was `undefined` on
- * every request and the "Gói hiện tại" card could never draw the real plan - nor change
- * after a payment, since re-fetching the profile brought back the same blank.
- *
- * Answers `null` when the tenant has no subscription row at all.
+ * Gói shop đang dùng. **Không lấy từ `/auth/me`**: `AuthService.me` chỉ trả user và role, nên `user.subscription` luôn undefined
+ * và thẻ "Gói hiện tại" không bao giờ hiện đúng gói.
+ * Trả `null` khi tenant chưa có dòng subscription nào.
  */
 export async function getCurrentSubscription(): Promise<CurrentSubscription | null> {
   const response = await client.get("/subscription/current");
@@ -162,9 +144,7 @@ export async function initiateUpgrade(planCode: string): Promise<InitiateUpgrade
   return response.data.data;
 }
 
-/**
- * Renew the tenant's current plan (no planCode needed - backend uses the active plan)
- */
+/** Gia hạn gói hiện tại (không cần planCode, backend dùng gói đang active). */
 export async function initiateRenewal(): Promise<InitiateUpgradeResult> {
   const response = await client.post("/subscription/renew/initiate", {});
   return response.data.data;

@@ -1,4 +1,3 @@
-// [API – Branch]
 import client from "@/lib/api/client";
 import type {
   Branch,

@@ -3,19 +3,10 @@ import { AxiosError } from "axios";
 /**
  * Mã lỗi của backend → câu tiếng Việt hiển thị cho người dùng.
  *
- * Backend trả về `{ success: false, statusCode, code, message, ... }`. `message` là câu chữ
- * cho người đọc: nó đang là tiếng Việt, sẽ đổi sang tiếng Anh, và bị viết lại mỗi khi ai đó
- * sửa câu. `code` là nửa hợp đồng **không đổi** — nên frontend rẽ nhánh theo `code` và tự
- * dựng câu tiếng Việt ở đây, thay vì so khớp `message` như trước
- * (`message.includes("phân công quản lý")` là một dòng có thật trong `staff-mapper.ts`).
- *
- * Danh sách này phải khớp với `Ikiot_BE/src/common/errors/error-codes.ts`. Mã ở đó là
- * **append-only**, nên bảng này chỉ thêm chứ không đổi khoá.
- *
- * **Một số câu ở đây cố tình chung chung hơn `message` của backend**, vì message gốc có chèn
- * số liệu chạy thật (`Không đủ tồn kho cho X: cần 5, còn 2`) mà bảng tĩnh không tái tạo
- * được. Khi cần đúng con số, backend phải trả thêm dữ liệu có cấu trúc trong `errors` —
- * hiện chưa làm.
+ * Backend trả `{ success: false, statusCode, code, message, ... }`. `message` chỉ là câu chữ
+ * cho người đọc, có thể đổi; frontend rẽ nhánh theo `code` (ổn định), không so khớp `message`.
+ * Bảng này phải khớp `Ikiot_BE/src/common/errors/error-codes.ts`, mã ở đó chỉ thêm, không đổi khoá.
+ * Một số câu cố tình chung chung hơn `message` gốc vì message có số liệu động; cần đúng con số thì backend phải trả thêm trong `errors`.
  */
 export const ERROR_MESSAGES = {
   ACCOUNT_HAS_NO_BRANCH: "Tài khoản chưa được phân về chi nhánh nào",
@@ -240,7 +231,6 @@ export const ERROR_MESSAGES = {
   WAREHOUSE_NOT_IN_TENANT: "Kho không thuộc cửa hàng của bạn",
   WEBHOOK_API_KEY_INVALID: "API key không hợp lệ",
 
-  // ── Hành trình đơn hàng (P0-3/P0-6, 2026-10-02) ─────────────────────────────
   // Giữ hàng, lô hàng, kho hàng hỏng
   INSUFFICIENT_AVAILABLE_STOCK: "Không đủ hàng có thể bán (một phần đã được giữ cho đơn khác)",
   INVENTORY_LOT_SHORTAGE: "Số liệu lô hàng không khớp tồn kho, vui lòng báo quản trị",
@@ -372,9 +362,8 @@ export const ERROR_MESSAGES = {
 export type ApiErrorCode = keyof typeof ERROR_MESSAGES;
 
 /**
- * Các mã nghĩa là "phiên đăng nhập không dùng được nữa" — dùng cho interceptor quyết định
- * có thử refresh token hay không. Trước đây chỗ đó so khớp đúng chuỗi
- * `"Invalid or expired token."`, tức là đổi một câu chữ là vòng refresh chết.
+ * Mã nghĩa là phiên không dùng được nữa; interceptor dựa vào đây để quyết định có refresh token không.
+ * Không so khớp chuỗi `message`, vì đổi câu chữ sẽ làm vòng refresh chết.
  */
 export const TOKEN_EXPIRED_CODES: ReadonlySet<string> = new Set<ApiErrorCode>([
   "SESSION_EXPIRED",
@@ -429,7 +418,7 @@ export function shortStockLinesOf(error: unknown): ShortStockLine[] {
   return body.errors.filter(isShortStockLine);
 }
 
-/** A money difference the backend explains alongside its code: `{ held, amount, difference }`. */
+/** Chênh lệch tiền backend trả kèm mã lỗi: `{ held, amount, difference }`. */
 export interface MoneyGap {
   held: number;
   amount: number;
@@ -444,12 +433,12 @@ function moneyGapAt(error: unknown, code: ApiErrorCode, key: string): MoneyGap |
   return { held: gap.held, amount: gap.amount, difference: gap.amount - gap.held };
 }
 
-/** `ORDER_DEPOSIT_CHANGED` (A-8): the edit would move the deposit off the money already taken. */
+/** `ORDER_DEPOSIT_CHANGED` (A-8): sửa đổi làm tiền cọc lệch khỏi số tiền đã thu. */
 export function depositChangeOf(error: unknown): MoneyGap | null {
   return moneyGapAt(error, "ORDER_DEPOSIT_CHANGED", "deposit");
 }
 
-/** `ORDER_REMITTANCE_AMOUNT_MISMATCH` (A-10): what the owner counted is not what the shipper collected. */
+/** `ORDER_REMITTANCE_AMOUNT_MISMATCH` (A-10): số chủ shop đếm không khớp số shipper đã thu. */
 export function remittanceGapOf(error: unknown): MoneyGap | null {
   return moneyGapAt(error, "ORDER_REMITTANCE_AMOUNT_MISMATCH", "remittance");
 }

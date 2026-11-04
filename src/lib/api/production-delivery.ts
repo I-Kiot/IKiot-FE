@@ -1,4 +1,4 @@
-// [API – Phiếu giao xưởng] Nhân viên xưởng + nơi nhận (2026-10-09). Contract: Ikiot_BE/docs/api-contract-order-flow.md §3.
+// Nhân viên xưởng + nơi nhận (2026-10-09). Hợp đồng: Ikiot_BE/docs/api-contract-order-flow.md §3.
 import client from '@/lib/api/client';
 import type {
   CreateProductionDeliveryPayload,

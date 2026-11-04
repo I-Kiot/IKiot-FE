@@ -1,4 +1,3 @@
-// [API – Stats]
 import client from '@/lib/api/client';
 import type { LocationType } from '@/types/location';
 
@@ -182,7 +181,7 @@ export interface LowStockItem {
   productItemId: string;
   productName: string;
   sku: string;
-  // Exactly one of the two is set, matching `locationType`.
+  // Chỉ một trong hai có giá trị, khớp với `locationType`.
   branchId: string | null;
   warehouseId: string | null;
   locationType: LocationType;
@@ -211,7 +210,7 @@ export interface ComparisonWindow {
 export interface RevenueComparisonItem {
   key: ComparisonKey;
   current: ComparisonWindow;
-  /** The same elapsed span of the period before, not the whole of it. */
+  /** Cùng khoảng thời gian đã trôi qua của kỳ trước, không phải toàn bộ kỳ đó. */
   previous: ComparisonWindow;
   changePct: { revenue: number | null; orderCount: number | null; aov: number | null };
 }
@@ -243,7 +242,7 @@ export interface RevenueByBranch {
   branches: RevenueByBranchItem[];
 }
 
-/** weekday: 0 = Sunday .. 6 = Saturday; hour: 0..23, shop-local. */
+/** weekday: 0 = Chủ nhật .. 6 = Thứ bảy; hour: 0..23, theo giờ của shop. */
 export interface SalesHeatmapCell {
   weekday: number;
   hour: number;
@@ -268,7 +267,6 @@ export interface TopCustomers {
   customers: TopCustomerItem[];
 }
 
-// ── Platform-operator overview (ADMIN) ──────────────────────────────────
 export interface AdminRevenuePoint {
   bucket: string;
   revenue: number;

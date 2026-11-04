@@ -7,9 +7,7 @@ import type { User } from "../auth";
 import type { LocationRef } from "@/types/location";
 import { resetSocket } from "../socket";
 
-/**
- * Log in a user and retrieve session tokens and profile
- */
+/** Đăng nhập, nhận token phiên và hồ sơ người dùng. */
 export async function loginUser(data: LoginInput) {
   const response = await client.post("/auth/login", {
     phoneNumber: data.phone,
@@ -37,22 +35,19 @@ export async function loginUser(data: LoginInput) {
 }
 
 /**
- * Log in with Google via Firebase. Opens the Google popup, obtains a Firebase
- * ID token, and exchanges it at the backend for our own session tokens. The
- * backend requires the Google email to already exist on a user's profile -
- * otherwise it rejects the sign-in.
+ * Đăng nhập Google qua Firebase, đổi ID token lấy token phiên của backend.
+ * Backend yêu cầu email Google đã tồn tại trên hồ sơ người dùng, nếu không sẽ từ chối.
  */
 export async function loginWithGoogle() {
   const auth = getAuth(firebaseApp);
   const provider = new GoogleAuthProvider();
-  // Always let the user pick which Google account to use.
+  // Luôn cho người dùng chọn tài khoản Google.
   provider.setCustomParameters({ prompt: "select_account" });
 
   const result = await signInWithPopup(auth, provider);
   const idToken = await result.user.getIdToken();
 
-  // We only need the ID token to exchange for our JWTs; drop the Firebase
-  // client session so it doesn't linger.
+  // Chỉ cần ID token để đổi lấy JWT; đóng phiên Firebase phía client để không còn sót lại.
   await auth.signOut().catch(() => {});
 
   const response = await client.post("/auth/firebase-login", {
@@ -73,10 +68,7 @@ export async function loginWithGoogle() {
   return { accessToken, refreshToken, user };
 }
 
-/**
- * Check whether the phone number / store name are already taken, before
- * sending an OTP, so the user gets immediate feedback and no wasted SMS.
- */
+/** Kiểm tra SĐT / tên cửa hàng đã được dùng chưa, trước khi gửi OTP để báo ngay và không tốn SMS. */
 export async function checkRegistrationAvailability(
   phoneNumber: string,
   tenantName: string,
@@ -91,17 +83,14 @@ export async function checkRegistrationAvailability(
   };
 }
 
-/**
- * Request an SMS OTP (sent via eSMS) for the given phone number before registration.
- */
+/** Gửi OTP qua SMS (eSMS) tới số điện thoại trước khi đăng ký. */
 export async function sendOtpRequest(phoneNumber: string) {
   const response = await client.post("/auth/send-otp", { phoneNumber });
   return response.data;
 }
 
 /**
- * Register a new user and tenant. `otpCode` is the 6-digit code the user
- * received via SMS (or "DEV_BYPASS" when OTP is bypassed in dev).
+ * Đăng ký user và tenant. `otpCode` là mã 6 số nhận qua SMS (hoặc "DEV_BYPASS" khi bỏ qua OTP ở dev).
  */
 export async function registerUser(data: SignupInput, otpCode: string) {
   const response = await client.post("/auth/register", {
@@ -118,9 +107,7 @@ export async function registerUser(data: SignupInput, otpCode: string) {
   return response.data;
 }
 
-/**
- * Log out user by calling API and clearing local storage
- */
+/** Đăng xuất: gọi API rồi xoá dữ liệu local. */
 export async function logout(): Promise<void> {
   const refreshToken = getRefreshToken();
   if (refreshToken) {
@@ -140,23 +127,19 @@ export async function logout(): Promise<void> {
     }
   }
 
-  // Always clear credentials locally even if the API call fails
+  // Luôn xoá thông tin đăng nhập ở local, kể cả khi gọi API lỗi.
   clearTokens();
   clearCachedUser();
-  // The socket was authenticated as this user and the backend joined it to their rooms;
-  // leaving it open would keep delivering their notifications to whoever signs in next.
+  // Socket đã xác thực theo user này và backend đã join vào room của họ; không ngắt thì người đăng nhập sau sẽ nhận thông báo của user cũ.
   resetSocket();
 }
 
-/**
- * Get current authenticated user profile
- */
-/** The shape `/auth/me` and `/auth/login` actually return for a user. */
+/** Dạng user mà `/auth/me` và `/auth/login` trả về. */
 interface ApiSessionUser {
   systemRole?: string;
-  /** The tenant-defined role relation - an object, not the account kind. */
+  /** Quan hệ Role do tenant định nghĩa, là object, không phải loại tài khoản. */
   role?: { id?: string; name?: string } | null;
-  /** The posting (`AuthService`'s `SESSION_USER_INCLUDE`); null for an owner or admin. */
+  /** Nơi làm việc (`SESSION_USER_INCLUDE` của AuthService); null với chủ shop hoặc admin. */
   location?: LocationRef | null;
   [key: string]: unknown;
 }
@@ -169,18 +152,9 @@ function postingIds(location: LocationRef | null | undefined): Pick<User, "branc
 }
 
 /**
- * Turns a backend user row into the session user the app reads.
- *
- * It puts the **account kind** back on `role`. The backend calls that `systemRole` and uses
- * `role` for the tenant `Role` relation, so passing the row through untouched left
- * `user.role` holding `{id,name}` or `null` - which made every `user.role === "TENANT_OWNER"`
- * false and every `!==` true, blanking the sidebar and inverting the negative guards. Same
- * job `staff-mapper.ts` does for staff rows.
- *
- * It also derives `branchId` / `warehouseId` from `location`. Since the Location refactor the
- * backend sends one `locationId` plus the `location` relation; reading the old two names
- * straight off the row left both undefined, so every STAFF account's location switcher fell
- * back to "the whole chain" (BUG-01 in docs/bug-log-test-hanh-trinh.md).
+ * Đổi user row của backend thành session user. Đưa loại tài khoản (`systemRole`) về lại `role`:
+ * backend dùng `role` cho quan hệ Role của tenant, để nguyên thì mọi so sánh `user.role === "..."` sai.
+ * Cũng suy ra `branchId` / `warehouseId` từ `location` (BUG-01, docs/bug-log-test-hanh-trinh.md).
  */
 export function normalizeSessionUser(
   user: ApiSessionUser | undefined,
@@ -205,15 +179,8 @@ export async function getMe() {
 }
 
 /**
- * Update current authenticated user profile
- */
-/**
- * `PATCH /auth/me` - the signed-in account editing itself.
- *
- * **The body is flat.** `UpdateMeDto` declares every field at the top level, so a nested
- * `profile` object was dropped whole by `whitelist: true`: the account-settings form
- * answered 200 and saved nothing but the email. `/users/:id` is the one that takes a
- * nested `profile`; the two endpoints do not share a DTO.
+ * `PATCH /auth/me` - tự sửa hồ sơ. **Body phẳng**: `UpdateMeDto` khai báo mọi trường ở cấp trên cùng,
+ * `whitelist: true` sẽ bỏ object `profile` lồng nhau. Chỉ `/users/:id` nhận `profile`.
  */
 export async function updateMe(payload: {
   firstName?: string;

@@ -1,4 +1,3 @@
-// [API – Category]
 import client from '@/lib/api/client'
 import type {
   Category,
@@ -9,9 +8,7 @@ import type {
   CategoryUpdatePayload,
 } from '@/types/category'
 
-// Kiểu phản hồi của API. Bản Express cũ trả document Mongo khoá `_id`; bản NestJS
-// trả `id`, nên phép ánh xạ dưới đây giờ là đồng nhất - giữ lại làm chỗ duy nhất phải
-// sửa nếu hình dạng phản hồi đổi lần nữa.
+// Bản Express cũ trả `_id`, bản NestJS trả `id` nên ánh xạ này giờ đồng nhất; giữ làm chỗ duy nhất phải sửa nếu hình dạng phản hồi đổi.
 type CategoryDoc = Omit<Category, 'id'> & { id: string }
 
 function mapCategory(doc: CategoryDoc): Category {
