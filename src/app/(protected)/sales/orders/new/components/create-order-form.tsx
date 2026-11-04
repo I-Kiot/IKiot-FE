@@ -498,7 +498,7 @@ function OrderDraftForm({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="requested-date" className={sectionLabel}>
-                  Thời gian khách hẹn giao
+                  {fulfillment === "STORE_PICKUP" ? "Ngày khách hẹn lấy hàng" : "Thời gian khách hẹn giao"}
                 </Label>
                 <Input
                   id="requested-date"
