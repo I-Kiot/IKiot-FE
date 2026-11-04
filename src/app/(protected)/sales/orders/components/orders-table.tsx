@@ -124,7 +124,8 @@ export function OrdersTable() {
 
   const columnCount = table.getVisibleLeafColumns().length;
   const alerts = useOrderAlertsStore((state) => state.alerts);
-  const showAlertBanner = !!alerts && (alerts.short > 0 || alerts.dueSoon > 0);
+  const showAlertBanner =
+    !!alerts && (alerts.short > 0 || alerts.dueSoon > 0 || alerts.pickupOverdue > 0);
 
   return (
     <div className="space-y-4">
@@ -157,6 +158,18 @@ export function OrdersTable() {
               )}
             >
               {alerts.dueSoon} đơn sắp tới ngày giao (trong {alerts.dueSoonDays} ngày, kể cả quá hạn)
+            </button>
+          )}
+          {alerts.pickupOverdue > 0 && (
+            <button
+              type="button"
+              onClick={() => updateQuery({ attention: "PICKUP_OVERDUE" })}
+              className={cn(
+                "cursor-pointer underline-offset-2 hover:underline",
+                listQuery.attention === "PICKUP_OVERDUE" && "font-semibold underline",
+              )}
+            >
+              {alerts.pickupOverdue} đơn khách quá hạn lấy hàng (cần liên hệ khách)
             </button>
           )}
           {listQuery.attention !== "all" && (
