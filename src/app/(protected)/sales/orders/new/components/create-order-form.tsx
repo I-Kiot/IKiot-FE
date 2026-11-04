@@ -278,10 +278,10 @@ function OrderDraftForm({
             },
           }
         : {}),
-      ...(fulfillment === "HOME_DELIVERY" && recipientName.trim()
+      ...(recipientName.trim()
         ? { recipientName: recipientName.trim() }
         : {}),
-      ...(fulfillment === "HOME_DELIVERY" && recipientPhone.trim()
+      ...(recipientPhone.trim()
         ? { recipientPhone: recipientPhone.trim() }
         : {}),
       ...(fulfillment === "HOME_DELIVERY" && deliveryAddress.trim()
@@ -511,31 +511,30 @@ function OrderDraftForm({
                   <p className="text-sm text-destructive">{errors.requestedDate}</p>
                 )}
               </div>
+              {/* Khách tới lấy cũng ghi người sẽ đến nhận để quầy đối chiếu; chỉ địa chỉ là của giao tận nơi. */}
+              <div className="space-y-1.5">
+                <Label htmlFor="recipient-name" className={sectionLabel}>
+                  {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận"}
+                </Label>
+                <Input
+                  id="recipient-name"
+                  value={recipientName}
+                  onChange={(event) => setRecipientName(event.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="recipient-phone" className={sectionLabel}>
+                  {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận"}
+                </Label>
+                <Input
+                  id="recipient-phone"
+                  inputMode="tel"
+                  value={recipientPhone}
+                  onChange={(event) => setRecipientPhone(event.target.value)}
+                />
+              </div>
               {fulfillment === "HOME_DELIVERY" && (
                 <>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recipient-name" className={sectionLabel}>
-                      Người nhận
-                    </Label>
-                    <Input
-                      id="recipient-name"
-                      value={recipientName}
-                      onChange={(event) => setRecipientName(event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recipient-phone" className={sectionLabel}>
-                      SĐT người nhận
-                    </Label>
-                    <Input
-                      id="recipient-phone"
-                      inputMode="tel"
-                      value={recipientPhone}
-                      onChange={(event) =>
-                        setRecipientPhone(event.target.value)
-                      }
-                    />
-                  </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="delivery-address" className={sectionLabel}>
                       Địa chỉ giao hàng
