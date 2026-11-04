@@ -1,4 +1,3 @@
-// [Table – Orchestrator Category]
 'use client'
 
 import { Fragment, useEffect, useMemo, useState } from 'react'

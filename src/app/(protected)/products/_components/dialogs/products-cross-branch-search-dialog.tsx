@@ -66,7 +66,7 @@ export function ProductsCrossBranchSearchDialog({ open, onOpenChange }: Props) {
     statusFilter
   );
 
-  // Branch/supplier options are only needed while this modal is open.
+  // Danh sách chi nhánh/nhà cung cấp chỉ cần khi modal đang mở.
   useEffect(() => {
     if (!open) return;
     ensureLocationOptionsLoaded();

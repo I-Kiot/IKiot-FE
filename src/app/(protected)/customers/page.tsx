@@ -1,4 +1,3 @@
-// [Page – Customers]
 import { PageHeader } from '@/components/page-header'
 import { CustomersButtonGroup } from './_components/customers-button-group'
 import { CustomersTable } from './_components/table/customers-table'

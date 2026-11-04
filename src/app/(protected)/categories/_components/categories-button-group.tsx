@@ -1,4 +1,3 @@
-// [Component – Button Group Category]
 'use client'
 
 import { Download, Plus, Trash2 } from 'lucide-react'

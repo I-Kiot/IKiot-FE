@@ -115,8 +115,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
         status: currentRow.status,
         isManufacturable: currentRow.isManufacturable ?? false,
         images: currentRow.images ?? [],
-        // Not used in edit mode (BE doesn't allow editing productName here),
-        // but the schema requires a value.
+        // Không dùng khi sửa (BE không cho sửa productName ở đây), nhưng schema bắt buộc có giá trị.
         useParentNameForItem: true,
         attributes: undefined,
       })
@@ -408,7 +407,6 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                   />
                 )}
 
-                {/* Tên phiên bản: dùng tên hàng hóa hoặc đặt tên riêng */}
                 <FormField
                   control={form.control}
                   name="useParentNameForItem"
@@ -452,7 +450,6 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                   />
                 )}
 
-                {/* Ảnh riêng cho phiên bản */}
                 <ProductItemImagesField
                   value={form.watch('itemImages') ?? []}
                   onChange={(images) => form.setValue('itemImages', images, { shouldDirty: true })}
@@ -623,7 +620,6 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
                   )}
                 />
 
-                {/* === Thuộc tính phiên bản === */}
                 <Separator />
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">

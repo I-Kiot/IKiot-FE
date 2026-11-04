@@ -108,8 +108,7 @@ export function ProductsExpandedPanel({
       if (!prev) return prev;
       return {
         ...prev,
-        // PATCH /products/items/:id doesn't populate `suppliers`, so keep the
-        // previously-populated list instead of clobbering it with raw ObjectIds.
+        // PATCH /products/items/:id không populate `suppliers`: giữ danh sách đã có, không ghi đè bằng ObjectId thô.
         items: prev.items.map((i) =>
           i.id === updated.id ? { ...updated, suppliers: i.suppliers } : i,
         ),

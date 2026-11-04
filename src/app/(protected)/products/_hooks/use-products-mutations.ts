@@ -1,4 +1,3 @@
-// [Mutations – Product]
 'use client'
 
 import { useState, useEffect } from 'react'

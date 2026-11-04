@@ -1,4 +1,3 @@
-// [Table – Expanded Panel Category]
 'use client'
 
 import { useState } from 'react'

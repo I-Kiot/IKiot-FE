@@ -1,4 +1,3 @@
-// [UI Types – Customer]
 import { z } from 'zod'
 
 export type CustomersDialogType = 'add' | 'edit' | 'delete' | 'deleteMany'

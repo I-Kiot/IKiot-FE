@@ -1,4 +1,3 @@
-// [Table – Columns Promotion]
 import { type ColumnDef } from '@tanstack/react-table'
 import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'

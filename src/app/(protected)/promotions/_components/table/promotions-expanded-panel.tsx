@@ -1,4 +1,3 @@
-// [Table – Expanded Panel Promotion]
 'use client'
 
 import { useEffect, useState } from 'react'

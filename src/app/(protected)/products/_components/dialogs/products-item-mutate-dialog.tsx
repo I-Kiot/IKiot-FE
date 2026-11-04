@@ -117,8 +117,7 @@ export function ProductsItemMutateDialog(props: Props) {
         description: existingItem.description ?? '',
         images: toItemImagePayload(existingItem.images),
         productDetails: existingItem.productDetails?.map((d) => ({ name: d.name, value: d.value })) ?? [],
-        // Not used in edit mode (only create needs the parent/custom choice),
-        // but the schema requires a value.
+        // Không dùng khi sửa (chỉ lúc tạo mới cần chọn cha/tuỳ chỉnh), nhưng schema bắt buộc có giá trị.
         useParentNameForItem: true,
         itemProductName: existingItem.productName,
       })
@@ -205,7 +204,6 @@ export function ProductsItemMutateDialog(props: Props) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* === Tên phiên bản: dùng tên hàng hóa hoặc đặt tên riêng === */}
             {!isEdit && (
               <>
                 <FormField
@@ -276,7 +274,6 @@ export function ProductsItemMutateDialog(props: Props) {
               <ComboComponentsField value={comboRows} onChange={setComboRows} selfId={existingItem?.id} />
             )}
 
-            {/* === Tải ảnh phiên bản === */}
             <ProductItemImagesField
               value={form.watch('images') ?? []}
               onChange={(images) => form.setValue('images', images, { shouldDirty: true })}
@@ -446,7 +443,6 @@ export function ProductsItemMutateDialog(props: Props) {
               )}
             />
 
-            {/* === Thuộc tính sản phẩm === */}
             <Separator />
             <div className="space-y-2">
               <div className="flex items-center justify-between">

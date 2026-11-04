@@ -1,4 +1,3 @@
-// [Dialog – Mutate Promotion]
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -196,17 +195,11 @@ export function PromotionsMutateDialog({
   const [branchOptions, setBranchOptions] = useState<Option[]>([])
   const [categoryOptions, setCategoryOptions] = useState<Option[]>([])
   const [productItemOptions, setProductItemOptions] = useState<Option[]>([])
-  // Decoupled from `branchIds` itself: turning this switch off with zero branches
-  // picked yet must still show the multi-select (not silently mean "whole system").
+  // Tách khỏi `branchIds`: tắt công tắc khi chưa chọn chi nhánh nào vẫn phải hiện multi-select, không ngầm hiểu là toàn hệ thống.
   const [applyToAllBranches, setApplyToAllBranches] = useState(true)
 
-  // Somebody posted at a branch scopes their promotion to that branch.
-  //
-  // The comment here used to claim the backend force-overrides `branchIds` on create and
-  // update. **It does not** - `PromotionService.create/update` take the list as given after
-  // only checking the branches exist, and the service header says the old branch-manager
-  // rule "goes with the role". So this is the only thing narrowing the scope, and it was
-  // keyed on a role nobody carries any more.
+  // Người đăng khuyến mãi tại một chi nhánh thì phạm vi bị giới hạn vào chi nhánh đó. BE không ghi đè `branchIds` khi tạo/sửa,
+  // nên đây là thứ duy nhất thu hẹp phạm vi (đang dựa vào role không còn ai giữ).
   const ownBranchId = getSessionBranchId()
   const isBranchScoped = Boolean(ownBranchId)
   const ownBranchLabel = branchOptions.find((b) => b.value === ownBranchId)?.label
@@ -265,10 +258,7 @@ export function PromotionsMutateDialog({
   const branchIds = form.watch('branchIds')
   const branchIdsKey = branchIds.join(',')
 
-  // Danh sách luôn là toàn bộ hàng hóa của cửa hàng (theo tenant). Chọn chi nhánh cụ thể thì
-  // `branchIds` chỉ gắn thêm tồn kho của (các) chi nhánh đó vào nhãn - KHÔNG lọc bớt: hàng
-  // chưa nhập về chi nhánh vẫn phải chọn được, vì đặt khuyến mãi cho lô hàng tuần sau là
-  // chuyện bình thường. Hàng còn tồn được xếp lên trước cho dễ chọn.
+  // Luôn liệt kê toàn bộ hàng hoá của cửa hàng. Chọn chi nhánh chỉ gắn thêm tồn của chi nhánh đó vào nhãn, KHÔNG lọc: hàng chưa nhập về vẫn chọn được (khuyến mãi cho lô tuần sau). Hàng còn tồn xếp lên trước.
   useEffect(() => {
     if (!open) return
     if (!applyToAllBranches && branchIds.length === 0) {

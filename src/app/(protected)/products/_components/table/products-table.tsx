@@ -68,8 +68,8 @@ export function ProductsTable() {
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     onExpandedChange: setExpanded,
-    // Default global filter only sees column values on `Product` rows, which never
-    // carry sku/productCode - match those via the pre-built skuSearchIndex instead.
+    // Bộ lọc toàn cục mặc định chỉ thấy giá trị cột của dòng `Product`, không có sku/productCode -
+    // nên khớp các trường đó qua skuSearchIndex đã dựng sẵn.
     globalFilterFn: (row, _columnId, filterValue) => {
       const term = String(filterValue ?? '').trim().toLowerCase()
       if (!term) return true

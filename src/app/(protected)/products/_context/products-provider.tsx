@@ -1,4 +1,3 @@
-// [Context – UI State]
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
@@ -44,8 +43,7 @@ type ProductsContextType = {
   categories: Category[]
   suppliers: Supplier[]
   ensureSuppliersLoaded: () => void
-  // productId -> lowercased "sku productCode" text, for the toolbar search box
-  // (GET /products doesn't include item-level fields on each product; see products-table.tsx).
+  // Chuỗi sku + productCode (viết thường) theo productId cho ô tìm kiếm; GET /products không kèm trường cấp item (xem products-table.tsx).
   skuSearchIndex: Map<string, string>
 }
 
@@ -83,9 +81,7 @@ export function ProductsProvider({
     })
   }, [])
 
-  // Powers the toolbar search box's SKU/product-code matching (see products-table.tsx) -
-  // GET /products doesn't attach item-level fields per product, so build the index from
-  // the flat item list instead.
+  // Phục vụ tìm theo SKU/mã hàng ở ô tìm kiếm (xem products-table.tsx). GET /products không gắn trường cấp item, nên dựng index từ danh sách item phẳng.
   useEffect(() => {
     productApi
       .listItems({ limit: 500, productType: screen.listTypes })
@@ -101,8 +97,7 @@ export function ProductsProvider({
       .catch(() => setSkuSearchIndex(new Map()))
   }, [screen.listTypes])
 
-  // Only needed inside stock-location pickers/labels (mutate dialog, item dialogs,
-  // detail sheet) - fetched on first open instead of on every products page mount.
+  // Chỉ cần trong picker/nhãn kho (dialog sửa, dialog phiên bản, detail sheet): tải khi mở lần đầu, không tải mỗi lần vào trang.
   function ensureLocationOptionsLoaded() {
     if (locationOptionsLoadedRef.current) return
     locationOptionsLoadedRef.current = true
@@ -116,7 +111,7 @@ export function ProductsProvider({
       .catch(() => setWarehouseOptions([]))
   }
 
-  // Only needed inside the Supplier dropdown/detail row - fetched on first open.
+  // Chỉ cần trong dropdown/dòng chi tiết nhà cung cấp: tải khi mở lần đầu.
   function ensureSuppliersLoaded() {
     if (suppliersLoadedRef.current) return
     suppliersLoadedRef.current = true

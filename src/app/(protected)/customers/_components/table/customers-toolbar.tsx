@@ -1,4 +1,3 @@
-// [Table – Toolbar Customer]
 'use client'
 
 import { type Table } from '@tanstack/react-table'
