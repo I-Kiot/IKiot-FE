@@ -144,10 +144,14 @@ function OrderDraftForm({
       : { id: branch.id, type: "BRANCH" as const }
     : null;
 
+  // Khách tới lấy không có phí giao hàng: ô nhập ẩn và phí tính bằng 0 dù trước đó đã nhập.
+  const pickup = fulfillment === "STORE_PICKUP";
+  const effectiveShippingFee = pickup ? 0 : shippingFee;
+
   const totals = computeTotals({
     lines,
     orderDiscount,
-    shippingFee,
+    shippingFee: effectiveShippingFee,
     depositType,
     depositValue,
   });
@@ -265,7 +269,7 @@ function OrderDraftForm({
         ...(line.customization ? { customization: line.customization } : {}),
       })),
       customerId: customer.id,
-      ...(shippingFee > 0 ? { shippingFee } : {}),
+      ...(effectiveShippingFee > 0 ? { shippingFee: effectiveShippingFee } : {}),
       ...(orderDiscount > 0
         ? { discountType: "ORDER" as const, discountValue: orderDiscount }
         : {}),
@@ -561,17 +565,19 @@ function OrderDraftForm({
         <CardContent className="px-4">
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="shipping-fee" className={sectionLabel}>
-                  Phí giao hàng
-                </Label>
-                <MoneyInput
-                  id="shipping-fee"
-                  className="text-right"
-                  value={shippingFee}
-                  onChange={setShippingFee}
-                />
-              </div>
+              {!pickup && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="shipping-fee" className={sectionLabel}>
+                    Phí giao hàng
+                  </Label>
+                  <MoneyInput
+                    id="shipping-fee"
+                    className="text-right"
+                    value={shippingFee}
+                    onChange={setShippingFee}
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="order-discount" className={sectionLabel}>
                   Giảm giá cả đơn
