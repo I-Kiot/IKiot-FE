@@ -123,7 +123,11 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   const hasOpenShipment = order.shipments.some(
     (shipment) => !["DELIVERED", "FAILED", "RETURNED", "CANCELLED"].includes(shipment.status),
   );
-  const typeLocked = !(order.status === "CONFIRMED" || (order.status === "PACKED" && !hasOpenShipment));
+  // Đã thu tại quầy (PAID mà tổng trừ cọc vẫn > 0) thì đổi sang giao tận nơi sẽ thu lần nữa (BE: ORDER_PICKUP_ALREADY_COLLECTED).
+  const collectedAtCounter =
+    order.fulfillmentType === "STORE_PICKUP" && order.paymentStatus === "PAID" && order.amountDue > 0;
+  const shippedOff = !(order.status === "CONFIRMED" || (order.status === "PACKED" && !hasOpenShipment));
+  const typeLocked = shippedOff || collectedAtCounter;
   const fee = pickup ? 0 : Number(shippingFee);
   // Chỉ kiểm tra ngày khi người dùng đổi ngày: đơn đã quá ngày hẹn vẫn phải sửa được các trường khác.
   const dateError =
@@ -219,7 +223,9 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
               </Select>
               {typeLocked && (
                 <p className="text-xs text-muted-foreground">
-                  Đơn đã giao cho vận chuyển nên không đổi được hình thức nhận.
+                  {collectedAtCounter
+                    ? "Đơn đã thu tiền tại quầy nên không đổi được hình thức nhận."
+                    : "Đơn đã giao cho vận chuyển nên không đổi được hình thức nhận."}
                 </p>
               )}
             </div>
