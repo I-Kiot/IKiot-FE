@@ -118,7 +118,13 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   }, [linesEditable, order.branch.id]);
 
   const linesChanged = linesEditable && linesKey(lines) !== linesKey(initialLines);
-  const fee = Number(shippingFee);
+  const pickup = fulfillmentType === "STORE_PICKUP";
+  // Chuyển giữa khách tới lấy và giao tận nơi chỉ khi chưa có ai mang hàng đi (BE: ORDER_FULFILLMENT_TYPE_LOCKED).
+  const hasOpenShipment = order.shipments.some(
+    (shipment) => !["DELIVERED", "FAILED", "RETURNED", "CANCELLED"].includes(shipment.status),
+  );
+  const typeLocked = !(order.status === "CONFIRMED" || (order.status === "PACKED" && !hasOpenShipment));
+  const fee = pickup ? 0 : Number(shippingFee);
   // Chỉ kiểm tra ngày khi người dùng đổi ngày: đơn đã quá ngày hẹn vẫn phải sửa được các trường khác.
   const dateError =
     requestedDeliveryDate !== (order.requestedDeliveryDate ?? "") && isPastDate(requestedDeliveryDate)
@@ -135,7 +141,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
       fulfillmentType: fulfillmentType as UpdateOrderPayload["fulfillmentType"],
       recipientName: recipientName.trim() || undefined,
       recipientPhone: recipientPhone.trim() || undefined,
-      deliveryAddress: deliveryAddress.trim() || undefined,
+      deliveryAddress: pickup ? undefined : deliveryAddress.trim() || undefined,
       requestedDeliveryDate: requestedDeliveryDate || undefined,
       shippingFee: Math.round(fee),
       note: note.trim() || undefined,
@@ -199,7 +205,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Hình thức nhận</Label>
-              <Select value={fulfillmentType} onValueChange={setFulfillmentType}>
+              <Select value={fulfillmentType} onValueChange={setFulfillmentType} disabled={typeLocked}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -213,7 +219,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Ngày khách hẹn giao</Label>
+              <Label>{pickup ? "Ngày khách hẹn lấy hàng" : "Ngày khách hẹn giao"}</Label>
               <Input
                 type="date"
                 min={todayIso()}
@@ -223,24 +229,28 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
               {dateError && <p className="text-xs text-destructive">{dateError}</p>}
             </div>
             <div className="grid gap-2">
-              <Label>Người nhận</Label>
+              <Label>{pickup ? "Người đến lấy hàng" : "Người nhận"}</Label>
               <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} />
             </div>
             <div className="grid gap-2">
-              <Label>Số điện thoại người nhận</Label>
+              <Label>{pickup ? "SĐT người đến lấy" : "Số điện thoại người nhận"}</Label>
               <Input value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} />
             </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <Label>Địa chỉ giao</Label>
-              <Input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Phí giao hàng</Label>
-              <MoneyInput
-                value={Number(shippingFee) || 0}
-                onChange={(next) => setShippingFee(String(next))}
-              />
-            </div>
+            {!pickup && (
+              <>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label>Địa chỉ giao</Label>
+                  <Input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Phí giao hàng</Label>
+                  <MoneyInput
+                    value={Number(shippingFee) || 0}
+                    onChange={(next) => setShippingFee(String(next))}
+                  />
+                </div>
+              </>
+            )}
             <div className="grid gap-2">
               <Label>Ghi chú</Label>
               <Textarea rows={1} value={note} onChange={(e) => setNote(e.target.value)} />
