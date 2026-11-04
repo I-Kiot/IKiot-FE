@@ -13,6 +13,9 @@ import type {
   PackableOrder,
   PackResult,
   Paginated,
+  PickupCollectPayload,
+  PickupCollectResult,
+  PickupHandOverPayload,
   Shipment,
   ConfirmRemittancePayload,
   OrderPriority,
@@ -120,6 +123,18 @@ export const orderJourneyApi = {
       params: { status: 'PACKED', page, limit },
     });
     return { data: res.data.data, pagination: res.data.pagination };
+  },
+
+  /** Đơn khách tới lấy, đang chờ khách (PACKED): thu số còn lại tại quầy. Tiền mặt ghi luôn; QR trả `payment.qrUrl` chờ tiền về. */
+  pickupCollect: async (id: string, payload: PickupCollectPayload): Promise<PickupCollectResult> => {
+    const res = await client.post<Envelope<PickupCollectResult>>(`/orders/${id}/pickup/collect`, payload);
+    return res.data.data;
+  },
+
+  /** Đơn khách tới lấy đã thu đủ: giao hàng cho khách, trừ tồn, PACKED → COMPLETED. */
+  pickupHandOver: async (id: string, payload: PickupHandOverPayload = {}): Promise<OrderDetail> => {
+    const res = await client.post<Envelope<{ order: OrderDetail }>>(`/orders/${id}/pickup/hand-over`, payload);
+    return res.data.data.order;
   },
 
   /** PICKED_UP → SHIPPING (C-2): trừ tồn kho đúng phần đã khoá lúc đóng gói. Trả về lần giao của đơn. */
