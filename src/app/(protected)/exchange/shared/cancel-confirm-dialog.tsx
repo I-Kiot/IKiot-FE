@@ -21,7 +21,7 @@ type CancelConfirmDialogProps = {
   loadingLabel?: string;
   isLoading?: boolean;
   onConfirm: () => void | Promise<void>;
-  /** Optional reason input (e.g. return goods). */
+  /** Ô lý do tuỳ chọn (ví dụ khi trả hàng). */
   reason?: {
     value: string;
     onChange: (value: string) => void;

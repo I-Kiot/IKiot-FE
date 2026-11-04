@@ -27,7 +27,6 @@ import {
 import { priorities, statuses, categories } from "../data/data"
 import type { Task } from "../data/schema"
 
-// Extended task schema for the form
 const taskFormSchema = z.object({
   id: z.string(),
   title: z.string().min(1, "Title is required"),
@@ -56,7 +55,6 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Generate unique task ID
   const generateTaskId = () => {
     const prefix = "TASK"
     const number = Math.floor(Math.random() * 9999) + 1000
@@ -67,13 +65,11 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
     e.preventDefault()
 
     try {
-      // Validate form data
       const validatedData = taskFormSchema.parse({
         ...formData,
         id: generateTaskId(),
       })
 
-      // Create the task
       const newTask: Task = {
         id: validatedData.id,
         title: validatedData.title,
@@ -84,7 +80,6 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
 
       onAddTask?.(newTask)
 
-      // Reset form and close modal
       setFormData({
         id: "",
         title: "",
@@ -140,7 +135,6 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Task Title */}
           <div className="space-y-2">
             <Label htmlFor="title">Task Title *</Label>
             <Input
@@ -155,7 +149,6 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
             )}
           </div>
 
-          {/* Task Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -167,9 +160,7 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
             />
           </div>
 
-          {/* Task Status and Category - Side by Side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Task Status */}
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select
@@ -194,7 +185,6 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
               </Select>
             </div>
 
-            {/* Task Category */}
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Select
@@ -215,7 +205,6 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
             </div>
           </div>
 
-          {/* Task Priority - Half Width on Desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
@@ -242,7 +231,6 @@ export function AddTaskModal({ onAddTask, trigger }: AddTaskModalProps) {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={handleCancel} className="cursor-pointer">
               Cancel

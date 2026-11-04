@@ -49,9 +49,9 @@ type Props = {
 const toInt = (value: string) => (value.trim() === "" ? 0 : Math.floor(Number(value)));
 
 /**
- * Nơi nhận kiểm hàng của một phiếu giao xưởng và xác nhận (`POST /production-deliveries/:id/receive`).
+ * Nơi nhận kiểm hàng của phiếu giao xưởng và xác nhận (`POST /production-deliveries/:id/receive`).
  * Đây là lúc tồn kho tăng: hàng đạt vào tồn bán được, hàng lỗi vào kho hàng hỏng, ghi công nợ xưởng.
- * Số nhận điền sẵn bằng số xưởng ghi, không được vượt.
+ * Số nhận không được vượt số xưởng ghi (điền sẵn bằng số đó).
  */
 export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived }: Props) {
   const { locations } = useProductionOptions();

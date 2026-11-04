@@ -43,7 +43,7 @@ import {
 import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
 import { useProductionOptions } from "../shared/use-production-options";
 
-/** One line being edited. `orderItemId` ties it to the order line it is made for (a custom piece always has one). */
+/** Một dòng đang sửa. `orderItemId` gắn dòng với dòng đơn hàng mà nó sản xuất (hàng đặt riêng luôn có). */
 export interface DraftLine {
   key: string;
   productItemId: string;
@@ -72,9 +72,9 @@ export interface DraftLine {
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Editing a DRAFT; omitted = a new request. */
+  /** Đang sửa YCSX nháp; bỏ trống = tạo mới. */
   request?: ProductionRequest | null;
-  /** Prefill for a new request (from the production list). */
+  /** Điền sẵn khi tạo mới (từ danh sách cần sản xuất). */
   initialLocationId?: string;
   initialLines?: DraftLine[];
   onSaved: (request: ProductionRequest) => void;
@@ -100,7 +100,7 @@ function linesOf(request: ProductionRequest): DraftLine[] {
   }));
 }
 
-/** B-6: create a production request, or edit one still in DRAFT (contract §3). Mounted only while open, so each opening starts from its own state. */
+/** B-6: tạo yêu cầu sản xuất, hoặc sửa yêu cầu còn NHÁP (contract §3). Chỉ mount khi mở nên mỗi lần mở bắt đầu từ state riêng. */
 export function ProductionRequestFormDialog({
   open,
   onOpenChange,
@@ -118,7 +118,7 @@ export function ProductionRequestFormDialog({
     request?.location.id ?? initialLocationId ?? "",
   );
   const [expectedReadyDate, setExpectedReadyDate] = React.useState(
-    // The API sends an ISO instant; <input type="date"> only takes the calendar day.
+    // API trả ISO instant; <input type="date"> chỉ nhận ngày lịch.
     request?.expectedReadyDate?.slice(0, 10) ?? "",
   );
   const [note, setNote] = React.useState(request?.note ?? "");
@@ -127,8 +127,8 @@ export function ProductionRequestFormDialog({
   );
   const [saving, setSaving] = React.useState(false);
 
-  // A SKU may repeat only for different order lines (PRODUCTION_REQUEST_DUPLICATE_ITEM otherwise);
-  // the search hides SKUs already on the request without an order line.
+  // Một SKU chỉ được lặp khi khác dòng đơn hàng (nếu không BE trả PRODUCTION_REQUEST_DUPLICATE_ITEM);
+  // ô tìm kiếm ẩn các SKU đã có trong yêu cầu mà không gắn dòng đơn hàng.
   const usedIds = React.useMemo(
     () =>
       new Set(lines.filter((l) => !l.orderItemId).map((l) => l.productItemId)),
@@ -167,7 +167,7 @@ export function ProductionRequestFormDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingVariantKeys]);
 
-  // A date left as it was on an existing request is not re-checked; only one the user picks now is.
+  // Ngày giữ nguyên từ yêu cầu cũ không kiểm lại; chỉ ngày người dùng vừa chọn mới được kiểm.
   const dateError =
     expectedReadyDate !== (request?.expectedReadyDate?.slice(0, 10) ?? "") && isPastDate(expectedReadyDate)
       ? PAST_DATE_MESSAGE

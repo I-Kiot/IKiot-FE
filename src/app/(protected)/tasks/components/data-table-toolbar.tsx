@@ -62,10 +62,8 @@ export function DataTableToolbar<TData>({
 
   return (
     <div className="space-y-4">
-      {/* Filter Section */}
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {/* Status Filter */}
           <Select
             value={statusFilter || "all"}
             onValueChange={handleStatusChange}
@@ -92,7 +90,6 @@ export function DataTableToolbar<TData>({
             </SelectContent>
           </Select>
 
-          {/* Category Filter */}
           <Select
             value={categoryFilter || "all"}
             onValueChange={handleCategoryChange}
@@ -114,7 +111,6 @@ export function DataTableToolbar<TData>({
             </SelectContent>
           </Select>
 
-          {/* Priority Filter */}
           <Select
             value={priorityFilter || "all"}
             onValueChange={handlePriorityChange}
@@ -143,7 +139,6 @@ export function DataTableToolbar<TData>({
         </div>
       </div>
 
-      {/* Search and Actions Section */}
       <div className="flex items-center justify-between">
         <div className="flex flex-1 items-center space-x-2">
           <Input

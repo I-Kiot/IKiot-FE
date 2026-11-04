@@ -1,4 +1,3 @@
-// [Dialog – Mutate Supplier]
 'use client'
 
 import { useEffect } from 'react'

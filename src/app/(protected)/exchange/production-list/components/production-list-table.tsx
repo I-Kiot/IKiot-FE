@@ -61,9 +61,8 @@ function specsSummary(row: ProductionListRow): string | null {
 }
 
 /**
- * B-6: what has to be made (`GET /production-list`, contract §3) - one row per (location, SKU),
- * worked out when read: demand of orders not yet shipped, against stock, what the workshops are
- * making and what is still on a draft. A notification links here with `locationId` / `productItemId`.
+ * B-6: hàng cần sản xuất (`GET /production-list`, contract §3), một dòng cho mỗi (nơi, SKU), tính khi đọc:
+ * nhu cầu của đơn chưa giao, trừ tồn kho, hàng xưởng đang làm và đang nháp. Thông báo link về đây với `locationId` / `productItemId`.
  */
 export function ProductionListTable() {
   const params = useSearchParams();

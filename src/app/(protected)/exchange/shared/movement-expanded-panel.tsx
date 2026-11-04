@@ -60,7 +60,7 @@ export type MovementImportActions = {
 
 export type MovementTransferActions = {
   handleOpen: (id: string) => Promise<void>;
-  /** Receiver OPENING: PATCH details only (BE close = fromLocation). */
+  /** Người nhận khi phiếu đang mở: chỉ PATCH chi tiết (backend đóng phiếu theo fromLocation). */
   handleSubmitFromOpening: (
     id: string,
     details: {
@@ -70,7 +70,7 @@ export type MovementTransferActions = {
       note?: string;
     }[],
   ) => Promise<void>;
-  /** Sender OPENING: updateDetails + close. */
+  /** Người gửi khi phiếu đang mở: updateDetails rồi close. */
   handleShipFromOpening: (
     id: string,
     details: {
@@ -192,7 +192,7 @@ export function MovementExpandedPanel({
   const isReceiver = mode === "transfer" && canActAsToLocation;
 
   const canOpenDraft = mode === "transfer" && isDraft && isSender;
-  // Doc: IMPORT details - user at toLocation
+  // Phiếu NHẬP (IMPORT): chi tiết do người ở toLocation sửa.
   const canEditOpening =
     mode === "import"
       ? detail.movementType === "IMPORT" && isPending && canActAsToLocation
@@ -222,10 +222,8 @@ export function MovementExpandedPanel({
     !!transferActions?.handleReturnGoods &&
     (isReceived || isInTransit);
 
-  // Huỷ được từ cả hai đầu, đúng như backend cho phép (`cancel` kiểm tra source HOẶC
-  // destination): bên nhận cũng tạo được phiếu chuyển nên phải rút lại được phiếu của mình,
-  // và phiếu nhập từ NCC vốn không có nơi gửi để mà khớp. Không huỷ RECEIVED / COMPLETED /
-  // CANCELLED.
+  // Huỷ được từ cả hai đầu, đúng như backend (`cancel` kiểm tra source HOẶC destination): bên nhận cũng tạo được
+  // phiếu chuyển nên phải rút lại được phiếu của mình. Phiếu nhập từ NCC không có nơi gửi. Không huỷ RECEIVED / COMPLETED / CANCELLED.
   const canCancel =
     (canActAsFromLocation || canActAsToLocation) &&
     !isReceived &&

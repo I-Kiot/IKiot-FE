@@ -118,7 +118,7 @@ const DEFAULT_LABELS: TransferUiLabels = {
   sidebarTitle: 'Chuyển kho',
 }
 
-/** Wording follows where the reader works, which is what the two manager roles used to say. */
+/** Nhãn theo nơi người đọc đang làm việc (trước đây là hai vai trò quản lý). */
 export function getTransferUiLabels(
   branchId?: string | null,
   warehouseId?: string | null,

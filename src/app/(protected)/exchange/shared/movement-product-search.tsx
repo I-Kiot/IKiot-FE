@@ -13,7 +13,7 @@ import type { StockMovementProductItemOption } from "@/types/stock-movement";
 
 export type MovementProductSearchScope = "catalog" | "list";
 
-/** Stable default: a fresh `[]` per render re-fires the search effect, which sets state, which renders again. */
+/** Giá trị mặc định ổn định: `[]` mới mỗi lần render sẽ kích hoạt lại effect tìm kiếm, làm render thêm vòng nữa. */
 const NO_POOL: StockMovementProductItemOption[] = [];
 
 type MovementProductSearchProps = {

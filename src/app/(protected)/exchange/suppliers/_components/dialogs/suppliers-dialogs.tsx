@@ -1,4 +1,3 @@
-// [Dialog – Orchestrator Supplier]
 'use client'
 
 import { useSuppliers } from '../../_context/suppliers-provider'

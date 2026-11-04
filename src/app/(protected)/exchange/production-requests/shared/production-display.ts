@@ -1,5 +1,5 @@
-// [Display – Production] Badges and formatting shared by the production list (B-4 · B-6) and the
-// production-request screens (B-6, B-7). Labels come from `@/types/order-flow`.
+// Badge và định dạng dùng chung cho danh sách cần sản xuất (B-4, B-6) và màn yêu cầu sản xuất (B-6, B-7).
+// Nhãn lấy từ `@/types/order-flow`.
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
@@ -12,7 +12,7 @@ import {
 
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
-/** Being drafted = outline, at the workshop = info, partly in = warning, done = success, dropped = error. */
+/** Đang soạn = outline, ở xưởng = info, đã vào một phần = warning, xong = success, huỷ = error. */
 const STATUS_VARIANT: Record<ProductionRequestStatus, BadgeVariant> = {
   DRAFT: "outline",
   SENT: "info",
@@ -60,7 +60,7 @@ export function deliverableQuantity(line: {
   return Math.max(0, line.quantity - line.receivedQuantity - line.pendingDeliveryQuantity);
 }
 
-/** Units ordered and received across the request's lines. */
+/** Số lượng đặt và đã nhận trên các dòng của yêu cầu. */
 export function requestProgress(request: Pick<ProductionRequest, "items">) {
   return request.items.reduce(
     (sum, line) => ({
@@ -73,7 +73,7 @@ export function requestProgress(request: Pick<ProductionRequest, "items">) {
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "-";
-  // A plain date (`YYYY-MM-DD`) is a calendar day, not an instant: never shift it by the time zone.
+  // Ngày thuần (`YYYY-MM-DD`) là ngày lịch, không phải thời điểm: không được lệch theo múi giờ.
   const plain = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (plain) return `${plain[3]}/${plain[2]}/${plain[1]}`;
   return new Date(value).toLocaleDateString("vi-VN");

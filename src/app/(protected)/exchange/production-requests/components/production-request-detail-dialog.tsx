@@ -40,7 +40,7 @@ import {
 import { ProductionRequestFormDialog } from "./production-request-form-dialog";
 import { ReceiveProductionDialog } from "./receive-production-dialog";
 
-/** An action that asks first. `close` (finish a partly delivered request short) needs a reason. */
+/** Hành động cần xác nhận trước. `close` (đóng yêu cầu đã giao một phần) cần lý do. */
 type Pending = "send" | "cancel" | "close" | "delete" | null;
 
 const CONFIRM_COPY: Record<Exclude<Pending, null>, { title: string; body: string; cta: string }> = {
@@ -73,7 +73,7 @@ type Props = {
   onDeleted: (id: string) => void;
 };
 
-/** B-6 · B-7: one production request - its lines, receipts and the next step allowed in its status. */
+/** B-6 · B-7: một yêu cầu sản xuất - các dòng, phiếu nhận và bước tiếp theo được phép theo trạng thái. */
 export function ProductionRequestDetailDialog({
   request,
   onOpenChange,

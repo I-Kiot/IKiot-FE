@@ -29,7 +29,6 @@ import type { Supplier } from "@/types/supplier";
 import { useSuppliers } from "../../_context/suppliers-provider";
 import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 
-// --- Schema ---
 const payDebtSchema = z.object({
   amount: z
     .number({ message: "Số tiền phải là số" })

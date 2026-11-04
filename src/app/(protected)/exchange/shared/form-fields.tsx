@@ -26,8 +26,6 @@ import {
 import { safeImageSrc } from "@/app/(protected)/products/_constants/product.constants";
 import type { StockMovementProductItemOption } from "@/types/stock-movement";
 
-/* ─── atoms dùng chung dialog / expanded panel ─── */
-
 export function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="mt-1 text-xs text-destructive">{message}</p>;
@@ -103,15 +101,14 @@ export function DetailLineCard({
   );
 }
 
-/** The unit written beside every money field. */
+/** Đơn vị ghi cạnh mọi ô tiền. */
 export const CURRENCY_SYMBOL = "đ";
 
 const WIDTH_CLASS = /^(w|min-w|max-w)-|^flex-1$/;
 
 /**
- * Puts the currency symbol inside the right edge of a money input. The caller's width classes
- * (`w-28`, `max-w-[180px]`...) move to the wrapper so the symbol stays next to the input rather
- * than at the far end of a wider box; everything else stays on the input.
+ * Đặt ký hiệu tiền ở mép phải ô nhập. Class độ rộng của caller (`w-28`, `max-w-[180px]`...) chuyển sang wrapper
+ * để ký hiệu nằm sát ô nhập; các class còn lại vẫn ở ô nhập.
  */
 function splitMoneyClasses(className?: string) {
   const tokens = (className ?? "").split(/\s+/).filter(Boolean);
@@ -222,8 +219,6 @@ export const NullableMoneyInput = React.forwardRef<
     </div>
   );
 });
-
-/* ─── Product picker ─── */
 
 const PRODUCT_TRIGGER_CLASS =
   "!h-auto min-h-11 w-full min-w-0 items-start justify-between gap-2 overflow-hidden px-3 py-2.5 text-left text-sm !whitespace-normal " +

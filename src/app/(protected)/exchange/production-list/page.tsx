@@ -8,7 +8,7 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { ProductionListTable } from "./components/production-list-table";
 
-/** B-4 · B-6: the production list (`/exchange/production-list`, contract §3) - what has to be made. Shortage notifications link here. */
+/** B-4 · B-6: danh sách cần sản xuất (`/exchange/production-list`, contract §3). Thông báo thiếu hàng link về đây. */
 export default function ProductionListPage() {
   const canView = allows(getSessionRole(), "production_requests", "read");
 
@@ -29,7 +29,7 @@ export default function ProductionListPage() {
         }
       />
       {canView ? (
-        // useSearchParams (a notification's locationId / productItemId) needs a Suspense boundary.
+        // useSearchParams (locationId / productItemId từ thông báo) cần ranh giới Suspense.
         <Suspense fallback={null}>
           <ProductionListTable />
         </Suspense>

@@ -38,9 +38,8 @@ type Props = {
 };
 
 /**
- * B-6 "Thêm vào yêu cầu": put a row of the production list on a draft request of a workshop
- * delivering to the row's location (`POST /production-requests/:id/items`), or start a new one.
- * A custom row carries its order line - the workshop makes that piece for that order.
+ * B-6 "Thêm vào yêu cầu": đưa một dòng danh sách vào YCSX nháp của xưởng giao về đúng nơi đó
+ * (`POST /production-requests/:id/items`), hoặc tạo YCSX mới. Dòng đặt riêng mang theo dòng đơn hàng của nó.
  */
 export function AddToRequestDialog({ row, open, onOpenChange, onAdded }: Props) {
   const { workshops, locations, loading } = useProductionOptions();
@@ -51,7 +50,7 @@ export function AddToRequestDialog({ row, open, onOpenChange, onAdded }: Props) 
   const [target, setTarget] = React.useState(NEW_REQUEST);
   const [saving, setSaving] = React.useState(false);
 
-  // The workshop's drafts delivering here - a line can only be added to one of those.
+  // Chỉ thêm dòng vào YCSX nháp của xưởng đang giao về nơi này.
   React.useEffect(() => {
     if (!supplierId || !locationId) return;
     let stale = false;

@@ -39,9 +39,8 @@ export function filterLocationsByAuthScope(
       (l) => l.id === scope.locationId && l.type === scope.locationType,
     );
   }
-  // A posting is what narrows the list now. The old test also asked for the
-  // WAREHOUSE_MANAGER / BRANCH_MANAGER role, which no account carries any more - so this
-  // fell through and offered every location in the shop to everyone.
+  // Chính warehouseId / branchId là thứ thu hẹp danh sách. Điều kiện cũ còn đòi role WAREHOUSE_MANAGER /
+  // BRANCH_MANAGER mà không tài khoản nào còn mang, nên rơi xuống nhánh cuối và hiện mọi nơi trong shop cho tất cả.
   const { warehouseId, branchId } = scope;
   if (warehouseId) return locations.filter((l) => l.id === warehouseId);
   if (branchId) return locations.filter((l) => l.id === branchId);
@@ -49,13 +48,11 @@ export function filterLocationsByAuthScope(
 }
 
 /**
- * Who the caller is and where they work - read from the cached `/auth/me` row.
+ * Người gọi là ai và làm ở đâu - đọc từ dòng `/auth/me` đã cache.
  *
- * It used to come out of the access token. The rewritten backend signs **only** `{ sub }`
- * (see `jwt.strategy.ts`), so `branchId`/`warehouseId`/`role` were all `undefined` and
- * every scope built on them silently widened to "no restriction". `/auth/me` returns all
- * three, and `AuthGuard` refreshes it on mount, so the cached user is both available and
- * current.
+ * Trước đây lấy từ access token. Backend viết lại chỉ ký `{ sub }` (xem `jwt.strategy.ts`) nên
+ * `branchId` / `warehouseId` / `role` đều `undefined`, và mọi scope dựa trên chúng âm thầm nới thành "không giới hạn".
+ * `/auth/me` trả đủ ba trường, `AuthGuard` làm mới khi mount nên cache luôn hiện tại.
  */
 export function getAuthScope(): AuthScope {
   const cached = getCachedUser();

@@ -77,9 +77,9 @@ type Props = {
 };
 
 /**
- * Sửa thuộc tính và giá của một dòng YCSX (2026-10-16). Đổi thuộc tính → khi lưu, BE chuyển dòng sang SKU đúng bộ
- * thuộc tính đó (dùng lại SKU có sẵn hoặc tạo SKU mới sao chép SKU này). Giá điền sẵn giá SKU và chỉ mở khi tick
- * "Cập nhật giá mới" - giá đó áp vào SKU kết quả, nên phải là quyết định có chủ đích.
+ * Sửa thuộc tính và giá của một dòng YCSX (2026-10-16). Khi lưu đổi thuộc tính, BE chuyển dòng sang SKU khớp
+ * bộ thuộc tính (dùng SKU có sẵn hoặc tạo SKU mới sao chép SKU này). Giá điền sẵn giá SKU, chỉ mở khi tick
+ * "Cập nhật giá mới" vì giá đó áp vào SKU kết quả.
  */
 export function ProductionLineVariant({ lineKey, productId, variant, onChange }: Props) {
   const changed = changedAttributes(variant).length > 0;

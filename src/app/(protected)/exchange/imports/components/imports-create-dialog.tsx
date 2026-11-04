@@ -393,7 +393,7 @@ export function ImportsCreateDialog({
       stockMovementApi.getCatalogProductItems(),
     ])
       .then(([s, l, products]) => {
-        // A workshop's goods arrive through its production request (B-5); a plain import refuses it.
+        // Hàng của xưởng đi qua YCSX (B-5); nhập thường từ chối loại này.
         setSuppliers(s.filter((supplier) => supplier.type !== "WORKSHOP"));
         setLocations(l);
         setCatalogProducts(products);

@@ -49,9 +49,9 @@ type Props = {
 const toInt = (value: string) => (value.trim() === "" ? 0 : Math.floor(Number(value)));
 
 /**
- * B-7: record what the workshop delivered (`POST /production-requests/:id/receive`, contract §3).
- * The only way workshop goods enter stock: good units go on sale at the request's location, defects
- * to its damaged-goods location; the workshop's payable is the good units × its price.
+ * B-7: ghi hàng xưởng đã giao (`POST /production-requests/:id/receive`, contract §3).
+ * Đây là cách duy nhất hàng xưởng vào kho: hàng tốt lên bán tại nơi của yêu cầu, hàng lỗi vào kho hàng hỏng;
+ * công nợ xưởng = số hàng tốt × giá.
  */
 export function ReceiveProductionDialog({ request, open, onOpenChange, onReceived }: Props) {
   const { locations } = useProductionOptions();
@@ -68,7 +68,7 @@ export function ReceiveProductionDialog({ request, open, onOpenChange, onReceive
   const set = (id: string, patch: Partial<LineInput>) =>
     setInputs((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
 
-  /** Per line: why it cannot be sent as typed, or null. */
+  /** Theo từng dòng: lý do không gửi được như đã nhập, hoặc null. */
   const problems = pending.map((line) => {
     const input = inputs[line.id];
     const received = toInt(input.received);

@@ -39,10 +39,8 @@ import { useTransfers } from './transfers-provider'
 /**
  * BR: chọn loại yêu cầu trước khi điền phiếu.
  *
- * `inbound` là chiều ngược lại của hai cái kia - chi nhánh đang xin hàng về chỗ mình chứ
- * không gửi đi, nên nơi nhận bị khoá vào chi nhánh của họ và nơi gửi mới là ô để chọn.
- * Backend cho phép cả hai đầu tạo phiếu chuyển (`create` chỉ đòi một trong hai đầu là chỗ
- * của người tạo), và bên gửi là bên nhận thông báo vì họ là bên phải soạn hàng.
+ * `inbound` là chiều ngược lại: chi nhánh xin hàng về chỗ mình nên nơi nhận bị khoá vào chi nhánh đó, nơi gửi là ô chọn.
+ * Backend cho phép tạo phiếu từ cả hai đầu; bên gửi nhận thông báo vì họ là bên soạn hàng.
  */
 type BranchRequestKind = 'transfer' | 'return' | 'inbound'
 

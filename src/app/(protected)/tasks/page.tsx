@@ -11,7 +11,7 @@ import { DataTable } from "./components/data-table"
 import { taskSchema, type Task } from "./data/schema"
 import tasksData from "./data/tasks.json"
 
-// Use static import for tasks data (works in both Vite and Next.js)
+// Dữ liệu mẫu import tĩnh từ tasks.json, không gọi API.
 async function getTasks() {
   return z.array(taskSchema).parse(tasksData)
 }
@@ -39,7 +39,6 @@ export default function TaskPage() {
     setTasks(prev => [newTask, ...prev])
   }
 
-  // Calculate statistics
   const stats = {
     total: tasks.length,
     completed: tasks.filter(t => t.status === "completed").length,
@@ -68,7 +67,6 @@ export default function TaskPage() {
         />
       </div>
 
-      {/* Mobile view placeholder - shows message instead of images */}
       <div className="md:hidden px-4 md:px-6">
         <div className="flex items-center justify-center h-96 border rounded-lg bg-muted/20">
           <div className="text-center p-8">
@@ -80,9 +78,7 @@ export default function TaskPage() {
         </div>
       </div>
 
-      {/* Desktop view */}
       <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:px-6 md:flex">
-        {/* Stats Cards */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           <Card>
             <CardContent>
