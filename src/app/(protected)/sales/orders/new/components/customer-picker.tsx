@@ -22,8 +22,7 @@ interface CustomerPickerProps {
 }
 
 /**
- * Same behaviour as the customer block of the direct-sale sidebar: search by name / phone with a
- * dropdown, or add a new customer through the shared dialog (which creates it straight away).
+ * Giống khối khách hàng của sidebar bán trực tiếp: tìm theo tên / SĐT qua dropdown, hoặc thêm khách mới qua dialog dùng chung (tạo luôn).
  */
 export function CustomerPicker({ value, onChange, error }: CustomerPickerProps) {
   const [query, setQuery] = React.useState("");

@@ -40,7 +40,7 @@ type OrdersExpandedPanelProps = {
   isLastRow: boolean;
 };
 
-/** The lines of one order with their stock, and how it is delivered and paid - opened in place in the list. */
+/** Dòng hàng của một đơn kèm tồn, cách giao và thanh toán; mở ngay trong danh sách. */
 export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelProps) {
   const lines = orderedLines(order.items ?? []);
 
@@ -86,7 +86,7 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
                   </td>
                   <td className="px-3 py-2 text-right">{line.quantity}</td>
                   <td className="px-3 py-2 text-right">
-                    {/* Combo components carry price 0; the combo line carries the price. */}
+                    {/* Thành phần combo có giá 0; giá nằm ở dòng combo. */}
                     {line.lineType === "COMBO_COMPONENT" ? "-" : formatVND(line.lineTotal)}
                   </td>
                   <td className="px-3 py-2">

@@ -1,8 +1,5 @@
-// [Totals – manual order form] The estimate the form shows while it is being filled. The server
-// prices the order (`OrderPricingService`) and is the only authority: after create the detail page
-// shows its figures. The rounding here mirrors it so the two agree to the đồng:
-// each line is rounded before its discount comes off, the whole-order discount is capped at what
-// the goods are worth, shipping is added on top.
+// Ước tính hiện khi đang nhập form. Server (`OrderPricingService`) là nguồn chính thức: sau khi tạo, trang chi tiết hiện số của server.
+// Làm tròn ở đây khớp với server đến đồng: mỗi dòng làm tròn trước khi trừ giảm giá; giảm giá cả đơn tối đa bằng giá trị hàng; phí ship cộng sau cùng.
 
 export interface TotalsLine {
   quantity: number;
@@ -27,12 +24,12 @@ export interface Totals {
   orderDiscount: number;
   shippingFee: number;
   grandTotal: number;
-  /** What the customer hands over now. */
+  /** Số khách đưa ngay bây giờ. */
   depositAmount: number;
-  /** The same sum as a percentage of the total (0 without a deposit). */
+  /** Cùng số tiền tính theo phần trăm tổng (0 nếu không có cọc). */
   depositPercent: number;
   amountDue: number;
-  /** Why the deposit cannot be sent, or null. */
+  /** Lý do không gửi được tiền cọc, hoặc null. */
   depositError: string | null;
 }
 
@@ -74,7 +71,7 @@ export function computeTotals(input: TotalsInput): Totals {
 
 export type StockLevel = "ENOUGH" | "SHORT" | "OUT";
 
-/** Informational only: a manual order is never blocked for lack of stock (contract §2). */
+/** Chỉ để tham khảo: đơn tạo tay không bao giờ bị chặn vì thiếu hàng (contract §2). */
 export function stockLevel(stock: number, quantity: number): { level: StockLevel; missing: number } {
   if (stock <= 0) return { level: "OUT", missing: quantity };
   if (stock < quantity) return { level: "SHORT", missing: quantity - stock };

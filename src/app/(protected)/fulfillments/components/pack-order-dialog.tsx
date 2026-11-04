@@ -33,8 +33,7 @@ interface PackOrderDialogProps {
 }
 
 /**
- * Dialog xác nhận đã đóng gói một đơn: xem các dòng hàng, ghi chú, gọi `POST /orders/:id/pack`.
- * Trang cha đặt `key={order.id}` nên mỗi đơn mở ra là một dialog mới, ghi chú / lỗi cũ không còn.
+ * Xác nhận đã đóng gói một đơn (`POST /orders/:id/pack`). Trang cha đặt `key={order.id}`, nên mỗi đơn mở ra là một dialog mới.
  */
 export function PackOrderDialog({ order, onClose, onNeedsReload }: PackOrderDialogProps) {
   const [note, setNote] = useState("");

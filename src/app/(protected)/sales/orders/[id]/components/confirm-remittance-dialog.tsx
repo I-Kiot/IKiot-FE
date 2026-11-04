@@ -27,9 +27,8 @@ type Props = {
 };
 
 /**
- * D-9: the owner counts the cash a shipper collected on delivery and confirms all of it arrived
- * (`POST /orders/:id/confirm-remittance`, A-10) - the order goes RECEIVED → COMPLETED. A short
- * hand-over is refused by the server; the dialog shows how much is missing.
+ * D-9: chủ shop đếm số tiền shipper thu khi giao và xác nhận đủ (`POST /orders/:id/confirm-remittance`, A-10).
+ * Đơn chuyển RECEIVED → COMPLETED. Nộp thiếu thì server từ chối; dialog hiện số còn thiếu.
  */
 export function ConfirmRemittanceDialog({ order, open, onOpenChange, onConfirmed }: Props) {
   const collected = order.collection?.amount ?? 0;

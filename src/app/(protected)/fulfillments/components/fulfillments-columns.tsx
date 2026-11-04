@@ -1,16 +1,12 @@
-// [Table – Columns Fulfillment]
 "use client";
-
-// Định nghĩa cột bảng Đóng hàng (TanStack Table).
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import type { PackableOrder } from "@/types/order-flow";
 
 /**
- * Số loại sản phẩm trong đơn = số SKU khác nhau, KHÔNG phải số dòng (`items.length`):
- * cùng một SKU có thể nằm ở hai dòng (vd. một dòng có thông số đặt riêng), đếm dòng sẽ ra dư.
- * Dòng chưa có SKU thì tính riêng theo id dòng.
+ * Đếm SKU khác nhau, không đếm dòng: một SKU có thể nằm ở hai dòng (vd. dòng đặt riêng).
+ * Dòng chưa có SKU tính theo id dòng.
  */
 function productKindCount(order: PackableOrder): number {
   return new Set(order.items.map((item) => item.sku ?? item.id)).size;
@@ -49,7 +45,6 @@ export function fulfillmentsColumns({ canPack, onPack }: FulfillmentsColumnsOpti
       cell: ({ row }) => row.original.branch.name,
     },
     {
-      // Trước là "Số dòng" - khó hiểu với cả dev lẫn người dùng.
       id: "productKinds",
       header: () => <div className="text-right">Số loại sản phẩm</div>,
       cell: ({ row }) => <div className="text-right">{productKindCount(row.original)}</div>,

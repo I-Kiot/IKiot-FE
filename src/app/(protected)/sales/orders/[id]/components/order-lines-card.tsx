@@ -23,7 +23,7 @@ function CustomizationDetails({ customization }: { customization: OrderItemCusto
   );
 }
 
-/** Every line of the order, with where it ships from and whether the shelf covers it right now. */
+/** Mọi dòng của đơn, kèm kho xuất và việc tồn trên kệ hiện tại có đủ hay không. */
 export function OrderLinesCard({ items }: { items: OrderDetailLine[] }) {
   const lines = orderedLines(items);
   const topLevel = items.filter((line) => !line.parentItemId).length;
@@ -73,7 +73,7 @@ export function OrderLinesCard({ items }: { items: OrderDetailLine[] }) {
                       {line.sourceLocation?.name ?? "-"}
                     </td>
                     <td className="px-3 py-2 text-right">{line.quantity}</td>
-                    {/* Combo components carry price 0; the combo line carries the price. */}
+                    {/* Thành phần combo có giá 0; giá nằm ở dòng combo. */}
                     <td className="px-3 py-2 text-right">
                       {isComponent ? "-" : formatVND(line.unitPrice)}
                     </td>

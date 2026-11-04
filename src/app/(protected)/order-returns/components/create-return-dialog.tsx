@@ -35,18 +35,18 @@ import {
   type OrderReturnReason,
 } from "@/types/order-flow";
 
-/** Orders whose goods already left stock - the only ones a return can bring back (contract §5). */
+/** Đơn đã trừ kho (hàng đã đi): chỉ đơn này mới được trả về (contract §5). */
 const RETURNABLE_STATUSES = ["SHIPPING", "RECEIVED", "COMPLETED"];
-/** Lines that hold stock; a COMBO header and a SERVICE line never left the shelf. */
+/** Dòng có trừ kho; dòng COMBO (tiêu đề) và SERVICE không bao giờ rời kệ. */
 const STOCKED_LINES = ["PRODUCT", "COMBO_COMPONENT"];
 
-/** What of a line can still come back. */
+/** Số lượng của một dòng còn có thể trả về. */
 const remaining = (line: OrderLine) => line.quantity - line.returnedQuantity;
 
 const returnableLines = (order: OrderDetail) =>
   order.items.filter(
     (line) =>
-      // `OrderItemStatus` in order-flow.ts still lists the pre-2026-10-02 statuses; SHIPPED = stock deducted.
+      // `OrderItemStatus` trong order-flow.ts còn các trạng thái trước 2026-10-02; SHIPPED = đã trừ kho.
       (line.status as string) === "SHIPPED" && STOCKED_LINES.includes(line.lineType) && remaining(line) > 0,
   );
 
@@ -56,7 +56,7 @@ interface CreateReturnDialogProps {
   onCreated: (created: OrderReturn) => void;
 }
 
-/** `POST /order-returns`: pick the order, say how many of each shipped line come back and why. */
+/** `POST /order-returns`: chọn đơn, số lượng từng dòng đã giao trả về và lý do. */
 export function CreateReturnDialog({ open, onOpenChange, onCreated }: CreateReturnDialogProps) {
   const [search, setSearch] = React.useState("");
   const [order, setOrder] = React.useState<OrderDetail | null>(null);
@@ -65,8 +65,7 @@ export function CreateReturnDialog({ open, onOpenChange, onCreated }: CreateRetu
   const [note, setNote] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Debounced order search - the list endpoint matches code, customer name and phone. Results are
-  // tagged with the term they answer, so a stale list is never shown and `searching` needs no state.
+  // Tìm đơn có debounce (BE khớp mã, tên, SĐT khách). Kết quả gắn với từ khoá đã trả lời nên không hiện danh sách cũ.
   const term = search.trim();
   const wanted = open && !order && term.length >= 2;
   const [found, setFound] = React.useState<{ term: string; items: OrderListItem[] } | null>(null);

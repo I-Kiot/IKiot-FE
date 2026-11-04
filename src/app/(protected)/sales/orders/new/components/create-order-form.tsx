@@ -55,21 +55,21 @@ interface AssigneeOption {
 
 const toNumber = (raw: string) => Math.max(0, Number(raw) || 0);
 
-/** D-2: a manual order (`POST /orders`, contract §2). It is born CONFIRMED - there is no draft - and stock never blocks it. */
+/** D-2: đơn tạo tay (`POST /orders`, contract §2). Sinh ra đã CONFIRMED, không có nháp; tồn không bao giờ chặn đơn. */
 function OrderDraftForm({
   sales,
   withReplacement = true,
   tabs,
 }: {
   sales: SalesBranch;
-  /** Tab strip rendered at the top of the product card, same place as in the direct-sale tab. */
+  /** Thanh tab hiện ở đầu thẻ sản phẩm, cùng vị trí với tab bán trực tiếp. */
   tabs?: React.ReactNode;
-  /** Only one tab may consume `?replacementFor=`, or every extra tab would prefill the same return. */
+  /** Chỉ một tab được dùng `?replacementFor=`, nếu không mọi tab thêm sẽ điền cùng một đơn trả. */
   withReplacement?: boolean;
 }) {
   const { branches, branchId, setBranchId } = sales;
   const router = useRouter();
-  // D-11: a buy-again order for the damaged goods of a return - prefilled, then linked to it on create.
+  // D-11: đơn mua lại cho hàng hỏng của đơn trả - điền sẵn, rồi liên kết với đơn trả khi tạo.
   const replacementParam = useSearchParams().get("replacementFor");
   const replacementFor = withReplacement ? replacementParam : null;
   const [replacementOf, setReplacementOf] = React.useState<{
@@ -118,7 +118,7 @@ function OrderDraftForm({
           id: s.id,
           name: s.fullName || s.phoneNumber,
         }));
-        // The account creating the order can be its person in charge too (a shop owner is not in the staff list).
+        // Tài khoản tạo đơn cũng có thể là người phụ trách (chủ shop không có trong danh sách nhân viên).
         const mine: AssigneeOption[] =
           me?.id && !staff.some((s) => s.id === me.id)
             ? [
@@ -137,7 +137,7 @@ function OrderDraftForm({
   }, []);
 
   const branch = branches.find((b) => b.id === branchId) ?? null;
-  // Stock is read where the goods ship from: the branch's default fulfilment warehouse, else the branch.
+  // Tồn đọc tại nơi xuất hàng: kho fulfilment mặc định của chi nhánh, không có thì lấy chính chi nhánh.
   const stockLocation = branch
     ? branch.defaultFulfillmentLocationId
       ? { id: branch.defaultFulfillmentLocationId, type: "WAREHOUSE" as const }
@@ -169,10 +169,9 @@ function OrderDraftForm({
     !errors.deposit &&
     !errors.requestedDate;
 
-  // Picking a customer fills the delivery details they already have, once, without overwriting what was typed.
-  // D-11: once the pick-lists are in, copy the customer, branch, person in charge, delivery and the
-  // damaged lines of the return's order. Prices are re-read from the catalogue by the server unless
-  // the user keeps the agreed ones shown here.
+  // Chọn khách sẽ điền một lần các thông tin giao hàng đã có, không ghi đè nội dung đã gõ.
+  // D-11: khi đã có danh sách chọn, sao chép khách, chi nhánh, người phụ trách, giao hàng và các dòng hỏng của đơn trả.
+  // Giá do server đọc lại từ catalogue, trừ khi người dùng giữ giá đã thoả thuận hiển thị ở đây.
   React.useEffect(() => {
     if (!replacementFor || !optionsReady) return;
     let stale = false;
@@ -297,7 +296,7 @@ function OrderDraftForm({
       const created = await orderJourneyApi.create(payload);
       toast.success(`Đã tạo đơn ${created.code ?? ""}`.trim());
       if (replacementOf) {
-        // The order exists either way; a failed link is reported, not undone.
+        // Đơn đã được tạo; liên kết lỗi thì báo, không hoàn tác.
         await orderReturnApi
           .setReplacementOrder(replacementOf.id, created.id)
           .catch(() =>
@@ -313,7 +312,7 @@ function OrderDraftForm({
     }
   }
 
-  /** Same merge rule the old line editor had: the same SKU at the same price just adds one. */
+  /** Cùng quy tắc gộp như trình sửa dòng cũ: cùng SKU, cùng giá thì chỉ tăng số lượng. */
   const addProduct = React.useCallback(
     (product: {
       id: string;
@@ -363,9 +362,7 @@ function OrderDraftForm({
   const sectionLabel = "text-sm font-medium text-muted-foreground";
 
   return (
-    // Bố cục trang thường, cuộn dọc (2026-10-16): trước đây là hai khung kéo giãn sao từ màn bán tại quầy, mở sidebar
-    // là giỏ hàng và khung thông tin cùng bị ép. Giờ: sản phẩm rộng hết trang, thông tin chia thẻ, thanh "Tạo đơn" luôn
-    // ở đáy màn hình.
+    // Bố cục cuộn dọc (2026-10-16): sản phẩm rộng hết trang, thông tin chia thẻ, thanh "Tạo đơn" luôn ở đáy.
     <div className="flex w-full flex-col gap-4 pb-24">
       <Card className="gap-3 py-4">
         <CardHeader className="px-4 pb-0">
@@ -799,8 +796,7 @@ interface OrderTab {
 }
 
 /**
- * Several order drafts side by side, like the direct-sale invoices. Every tab keeps its own
- * `OrderDraftForm` mounted (hidden when inactive), so switching never loses what was typed.
+ * Nhiều nháp đơn cạnh nhau, như hoá đơn bán trực tiếp. Mỗi tab giữ một `OrderDraftForm` (ẩn khi không active) nên chuyển tab không mất nội dung đã gõ.
  */
 export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
   const seq = React.useRef(1);
@@ -837,7 +833,7 @@ export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
     <div className="h-full min-h-[40rem]">
       {tabs.map((tab, index) => (
         <div key={tab.id} className={cn("h-full", tab.id !== activeId && "hidden")}>
-          {/* Only the first tab consumes ?replacementFor=, or every extra tab would prefill the same return. */}
+          {/* Chỉ tab đầu tiên dùng ?replacementFor=, nếu không mọi tab sẽ điền cùng một đơn trả. */}
           <OrderDraftForm sales={sales} withReplacement={index === 0} tabs={strip} />
         </div>
       ))}

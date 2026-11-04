@@ -9,7 +9,7 @@ import type { OrderDetail, OrderStatus } from "@/types/order-flow";
 import { EditOrderDialog } from "./edit-order-dialog";
 import { OrderHandlingDialog } from "./order-handling-dialog";
 
-/** Where an order can still be edited (A-8): before its goods leave stock. */
+/** Đơn còn sửa được (A-8): trước khi hàng rời kho. */
 const EDITABLE_STATUSES: readonly OrderStatus[] = [
   "CONFIRMED",
   "PACKED",
@@ -18,7 +18,7 @@ const EDITABLE_STATUSES: readonly OrderStatus[] = [
 
 type Open = "edit" | "handling" | null;
 
-/** The order detail header's buttons: edit and hand-over (D-7). The journey's steps - confirming the shipper's cash (D-9) included - sit under the step bar (`OrderJourneyActions`). Each shows only where its route would accept it. */
+/** Nút trên header chi tiết đơn: sửa và bàn giao (D-7). Các bước hành trình nằm dưới thanh bước (`OrderJourneyActions`). Mỗi nút chỉ hiện khi route tương ứng chấp nhận. */
 export function OrderActions({
   order,
   onChanged,
@@ -60,7 +60,7 @@ export function OrderActions({
         Sửa đơn
       </Button>
 
-      {/* Mounted only while open, so each opening starts from the order as it is now. */}
+      {/* Chỉ mount khi mở, để mỗi lần mở lấy đơn ở trạng thái hiện tại. */}
       {open === "edit" && (
         <EditOrderDialog
           order={order}

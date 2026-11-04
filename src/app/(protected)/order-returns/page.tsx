@@ -5,7 +5,7 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { ReturnsTable } from "./components/returns-table";
 
-/** D-6: return orders (`/order-returns`, contract §5). Same permission as its sidebar entry. */
+/** Đơn trả hàng (`/order-returns`, contract §5); cùng quyền với mục sidebar. */
 export default function OrderReturnsPage() {
   const canView = allows(getSessionRole(), "returns", "read");
 

@@ -43,17 +43,16 @@ import {
 interface ReturnDetailDialogProps {
   orderReturn: OrderReturn | null;
   onOpenChange: (open: boolean) => void;
-  /** The server's version of the return after an action - the list swaps its row for it. */
+  /** Bản đơn trả mới nhất từ server sau một thao tác; danh sách thay dòng cũ bằng bản này. */
   onChanged: (updated: OrderReturn) => void;
   canInspect: boolean;
   canCancel: boolean;
 }
 
 /**
- * One return: its lines and the next step. REQUESTED → "Đã nhận hàng" (receive), INSPECTING → a
- * verdict per line (GOOD goes back on the shelf, DAMAGED to the damaged-goods warehouse) and
- * "Xác nhận kiểm hàng" (inspect). Stock moves only on inspect (contract §5). The parent keys it on
- * the return's id and status, so verdicts start empty for each return and each step.
+ * Một đơn trả: các dòng và bước kế tiếp. REQUESTED → "Đã nhận hàng" (receive); INSPECTING → chọn kết quả từng dòng
+ * (GOOD về kệ, DAMAGED về kho hàng hỏng) rồi "Xác nhận kiểm hàng" (inspect). Tồn chỉ đổi khi kiểm hàng (contract §5).
+ * Cha đặt key theo id và trạng thái đơn trả nên kết quả luôn bắt đầu trống cho mỗi đơn và mỗi bước.
  */
 export function ReturnDetailDialog({
   orderReturn,

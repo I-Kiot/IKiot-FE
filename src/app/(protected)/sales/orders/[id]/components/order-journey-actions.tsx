@@ -55,12 +55,11 @@ function deliveredShipment(order: OrderDetail): OrderShipment | undefined {
 }
 
 /**
- * Chỉ để ẩn nút chắc chắn bị từ chối - luật thật là `assertOrderStepAccess` / `deliveryActorAccess` của
- * BE, sai thì BE trả `ORDER_STEP_DENIED`. Người phụ trách đơn làm được mọi bước mà không cần quyền, trừ "Bắt đầu vận chuyển" (xem `ASSIGNEE_MAY_SHIP`).
+ * Chỉ để ẩn nút chắc chắn bị từ chối; luật thật ở BE (`assertOrderStepAccess`, `deliveryActorAccess`), sai thì trả `ORDER_STEP_DENIED`.
+ * Người phụ trách làm được mọi bước không cần quyền, trừ "Bắt đầu vận chuyển" (xem `ASSIGNEE_MAY_SHIP`).
  */
 /**
- * Người phụ trách có được bấm "Đã giao cho ĐVVC" (trừ tồn kho) mà không cần `orders:ship` không. Tắt từ
- * 2026-10-16, chờ khách xác nhận; bật lại thì đổi cùng lúc `ASSIGNEE_MAY_SHIP` ở BE (`order-handler.ts`).
+ * Người phụ trách bấm "Đã giao cho ĐVVC" (trừ tồn) không cần `orders:ship` khi cờ này bật. Đang tắt từ 2026-10-16 (chờ khách xác nhận); bật lại thì đổi cùng `ASSIGNEE_MAY_SHIP` ở BE (`order-handler.ts`).
  */
 const ASSIGNEE_MAY_SHIP = false;
 
@@ -97,8 +96,7 @@ interface OrderJourneyActionsProps {
 }
 
 /**
- * Trang phải luôn mount component này, kể cả khi không có nút nào: sheet giao hàng sống ở đây, và giao bằng
- * QR xong thì đơn sang RECEIVED rồi COMPLETED - lúc đó không còn nút, nhưng sheet vẫn phải ở lại.
+ * Luôn phải mount component này, kể cả khi không có nút: sheet giao hàng sống ở đây. Giao bằng QR xong đơn chuyển RECEIVED rồi COMPLETED (không còn nút), nhưng sheet vẫn phải ở lại.
  */
 export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJourneyActionsProps) {
   const router = useRouter();

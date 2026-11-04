@@ -19,9 +19,8 @@ interface OrderCartLinesProps {
 }
 
 /**
- * The lines of a manual order, one card per line. Same data as
- * `OrderLinesEditor` minus its search box (the form puts the shared `ProductSearch` above this),
- * and with "Thông số riêng" kept per line.
+ * Dòng hàng của đơn tạo tay, mỗi dòng một thẻ. Giống `OrderLinesEditor` nhưng bỏ ô tìm kiếm (form đặt `ProductSearch` phía trên),
+ * và giữ "Thông số riêng" cho từng dòng.
  */
 export function OrderCartLines({
   lines,
@@ -59,8 +58,7 @@ export function OrderCartLines({
 
   return (
     <div className="space-y-2">
-      {/* Mỗi dòng một thẻ (2026-10-16), không dùng bảng kiểu bán tại quầy: hàng làm riêng cần chỗ cho mọi thay đổi và
-          ảnh, mà cột "Sản phẩm" của bảng bị ép hẹp khi mở sidebar. */}
+      {/* Mỗi dòng một thẻ, không dùng bảng: hàng làm riêng cần chỗ cho mọi thay đổi và ảnh. */}
       <ol className="flex flex-col gap-3">
         {lines.map((line, index) => {
           const { level, missing } = stockLevel(line.stock, line.quantity);

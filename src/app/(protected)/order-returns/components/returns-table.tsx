@@ -40,11 +40,10 @@ import { ReturnDetailDialog } from "./return-detail-dialog";
 const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
-/** D-6: the return list (`GET /order-returns`) with create / receive / inspect / cancel (contract §5). */
+/** Danh sách đơn trả (`GET /order-returns`): tạo, nhận hàng, kiểm, huỷ (contract §5). */
 export function ReturnsTable() {
   const role = getSessionRole();
-  // Opening a return is also open to the order's person in charge, so the button is not hidden by
-  // permission - the server answers ORDER_RETURN_DENIED to anyone else.
+  // Người phụ trách đơn cũng được mở đơn trả nên nút không ẩn theo quyền; BE trả ORDER_RETURN_DENIED cho người khác.
   const canInspect = allows(role, "returns", "inspect");
   const canCancel = allows(role, "returns", "cancel");
 
@@ -54,12 +53,11 @@ export function ReturnsTable() {
   const [status, setStatus] = React.useState<string>(ALL);
   const [search, setSearch] = React.useState("");
   const [term, setTerm] = React.useState("");
-  /** Bumped after a change the list must re-read (a return was created). */
+  /** Tăng khi có thay đổi làm danh sách phải đọc lại (vd. vừa tạo đơn trả). */
   const [reloads, setReloads] = React.useState(0);
   const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<OrderReturn | null>(null);
-  // What the last request returned, tagged with the query it answered: while the tag differs
-  // from the current query a newer request is in flight, so `loading` needs no state of its own.
+  // Kết quả gắn với query nó trả lời; khi khác query hiện tại nghĩa là request mới đang chạy, nên `loading` không cần state riêng.
   const query = `${page}|${pageSize}|${status}|${term}|${reloads}`;
   const [loaded, setLoaded] = React.useState<{
     query: string;
@@ -194,7 +192,7 @@ export function ReturnsTable() {
         }}
       />
 
-      {/* Mounted only while open, so each opening starts from an empty form. */}
+      {/* Chỉ mount khi mở, để mỗi lần mở bắt đầu từ form trống. */}
       {creating && (
         <CreateReturnDialog
           open

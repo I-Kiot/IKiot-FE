@@ -39,7 +39,7 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
     header: ORDERS_COLUMN_LABELS.code,
     cell: ({ row }) => (
       <div className="flex flex-col">
-        {/* Opens the detail (D-3); stopPropagation so the click does not also toggle the row. */}
+        {/* Mở chi tiết (D-3); chặn lan lên để click không đồng thời mở/đóng dòng. */}
         <Link
           href={`/sales/orders/${row.original.id}`}
           onClick={(event) => event.stopPropagation()}
@@ -94,7 +94,7 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
   {
     accessorKey: "stockSummary",
     header: ORDERS_COLUMN_LABELS.stockSummary,
-    // Null once the order has shipped: there is nothing left to have in stock.
+    // Null khi đơn đã giao đi: không còn hàng nào để tính tồn.
     cell: ({ row }) => {
       const summary = row.original.stockSummary;
       if (!summary) return <span className="text-muted-foreground">-</span>;
@@ -112,7 +112,7 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
   {
     id: "driver",
     header: ORDERS_COLUMN_LABELS.driver,
-    // Only meaningful while the goods are on the road.
+    // Chỉ có nghĩa khi hàng đang trên đường đi.
     cell: ({ row }) => (
       <span className="text-sm">
         {row.original.status === "SHIPPING" ? (row.original.driver?.name ?? "-") : "-"}
@@ -122,7 +122,7 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
   {
     accessorKey: "requestedDeliveryDate",
     header: ORDERS_COLUMN_LABELS.requestedDeliveryDate,
-    // Within 10 days the date is replaced by a countdown; further out it stays a date.
+    // Trong vòng 10 ngày thì hiện đếm ngược thay cho ngày; xa hơn giữ nguyên ngày.
     cell: ({ row }) => {
       const value = row.original.requestedDeliveryDate;
       const days = value ? daysUntilPlainDate(value) : null;

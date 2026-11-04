@@ -27,7 +27,7 @@ function person(user: UserRef | null, at?: string | null): ReactNode {
   );
 }
 
-/** Who the order is for, who handles it, and who moved it along. */
+/** Đơn cho ai, ai phụ trách và ai đã chuyển đơn đi tiếp. */
 export function OrderInfoCard({ order }: { order: OrderDetail }) {
   return (
     <Card>

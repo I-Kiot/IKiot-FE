@@ -50,7 +50,7 @@ export function OrderPaymentCard({ order }: { order: OrderDetail }) {
               label="Hình thức"
               value={COLLECTION_METHOD_LABELS[collection.method] ?? collection.method}
             />
-            {/* Fully deposited: nothing was collected, so there is no amount or collector to show. */}
+            {/* Đã cọc đủ: không thu thêm gì nên không hiện số tiền hay người thu. */}
             {collection.method !== "NONE" && (
               <>
                 <InfoRow label="Số tiền" value={formatVND(collection.amount)} />
