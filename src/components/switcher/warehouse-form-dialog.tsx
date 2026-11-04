@@ -37,10 +37,8 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 
-// Mirrors branchFormSchema: `CreateWarehouseDto` gained `phoneNumber` and `email` in the
-// 2026-08-19 migration that gave warehouses the same contact details a branch has, and
-// `phoneNumber` is **required** there (`@ArrayNotEmpty`). This form never collected it, so
-// every "thêm kho hàng" was a 400 the moment the field existed server-side.
+// Khớp với branchFormSchema: `CreateWarehouseDto` có `phoneNumber` (bắt buộc, `@ArrayNotEmpty`) từ migration 2026-08-19.
+// Form này trước đây không thu số đó nên mọi lần thêm kho đều bị 400.
 const warehouseFormSchema = z.object({
   name: z.string().min(1, {
     message: "Tên kho hàng là bắt buộc.",
@@ -71,7 +69,7 @@ interface WarehouseFormDialogProps {
   onSubmit: (values: WarehouseFormValues) => void
   defaultValues?: Partial<WarehouseFormValues>
   title?: string
-  /** Non-sellable warehouses to pick a default damaged-goods warehouse from. */
+  /** Các kho không bán được, để chọn kho hàng hỏng mặc định. */
   damagedWarehouses?: DamagedLocationOption[]
 }
 

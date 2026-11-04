@@ -57,7 +57,7 @@ type StaffsContextType = {
   warehouseOptionsFailed: boolean;
   /** Xưởng (NCC loại WORKSHOP) để gắn nhân viên xưởng; rỗng nếu shop chưa có xưởng hoặc tài khoản không xem được NCC. */
   workshopOptions: { value: string; label: string }[];
-  /** The global branch/warehouse switcher's current key ("all" | "branch-<id>" | "warehouse-<id>") - takes precedence over the manual filters below. */
+  /** Key switcher chi nhánh/kho toàn cục ("all" | "branch-<id>" | "warehouse-<id>"), ưu tiên hơn bộ lọc thủ công bên dưới. */
   locationKey: string;
   open: StaffsDialogType | null;
   setOpen: (value: StaffsDialogType | null) => void;
@@ -102,14 +102,7 @@ type StaffsContextType = {
 
 const StaffsContext = React.createContext<StaffsContextType | null>(null);
 
-/**
- * Empty, and that is the correct default.
- *
- * This used to hold the three roles the old backend had built in. Sending one of those
- * names as a `roleId` would now be rejected - a role is a row this shop created, and a
- * brand-new tenant has none until somebody defines them. Falling back to a made-up list
- * would turn "you have not set up roles yet" into a 400 at the end of the hiring form.
- */
+/** Rỗng là đúng: role do shop tự tạo. Không dùng danh sách giả, vì sẽ thành lỗi 400 ở cuối form tạo nhân viên. */
 const DEFAULT_ROLE_OPTIONS: StaffRoleOption[] = [];
 
 type StaffsProviderProps = {
@@ -163,11 +156,6 @@ export function StaffsProvider({
   const locationKey = useAuthStore((state) => state.locationKey);
 
   useEffect(() => {
-    // if (!canFetch) {
-    //   setIsInitialLoading(false);
-    //   return;
-    // }
-
     const timer = setTimeout(() => {
       setListQuery((prev) => {
         if (prev.search === keywordInput) return prev;
@@ -229,9 +217,7 @@ export function StaffsProvider({
 
     setIsFetching(true);
     try {
-      // The global branch/warehouse switcher takes precedence over the page's own
-      // filter dropdowns - same reactive scoping products/checkout apply via
-      // locationKey - so switching branch immediately scopes the staff list.
+      // Switcher chi nhánh/kho toàn cục ưu tiên hơn bộ lọc của trang (cùng cơ chế locationKey như sản phẩm/checkout), nên đổi chi nhánh là danh sách nhân viên đổi theo ngay.
       const scope = parseLocationKey(locationKey);
       const branchId =
         scope?.locationType === "BRANCH"
@@ -275,7 +261,7 @@ export function StaffsProvider({
     try {
       const roles = await staffApi.getRoles();
       if (roles.length > 0) {
-        // `getRoles` already returns { value: role id, label: role name }.
+        // getRoles đã trả về { value: id role, label: tên role }.
         setRoleOptions(roles);
       }
     } catch {

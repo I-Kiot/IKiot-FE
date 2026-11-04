@@ -23,7 +23,7 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
-  // Paths that are always allowed for any authenticated user
+  // Các đường dẫn luôn được phép với mọi người đã đăng nhập
   const publicProtectedRoutes = [
     "/settings",
     "/calendar",
@@ -33,7 +33,6 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     "/pricing",
   ];
 
-  // Check if current route is a public protected route
   const isPublicProtected = publicProtectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + "/"),
   );
@@ -47,17 +46,15 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // `/shipments/<id>` is where a shipment notification lands. It only looks the shipment up and
-  // redirects (to /shipper for its driver, to /shipments for everyone else), and the API 404s one the
-  // caller cannot see - so it must not need `shipments:read`, which a plain shipper does not hold.
+  // `/shipments/<id>` là nơi thông báo đơn giao dẫn tới: route chỉ tra cứu rồi chuyển hướng (shipper sang /shipper, người khác sang /shipments).
+  // API trả 404 với đơn không được xem, nên route không yêu cầu `shipments:read` (shipper thường không có quyền này).
   if (/^\/shipments\/[^/]+$/.test(pathname)) {
     return <>{children}</>;
   }
 
-  // Same list the sidebar draws: account-kind config narrowed by this role's permissions.
+  // Cùng danh sách với sidebar: cấu hình theo loại tài khoản, thu hẹp theo quyền của role.
   const allowedUrls = getAllowedSidebarUrls(user.role);
 
-  // Perform prefix matching check
   const isAllowed = allowedUrls.some(
     (allowedUrl) => pathname === allowedUrl || pathname.startsWith(allowedUrl + "/"),
   );
@@ -114,13 +111,11 @@ export default function DashboardLayout({
                 collapsible={config.collapsible}
                 side={config.side}
               />
-              {/* min-w-0: con của flex mặc định không hẹp hơn nội dung, nên bảng rộng sẽ đẩy cả trang
-                  rộng ra thay vì cuộn ngang trong khung của nó. Nhánh sidebar bên phải dưới đây cũng vậy. */}
+              {/* min-w-0: flex child mặc định không hẹp hơn nội dung; thiếu class này bảng rộng sẽ đẩy cả trang thay vì cuộn trong khung. */}
               <SidebarInset className="h-svh min-w-0 overflow-hidden">
                 <PageFooterProvider>
                   <SiteHeader />
-                  {/* Chỉ vùng này cuộn: header ở trên và chân trang (phân trang) ở dưới đứng yên, thanh cuộn
-                      không chạy lên tới vùng header. */}
+                  {/* Chỉ vùng này cuộn: header và chân trang (phân trang) đứng yên, thanh cuộn không lên tới header. */}
                   <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                     <div className="@container/main flex flex-1 flex-col gap-2">
                       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -137,8 +132,7 @@ export default function DashboardLayout({
               <SidebarInset className="h-svh min-w-0 overflow-hidden">
                 <PageFooterProvider>
                   <SiteHeader />
-                  {/* Chỉ vùng này cuộn: header ở trên và chân trang (phân trang) ở dưới đứng yên, thanh cuộn
-                      không chạy lên tới vùng header. */}
+                  {/* Chỉ vùng này cuộn: header và chân trang (phân trang) đứng yên, thanh cuộn không lên tới header. */}
                   <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                     <div className="@container/main flex flex-1 flex-col gap-2">
                       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">

@@ -40,11 +40,11 @@ export interface Invoice {
   };
   status: InvoiceStatus;
   type: InvoiceType;
-  /** Null until ISSUED; `invoiceCode` falls back to the order's code until then. */
+  /** Null tới khi ISSUED; `invoiceCode` tạm dùng mã đơn đến lúc đó. */
   invoiceNumber: string | null;
   orderId: string;
   orderCode: string;
-  /** COUNTER = sold over the till (TAKEAWAY); ORDERED = an order taken to be fulfilled later. */
+  /** COUNTER = bán tại quầy (TAKEAWAY); ORDERED = đơn nhận để giao sau. */
   kind: InvoiceKind;
   fulfillmentType: FulfillmentType;
   reason?: string | null;
@@ -54,7 +54,7 @@ export interface Invoice {
     email: string;
     role: string;
   };
-  /** Null for an order that has not been paid at the till (taken by deposit + collected on delivery). */
+  /** Null với đơn chưa thanh toán tại quầy (đặt cọc, thu khi giao). */
   paymentMethod: "CASH" | "BANK_TRANSFER" | "MOMO" | "VNPAY" | "SEPAY" | null;
   grandTotal: number;
   customerPay: number | null;
@@ -174,7 +174,7 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
             {row.getValue("invoiceCode")}
             {type === "ADJUSTMENT" && <Badge variant="outline">{INVOICE_TYPE_LABELS.ADJUSTMENT}</Badge>}
           </span>
-          {/* The order it belongs to, once the invoice has a number of its own. */}
+          {/* Đơn gốc; hiện khi hoá đơn đã có số riêng. */}
           {invoiceNumber && status !== "PENDING" && (
             <span className="font-mono text-xs text-muted-foreground">Đơn {orderCode}</span>
           )}
@@ -278,7 +278,7 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
     header: "Trạng thái",
     cell: ({ row }) => {
       const status = row.original.status;
-      // Keep the fallback: a status the contract adds later must not crash the whole list.
+      // Giữ nhánh mặc định: trạng thái mới từ contract không được làm sập cả danh sách.
       const { label, variant } = STATUS_MAP[status] ?? { label: String(status), variant: "info" as const };
       return (
         <Badge variant={variant}>
@@ -309,8 +309,7 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
   {
     id: "actions",
     header: "Thao tác",
-    // Only an issued invoice is a document to hand over; a PENDING one has no number yet and a
-    // CANCELLED one was withdrawn.
+    // Chỉ hoá đơn ISSUED mới in được: PENDING chưa có số, CANCELLED đã bị thu hồi.
     cell: ({ row }) =>
       row.original.status === "ISSUED" ? (
         <Button
@@ -319,7 +318,7 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
           size="sm"
           className="h-8 cursor-pointer gap-1.5"
           onClick={(event) => {
-            // The row toggles its detail panel on click; printing must not.
+            // Click dòng mở/đóng panel chi tiết; in thì không được kích hoạt việc đó.
             event.stopPropagation();
             if (!printInvoice(row.original)) {
               toast.error("Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.");

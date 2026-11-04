@@ -10,7 +10,7 @@ import { getSessionRole } from "@/lib/auth";
 import { OrdersProvider } from "./components/orders-provider";
 import { OrdersTable } from "./components/orders-table";
 
-/** D-1: the order-journey list (`GET /orders`, contract §2). Same permission as its sidebar entry. */
+/** Danh sách hành trình đơn (D-1, `GET /orders`, contract §2); cùng quyền với mục sidebar. */
 export default function OrdersPage() {
   const role = getSessionRole();
   const canView = allows(role, "orders", "read");

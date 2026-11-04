@@ -7,7 +7,7 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { ProductionRequestsTable } from "./components/production-requests-table";
 
-/** B-6: production requests (`/exchange/production-requests`, contract §3). Same permission as its sidebar entry. */
+/** B-6: trang yêu cầu sản xuất (`/exchange/production-requests`, contract §3). Cùng quyền với mục sidebar. */
 export default function ProductionRequestsPage() {
   const canView = allows(getSessionRole(), "production_requests", "read");
 

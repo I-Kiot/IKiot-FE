@@ -57,7 +57,7 @@ import { ORDERS_COLUMN_LABELS, ordersColumns as columns } from "./orders-columns
 import { OrdersExpandedPanel } from "./orders-expanded-panel";
 import { useOrders } from "./orders-provider";
 
-/** The statuses the journey list filters by, in journey order. POS's legacy PENDING is left out. */
+/** Trạng thái lọc danh sách hành trình, theo thứ tự hành trình. Bỏ PENDING cũ của POS. */
 const STATUS_FILTER_OPTIONS: OrderStatus[] = [
   "PENDING_CONFIRMATION",
   "CONFIRMED",

@@ -47,7 +47,7 @@ type Props = {
 
 const JOURNEY_FULFILLMENT_TYPES = ["HOME_DELIVERY", "STORE_PICKUP"] as const;
 
-/** The order's own lines as drafts: top-level only - a combo's components follow its quantity on the server. */
+/** Dòng của đơn dưới dạng nháp, chỉ dòng cấp trên; thành phần combo do server tính theo số lượng combo. */
 function draftsOf(order: OrderDetail): OrderLineDraft[] {
   return order.items
     .filter((line) => !line.parentItemId)
@@ -71,10 +71,9 @@ const linesKey = (lines: OrderLineDraft[]) =>
   );
 
 /**
- * D-7: edit a journey order before it ships (`PATCH /orders/:id`, A-8). Delivery details, fee and
- * note change until SHIPPING; the lines only while CONFIRMED - a packed order's goods are locked to
- * them (cancel and re-create to change goods). A deposit the edit would move off the money already
- * taken is refused (ORDER_DEPOSIT_CHANGED); the form offers to keep the amount taken.
+ * D-7: sửa đơn tạo tay trước khi giao (`PATCH /orders/:id`, A-8). Thông tin giao, phí và ghi chú sửa được tới SHIPPING;
+ * dòng hàng chỉ sửa khi CONFIRMED (đơn đã đóng gói thì hàng bị khoá, muốn đổi thì huỷ rồi tạo lại). Đổi cọc làm lệch số tiền đã thu
+ * sẽ bị từ chối (ORDER_DEPOSIT_CHANGED); form cho phép giữ nguyên số đã thu.
  */
 export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   const linesEditable = order.status === "CONFIRMED";
@@ -96,7 +95,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   const [depositGap, setDepositGap] = React.useState<MoneyGap | null>(null);
   const [saving, setSaving] = React.useState(false);
 
-  // Stock for lines added here is read where the branch ships from, as on create.
+  // Tồn của dòng thêm mới được đọc tại kho xuất của chi nhánh, như khi tạo đơn.
   React.useEffect(() => {
     if (!linesEditable) return;
     let stale = false;
@@ -120,8 +119,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
 
   const linesChanged = linesEditable && linesKey(lines) !== linesKey(initialLines);
   const fee = Number(shippingFee);
-  // Only a date the user changed is checked: an order whose promised day has since passed must still
-  // be editable for its other fields.
+  // Chỉ kiểm tra ngày khi người dùng đổi ngày: đơn đã quá ngày hẹn vẫn phải sửa được các trường khác.
   const dateError =
     requestedDeliveryDate !== (order.requestedDeliveryDate ?? "") && isPastDate(requestedDeliveryDate)
       ? PAST_DATE_MESSAGE
@@ -141,7 +139,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
       requestedDeliveryDate: requestedDeliveryDate || undefined,
       shippingFee: Math.round(fee),
       note: note.trim() || undefined,
-      // Lines are sent only when they changed: sending them reprices the order.
+      // Chỉ gửi dòng khi có thay đổi: gửi dòng là server tính lại giá đơn.
       ...(linesChanged
         ? {
             items: lines.map((line) => ({

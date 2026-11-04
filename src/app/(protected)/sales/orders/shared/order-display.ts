@@ -1,5 +1,4 @@
-// [Display – Order journey] Badges and formatting shared by the order list (D-1) and the
-// order detail (D-3). Labels come from `@/types/order-flow`; this file only decides how they look.
+// Badge và định dạng dùng chung cho danh sách đơn (D-1) và chi tiết đơn (D-3). Nhãn lấy từ `@/types/order-flow`; file này chỉ quyết định cách hiển thị.
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
@@ -23,14 +22,14 @@ export interface BadgeDisplay {
   variant: BadgeVariant;
 }
 
-/** Waiting on staff = info, waiting on someone else = warning, done = success, ended badly = error. */
+/** Chờ nhân viên = info, chờ bên khác = warning, xong = success, kết thúc lỗi = error. */
 const ORDER_STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   PENDING_CONFIRMATION: "outline",
   CONFIRMED: "info",
   PACKED: "info",
   PICKED_UP: "warning",
   SHIPPING: "warning",
-  // Delivered, but the shipper still holds the cash.
+  // Đã giao nhưng shipper còn giữ tiền.
   RECEIVED: "warning",
   COMPLETED: "success",
   CANCELLED: "error",
@@ -63,7 +62,7 @@ export function orderStatusDisplay(
   status: OrderStatus,
   latestShipmentStatus?: ShipmentStatus | null,
 ): BadgeDisplay {
-  // A failed delivery leaves the order SHIPPING (goods still out); show what the shipper reported.
+  // Giao thất bại thì đơn vẫn SHIPPING (hàng còn ngoài); hiện lý do shipper báo.
   if (isDeliveryFailed({ status, latestShipmentStatus: latestShipmentStatus ?? null })) {
     return { label: SHIPMENT_STATUS_LABELS.FAILED, variant: "error" };
   }
@@ -94,7 +93,7 @@ export function stockDisplay(status: StockCheckStatus): BadgeDisplay {
   };
 }
 
-/** The order's worst line (what the list calls stockSummary); null when no line has a stockCheck. */
+/** Dòng tồn xấu nhất của đơn (danh sách gọi là stockSummary); null khi không dòng nào có stockCheck. */
 export function worstStock(
   lines: { stockCheck: { status: StockCheckStatus } | null }[],
 ): StockCheckStatus | null {
@@ -102,7 +101,7 @@ export function worstStock(
   return (["OUT", "PARTIAL", "ENOUGH"] as const).find((status) => present.has(status)) ?? null;
 }
 
-/** A combo line, then its components (`depth: 1`) under it; plain lines as they come. */
+/** Dòng combo, rồi các thành phần (`depth: 1`) bên dưới; dòng thường giữ nguyên thứ tự. */
 export function orderedLines<T extends { id: string; parentItemId: string | null }>(
   items: T[],
 ): { line: T; depth: number }[] {
@@ -123,7 +122,7 @@ export function orderedLines<T extends { id: string; parentItemId: string | null
 export const formatVND = (value: number): string =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
 
-/** An ISO timestamp as `dd/MM/yyyy HH:mm`, in the viewer's time zone. */
+/** Chuỗi thời gian ISO hiển thị dạng `dd/MM/yyyy HH:mm`, theo múi giờ người xem. */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "-";
   const date = new Date(iso);
@@ -138,8 +137,8 @@ export function formatDateTime(iso: string | null | undefined): string {
 }
 
 /**
- * A plain `YYYY-MM-DD` (requestedDeliveryDate) as `dd/MM/yyyy`. Split rather than parsed:
- * `new Date("2026-10-10")` is UTC midnight, which shows as the 9th west of Greenwich.
+ * `YYYY-MM-DD` (requestedDeliveryDate) thành `dd/MM/yyyy`. Tách chuỗi thay vì parse: `new Date("2026-10-10")` là nửa đêm UTC,
+ * nên hiện thành ngày 9 ở các múi giờ phía tây Greenwich.
  */
 export function formatPlainDate(value: string | null | undefined): string {
   if (!value) return "-";
@@ -147,7 +146,7 @@ export function formatPlainDate(value: string | null | undefined): string {
   return year && month && day ? `${day}/${month}/${year}` : value;
 }
 
-/** Whole calendar days from today (viewer's local date) to a `YYYY-MM-DD` date; negative once past. */
+/** Số ngày lịch từ hôm nay (theo ngày địa phương của người xem) tới ngày `YYYY-MM-DD`; âm khi đã qua. */
 export function daysUntilPlainDate(value: string): number | null {
   const [year, month, day] = value.split("-").map(Number);
   if (!year || !month || !day) return null;

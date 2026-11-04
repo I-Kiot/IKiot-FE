@@ -45,14 +45,7 @@ export interface ApiScheduleUser {
 }
 
 /**
- * Raw response shape từ BE.
- *
- * `assignedUsers` là mảng nhân viên trong cùng một ca - `WorkingSchedule` có bảng nối, nên
- * một ca mang một danh sách người chứ không phải một `userId`. Trước đây khai là `userId`
- * (tên của model Mongo cũ), mà API chưa bao giờ gửi khoá đó.
- *
- * `user` là khoá của `GET /working-schedules/:id/users/:userId` - endpoint đó trả về đúng
- * một người thay cho cả danh sách.
+ * Response thô từ BE. `assignedUsers` là danh sách nhân viên cùng ca (bảng nối nên không phải một `userId`); `user` là khoá của `GET /working-schedules/:id/users/:userId`, chỉ trả về một người.
  */
 export interface ApiWorkingSchedule {
   id: string;

@@ -25,7 +25,7 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   const [selectedTheme, setSelectedTheme] = React.useState("twitter")
   const [selectedRadius, setSelectedRadius] = React.useState("1rem")
 
-  // Load from local storage on mount
+  // Đọc từ localStorage khi mount
   React.useEffect(() => {
     try {
       const savedTheme = localStorage.getItem("theme-preset")
@@ -38,19 +38,14 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   }, [])
 
   const handleReset = () => {
-    // Complete reset to application defaults
 
-    // 1. Reset all state variables to initial values
     setSelectedTheme("twitter")
     setSelectedRadius("1rem")
 
-    // 2. Completely remove all custom CSS variables
     resetTheme()
 
-    // 3. Reset the radius to default
     applyRadius("1rem")
 
-    // 4. Reset sidebar to defaults
     updateSidebarConfig({ variant: "inset", collapsible: "offcanvas", side: "left" })
 
     try {
@@ -64,7 +59,7 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
 
 
 
-  // Re-apply themes when theme mode changes
+  // Áp lại theme khi đổi chế độ sáng/tối
   React.useEffect(() => {
     if (selectedTheme) {
       applyTheme(selectedTheme, isDarkMode)
@@ -105,10 +100,6 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
                   <TabsTrigger value="theme" className="cursor-pointer data-[state=active]:bg-background"><Palette className="h-4 w-4 mr-1" /> Theme</TabsTrigger>
                   <TabsTrigger value="layout" className="cursor-pointer data-[state=active]:bg-background"><Layout className="h-4 w-4 mr-1" /> Layout</TabsTrigger>
                 </TabsList>
-                {/* <TabsList className="grid w-full grid-cols-2 rounded-none h-12 p-1.5">
-                  <TabsTrigger value="theme" className="cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"><Palette className="h-4 w-4 mr-1" /> Theme</TabsTrigger>
-                  <TabsTrigger value="layout" className="cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"><Layout className="h-4 w-4 mr-1" /> Layout</TabsTrigger>
-                </TabsList> */}
               </div>
 
               <TabsContent value="theme" className="flex-1 mt-0">
@@ -133,7 +124,7 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   )
 }
 
-// Floating trigger button - positioned dynamically based on sidebar side
+// Nút mở tuỳ chỉnh nổi, vị trí đổi theo phía của sidebar
 export function ThemeCustomizerTrigger({ onClick }: { onClick: () => void }) {
   const { config: sidebarConfig } = useSidebarConfig()
 

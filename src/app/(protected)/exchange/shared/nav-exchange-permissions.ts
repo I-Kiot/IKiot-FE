@@ -1,26 +1,17 @@
 /**
- * Which "Giao dịch" submenu entries to draw.
- *
- * The group was missing from the STAFF sidebar entirely - not hidden by a permission check,
- * just absent from `sidebarRoleConfig` - so a role granted every permission in the catalogue
- * still had no way to reach imports, transfers or stock adjustments. That was a leftover
- * from the fixed-role era, when only `BRANCH_MANAGER`/`WAREHOUSE_MANAGER` (values nothing
- * carries any more) were meant to see it.
- *
- * Each entry now names the permission its screen is gated on server-side, the same way
- * `nav-hr-permissions.ts` does for the HR menu.
+ * Mục submenu "Giao dịch" nào được vẽ. Nhóm này từng thiếu hẳn trong sidebar STAFF nên vai trò có đủ quyền vẫn không
+ * vào được nhập, chuyển, điều chỉnh kho. Mỗi mục gắn với quyền backend kiểm tra cho màn đó, giống `nav-hr-permissions.ts`.
  */
 import { allows } from "@/components/sidebar/constants/role-permissions";
 
 const EXCHANGE_NAV_PERMISSION = {
-  // Reading the list is the entry point for every one of these screens; creating,
-  // approving and receiving are gated per button inside them.
+  // Quyền đọc là điểm vào của mọi màn; tạo, duyệt, nhận được kiểm từng nút trong màn.
   suppliers: ["suppliers", "read"],
   imports: ["stock_movement", "read"],
   exports: ["stock_movement", "read"],
   adjustments: ["stock_movement", "read"],
   productionRequests: ["production_requests", "read"],
-  // Read off the same permission: the list is what production requests are raised from.
+  // Dùng chung quyền đọc: danh sách là nơi tạo yêu cầu sản xuất.
   productionList: ["production_requests", "read"],
   // `GET /production-deliveries`; nhận / từ chối còn cần `production:receive` (kiểm trong màn).
   productionDeliveries: ["production_requests", "read"],

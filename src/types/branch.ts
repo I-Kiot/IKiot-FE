@@ -7,12 +7,11 @@ export interface Branch {
   address?: string;
   email?: string;
   status: BranchStatus;
-  /** Where this branch's orders ship from by default; the branch itself when empty. */
+  /** Kho xuất hàng mặc định của đơn chi nhánh này; để trống = chính chi nhánh. */
   defaultFulfillmentLocationId?: string | null;
-  /** D-4: where this branch's damaged / defective goods go (a non-sellable warehouse). */
+  /** D-4: nơi hàng hỏng / lỗi của chi nhánh này chuyển đến (một kho không bán được). */
   damagedLocationId?: string | null;
-  /** Who runs this location. Appointed through `PATCH /:id/manager`, not by holding a
-   *  particular role - the rewrite moved that from `User.role` onto the location itself. */
+  /** Người quản lý địa điểm, gán qua `PATCH /:id/manager` chứ không theo vai trò tài khoản. */
   managerId?: string | null;
   createdAt: string;
   updatedAt?: string;

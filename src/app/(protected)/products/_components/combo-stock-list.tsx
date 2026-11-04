@@ -13,9 +13,8 @@ function setsCovered(part: ComboComponent): number | null {
 }
 
 /**
- * Tồn của từng thành phần trong combo, để biết vì sao combo còn / hết hàng. Combo bán được bằng số
- * bộ của thành phần khan nhất (khớp `comboSetsAvailable` ở BE); thành phần đó được tô nổi.
- * Thành phần là combo lồng thì `availableStock` của nó chính là số bộ của combo con.
+ * Tồn từng thành phần: combo bán được bằng số bộ của thành phần khan nhất (khớp `comboSetsAvailable` ở BE, được tô nổi).
+ * Thành phần là combo lồng thì `availableStock` là số bộ của combo con.
  */
 export function ComboStockList({ components }: { components: ComboComponent[] }) {
   const covered = components.map(setsCovered)

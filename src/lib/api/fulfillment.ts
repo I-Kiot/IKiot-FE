@@ -1,4 +1,4 @@
-// [API – Fulfillment] Track C. Contract: Ikiot_BE/docs/api-contract-order-flow.md §4.
+// Track C. Hợp đồng: Ikiot_BE/docs/api-contract-order-flow.md §4.
 import client from '@/lib/api/client';
 import type {
   AddFulfillmentPackagePayload,
@@ -17,7 +17,7 @@ export const fulfillmentApi = {
     return { data: res.data.data, pagination: res.data.pagination };
   },
 
-  /** READY_TO_PACK orders that have no fulfillment yet. */
+  /** Đơn READY_TO_PACK chưa có fulfillment. */
   getReadyOrders: async (locationId?: string): Promise<OrderListItem[]> => {
     const res = await client.get<Envelope<OrderListItem[]>>('/fulfillments/ready-orders', {
       params: locationId ? { locationId } : undefined,
@@ -49,7 +49,7 @@ export const fulfillmentApi = {
     return res.data.data;
   },
 
-  /** The person in charge confirms the goods are intact - this is what deducts the stock. */
+  /** Người phụ trách xác nhận hàng nguyên vẹn; bước này mới trừ tồn kho. */
   verify: async (id: string): Promise<Fulfillment> => {
     const res = await client.post<Envelope<Fulfillment>>(`/fulfillments/${id}/verify`, {});
     return res.data.data;

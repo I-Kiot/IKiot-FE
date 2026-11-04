@@ -19,7 +19,6 @@ import { shipmentApi } from "@/lib/api/shipment";
 import { personName, type DriverOption, type Shipment } from "@/types/order-flow";
 import { reportShipmentError } from "./shipment-ui";
 
-// ─── Ô chọn shipper ─────────────────────────────────────────────────────────
 
 type DriversState = { status: "loading" } | { status: "error" } | { status: "ready"; drivers: DriverOption[] };
 
@@ -47,8 +46,8 @@ interface DriverSelectProps {
 }
 
 /**
- * Danh sách lấy từ BE (`GET /shipments/drivers`) – đúng những người BE sẽ chấp nhận. Tải lại mỗi lần mở
- * (component được dựng lại theo dialog), nên người vừa bị khoá tài khoản không còn trong danh sách.
+ * Danh sách lấy từ BE (`GET /shipments/drivers`), đúng những người BE chấp nhận. Tải lại mỗi lần mở,
+ * nên người vừa bị khoá tài khoản không còn trong danh sách.
  */
 export function DriverSelect({ orderId, value, onChange, disabled }: DriverSelectProps) {
   const [state, setState] = useState<DriversState>({ status: "loading" });
@@ -85,7 +84,6 @@ export function DriverSelect({ orderId, value, onChange, disabled }: DriverSelec
   );
 }
 
-// ─── Dialog đổi shipper ─────────────────────────────────────────────────────
 
 interface ChangeDriverDialogProps {
   shipment: Shipment;

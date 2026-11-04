@@ -69,16 +69,15 @@ export function LandingFooter() {
   });
 
   function onSubmit(values: z.infer<typeof newsletterSchema>) {
-    // Here you would typically send the email to your newsletter service
+    // Chỗ này sẽ gửi email đăng ký lên dịch vụ newsletter.
     console.log(values);
-    // Show success message and reset form
+    // Hiện thông báo thành công và reset form
     form.reset();
   }
 
   return (
     <footer className="border-t bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Newsletter Section */}
         <div className="mb-16">
           <div className="mx-auto max-w-2xl text-center">
             <h3 className="text-2xl font-bold mb-4">Đăng ký nhận bản tin</h3>
@@ -115,9 +114,7 @@ export function LandingFooter() {
           </div>
         </div>
 
-        {/* Main Footer Content */}
         <div className="grid gap-8 grid-cols-4 lg:grid-cols-6">
-          {/* Brand Column */}
           <div className="col-span-4 lg:col-span-2 max-w-2xl">
             <div className="flex items-center space-x-2 mb-4 max-lg:justify-center">
               <a
@@ -149,7 +146,6 @@ export function LandingFooter() {
             </div>
           </div>
 
-          {/* Links Columns */}
           <div className="max-md:col-span-2 lg:col-span-1">
             <h4 className="font-semibold mb-4">Sản phẩm</h4>
             <ul className="space-y-3">
@@ -217,7 +213,6 @@ export function LandingFooter() {
 
         <Separator className="my-8" />
 
-        {/* Bottom Footer */}
         <div className="flex flex-col lg:flex-row justify-between items-center gap-2">
           <div className="flex flex-col sm:flex-row items-center gap-2 text-muted-foreground text-sm">
             <div className="flex items-center gap-1">

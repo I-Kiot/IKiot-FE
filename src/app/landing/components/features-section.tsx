@@ -85,7 +85,6 @@ export function FeaturesSection() {
   return (
     <section id="features" className="py-24 sm:py-32 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div className="mx-auto max-w-2xl text-center mb-16">
           <Badge variant="outline" className="mb-4">
             Hệ sinh thái tính năng
@@ -100,16 +99,13 @@ export function FeaturesSection() {
           </p>
         </div>
 
-        {/* First Feature Section */}
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8 xl:gap-16 mb-24">
-          {/* Left Image */}
           <Image3D
             lightSrc="/quan-ly-ton-kho-1.jpg"
             darkSrc="/quan-ly-ton-kho-1.jpg"
             alt="Vận hành cửa hàng và tồn kho"
             direction="left"
           />
-          {/* Right Content */}
           <div className="space-y-6">
             <div className="space-y-4">
               <h3 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
@@ -156,9 +152,7 @@ export function FeaturesSection() {
           </div>
         </div>
 
-        {/* Second Feature Section - Flipped Layout */}
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8 xl:gap-16 mb-24">
-          {/* Left Content */}
           <div className="space-y-6 order-2 lg:order-1">
             <div className="space-y-4">
               <h3 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
@@ -204,7 +198,6 @@ export function FeaturesSection() {
             </div>
           </div>
 
-          {/* Right Image */}
           <Image3D
             lightSrc="/bo-phan-cham-soc-khach-hang.jpg"
             darkSrc="/bo-phan-cham-soc-khach-hang.jpg"
@@ -214,7 +207,6 @@ export function FeaturesSection() {
           />
         </div>
 
-        {/* Third Feature Section - AI & Smart Analysis */}
         <div className="mt-24 rounded-2xl border bg-card/60 p-8 md:p-12 relative overflow-hidden group shadow-xl">
           <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary/10 rounded-full blur-3xl -z-10 group-hover:bg-primary/15 transition-colors"></div>
 

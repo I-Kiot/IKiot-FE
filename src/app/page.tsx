@@ -10,7 +10,7 @@ export default function HomePage() {
     router.replace("/landing");
   }, [router]);
 
-  // Show a loading state while redirecting
+  // Hiển thị trạng thái loading trong lúc chuyển hướng
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">

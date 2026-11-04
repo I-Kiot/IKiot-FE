@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-/** Radix Select cannot hold an empty value, so "no damaged-goods warehouse" gets this sentinel. */
+/** Radix Select không nhận giá trị rỗng, nên "không có kho hàng hỏng" dùng giá trị sentinel này. */
 export const NO_DAMAGED_LOCATION = "__none__"
 
 export interface DamagedLocationOption {
@@ -28,11 +28,11 @@ export interface DamagedLocationOption {
 interface DamagedLocationFieldProps<T extends FieldValues> {
   control: Control<T>
   name: Path<T>
-  /** Non-sellable warehouses the owner can pick from (the location itself already left out). */
+  /** Các kho không bán được mà chủ shop có thể chọn (địa điểm hiện tại đã bị loại). */
   options: DamagedLocationOption[]
 }
 
-/** D-4: where this location's damaged / defective goods go (`damagedLocationId`). */
+/** D-4: hàng hỏng / lỗi của địa điểm này được chuyển tới đâu (`damagedLocationId`). */
 export function DamagedLocationField<T extends FieldValues>({
   control,
   name,

@@ -34,14 +34,14 @@ export type RevenueDateRange = {
   fromDate: string
   toDate: string
   groupBy: 'day' | 'month'
-  /** The equal-length window right before. */
+  /** Khoảng cùng độ dài ngay trước đó. */
   previousFromDate: string
   previousToDate: string
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Today as `YYYY-MM-DD` in the shop's own timezone. */
+/** Hôm nay dạng `YYYY-MM-DD` theo múi giờ của cửa hàng. */
 function todayLocal(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
 }
@@ -54,7 +54,7 @@ function formatDay(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10)
 }
 
-/** Resolve a range option to concrete local dates, plus the window right before it of the same length. */
+/** Quy một lựa chọn kỳ ra ngày cụ thể, kèm khoảng cùng độ dài ngay trước đó. */
 export function resolveDashboardRange(range: DashboardRange): RevenueDateRange {
   const today = todayLocal()
   const now = new Date(parseDay(today))
@@ -105,7 +105,7 @@ export function resolveDashboardRange(range: DashboardRange): RevenueDateRange {
   }
 }
 
-/** The report widgets degrade on their own: one failing endpoint blanks its widget, not the whole page. */
+/** Widget báo cáo tự xử lý lỗi: một endpoint lỗi chỉ làm trống đúng widget đó, không cả trang. */
 function optional<T>(request: Promise<T>): Promise<T | null> {
   return request.catch((err) => {
     console.error(err)

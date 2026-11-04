@@ -145,7 +145,7 @@ export function useOpeningEditor({
 
     let cancelled = false;
 
-    // EXPORT/RETURN OPENING: products at source
+    // Phiếu XUẤT / TRẢ: sản phẩm lấy ở nơi gửi.
     if (
       enabled &&
       detail.status === "OPENING" &&

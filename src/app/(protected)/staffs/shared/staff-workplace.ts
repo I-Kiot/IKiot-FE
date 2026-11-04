@@ -1,10 +1,5 @@
 /**
- * A staff member works at exactly one location.
- *
- * This used to only apply to the fixed `STAFF` role, because BRANCH_MANAGER and
- * WAREHOUSE_MANAGER each implied their own kind of posting. Those roles are gone and the
- * backend now rejects a body naming both for **anybody** (`normalizeWorkplaceUpdateData`),
- * so the rule lost its exception rather than its meaning.
+ * Nhân viên chỉ thuộc đúng một nơi làm việc, áp dụng cho mọi tài khoản. Backend từ chối body chọn cả chi nhánh lẫn kho.
  */
 export function validateStaffWorkplace(
   branchId?: string,

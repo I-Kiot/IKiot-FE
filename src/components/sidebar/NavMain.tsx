@@ -57,8 +57,7 @@ export function NavMain({
   const locationKey = useAuthStore((state) => state.locationKey);
   const orderAlertCount = orderAlerts ? orderAlerts.short + orderAlerts.dueSoon : 0;
 
-  // Refreshed on a minute's poll and whenever the user moves between pages, so the badge
-  // follows a sale or a stock receipt without a socket event of its own.
+  // Làm mới khi poll mỗi phút và khi đổi trang, để badge theo kịp đơn bán và phiếu nhập kho mà không cần socket riêng.
   useEffect(() => {
     if (!hasOrdersEntry || !allows(getSessionRole(), "orders", "read")) return;
     const scope = parseLocationKey(locationKey);
@@ -89,7 +88,6 @@ export function NavMain({
     localStorage.setItem("sidebar-expanded-groups", JSON.stringify(next));
   };
 
-  // Check if any subitem is active to determine if parent should be open
   const shouldBeOpen = (item: typeof items[0]) => {
     if (item.isActive) return true;
     return item.items?.some((subItem) => pathname === subItem.url) || false;

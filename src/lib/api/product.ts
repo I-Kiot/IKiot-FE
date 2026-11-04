@@ -75,8 +75,8 @@ export const productApi = {
     };
   },
 
-  // GET /products/items - flat SKU list, does not require fetching each product's detail
-  // (GET /products list responses don't include `items` per product; see ProductService.js).
+  // GET /products/items: danh sách SKU phẳng, không cần lấy chi tiết từng sản phẩm
+  // (GET /products không trả `items` theo từng sản phẩm; xem ProductService.js).
   listItems: async (
     params?: ProductItemListParams,
   ): Promise<ProductItemListEntry[]> => {

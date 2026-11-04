@@ -22,7 +22,6 @@ export function FAQSection({ faqs }: FAQSectionProps) {
       </CardHeader>
       <CardContent className="mt-6 sm:mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6">
-          {/* Left Column */}
           <div className="space-y-4">
             <Accordion type='multiple'>
               {faqs.slice(0, 3).map(item => (
@@ -34,7 +33,6 @@ export function FAQSection({ faqs }: FAQSectionProps) {
             </Accordion>
           </div>
 
-          {/* Right Column */}
           <div className="space-y-4">
             <Accordion type='multiple'>
               {faqs.slice(3, 6).map(item => (

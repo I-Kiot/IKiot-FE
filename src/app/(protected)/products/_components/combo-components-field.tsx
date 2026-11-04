@@ -225,10 +225,8 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
 }
 
 /**
- * Ô số lượng giữ chuỗi người đang gõ, để xoá trắng rồi gõ lại được (ép về 1 ngay khi rỗng làm
- * "1" → xoá → gõ "4" thành 14). Ô trống đẩy lên 0 - form thấy không hợp lệ và chặn lưu
- * (`hasInvalidQuantity`), nên không bao giờ lưu một số người dùng không còn thấy. Rời ô khi còn
- * trống thì trả lại số hợp lệ gần nhất.
+ * Giữ chuỗi đang gõ để xoá rồi gõ lại được (ép về 1 khi rỗng sẽ thành 14). Ô trống đẩy về 0 để form chặn lưu (`hasInvalidQuantity`);
+ * rời ô khi còn trống thì trả lại số hợp lệ gần nhất.
  */
 function QuantityInput({ value, onCommit }: { value: number; onCommit: (quantity: number) => void }) {
   const [draft, setDraft] = useState(value >= 1 ? String(value) : '')

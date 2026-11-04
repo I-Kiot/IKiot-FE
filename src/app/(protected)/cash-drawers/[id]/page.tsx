@@ -70,7 +70,7 @@ export default function CashDrawerDetailPage() {
 
   const prevLocationKeyRef = useRef<string | null>(null);
 
-  // Capture initial locationKey on mount
+  // Ghi nhận locationKey ban đầu khi mount
   useEffect(() => {
     if (locationKey) {
       prevLocationKeyRef.current = locationKey;
@@ -96,7 +96,7 @@ export default function CashDrawerDetailPage() {
     }
   }, [id]);
 
-  // Listen for global branch switcher changes
+  // Lắng nghe thay đổi từ bộ chọn chi nhánh toàn cục
   useEffect(() => {
     if (!user || user.role !== "TENANT_OWNER" || !session) return;
     if (!prevLocationKeyRef.current) {
@@ -104,7 +104,7 @@ export default function CashDrawerDetailPage() {
       return;
     }
 
-    // Only react if locationKey changed via the global selector
+    // Chỉ xử lý khi locationKey đổi qua bộ chọn toàn cục
     if (prevLocationKeyRef.current === locationKey) return;
 
     const parsed = parseLocationKey(locationKey);
@@ -116,13 +116,13 @@ export default function CashDrawerDetailPage() {
       return;
     }
 
-    // Switched to a warehouse
+    // Chuyển sang kho
     if (locationKey?.startsWith("warehouse") || parsed?.locationType === "WAREHOUSE") {
       prevLocationKeyRef.current = locationKey;
-      return; // Do nothing, let it render the warehouse warning screen below
+      return; // Không làm gì, để màn cảnh báo kho bên dưới hiển thị
     }
 
-    // Switched to another branch
+    // Chuyển sang chi nhánh khác
     if (parsed && parsed.locationType === "BRANCH" && parsed.locationId !== currentSessionBranchId) {
       setIsLoading(true);
       cashDrawerApi
@@ -142,7 +142,7 @@ export default function CashDrawerDetailPage() {
     prevLocationKeyRef.current = locationKey;
   }, [locationKey, session, user, router]);
 
-  // Load active staffs for next staff dropdown
+  // Tải nhân viên đang hoạt động cho dropdown ca kế tiếp
   useEffect(() => {
     if (!isReportOpen || !session) return;
 
@@ -156,9 +156,7 @@ export default function CashDrawerDetailPage() {
           status: "ACTIVE",
           limit: 100,
         });
-        // No role filter any more: every /users row is already a staff account of this
-        // tenant, and the backend checks the rest (active, posted at this branch) when
-        // the drawer is opened or handed over.
+        // Không lọc theo role: mọi dòng /users đã là nhân viên của tenant; backend kiểm tra trạng thái và chi nhánh khi mở két hoặc bàn giao.
         const filtered = response.data || [];
         setBranchStaffs(filtered);
       } catch (error) {
@@ -206,8 +204,7 @@ export default function CashDrawerDetailPage() {
     }).format(new Date(dateStr));
   };
 
-  // The backend answers every person on a session as `{ id, phoneNumber, profile }`
-  // next to the raw `*Id` column; a bare id (a row older than that change) still gets a label.
+  // Backend trả người trong session dạng `{ id, phoneNumber, profile }` kèm cột `*Id`; bản ghi cũ chỉ có id vẫn có nhãn.
   const getUserFullName = (userRef?: CashDrawerUserRef | null, fallback = "Nhân viên") => {
     if (!userRef) return fallback;
     const first = userRef.profile?.firstName || "";
@@ -220,7 +217,6 @@ export default function CashDrawerDetailPage() {
     );
   };
 
-  // Submit Shift Report (Staff or Keeper Manager)
   const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseInt(reportAmount.replace(/\D/g, ""), 10);
@@ -231,9 +227,7 @@ export default function CashDrawerDetailPage() {
 
     setIsSubmitting(true);
     try {
-      // The server wants a START from the holder before their END. The "Nhận ca" button
-      // files it explicitly; if the keeper skipped that step, file it here first so the
-      // end-of-shift report never fails with SHIFT_LOG_START_REQUIRED.
+      // Server yêu cầu START trước END của người giữ két. Nút "Nhận ca" đã gửi START; nếu bỏ qua thì gửi ở đây để không lỗi SHIFT_LOG_START_REQUIRED.
       if (!hasStartedShift) {
         await cashDrawerApi.submitShiftLog(id, {
           type: "START",
@@ -259,7 +253,6 @@ export default function CashDrawerDetailPage() {
     }
   };
 
-  // Submit Finalization (Manager)
   const handleSubmitClose = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseInt(closeAmount.replace(/\D/g, ""), 10);
@@ -286,20 +279,19 @@ export default function CashDrawerDetailPage() {
     }
   };
 
-  // Derived properties
   const isManager = canManageCashDrawer(user?.role);
   const branchName = session?.branch?.name ?? "Chi nhánh";
   const currentStaffName = session ? getUserFullName(session.currentStaff) : "";
   const openedByName = session ? getUserFullName(session.openedBy, "Quản lý") : "";
   const isOpen = session ? session.status === "OPEN" : false;
 
-  // Next staff candidates (exclude current keeper)
+  // Ứng viên ca kế tiếp (loại người đang giữ két)
   const nextStaffCandidates = useMemo(() => {
     if (!session) return [];
     return branchStaffs.filter((s) => s.id !== session.currentStaffId);
   }, [branchStaffs, session]);
 
-  // Handover Info for Staff User
+  // Thông tin bàn giao cho nhân viên
   const staffHandoverAmount = useMemo(() => {
     if (!session || !user) return 0;
     if (session.shiftLogs && session.shiftLogs.length > 0) {
@@ -344,15 +336,14 @@ export default function CashDrawerDetailPage() {
     return session.currentStaffId === user.id;
   }, [session, user]);
 
-  // Whether the keeper has filed their START log - the server only accepts an END after it.
+  // Người giữ két đã gửi log START chưa; server chỉ nhận END sau START.
   const hasStartedShift = useMemo(() => {
     if (!session || !user) return false;
     const lastLog = session.shiftLogs.at(-1);
     return lastLog?.type === "START" && lastLog.staffId === user.id;
   }, [session, user]);
 
-  // The holder's final END (naming nobody to take over) is the handover to the manager:
-  // from here only "chốt két" is possible, so the keeper gets no further shift buttons.
+  // END cuối của người giữ két (không chỉ định người nhận) là bàn giao cho quản lý: từ đây chỉ còn "chốt két", nên không hiện nút ca nữa.
   const awaitingFinalize = useMemo(() => {
     if (!session) return false;
     const lastLog = session.shiftLogs.at(-1);
@@ -363,7 +354,7 @@ export default function CashDrawerDetailPage() {
     );
   }, [session]);
 
-  // "Nhận ca": file the START log with the amount that was handed over.
+  // "Nhận ca": gửi log START với số tiền đã bàn giao.
   const handleStartShift = async () => {
     setIsSubmitting(true);
     try {
@@ -383,9 +374,7 @@ export default function CashDrawerDetailPage() {
     }
   };
 
-  // Determine dynamic breadcrumbs:
-  // For branch/staff: Trang chủ > Két tiền
-  // For tenant: Trang chủ > Két tiền > Chi tiết
+  // Breadcrumb động: branch/staff là Trang chủ > Két tiền; tenant là Trang chủ > Két tiền > Chi tiết
   const breadcrumbs = useMemo(() => {
     if (user?.role === "TENANT_OWNER") {
       return [
@@ -452,7 +441,6 @@ export default function CashDrawerDetailPage() {
       <PageHeader breadcrumbs={breadcrumbs} />
 
       <div className="w-full">
-        {/* Render Manager View */}
         {isManager ? (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b gap-4">
@@ -477,7 +465,6 @@ export default function CashDrawerDetailPage() {
             </div>
 
             <div className="space-y-6">
-              {/* Cash statistics */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6 border-b">
                 <div className="space-y-1.5 bg-muted/45 rounded-xl p-4 border">
                   <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
@@ -497,13 +484,11 @@ export default function CashDrawerDetailPage() {
                 </div>
               </div>
 
-              {/* Handover Timeline */}
               <div className="space-y-4">
                 <h3 className="text-sm font-extrabold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
                   <History className="h-4 w-4 text-muted-foreground" /> Lịch sử bàn giao ca
                 </h3>
                 <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-muted">
-                  {/* Opening log entry */}
                   <div className="relative">
                     <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-primary bg-background ring-4 ring-primary/10" />
                     <div className="flex flex-col gap-1">
@@ -524,7 +509,6 @@ export default function CashDrawerDetailPage() {
                     </div>
                   </div>
 
-                  {/* Shift logs list */}
                   {session.shiftLogs.map((log, idx) => (
                     <div key={log.id || idx} className="relative">
                       <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-amber-500 bg-background ring-4 ring-amber-500/10" />
@@ -556,7 +540,6 @@ export default function CashDrawerDetailPage() {
                     </div>
                   ))}
 
-                  {/* Closing final log entry */}
                   {!isOpen && session.finalLog && (
                     <div className="relative">
                       <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-destructive bg-background ring-4 ring-destructive/10" />
@@ -583,7 +566,6 @@ export default function CashDrawerDetailPage() {
                 </div>
               </div>
 
-              {/* Action Close Cash Drawer */}
               {isOpen && (
                 <div className="pt-6 border-t mt-6 flex flex-wrap items-center gap-3">
                   <Button
@@ -629,7 +611,6 @@ export default function CashDrawerDetailPage() {
             </div>
           </div>
         ) : (
-          /* Render Staff View */
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b gap-4">
               <div className="space-y-1">
@@ -650,7 +631,6 @@ export default function CashDrawerDetailPage() {
             </div>
 
             <div className="space-y-6">
-              {/* Handover summary details */}
               <div className="space-y-6">
                 <div className="border border-muted rounded-xl p-6 flex flex-col items-center justify-center text-center bg-muted/20">
                   <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">
@@ -681,7 +661,6 @@ export default function CashDrawerDetailPage() {
                 </div>
               </div>
 
-              {/* Action Button: Báo cáo cuối ca */}
               {isOpen && isCurrentKeeper && awaitingFinalize ? (
                 <div className="text-center text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-4 font-medium">
                   Bạn đã báo cáo cuối ca. Két đang chờ quản lý chốt.
@@ -721,7 +700,6 @@ export default function CashDrawerDetailPage() {
         )}
       </div>
 
-      {/* Dialog Báo cáo cuối ca (Staff or Keeper Manager) */}
       <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleSubmitReport}>
@@ -815,7 +793,6 @@ export default function CashDrawerDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Chốt két (Manager) */}
       <Dialog open={isCloseOpen} onOpenChange={setIsCloseOpen}>
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleSubmitClose}>

@@ -39,7 +39,6 @@ export function UsersToolbar({
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      {/* Search bar */}
       <div className="relative flex-1 max-w-sm">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -50,7 +49,6 @@ export function UsersToolbar({
         />
       </div>
 
-      {/* Filtering selectors */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="space-y-1 max-w-[150px]">
           <Select value={planFilter} onValueChange={onPlanFilterChange}>

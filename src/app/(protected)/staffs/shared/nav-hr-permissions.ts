@@ -1,11 +1,5 @@
 /**
- * Which HR submenu entries to draw.
- *
- * These were allowlists of role names copied from the old backend's `permissions.json`.
- * Two of the four values in them - `BRANCH_MANAGER`, `WAREHOUSE_MANAGER` - no longer exist,
- * so the lists were quietly hiding the whole HR menu from every staff account. Each entry
- * now names the permission its screen is actually gated on server-side, and `allows()`
- * answers.
+ * Mục menu HR hiện theo quyền mà màn hình đó bị chặn ở backend (`allows()`), không theo tên role. Danh sách role cũ đã làm ẩn cả menu HR.
  */
 import { allows } from "@/components/sidebar/constants/role-permissions";
 

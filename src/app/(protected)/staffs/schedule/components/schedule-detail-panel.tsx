@@ -128,7 +128,7 @@ export function ScheduleDetailPanel() {
     targetAssigneeUserId,
   );
 
-  // Shown when the only reason you cannot edit this shift is that you are on it.
+  // Hiện khi chỉ vì mình đang được gán vào ca này nên không sửa được.
   const readOnlyHint =
     !scheduleLocked &&
     !canEdit &&
@@ -179,7 +179,6 @@ export function ScheduleDetailPanel() {
           {showDetail ? "Chi tiết ca làm" : `Ca làm ngày ${dateLabel}`}
         </SheetTitle>
 
-        {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-2 border-b px-5 py-3.5">
           <div className="min-w-0 flex-1">
             {showDetail && selectedDayDate ? (
@@ -228,7 +227,6 @@ export function ScheduleDetailPanel() {
           </Button>
         </div>
 
-        {/* Body */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {showDayList && (
             <div className="space-y-2 p-4">

@@ -65,7 +65,6 @@ export function useAccountSettings() {
     }
   }
 
-  // Load user profile details
   useEffect(() => {
     if (user) {
       const translatedRole = getUserRoleLabel(user.role)
@@ -135,7 +134,6 @@ export function useAccountSettings() {
     }
   }
 
-  // Mouse drag crop handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault()
     setIsDragging(true)
@@ -155,7 +153,6 @@ export function useAccountSettings() {
     setIsDragging(false)
   }
 
-  // Touch crop handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length !== 1) return
     setIsDragging(true)
@@ -187,7 +184,7 @@ export function useAccountSettings() {
       })
 
       const W = 256
-      const S = 512 // 512x512 canvas for high-quality
+      const S = 512
       const canvas = document.createElement("canvas")
       canvas.width = S
       canvas.height = S

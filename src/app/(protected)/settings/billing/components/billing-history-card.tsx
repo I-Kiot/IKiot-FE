@@ -26,9 +26,8 @@ interface BillingHistoryCardProps {
 }
 
 /**
- * Fetched by `useBilling` rather than here: the invoice that was just paid flips
- * PENDING -> PAID at the same instant the plan activates, so both halves of the screen
- * have to be reloadable from the one call the payment dialog makes.
+ * Lấy từ `useBilling` chứ không tự fetch: hoá đơn vừa thanh toán chuyển PENDING -> PAID cùng lúc gói được
+ * kích hoạt, nên cả hai phải reload được từ cùng một lần gọi.
  */
 export function BillingHistoryCard({
   invoices,

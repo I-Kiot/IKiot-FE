@@ -46,7 +46,6 @@ interface ShipmentDetailSheetProps {
   onChanged: () => void;
 }
 
-// ─── Dialog ghi chú ─────────────────────────────────────────────────────────
 
 interface ShipmentNoteDialogProps {
   open: boolean;
@@ -107,7 +106,6 @@ export function ShipmentNoteDialog({
   );
 }
 
-// ─── Sheet ──────────────────────────────────────────────────────────────────
 
 /** Chữ ở đầu sheet khi chưa có dữ liệu. */
 function loadingText(state: DetailState): string {

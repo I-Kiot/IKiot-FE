@@ -20,10 +20,7 @@ interface OverviewContextValue {
   branchId?: string;
   warehouseId?: string;
   isWarehouse: boolean;
-  /**
-   * Tăng khi có sự kiện realtime: chỉ các widget "ngay lúc này" (tình trạng đơn, tồn kho, đơn
-   * gần đây) tải lại; "Làm mới" cũng tăng nó. Số liệu theo kỳ tải lại vì `resolved` được tính lại.
-   */
+  /** Tăng khi có realtime hoặc bấm "Làm mới": tình trạng đơn, tồn kho, đơn gần đây tải lại; số liệu theo kỳ cũng tải lại vì `resolved` đổi. */
   liveVersion: number;
   refresh: () => void;
 }

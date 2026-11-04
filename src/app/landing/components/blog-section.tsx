@@ -36,7 +36,6 @@ export function BlogSection() {
   return (
     <section id="blog" className="py-24 sm:py-32 bg-muted/50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div className="mx-auto max-w-2xl text-center mb-16">
           <Badge variant="outline" className="mb-4">Tin tức & Kinh nghiệm</Badge>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
@@ -47,7 +46,6 @@ export function BlogSection() {
           </p>
         </div>
 
-        {/* Blog Grid */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {blogs.map(blog => (
             <Card key={blog.id} className="overflow-hidden py-0">
@@ -74,14 +72,6 @@ export function BlogSection() {
                     <h3 className="text-xl font-bold hover:text-primary transition-colors">{blog.title}</h3>
                   </a>
                   <p className="text-muted-foreground">{blog.description}</p>
-                  {/* <a
-                    href="#"
-                    onClick={e => e.preventDefault()}
-                    className="inline-flex items-center gap-2 text-primary hover:underline cursor-pointer"
-                  >
-                    Đọc thêm
-                    <ArrowRight className="size-4" />
-                  </a> */}
                 </div>
               </CardContent>
             </Card>

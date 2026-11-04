@@ -17,7 +17,7 @@ import { RevenueBreakdown } from './revenue-breakdown'
 export function DashboardGrid() {
   const { isWarehouse, revenueByBranch } = useDashboard()
 
-  // A warehouse has no sales - show only the widgets that apply to it.
+  // Kho không có doanh thu bán hàng, chỉ hiện các widget áp dụng cho kho.
   if (isWarehouse) {
     return (
       <div className="@container/main space-y-6">
@@ -44,7 +44,7 @@ export function DashboardGrid() {
       {/* Các mốc thời gian cố định (hôm nay, tuần, tháng...) - KPI và xu hướng theo kỳ đã nằm ở dashboard. */}
       <RevenueComparison />
 
-      {/* Detail is split by question so no tab is a wall of cards. */}
+      {/* Tách chi tiết theo từng câu hỏi để mỗi tab không chỉ toàn thẻ. */}
       <Tabs defaultValue="sales" className="space-y-6">
         <TabsList>
           <TabsTrigger value="sales" className="cursor-pointer">Bán hàng</TabsTrigger>

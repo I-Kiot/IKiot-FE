@@ -1,10 +1,6 @@
-// [Domain – Types] Hành trình đơn hàng (P0-6, 2026-10-02).
-//
-// Mirror of Ikiot_BE/docs/api-contract-order-flow.md and the BE constants in
-// src/common/constants/*-status.ts. Owned by Phase 0: change the contract first, then this
-// file - never one without the other.
+// Hành trình đơn hàng (P0-6, 2026-10-02). Phản chiếu Ikiot_BE/docs/api-contract-order-flow.md
+// và src/common/constants/*-status.ts: đổi hợp đồng trước, rồi mới đổi file này.
 
-// ─── Shared ─────────────────────────────────────────────────────────────────
 
 export interface UserRef {
   id: string;
@@ -28,10 +24,8 @@ export interface PageQuery {
   search?: string;
 }
 
-// ─── Statuses (same strings as the BE constants) ────────────────────────────
 
-// Order statuses per contract §2 (revised 2026-10-04): DRAFT, READY_TO_PACK and DELIVERED are
-// gone; PICKED_UP and RECEIVED are new. Labels are the journey's own words.
+// Trạng thái đơn theo hợp đồng §2 (sửa 2026-10-04): đã bỏ DRAFT, READY_TO_PACK, DELIVERED; thêm PICKED_UP và RECEIVED. Nhãn là từ ngữ của hành trình.
 export const ORDER_STATUSES = [
   "PENDING_CONFIRMATION",
   "CONFIRMED",
@@ -42,7 +36,7 @@ export const ORDER_STATUSES = [
   "COMPLETED",
   "CANCELLED",
   "RETURNED",
-  /** Legacy till state (awaiting SePay) until A-2 retires it. */
+  /** Trạng thái quầy cũ (chờ SePay), bỏ ở A-2. */
   "PENDING",
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -60,7 +54,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING: "Chờ thanh toán",
 };
 
-/** A line has no stock-held states any more: whether its goods are there is `stockCheck`, not a status. */
+/** Dòng không còn trạng thái giữ hàng: có đủ hàng hay không nằm ở `stockCheck`, không phải status. */
 export const ORDER_ITEM_STATUSES = [
   "PENDING",
   "SHIPPED",
@@ -76,7 +70,7 @@ export const ORDER_ITEM_STATUS_LABELS: Record<OrderItemStatus, string> = {
   RETURNED: "Đã hoàn",
 };
 
-/** The tag staff pick the next order to pack by (journey GĐ1 – Bước 3). */
+/** Nhãn để nhân viên chọn đơn đóng gói tiếp theo (hành trình GĐ1 – Bước 3). */
 export const ORDER_PRIORITIES = ["NORMAL", "HIGH", "URGENT"] as const;
 export type OrderPriority = (typeof ORDER_PRIORITIES)[number];
 
@@ -86,7 +80,7 @@ export const ORDER_PRIORITY_LABELS: Record<OrderPriority, string> = {
   URGENT: "Gấp",
 };
 
-/** A line's stockCheck / an order's stockSummary (its worst line) - worked out when read, not held. */
+/** stockCheck của dòng / stockSummary của đơn (dòng xấu nhất): tính khi đọc, không lưu. */
 export const STOCK_CHECK_STATUSES = ["ENOUGH", "PARTIAL", "OUT"] as const;
 export type StockCheckStatus = (typeof STOCK_CHECK_STATUSES)[number];
 
@@ -96,7 +90,7 @@ export const STOCK_CHECK_STATUS_LABELS: Record<StockCheckStatus, string> = {
   OUT: "Hết hàng",
 };
 
-/** Has the cash a shipper collected reached the owner? */
+/** Tiền shipper thu đã về tới chủ shop chưa? */
 export const REMITTANCE_STATUSES = ["NOT_APPLICABLE", "PENDING", "RECEIVED"] as const;
 export type RemittanceStatus = (typeof REMITTANCE_STATUSES)[number];
 
@@ -217,7 +211,7 @@ export const ORDER_CHANNEL_LABELS: Record<OrderChannel, string> = {
   SHOPEE: "Shopee",
 };
 
-/** Contract §5. "Restocked / recorded as damaged" is per line (`condition`), not a status. */
+/** Hợp đồng §5. "Nhập lại kho / ghi hỏng" theo từng dòng (`condition`), không phải status. */
 export type OrderReturnStatus = "REQUESTED" | "INSPECTING" | "COMPLETED" | "CANCELLED";
 
 export type OrderReturnReason = "CUSTOMER_RETURN" | "DELIVERY_FAILED";
@@ -242,7 +236,6 @@ export const RETURN_CONDITION_LABELS: Record<ReturnCondition, string> = {
 export type SupplierType = "GOODS" | "WORKSHOP";
 export type ImportSource = "SUPPLIER" | "WORKSHOP";
 
-// ─── Orders (track A BE / track D FE) ───────────────────────────────────────
 
 export interface OrderItemSpec {
   /** Thuộc tính của sản phẩm mà khách đổi; không có = thông số ghi tự do. */
@@ -282,11 +275,11 @@ export interface OrderLine {
   lineTotal: number;
   returnedQuantity: number;
   isCustom: boolean;
-  /** Read against on-shelf stock; null for COMBO / SERVICE lines and once the line has shipped. */
+  /** Đối chiếu với tồn trên kệ; null với dòng COMBO / SERVICE và khi dòng đã xuất. */
   stockCheck: StockCheck | null;
 }
 
-/** A line as `GET /orders/:id` returns it: plus where it ships from and its custom specs. */
+/** Dòng như `GET /orders/:id` trả về: thêm nơi xuất hàng và thông số đặt riêng. */
 export interface OrderDetailLine extends OrderLine {
   sourceLocation: LocationRef | null;
   customization: OrderItemCustomization | null;
@@ -294,12 +287,12 @@ export interface OrderDetailLine extends OrderLine {
 
 export interface StockCheck {
   status: StockCheckStatus;
-  /** On-shelf stock at the line's source location (stock − locked). */
+  /** Tồn trên kệ tại kho xuất của dòng (stock − locked). */
   stock: number;
   shortQuantity: number;
 }
 
-/** What was collected on delivery; null until then. */
+/** Khoản thu khi giao; null cho tới lúc đó. */
 export interface OrderCollection {
   method: CollectionMethod;
   amount: number;
@@ -323,7 +316,7 @@ export interface OrderListItem {
   createdBy: UserRef | null;
   confirmedBy: UserRef | null;
   confirmedAt: string | null;
-  /** Who confirmed SHIPPING (the stock deduction), and when. */
+  /** Ai xác nhận SHIPPING (trừ tồn), và lúc nào. */
   shippedBy: UserRef | null;
   shippedAt: string | null;
   fulfillmentType: FulfillmentType;
@@ -334,9 +327,9 @@ export interface OrderListItem {
   discountType: "ORDER" | "PROMOTION" | null;
   discountValue: number;
   grandTotal: number;
-  /** `percent` is null when the deposit was typed as an amount. */
+  /** `percent` là null khi cọc được nhập theo số tiền. */
   deposit: { amount: number; percent: number | null } | null;
-  /** grandTotal − deposit: what the shipper collects on delivery. Server-computed. */
+  /** grandTotal − deposit: số shipper thu khi giao; server tính. */
   amountDue: number;
   collection: OrderCollection | null;
   paymentStatus: OrderPaymentStatus;
@@ -350,17 +343,17 @@ export interface OrderListItem {
   note: string | null;
   createdAt: string;
   updatedAt: string;
-  /** Top-level lines - a combo counts once. */
+  /** Dòng cấp cao nhất; một combo tính một lần. */
   itemCount: number;
-  /** The worst line's stockCheck; null once shipped or with no stock-carrying lines. */
+  /** stockCheck của dòng xấu nhất; null khi đã xuất hoặc không có dòng cần tồn. */
   stockSummary: StockCheckStatus | null;
-  /** The list keeps each order's lines (POS reads them off the same route). */
+  /** Danh sách vẫn giữ dòng của từng đơn (POS đọc từ cùng route). */
   items: OrderLine[];
-  /** Status of the newest shipment; a failed delivery leaves the order SHIPPING, so this is what tells them apart. */
+  /** Trạng thái lần giao mới nhất; giao thất bại vẫn để đơn SHIPPING, nên trường này phân biệt được. */
   latestShipmentStatus: ShipmentStatus | null;
 }
 
-/** Order still SHIPPING whose newest delivery attempt failed - waits for a return ticket. */
+/** Đơn còn SHIPPING mà lần giao mới nhất thất bại, đang chờ phiếu hoàn. */
 export function isDeliveryFailed(order: {
   status: OrderStatus;
   latestShipmentStatus: ShipmentStatus | null;
@@ -382,17 +375,17 @@ export interface OrderDetail extends Omit<OrderListItem, "items" | "itemCount" |
 }
 
 export const ORDER_SORTS = ["createdAt", "requestedDeliveryDate", "priority"] as const;
-/** Each has one fixed direction: newest first, soonest delivery first, most urgent first. */
+/** Mỗi kiểu có một chiều cố định: mới nhất trước, giao sớm nhất trước, gấp nhất trước. */
 export type OrderSort = (typeof ORDER_SORTS)[number];
 
-/** What needs someone's eye on an order that has not shipped (BE `attention` filter). */
+/** Đơn chưa xuất cần được chú ý (bộ lọc `attention` của BE). */
 export type OrderAttention = "SHORT" | "DUE_SOON";
 
 /** `GET /orders/alerts`. */
 export interface OrderAlerts {
-  /** Orders with a line partly or wholly out on the shelf. */
+  /** Đơn có dòng thiếu một phần hoặc hết trên kệ. */
   short: number;
-  /** Orders whose requested delivery date is today, within `dueSoonDays`, or already past. */
+  /** Đơn có ngày giao hẹn là hôm nay, trong `dueSoonDays` ngày tới, hoặc đã qua. */
   dueSoon: number;
   dueSoonDays: number;
 }
@@ -406,22 +399,22 @@ export interface OrderJourneyQuery extends PageQuery {
   priority?: OrderPriority;
   stockSummary?: StockCheckStatus;
   cashRemittanceStatus?: RemittanceStatus;
-  /** Creation-date window, ISO. */
+  /** Khoảng ngày tạo đơn, ISO. */
   from?: string;
   to?: string;
   sort?: OrderSort;
-  /** Leave out the till's sales (`TAKEAWAY`). POS lists through the same `GET /orders`, so the backend only drops them when asked - every journey screen sends `true`. */
+  /** Bỏ đơn quầy (`TAKEAWAY`). POS dùng chung `GET /orders` nên BE chỉ bỏ khi được yêu cầu; mọi màn hành trình đều gửi `true`. */
   excludePos?: boolean;
 }
 
 export interface CreateOrderLinePayload {
   productItemId: string;
   quantity: number;
-  /** Agreed price; omit for the catalogue price. */
+  /** Giá đã thoả thuận; bỏ trống thì dùng giá niêm yết. */
   unitPrice?: number;
   discountAmount?: number;
   sourceLocationId?: string;
-  /** Present → a custom (made-to-order) line. */
+  /** Có giá trị → dòng đặt riêng (sản xuất theo yêu cầu). */
   customization?: OrderItemCustomization;
 }
 
@@ -429,9 +422,9 @@ export interface CreateOrderJourneyPayload {
   branchId: string;
   customerId?: string;
   customer?: { name: string; phone?: string; address?: string };
-  /** Required: the person in charge is picked on the form (ORDER_ASSIGNEE_REQUIRED / _INVALID). */
+  /** Bắt buộc: người phụ trách chọn trên form (ORDER_ASSIGNEE_REQUIRED / _INVALID). */
   assigneeId: string;
-  /** The journey's two kinds only; TAKEAWAY is the till's. */
+  /** Chỉ hai loại của hành trình; TAKEAWAY là của quầy. */
   fulfillmentType: "STORE_PICKUP" | "HOME_DELIVERY";
   priority?: OrderPriority;
   items: CreateOrderLinePayload[];
@@ -439,7 +432,7 @@ export interface CreateOrderJourneyPayload {
   discountType?: "ORDER";
   discountValue?: number;
   appliedPromotions?: { promotionId: string }[];
-  /** Money taken now. `value` is đồng for AMOUNT, a percentage (0 < value ≤ 100) for PERCENT. */
+  /** Tiền thu ngay. `value` là đồng với AMOUNT, là phần trăm (0 < value ≤ 100) với PERCENT. */
   deposit?: { type: "AMOUNT" | "PERCENT"; value: number; method: "CASH" | "BANK_TRANSFER" };
   recipientName?: string;
   recipientPhone?: string;
@@ -448,29 +441,29 @@ export interface CreateOrderJourneyPayload {
   note?: string;
 }
 
-/** A line on `PATCH /orders/:id` (A-8): with `id`, that line changed in place (same product); without, a new line. A line left out is removed. Specs go through `setCustomization`, never here. */
+/** Dòng của `PATCH /orders/:id` (A-8): có `id` = đổi tại chỗ (cùng sản phẩm), không có = dòng mới; dòng vắng mặt bị xoá. Thông số đi qua `setCustomization`. */
 export interface UpdateOrderLinePayload extends Omit<CreateOrderLinePayload, "customization"> {
   id?: string;
 }
 
-/** `PATCH /orders/:id` (A-8): the create's fields but the branch, every one optional - a field left out is left as it is. `items` is the whole new list, and only while CONFIRMED. `discountType: null` clears a manual discount. */
+/** `PATCH /orders/:id` (A-8): các trường như create trừ chi nhánh, đều tuỳ chọn. `items` là toàn bộ danh sách mới, chỉ khi CONFIRMED. `discountType: null` xoá chiết khấu nhập tay. */
 export interface UpdateOrderPayload
   extends Partial<Omit<CreateOrderJourneyPayload, "branchId" | "items" | "discountType">> {
   items?: UpdateOrderLinePayload[];
   discountType?: "ORDER" | null;
 }
 
-/** @deprecated The A-8 edit is not a draft edit; use `UpdateOrderPayload`. */
+/** @deprecated Sửa A-8 không còn là sửa nháp; dùng `UpdateOrderPayload`. */
 export type UpdateDraftOrderPayload = UpdateOrderPayload;
 
-/** `ORDER_DEPOSIT_CHANGED` (409): the edit would move the deposit off the money already taken. */
+/** `ORDER_DEPOSIT_CHANGED` (409): sửa sẽ làm cọc lệch khỏi số tiền đã thu. */
 export interface DepositChange {
   held: number;
   amount: number;
   difference: number;
 }
 
-/** `POST /orders/:id/confirm-remittance` (A-10): the cash the owner counted from the shipper - all of it. */
+/** `POST /orders/:id/confirm-remittance` (A-10): số tiền chủ shop đã đếm từ shipper, toàn bộ. */
 export interface ConfirmRemittancePayload {
   amount: number;
   note?: string;
@@ -482,7 +475,6 @@ export interface ConfirmOrderPayload {
   lines?: { orderItemId: string; sourceLocationId: string }[];
 }
 
-// ─── Production requests & imports (track B) ────────────────────────────────
 
 /** Giá trị một thuộc tính của SKU (Màu: Óc chó). `attributeId` null = dòng ghi tự do. */
 export interface SkuAttributeValue {
@@ -497,7 +489,6 @@ export interface ProductionRequestLine {
   productId: string;
   sku: string | null;
   productName: string;
-  /** Giá bán hiện tại của SKU. */
   retailPrice: number;
   /** Thuộc tính của SKU - xưởng làm đúng bộ này. */
   attributes: SkuAttributeValue[];
@@ -509,7 +500,7 @@ export interface ProductionRequestLine {
   note: string | null;
   /** Ảnh gửi xưởng của dòng này (bản thiết kế, ảnh mẫu). */
   attachmentUrls: string[];
-  /** The order line the piece is made for - always set for a custom piece. */
+  /** Dòng đơn mà chi tiết này sản xuất cho; luôn có với hàng đặt riêng. */
   orderItem: {
     id: string;
     orderId: string;
@@ -520,14 +511,14 @@ export interface ProductionRequestLine {
   } | null;
 }
 
-/** One receipt against a request: the WORKSHOP import it wrote (`/stock-movements`). */
+/** Một lần nhận theo YCSX: phiếu nhập XƯỞNG tương ứng (`/stock-movements`). */
 export interface ProductionReceipt {
   stockMovementId: string;
   receivedAt: string | null;
   receivedBy: PersonRef | null;
 }
 
-/** `GET /production-requests/:id` (contract §3, BE track B). People come with a nested `profile`. */
+/** `GET /production-requests/:id` (hợp đồng §3). Người đi kèm `profile` lồng nhau. */
 export interface ProductionRequest {
   id: string;
   code: string;
@@ -537,7 +528,7 @@ export interface ProductionRequest {
   expectedReadyDate: string | null;
   sentAt: string | null;
   note: string | null;
-  /** COMPLETED with a line never fully delivered: closed short by hand. */
+  /** COMPLETED mà có dòng chưa giao đủ: đóng thiếu bằng tay. */
   closedShort: boolean;
   createdBy: PersonRef | null;
   statusUpdatedBy: PersonRef | null;
@@ -630,7 +621,7 @@ export interface ProductionRequestQuery extends PageQuery {
   status?: ProductionRequestStatus;
   supplierId?: string;
   locationId?: string;
-  /** Requests with a line for this SKU. */
+  /** YCSX có dòng cho SKU này. */
   productItemId?: string;
 }
 
@@ -656,28 +647,28 @@ export interface CreateProductionRequestPayload {
   items: ProductionRequestLinePayload[];
 }
 
-/** SENT = the workshop has been called; CANCELLED only before anything arrived; COMPLETED by hand = close a partly delivered request short (`note` required). */
+/** SENT = đã gọi xưởng; CANCELLED chỉ khi chưa nhận gì; COMPLETED bằng tay = đóng YCSX giao thiếu (bắt buộc `note`). */
 export interface UpdateProductionRequestStatusPayload {
   status: "SENT" | "COMPLETED" | "CANCELLED";
   note?: string;
 }
 
-/** `POST /production-requests/:id/receive` (B-5): what arrived this time. Good units open a lot at the request's location; defects go to its damaged-goods location. */
+/** `POST /production-requests/:id/receive` (B-5): số nhận lần này. Hàng tốt mở lot tại địa điểm YCSX; hàng lỗi sang kho hàng hỏng của địa điểm đó. */
 export interface ReceiveProductionPayload {
   items: {
     productionRequestItemId: string;
-    /** Arrived this time, defects included. */
+    /** Nhận lần này, kể cả hàng lỗi. */
     receivedQuantity: number;
     defectQuantity?: number;
-    /** The workshop's price per unit; blank = the SKU's cost price. */
+    /** Giá xưởng cho mỗi đơn vị; để trống = giá vốn của SKU. */
     unitCost?: number;
   }[];
-  /** Defaults to the receiving location's damaged-goods location. */
+  /** Mặc định là kho hàng hỏng của địa điểm nhận. */
   defectLocationId?: string;
   note?: string;
 }
 
-/** One row of the production list (`GET /production-list`): a (location, SKU), worked out when read. */
+/** Một dòng danh sách sản xuất (`GET /production-list`): cặp (địa điểm, SKU), tính khi đọc. */
 export interface ProductionListRow {
   key: string;
   location: (LocationRef & { type: "BRANCH" | "WAREHOUSE" }) | null;
@@ -688,16 +679,16 @@ export interface ProductionListRow {
   /** false = chỉ nhập từ nhà cung cấp, không đặt xưởng được. */
   isManufacturable: boolean;
   isCustom: boolean;
-  /** The order line a custom row is made for. */
+  /** Dòng đơn mà hàng đặt riêng này sản xuất cho. */
   customOrderItemId: string | null;
   customization: OrderItemCustomization | null;
   stock: number;
   demandQuantity: number;
-  /** Sent to the workshop, not yet delivered. */
+  /** Đã gửi xưởng, chưa giao. */
   onOrderQuantity: number;
-  /** On a draft request, not yet sent. */
+  /** Trên YCSX nháp, chưa gửi. */
   draftQuantity: number;
-  /** Still short and not ordered at all. */
+  /** Vẫn thiếu và chưa đặt gì. */
   shortQuantity: number;
   orders: {
     orderId: string;
@@ -722,20 +713,19 @@ export interface ProductionListRow {
 
 export interface ProductionListQuery extends PageQuery {
   locationId?: string;
-  /** One SKU - where a shortage notification links to. */
+  /** Một SKU; thông báo thiếu hàng trỏ về đây. */
   productItemId?: string;
-  /** Only rows still short after stock and every open request. */
+  /** Chỉ dòng còn thiếu sau tồn kho và mọi YCSX đang mở. */
   onlyShort?: boolean;
-  /** Only rows with a request still open. */
+  /** Chỉ dòng còn YCSX đang mở. */
   hasOpenRequest?: boolean;
 }
 
-/** The list is paged like every list, plus how many rows need ordering whatever the filter. */
+/** Phân trang như mọi danh sách, kèm số dòng cần đặt hàng bất kể bộ lọc. */
 export interface ProductionListPage extends Paginated<ProductionListRow> {
   summary: { shortRows: number };
 }
 
-// ─── Fulfillment & delivery (track C) ───────────────────────────────────────
 
 export interface FulfillmentLine {
   id: string;
@@ -989,7 +979,6 @@ export interface ShipmentQrPayment {
   qrUrl: string | null;
 }
 
-// ─── Returns (track D) ──────────────────────────────────────────────────────
 
 export interface OrderReturnLine {
   id: string;
@@ -1010,7 +999,7 @@ export interface OrderReturn {
   order: { id: string; code: string | null; customerName: string; assigneeId: string | null };
   shipmentId: string | null;
   note: string | null;
-  /** The new order a customer placed to buy the goods again (GĐ2 – 3B). */
+  /** Đơn mới khách đặt để mua lại hàng (GĐ2 – 3B). */
   replacementOrder: { id: string; code: string | null } | null;
   createdBy: UserRef | null;
   receivedBy: UserRef | null;

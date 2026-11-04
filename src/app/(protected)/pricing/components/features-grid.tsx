@@ -1,7 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Rocket, Shield, Zap, Users, Headphones, Clock } from "lucide-react"
 
-// Icon mapping
 const iconMap = {
   Rocket,
   Shield,

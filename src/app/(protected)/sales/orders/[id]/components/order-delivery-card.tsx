@@ -8,7 +8,7 @@ import {
 } from "@/types/order-flow";
 import { InfoRow } from "./order-info-card";
 
-/** Where it goes, the shipments that took it there, and any returns. */
+/** Giao đến đâu, các lần giao đã đưa hàng tới, và các đơn trả (nếu có). */
 export function OrderDeliveryCard({ order }: { order: OrderDetail }) {
   return (
     <Card>

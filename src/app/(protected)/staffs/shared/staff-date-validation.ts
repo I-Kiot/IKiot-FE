@@ -21,7 +21,7 @@ export function parseDateInput(value?: string): Date | null {
   const parsed = parseISO(`${trimmed}T00:00:00`);
   if (!isValid(parsed)) return null;
 
-  // Reject impossible calendar dates such as 2026-02-30.
+  // Loại ngày không tồn tại trên lịch, ví dụ 2026-02-30.
   const [year, month, day] = trimmed.split("-").map(Number);
   return parsed.getFullYear() === year &&
     parsed.getMonth() + 1 === month &&

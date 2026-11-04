@@ -15,7 +15,6 @@ export function CTASection() {
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
             <div className="space-y-8">
-              {/* Badge and Stats */}
               <div className="flex flex-col items-center gap-4">
                 <Badge variant="outline" className="flex items-center gap-2">
                   <TrendingUp className="size-3" />
@@ -34,7 +33,6 @@ export function CTASection() {
                 </div>
               </div>
 
-              {/* Main Content */}
               <div className="space-y-6">
                 <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl">
                   Bứt phá doanh thu chuỗi
@@ -56,7 +54,6 @@ export function CTASection() {
                 </p>
               </div>
 
-              {/* CTA Buttons */}
               <div className="flex flex-col justify-center gap-4 sm:flex-row sm:gap-6">
                 <Button
                   size="lg"
@@ -81,7 +78,6 @@ export function CTASection() {
                 </Button>
               </div>
 
-              {/* Trust Indicators */}
               <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="size-2 rounded-full bg-green-600 dark:bg-green-400 me-1" />

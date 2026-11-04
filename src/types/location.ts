@@ -1,11 +1,7 @@
-/**
- * A location's type, spelled exactly as the backend and the database store it
- * (`Location.type`, held to these two values by a CHECK constraint). One spelling on
- * every side of the wire - nothing on this side translates it.
- */
+/** Loại địa điểm, viết đúng như BE và DB lưu (`Location.type`, CHECK constraint giữ hai giá trị này). Hai phía dùng cùng cách viết, FE không dịch. */
 export type LocationType = "BRANCH" | "WAREHOUSE";
 
-/** The one shape a location takes in stock responses (`inventory.location`, `stockDetails[].location`, `fromLocation`/`toLocation`). */
+/** Dạng địa điểm trong phản hồi tồn kho (`inventory.location`, `stockDetails[].location`, `fromLocation`/`toLocation`). */
 export interface LocationRef {
   id: string;
   type: LocationType;

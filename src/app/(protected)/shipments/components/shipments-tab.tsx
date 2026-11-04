@@ -36,7 +36,6 @@ const loadShipments = (query: ShipmentListQuery) => shipmentApi.getList(query);
 
 const ALL = "all";
 
-// ─── Cột ────────────────────────────────────────────────────────────────────
 
 const shipmentsColumns: ColumnDef<ShipmentSummary>[] = [
   {
@@ -78,7 +77,6 @@ const shipmentsColumns: ColumnDef<ShipmentSummary>[] = [
   },
 ];
 
-// ─── Thanh lọc ──────────────────────────────────────────────────────────────
 
 /** Ô tìm kiếm chỉ áp khi bấm Enter / nút Tìm, để không gọi BE theo từng phím. Đổi bộ lọc thì nơi gọi đưa trang về 1. */
 function ShipmentsToolbar({
@@ -169,7 +167,6 @@ function ShipmentsToolbar({
   );
 }
 
-// ─── Tab ────────────────────────────────────────────────────────────────────
 
 interface ShipmentsTabProps {
   reloadKey: number;

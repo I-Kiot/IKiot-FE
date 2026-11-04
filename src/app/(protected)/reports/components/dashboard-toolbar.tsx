@@ -7,7 +7,7 @@ import { useDashboard } from "./dashboard-provider"
 import { RANGE_OPTIONS, type DashboardRange } from "../hooks/use-dashboard-stats"
 import { formatDayVi } from "@/lib/stats-format"
 
-/** One place to choose the period - it drives every widget below except the fixed-milestone comparison. */
+/** Chọn kỳ tại một chỗ; kỳ này điều khiển mọi widget bên dưới, trừ so sánh mốc cố định. */
 export function DashboardToolbar() {
   const { range, setRange, revenueDateRange, refetch, isLoading, isWarehouse } = useDashboard()
 

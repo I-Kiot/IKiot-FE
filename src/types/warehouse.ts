@@ -7,12 +7,11 @@ export interface Warehouse {
   status: WarehouseStatus;
   phoneNumber?: string[];
   email?: string | null;
-  /** D-4: `false` marks a damaged-goods warehouse - it takes defective / damaged returns and is never sold from. */
+  /** D-4: `false` = kho hàng hỏng: nhận hàng lỗi / hư hỏng trả về, không bán từ kho này. */
   isSellable?: boolean;
-  /** D-4: where this warehouse's own damaged goods go (another non-sellable warehouse). */
+  /** D-4: nơi hàng hỏng của kho này chuyển đến (một kho không bán được khác). */
   damagedLocationId?: string | null;
-  /** Who runs this location. Appointed through `PATCH /:id/manager`, not by holding a
-   *  particular role - the rewrite moved that from `User.role` onto the location itself. */
+  /** Người quản lý địa điểm, gán qua `PATCH /:id/manager` chứ không theo vai trò tài khoản. */
   managerId?: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -39,15 +38,11 @@ export interface WarehouseListResponse {
 
 export interface WarehouseCreatePayload {
   name: string;
-  /**
-   * **Required** - `CreateWarehouseDto` declares `@IsArray() @ArrayNotEmpty()`, the same
-   * rule a branch has carried since warehouses gained contact details. This type omitted
-   * it, so `POST /warehouses` was a 400 the UI had no field to satisfy.
-   */
+  /** Bắt buộc, không được rỗng (`CreateWarehouseDto`). Type cũ thiếu trường này nên `POST /warehouses` luôn 400. */
   phoneNumber: string[];
   address?: string;
   email?: string;
-  /** D-4: `false` makes this a damaged-goods warehouse. Defaults to true server-side. */
+  /** D-4: `false` = kho hàng hỏng. Server mặc định `true`. */
   isSellable?: boolean;
   damagedLocationId?: string | null;
 }

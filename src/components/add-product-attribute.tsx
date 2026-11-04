@@ -15,8 +15,8 @@ type Props = {
 };
 
 /**
- * Nút "Thêm thuộc tính": thêm một thuộc tính cho sản phẩm ngay tại màn đang làm (thông số làm riêng, YCSX), không
- * phải quay về màn Hàng hoá. Ghi thẳng vào sản phẩm (`POST /products/:id/attributes`, cần quyền sửa hàng hoá).
+ * Nút "Thêm thuộc tính": thêm thuộc tính ngay tại màn đang làm (thông số làm riêng, YCSX) mà không phải quay về Hàng hoá.
+ * Ghi thẳng vào sản phẩm (`POST /products/:id/attributes`, cần quyền sửa hàng hoá).
  */
 export function AddProductAttribute({ productId, onAdded }: Props) {
   const [open, setOpen] = React.useState(false);

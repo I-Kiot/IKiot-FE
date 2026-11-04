@@ -1,11 +1,9 @@
 import type { LocationType } from "@/types/location"
 
 /**
- * Parse switcher key: "all" | "branch-{id}" | "warehouse-{id}".
+ * Parse key switcher `"all" | "branch-{id}" | "warehouse-{id}"`.
  *
- * The key keeps its lowercase prefix - it is persisted in localStorage (`activeLocationKey`)
- * and changing it would strand every saved selection. The parsed `locationType` is the
- * API's own `BRANCH` / `WAREHOUSE`, so it can go straight into a request.
+ * Key giữ tiền tố chữ thường vì được lưu trong localStorage (`activeLocationKey`); đổi sẽ làm mất mọi lựa chọn đã lưu. `locationType` là `BRANCH` / `WAREHOUSE` của API, dùng thẳng được trong request.
  */
 export type ParsedLocationKey = {
   locationId: string
@@ -31,14 +29,8 @@ export function parseLocationKey(
 }
 
 /**
- * The `{ branchId?, warehouseId? }` pair the list endpoints filter by.
- *
- * Eight call sites had each written their own version of this, and six of them wrote it
- * as `const [type, id] = key.split("-")` - which **truncates the id at the UUID's first
- * hyphen**, leaving 8 of 36 characters. The request then filtered on a branch that does
- * not exist, so the screen showed an empty list rather than an error. Only the two that
- * spelled the parse out (`rest.join("-")`) were right, which is why this lives here now
- * and nowhere else.
+ * Cặp filter `{ branchId?, warehouseId? }` cho endpoint list. Đừng tự `split("-")`: UUID chứa dấu gạch,
+ * cắt sai id làm màn hình hiện danh sách rỗng mà không báo lỗi.
  */
 export function locationFilter(key: string | null | undefined): {
   branchId?: string
@@ -51,7 +43,7 @@ export function locationFilter(key: string | null | undefined): {
     : { warehouseId: parsed.locationId }
 }
 
-/** Just the branch, for the endpoints that take no warehouse filter at all. */
+/** Chỉ lấy branch, cho các endpoint không nhận filter kho. */
 export function branchIdOf(key: string | null | undefined): string | undefined {
   const parsed = parseLocationKey(key)
   return parsed?.locationType === "BRANCH" ? parsed.locationId : undefined

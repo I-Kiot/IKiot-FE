@@ -1,4 +1,3 @@
-// [Constants – Product]
 import type { ProductStatus } from '@/types/product'
 
 const PLACEHOLDER = '/placeholder-product.svg'

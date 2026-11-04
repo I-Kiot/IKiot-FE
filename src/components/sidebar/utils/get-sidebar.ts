@@ -12,13 +12,8 @@ export function getSidebar(role?: string): NavGroup[] {
 }
 
 /**
- * `sidebarRoleConfig` says what the account kind *can* reach; the permission filters say
- * what this particular role may. A parent whose children are all filtered away is dropped
- * rather than drawn as a menu that opens onto nothing; a leaf goes through
- * `filterLeafNavItems`, which keeps the ones no permission has been named for.
- *
- * Both the sidebar and `RoutePermissionGuard` read this, so a screen hidden from the menu
- * is also refused when its URL is typed by hand instead of merely failing its first fetch.
+ * `sidebarRoleConfig` quy định loại tài khoản tới được đâu; bộ lọc quyền quyết định role này được thấy gì. Cha có mọi con bị lọc thì bị ẩn; leaf đi qua `filterLeafNavItems`.
+ * Sidebar và `RoutePermissionGuard` cùng dùng hàm này, nên màn ẩn khỏi menu cũng bị chặn khi gõ URL tay.
  */
 export function getFilteredSidebar(role?: string | null): NavGroup[] {
   return getSidebar(role ?? undefined)
@@ -52,7 +47,7 @@ export function canOpenCheckout(role?: string | null): boolean {
   return allows(role, "orders", "create");
 }
 
-/** Every concrete URL the filtered sidebar links to (placeholder `#` entries excluded). */
+/** Mọi URL thật mà sidebar đã lọc trỏ tới (bỏ các mục placeholder `#`). */
 export function getAllowedSidebarUrls(role?: string | null): string[] {
   const urls: string[] = [];
   const isReal = (url?: string) => !!url && url !== "#" && !url.startsWith("/#");

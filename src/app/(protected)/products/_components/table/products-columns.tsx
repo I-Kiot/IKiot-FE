@@ -49,9 +49,7 @@ function SortableHeader({
 export function getProductsColumns(
   brands: Brand[],
   categories: Category[],
-  // Đang xem theo một chi nhánh/kho cụ thể? Lúc đó cột tồn kho phải nói cả hai con số:
-  // tại đây (có thể là 0 vì chưa nhập về) và toàn chuỗi - để nhân viên biết cửa hàng CÓ
-  // mặt hàng này mà đề nghị chuyển kho, thay vì tưởng là không bán.
+  // Đang xem theo chi nhánh/kho: cột tồn hiện cả tồn tại đó (có thể 0) và toàn chuỗi, để biết cửa hàng CÓ mặt hàng này và đề nghị chuyển kho.
   isLocationScoped = false,
 ): ColumnDef<Product>[] {
   return [

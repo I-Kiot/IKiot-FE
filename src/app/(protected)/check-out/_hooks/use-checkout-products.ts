@@ -8,9 +8,8 @@ import { getCachedUser } from '@/lib/auth'
 export type CheckoutLocation = { id: string; type: 'BRANCH' | 'WAREHOUSE' }
 
 /**
- * `location` overrides where stock is read: undefined = the sale's own branch (account posting /
- * switcher), null = no location, a value = that location (the manual-order form reads the
- * branch/warehouse the order ships from).
+ * `location` quyết định kho đọc tồn: undefined = chi nhánh của đơn bán, null = không đọc, giá trị = địa điểm đó
+ * (form đơn tay đọc tồn tại nơi xuất hàng của đơn).
  */
 export function useCheckoutProducts(searchQuery: string, location?: CheckoutLocation | null) {
   const [products, setProducts] = useState<Product[]>([])

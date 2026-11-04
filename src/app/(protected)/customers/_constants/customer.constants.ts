@@ -1,4 +1,3 @@
-// [Constants – Customer]
 import type { CustomerGender, CustomerOrderStatus, CustomerOrderPaymentMethod } from '@/types/customer'
 
 export const GENDER_MAP: Record<CustomerGender, { label: string; className: string }> = {

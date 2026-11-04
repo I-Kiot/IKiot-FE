@@ -1,4 +1,3 @@
-// [API – Warehouse]
 import client from "@/lib/api/client";
 import type {
   Warehouse,

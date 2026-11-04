@@ -20,7 +20,7 @@ import {
   type StockCheckStatus,
 } from "@/types/order-flow";
 
-/** The list's own filters; "all" = not sent. */
+/** Bộ lọc riêng của danh sách; "all" = không gửi. */
 export interface OrdersListQuery {
   page: number;
   limit: number;
@@ -28,12 +28,12 @@ export interface OrdersListQuery {
   status: OrderStatus | "all";
   priority: OrderPriority | "all";
   stockSummary: StockCheckStatus | "all";
-  /** Banner shortcuts: only orders short on the shelf / with a near delivery date. */
+  /** Lối tắt từ banner: đơn thiếu hàng trên kệ, hoặc đơn sắp đến hạn giao. */
   attention: OrderAttention | "all";
-  /** D-9: orders whose cash is still with the shipper (`PENDING`), or already handed back. */
+  /** D-9: đơn mà tiền còn ở shipper (`PENDING`) hoặc đã nộp lại. */
   cashRemittanceStatus: RemittanceStatus | "all";
   sort: OrderSort;
-  /** Only orders the signed-in account is in charge of. */
+  /** Chỉ đơn do tài khoản đang đăng nhập phụ trách. */
   mineOnly: boolean;
 }
 
@@ -50,7 +50,7 @@ const DEFAULT_LIST_QUERY: OrdersListQuery = {
   mineOnly: false,
 };
 
-/** One answer from the server, tagged with the request it answers. */
+/** Một kết quả từ server, gắn với request mà nó trả lời. */
 interface ListResult {
   params: OrderJourneyQuery;
   orders: OrderListItem[];
@@ -67,7 +67,7 @@ type OrdersContextType = {
   listQuery: OrdersListQuery;
   keywordInput: string;
   setKeywordInput: (value: string) => void;
-  /** Change one filter; every change but the page itself goes back to page 1. */
+  /** Đổi một bộ lọc; mọi thay đổi (trừ trang) đưa về trang 1. */
   updateQuery: (patch: Partial<Omit<OrdersListQuery, "page">>) => void;
   updatePage: (page: number) => void;
   resetFilters: () => void;
@@ -93,7 +93,7 @@ type OrdersProviderProps = {
   enabled?: boolean;
 };
 
-/** State and fetching for the order list (D-1, `GET /orders`): filters, sort and paging all run on the server. */
+/** State và fetch danh sách đơn (D-1, `GET /orders`): lọc, sắp xếp, phân trang đều chạy ở server. */
 export function OrdersProvider({
   children,
   enabled = true,
@@ -109,15 +109,14 @@ export function OrdersProvider({
   const [result, setResult] = useState<ListResult | null>(null);
   const locationKey = useAuthStore((state) => state.locationKey);
 
-  // Switching branch in the header starts the list again from page 1 - adjusted while
-  // rendering, the way React recommends for state that follows a changing input.
+  // Đổi chi nhánh ở header đưa danh sách về trang 1; điều chỉnh ngay lúc render, đúng cách React khuyến nghị cho state theo input đổi.
   const [listedLocationKey, setListedLocationKey] = useState(locationKey);
   if (listedLocationKey !== locationKey) {
     setListedLocationKey(locationKey);
     setListQuery((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
   }
 
-  // Typing waits 400ms before it becomes a request, as on the staff list.
+  // Gõ tìm kiếm chờ 400ms mới thành request, như danh sách nhân viên.
   useEffect(() => {
     const timer = setTimeout(() => {
       setListQuery((prev) =>
@@ -130,8 +129,7 @@ export function OrdersProvider({
   }, [keywordInput]);
 
   const params = useMemo<OrderJourneyQuery>(() => {
-    // The header's branch switcher scopes the list. Orders belong to a branch, not a
-    // warehouse, so a warehouse in the switcher narrows nothing here.
+    // Bộ chuyển chi nhánh ở header áp dụng cho danh sách. Đơn thuộc chi nhánh chứ không thuộc kho, nên chọn kho không lọc gì ở đây.
     const scope = parseLocationKey(locationKey);
     return {
       page: listQuery.page,
@@ -150,15 +148,14 @@ export function OrdersProvider({
       sort: listQuery.sort,
       assigneeId: listQuery.mineOnly ? getSessionUserId() : undefined,
       branchId: scope?.locationType === "BRANCH" ? scope.locationId : undefined,
-      // Till sales share the route but are not part of the journey (contract §2).
+      // Bán tại quầy dùng chung route nhưng không thuộc hành trình (contract §2).
       excludePos: true,
     };
   }, [listQuery, locationKey]);
 
   useEffect(() => {
     if (!enabled) return;
-    // Filters change faster than the server answers: a request whose filters are no longer
-    // current is dropped when it lands, so an old answer never overwrites a newer one.
+    // Bộ lọc đổi nhanh hơn server trả lời: request có bộ lọc cũ sẽ bị bỏ khi về, nên đơn cũ không đè kết quả mới.
     let cancelled = false;
     orderJourneyApi
       .getList(params)
@@ -200,7 +197,7 @@ export function OrdersProvider({
   return (
     <OrdersContext.Provider
       value={{
-        // The last answer stays on screen (dimmed) while the next one loads.
+        // Kết quả cũ vẫn hiện (mờ) trong lúc tải kết quả mới.
         orders: result?.orders ?? [],
         isInitialLoading: enabled && result === null,
         isFetching: enabled && result?.params !== params,

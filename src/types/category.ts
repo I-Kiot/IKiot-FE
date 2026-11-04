@@ -1,4 +1,3 @@
-// [Domain – Types]
 export interface CategoryBreadcrumb {
   id: string
   name: string

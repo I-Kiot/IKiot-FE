@@ -8,8 +8,7 @@ interface Step {
   label: string;
 }
 
-// Journey GĐ1 (docs/hanh-trinh-don-hang.md, "Tóm tắt trạng thái chính"). PENDING_CONFIRMATION
-// only exists for marketplace orders; a manual order is born CONFIRMED.
+// Bước GĐ1 (docs/hanh-trinh-don-hang.md, "Tóm tắt trạng thái chính"). PENDING_CONFIRMATION chỉ có ở đơn sàn; đơn tạo tay sinh ra đã CONFIRMED.
 const STEPS: Step[] = [
   { status: "PENDING_CONFIRMATION", label: "Chờ xác nhận" },
   { status: "CONFIRMED", label: "Xác nhận" },
@@ -20,7 +19,7 @@ const STEPS: Step[] = [
   { status: "COMPLETED", label: "Hoàn thành" },
 ];
 
-/** When each step happened, where the order records it. */
+/** Thời điểm từng bước xảy ra, lấy từ các mốc thời gian của đơn. */
 function stepTime(order: OrderDetail, status: Step["status"]): string | null {
   switch (status) {
     case "PENDING_CONFIRMATION":
@@ -41,7 +40,7 @@ function stepTime(order: OrderDetail, status: Step["status"]): string | null {
   }
 }
 
-/** Where the order is in the journey: done steps ticked, the current one highlighted. */
+/** Vị trí đơn trên hành trình: bước đã xong được tick, bước hiện tại được tô nổi bật. */
 export function OrderJourneySteps({ order }: { order: OrderDetail }) {
   if (order.status === "CANCELLED") {
     return (
@@ -52,10 +51,10 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
     );
   }
 
-  // The delivery failed: the order stays SHIPPING while the goods are still out (the shipper may retry),
-  // then RETURNED once the shop confirms they are back. The last two steps give way to failed -> returned.
+  // Giao thất bại: đơn vẫn SHIPPING khi hàng còn ngoài (shipper có thể giao lại), chuyển RETURNED khi shop xác nhận đã nhận hàng về.
+  // Hai bước cuối nhường chỗ cho failed → returned.
   const failed = isDeliveryFailed(order);
-  // Whole order came back after a failed delivery: same track, now finished.
+  // Cả đơn đã về sau giao thất bại: cùng track, nay đã hoàn tất.
   const returnedAfterFailure =
     order.status === "RETURNED" && order.latestShipmentStatus === "RETURNED";
   const steps = (failed || returnedAfterFailure
@@ -68,7 +67,7 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
   ).filter((step) => {
     if (step.status === "PENDING_CONFIRMATION")
       return order.channel !== "MANUAL";
-    // QR, or nothing left to collect: SHIPPING goes straight to COMPLETED, no RECEIVED step.
+    // Thu bằng QR, hoặc không còn gì để thu: SHIPPING đi thẳng tới COMPLETED, không qua RECEIVED.
     if (step.status === "RECEIVED") {
       const skipped =
         ["COMPLETED", "RETURNED"].includes(order.status) &&
@@ -79,11 +78,9 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
     return true;
   });
 
-  // Each step is named for the status the order *reaches*, so status X means step X is done and
-  // the step after it is the one in progress - a manual order born CONFIRMED is waiting to be
-  // packed. A returned order went all the way first; its returns are listed further down. A
-  // finished order (COMPLETED / RETURNED) has every step done - none is still "in progress".
-  // A status with no step of its own (PENDING) highlights nothing.
+  // Mỗi bước đặt tên theo trạng thái đơn *đạt tới*: trạng thái X nghĩa là bước X đã xong, bước sau là bước đang làm (đơn tạo tay CONFIRMED đang chờ đóng gói).
+  // Đơn RETURNED đã đi hết track; các đơn trả hiện ở phía dưới. Đơn COMPLETED/RETURNED có mọi bước đã xong.
+  // PENDING không có bước riêng nên không tô bước nào.
   const finished = order.status === "COMPLETED" || order.status === "RETURNED";
   const reachedIndex = steps.findIndex((step) => step.status === order.status);
   let currentIndex: number;
@@ -102,7 +99,7 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
         {steps.map((step, index) => {
           const done = currentIndex >= 0 && index < currentIndex;
           const current = index === currentIndex;
-          // The current step hasn't happened yet, so only done steps carry a time.
+          // Bước hiện tại chưa xảy ra nên chỉ bước đã xong mới có thời gian.
           const time = done ? stepTime(order, step.status) : null;
           return (
             <li

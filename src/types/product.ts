@@ -70,8 +70,7 @@ export interface StockDetail {
   location: LocationRef;
 }
 
-// Populated subset of Supplier as returned on ProductItem.suppliers
-// (BE populates only these fields - see ProductService.getProductById/addSupplierToItem).
+// Tập con của Supplier mà BE populate vào ProductItem.suppliers (chỉ các trường này; xem ProductService.getProductById/addSupplierToItem).
 export interface ProductItemSupplier {
   id: string;
   supplierName: string;
@@ -97,8 +96,7 @@ export interface ProductItem {
   suppliers?: ProductItemSupplier[];
   itemType?: ProductItemType;
   comboComponents?: ComboComponent[];
-  // Tồn tại địa điểm đang xem (tổng của stockDetails). Khi không lọc địa điểm thì bằng
-  // stockAllLocations.
+  // Tồn tại địa điểm đang xem (tổng stockDetails); không lọc địa điểm thì bằng stockAllLocations.
   stock?: number;
   // Tồn của biến thể này ở TẤT CẢ chi nhánh/kho, không phụ thuộc bộ lọc địa điểm. BE luôn
   // trả về số - 0 nghĩa là cả chuỗi chưa có, không phải "chưa nạp".
@@ -126,8 +124,7 @@ export interface Product {
   images?: ProductImage[];
   attributes?: ProductAttribute[];
   items?: ProductItem[];
-  // Tồn tại địa điểm đang xem. Khi danh sách không lọc địa điểm thì bằng
-  // totalStockAllLocations.
+  // Tồn tại địa điểm đang xem; không lọc địa điểm thì bằng totalStockAllLocations.
   totalStock?: number;
   // Tồn toàn chuỗi (mọi chi nhánh + kho). Dùng để trả lời "cửa hàng có mặt hàng này không"
   // khi chi nhánh đang xem chưa nhập về - lúc đó totalStock là 0 còn số này thì không.
@@ -177,8 +174,7 @@ export interface ProductSearchParams {
   limit?: number;
 }
 
-// GET /products/items - flat SKU list for pickers (e.g. promotion product-scope selector).
-// Unlike Product.items, this doesn't require fetching every product's detail.
+// GET /products/items - danh sách SKU phẳng cho bộ chọn (vd. phạm vi sản phẩm của khuyến mãi); không cần tải chi tiết từng sản phẩm như Product.items.
 export interface ProductItemListEntry {
   id: string;
   productId: string;

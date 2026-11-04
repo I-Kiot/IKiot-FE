@@ -4,9 +4,8 @@ import { useCallback, useState } from "react";
 import { sendOtpRequest } from "@/lib/api/auth";
 
 /**
- * Drives the registration OTP flow. The backend generates + sends the OTP via
- * eSMS (see /auth/send-otp) and verifies the entered code at /auth/register,
- * so the client only needs to trigger the send and collect the code.
+ * Điều khiển luồng OTP đăng ký. Backend tạo và gửi OTP qua eSMS (/auth/send-otp), rồi xác thực mã tại /auth/register;
+ * client chỉ cần kích hoạt gửi và thu thập mã.
  */
 export function usePhoneOtp() {
   const [isSending, setIsSending] = useState(false);

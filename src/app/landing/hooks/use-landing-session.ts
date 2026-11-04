@@ -7,12 +7,8 @@ import { getHomeRoute } from "@/components/sidebar/utils/get-sidebar";
 const noopSubscribe = () => () => {};
 
 /**
- * Người đang xem trang landing có đang đăng nhập không, để đổi nút "Đăng nhập / Đăng ký" thành
- * "Vào trang quản lý". Đọc user đã lưu (localStorage) - không gọi /auth/me: trang landing là trang
- * công khai, phiên hết hạn thì bấm vào sẽ được trang quản lý đưa về /sign-in như mọi khi.
- *
- * `user` chỉ có sau khi mount: lúc render phía server không có localStorage, đọc ngay sẽ lệch HTML
- * (hydration mismatch). Trước khi mount thì coi như chưa đăng nhập.
+ * Đọc user đã lưu (localStorage) để đổi nút "Đăng nhập / Đăng ký" thành "Vào trang quản lý".
+ * Không gọi /auth/me vì trang landing công khai; `user` chỉ có sau khi mount để tránh lệch hydration.
  */
 export function useLandingSession() {
   const { user, logout } = useAuth();

@@ -1,4 +1,3 @@
-// [UI Types – Product]
 import { z } from 'zod'
 
 export type ProductsDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'crossBranchSearch'

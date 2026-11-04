@@ -45,7 +45,7 @@ import { ProductionRequestFormDialog } from "./production-request-form-dialog";
 const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
-/** B-6: the production-request list (`GET /production-requests`, contract §3). */
+/** B-6: danh sách yêu cầu sản xuất (`GET /production-requests`, contract §3). */
 export function ProductionRequestsTable() {
   const canCreate = allows(getSessionRole(), "production_requests", "create");
 
@@ -58,7 +58,7 @@ export function ProductionRequestsTable() {
   const [reloads, setReloads] = React.useState(0);
   const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<ProductionRequest | null>(null);
-  // Tagged with the query it answered: while the tag differs, a newer request is in flight.
+  // Gắn kèm query đã trả lời: khi tag khác nghĩa là có yêu cầu mới đang chạy.
   const query = `${page}|${pageSize}|${status}|${term}|${reloads}`;
   const [loaded, setLoaded] = React.useState<{
     query: string;

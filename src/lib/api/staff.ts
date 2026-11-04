@@ -53,16 +53,10 @@ function buildProfileBody(
 }
 
 /**
- * The body of `POST /users` - hiring somebody, without a login.
+ * Body của `POST /users` (thuê người, chưa có tài khoản đăng nhập).
  *
- * `newPassword`/`reEnterPassword` ride along on `CreateStaffPayload` but are deliberately
- * **not** in here: switching the login on is `POST /users/:id/account`, a second call the
- * provider makes right after this one.
- *
- * `avatarUrl`/`taxNumber`/`dob` used to be repeated flat beside `profile`, which
- * `CreateUserDto` has never accepted at the top level (`whitelist: true` drops unknown keys
- * without complaining) - the nested copy is the one that counts, so the flat trio is gone
- * rather than left there implying the server reads it.
+ * `newPassword`/`reEnterPassword` có trong `CreateStaffPayload` nhưng cố tình không gửi ở đây: bật đăng nhập là `POST /users/:id/account`, một lệnh riêng ngay sau đó.
+ * `avatarUrl`/`taxNumber`/`dob` chỉ nằm trong `profile`: `CreateUserDto` không nhận chúng ở cấp trên cùng, `whitelist: true` bỏ im lặng.
  */
 function buildCreateBody(payload: CreateStaffPayload) {
   const profile = buildProfileBody(
@@ -89,23 +83,12 @@ function buildCreateBody(payload: CreateStaffPayload) {
 }
 
 /**
- * The body of `PATCH /users/:id`.
+ * Body của `PATCH /users/:id`. Hai lưu ý:
  *
- * Two things about it were wrong at once, and the first one hid the second:
+ * 1. Phải trả các trường phẳng, không `{ data }`: `ValidationPipe({ whitelist: true })` bỏ im lặng key lạ, nên lần sửa thành object rỗng mà vẫn 200.
+ * 2. **Tối đa một nơi làm việc.** `UserService.resolvePosting` trả 400 nếu có cả `branchId` và `warehouseId`; `undefined` là "giữ nguyên", đặt một cái đã xoá cái kia phía server.
  *
- * 1. It used to `return { data }`. The server's global `ValidationPipe({ whitelist: true })`
- *    **drops unknown keys silently** rather than erroring, so the whole edit arrived as an
- *    empty object: HTTP 200, nothing saved, no complaint anywhere. Return the fields flat.
- * 2. **At most one posting may be sent.** `UserService.resolvePosting` throws 400 the
- *    moment `branchId` *and* `warehouseId` are both present - `undefined` is the only
- *    "leave it alone", and naming one already clears the other server-side. The edit
- *    dialog sends `warehouseId: null` alongside a real `branchId`, which would have been
- *    a 400 on the first edit after this function started sending anything at all.
- *
- * `roleId` is sent too. The old comment here said role changes went through the
- * branch/warehouse manager assignment instead - that stopped being true when appointing a
- * manager became `PATCH /branches/:id/manager` and the role became an ordinary field; the
- * dialog has been putting `roleId` in the payload since, and this dropped it on the floor.
+ * `roleId` cũng được gửi; trước đây hàm này bỏ rơi nó dù form đã gửi.
  */
 function buildUpdateBody(payload: UpdateStaffPayload) {
   const data: Record<string, unknown> = {};
@@ -121,8 +104,7 @@ function buildUpdateBody(payload: UpdateStaffPayload) {
   // Khác nơi làm việc: `null` là trạng thái thật (bỏ gắn xưởng), BE nhận `workshopId: null`.
   if (payload.workshopId !== undefined) data.workshopId = payload.workshopId;
 
-  // Exactly one, never both. A form that clears the posting sends null for both, and the
-  // server has no "unposted" state to move someone into - so that case sends neither.
+  // Chỉ gửi đúng một trong hai, không bao giờ cả hai. Form bỏ gắn gửi null cho cả hai, server không có trạng thái "chưa gắn" nên trường hợp đó không gửi gì.
   if (payload.branchId) {
     data.branchId = payload.branchId;
   } else if (payload.warehouseId) {
@@ -139,7 +121,7 @@ function buildUpdateBody(payload: UpdateStaffPayload) {
   return data;
 }
 
-/** One row of `GET /roles`. `_count.users` is how many accounts hold it. */
+/** Một dòng của `GET /roles`. `_count.users` là số tài khoản đang giữ vai trò. */
 interface StaffRoleRow {
   id: string;
   name: string;
@@ -189,7 +171,7 @@ export const staffApi = {
     return all.filter((staff) => staff.status === "ACTIVE");
   },
 
-  /** Paginate GET /staff to collect all staff records across pages. */
+  /** Phân trang GET /staff để lấy hết nhân viên qua mọi trang. */
   getAllForOptions: async (): Promise<Staff[]> => {
     const merged: Staff[] = [];
     let page = 1;
@@ -231,7 +213,7 @@ export const staffApi = {
     await client.patch(`/users/${id}/account/password`, payload);
   },
 
-  /** Takes no body: the rewrite dropped `replacementManagerId` (see staff-manager-utils). */
+  /** Không có body: bản viết lại đã bỏ `replacementManagerId` (xem staff-manager-utils). */
   deactivateAccount: async (id: string): Promise<void> => {
     await client.patch(`/users/${id}/account/deactivate`);
   },
@@ -241,12 +223,8 @@ export const staffApi = {
   },
 
   /**
-   * The roles this shop has defined.
-   *
-   * `GET /staff/roles` used to answer with the fixed three-value enum the old backend
-   * shipped. Roles are tenant-owned rows now (`GET /roles`), so an empty list means the
-   * owner has not created any yet - which is a real state, not a failure: `POST /users`
-   * requires a `roleId`, so nobody can be hired until at least one role exists.
+   * Các vai trò shop đã định nghĩa (`GET /roles`). Danh sách rỗng là trạng thái thật, không phải lỗi:
+   * `POST /users` cần `roleId` nên chưa ai được thuê khi chưa có vai trò nào.
    */
   getRoles: async (): Promise<StaffRoleOption[]> => {
     const response = await client.get<{ data: StaffRoleRow[] }>("/roles");

@@ -35,8 +35,7 @@ type Props = {
 };
 
 /**
- * Thay đổi khách đặt riêng, mỗi thay đổi một chip nhỏ tự xuống hàng ("Màu: ~~Óc chó~~ Trắng"), thay cho một chuỗi
- * dài nối bằng dấu chấm - đổi nhiều thuộc tính thì chuỗi đó kéo giãn cả ô sản phẩm.
+ * Thay đổi khách đặt riêng: mỗi thay đổi một chip tự xuống hàng ("Màu: ~~Óc chó~~ Trắng"), thay vì nối cả chuỗi dài bằng dấu chấm (sẽ kéo giãn ô sản phẩm).
  */
 export function CustomizationChips({ customization, max, compact, className }: Props) {
   const chips = chipsOf(customization);

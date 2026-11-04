@@ -14,7 +14,7 @@ import type { SalesBranch } from "../_hooks/use-sales-branch";
 interface SalesBranchSelectProps {
   sales: SalesBranch;
   error?: string;
-  /** Show the label above the select (default) or just the select. */
+  /** Hiện nhãn phía trên select (mặc định) hoặc chỉ hiện select. */
   showLabel?: boolean;
 }
 

@@ -1,5 +1,5 @@
 /**
- * Auth Helper - Token management and authentication state
+ * Helper xác thực: quản lý token và trạng thái đăng nhập.
  */
 
 import axios from "axios";
@@ -16,7 +16,7 @@ export interface AuthTokens {
 
 export interface User {
   id: string;
-  /** Optional on the backend - `phoneNumber` is the required identifier. */
+  /** Không bắt buộc ở backend; `phoneNumber` mới là định danh bắt buộc. */
   email?: string | null;
   full_name?: string;
   display_name?: string;
@@ -26,35 +26,22 @@ export interface User {
   created_at?: string;
   updated_at?: string;
   /**
-   * The **account kind** - `ADMIN | TENANT_OWNER | STAFF | CUSTOMER`.
-   *
-   * Normalised at the API boundary from the backend's `systemRole`. The rewrite renamed
-   * this concept and reused the name `role` for the tenant-defined `Role` relation, so a
-   * raw `/auth/me` row carries `role: {id,name} | null` - an object, never one of these
-   * strings. Every `user.role === "…"` gate in the app was silently false until this was
-   * mapped; see `normalizeSessionUser`.
+   * **Loại tài khoản** (`ADMIN | TENANT_OWNER | STAFF | CUSTOMER`), lấy từ `systemRole`.
+   * `normalizeSessionUser` map lại vì backend dùng `role` cho relation Role.
    */
   role?: string;
   /**
-   * Every `"resource:action"` this account holds, as `GET /auth/me` returned it.
-   *
-   * **Empty for ADMIN and TENANT_OWNER** - they short-circuit the backend's guard before it
-   * is consulted, so empty means "not applicable", not "nothing". Read it through `allows()`
-   * in `role-permissions.ts`, which handles that.
+   * Quyền `"resource:action"` tài khoản có, theo `GET /auth/me`. **Rỗng với ADMIN và TENANT_OWNER**:
+   * nghĩa là không áp dụng, không phải không có quyền. Đọc qua `allows()` trong `role-permissions.ts`.
    */
   permissions?: string[];
-  /** The backend's own name for the account kind, kept beside the normalised `role`. */
+  /** Tên loại tài khoản do backend trả, giữ cạnh `role` đã normalise. */
   systemRole?: string;
-  /** The tenant-defined role's display name, when the account holds one. */
+  /** Tên hiển thị của role do tenant định nghĩa, nếu tài khoản có role. */
   roleName?: string;
   /**
-   * The shop this account belongs to.
-   *
-   * **Never populated.** `/auth/me` returns the user row and its role relation and
-   * nothing else (`AuthService.toPublicUser` strips only the password), so every reader of
-   * this falls through its optional chain to a blank. `GET /tenant/me` (`getMyTenant()` in
-   * `lib/api/tenant.ts`) is the real source and `/settings` now reads it; this stays typed
-   * so anyone tempted to reach for `me.tenant` sees why it is empty.
+   * Cửa hàng của tài khoản. **Không bao giờ có giá trị**: `/auth/me` không trả tenant.
+   * Lấy từ `getMyTenant()` (`lib/api/tenant.ts`).
    */
   tenant?: {
     id?: string;
@@ -72,14 +59,10 @@ export interface User {
   phoneNumber?: string;
   status?: string;
   tenantId?: string;
-  /** The account's posting, as the backend sends it (`User.locationId` + the `location` relation). Null for an owner or admin, who are posted nowhere. */
+  /** Vị trí làm việc backend trả (`User.locationId` + relation `location`); null với owner và admin vì họ không gắn vị trí nào. */
   locationId?: string | null;
   location?: LocationRef | null;
-  /**
-   * `location` split by its type - derived in `normalizeSessionUser`, never sent by the
-   * backend. Kept because ~40 screens read the posting through these two names; deriving
-   * them in that one place is what keeps those screens and the backend's shape in step.
-   */
+  /** `location` tách theo loại, do `normalizeSessionUser` tính (backend không gửi), vì ~40 màn đọc qua hai tên này. */
   branchId?: string;
   warehouseId?: string;
   /** Nhân viên xưởng (2026-10-09): xưởng (NCC loại WORKSHOP) tài khoản này thuộc về; null với người khác. */
@@ -96,20 +79,12 @@ export interface User {
     gender?: "MALE" | "FEMALE" | "OTHER";
   };
   /**
-   * **Removed - `/auth/me` has never returned this.**
-   *
-   * The old Express backend joined the subscription onto the profile for TENANT_OWNERs;
-   * `AuthService.me` in the rewrite returns the user row and its role relation and nothing
-   * else, so the field sat here typed and permanently `undefined`, and the billing screen
-   * that read `user.subscription` drew an empty plan on every render - a `fetchMe()` after
-   * a payment brought back the same blank.
-   *
-   * The plan comes from `getCurrentSubscription()` in `lib/api/subscription.ts`.
+   * **Đã bỏ**: `/auth/me` không bao giờ trả field này. Gói hiện tại lấy từ `getCurrentSubscription()` (`lib/api/subscription.ts`).
    */
 }
 
 /**
- * Check if user is authenticated (has valid access token)
+ * Kiểm tra đã có access token trong localStorage.
  */
 export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
@@ -118,7 +93,7 @@ export function isAuthenticated(): boolean {
 }
 
 /**
- * Get access token from localStorage
+ * Lấy access token từ localStorage.
  */
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -126,7 +101,7 @@ export function getAccessToken(): string | null {
 }
 
 /**
- * Get refresh token from localStorage
+ * Lấy refresh token từ localStorage.
  */
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -134,7 +109,7 @@ export function getRefreshToken(): string | null {
 }
 
 /**
- * Store auth tokens to localStorage
+ * Lưu token vào localStorage.
  */
 export function setTokens(tokens: AuthTokens): void {
   if (typeof window === "undefined") return;
@@ -143,7 +118,7 @@ export function setTokens(tokens: AuthTokens): void {
 }
 
 /**
- * Clear auth tokens from localStorage
+ * Xoá token khỏi localStorage.
  */
 export function clearTokens(): void {
   if (typeof window === "undefined") return;
@@ -175,7 +150,7 @@ export function getSessionRole(): string | undefined {
   return getCachedUser()?.role;
 }
 
-// The access token carries only `sub`, so the posting comes from the cached profile alone - see `normalizeSessionUser`.
+// Access token chỉ mang `sub`, nên posting lấy từ cached profile; xem `normalizeSessionUser`.
 export function getSessionBranchId(): string | undefined {
   return getCachedUser()?.branchId;
 }
@@ -214,7 +189,7 @@ export function mergeUserWithJwtPayload(user: User): User {
 }
 
 /**
- * Get current user from localStorage (if cached)
+ * Lấy user đã cache trong localStorage (nếu có).
  */
 export function getCachedUser(): User | null {
   if (typeof window === "undefined") return null;
@@ -228,7 +203,7 @@ export function getCachedUser(): User | null {
 }
 
 /**
- * Cache user to localStorage
+ * Cache user vào localStorage.
  */
 export function setCachedUser(user: User): void {
   if (typeof window === "undefined") return;
@@ -236,7 +211,7 @@ export function setCachedUser(user: User): void {
 }
 
 /**
- * Clear cached user from localStorage
+ * Xoá user đã cache khỏi localStorage.
  */
 export function clearCachedUser(): void {
   if (typeof window === "undefined") return;

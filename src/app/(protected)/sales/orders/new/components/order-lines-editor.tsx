@@ -22,20 +22,20 @@ import { CustomizationDialog } from "../../shared/customization-dialog";
 import { formatVND, lineTotal, stockLevel } from "../shared/order-totals";
 
 export interface OrderLineDraft {
-  /** Local key; the same SKU can be added twice with different agreed prices. */
+  /** Khoá cục bộ; cùng một SKU có thể thêm hai lần với giá thoả thuận khác nhau. */
   key: string;
-  /** The existing order line this draft edits (D-7); absent for a line added in the form. */
+  /** Dòng đơn hiện có mà nháp này sửa (D-7); không có với dòng thêm mới trong form. */
   id?: string;
   productItemId: string;
   name: string;
   sku: string;
   retailPrice: number;
-  /** On-shelf stock at the ship-from location when the line was added. */
+  /** Tồn trên kệ tại kho xuất lúc thêm dòng. */
   stock: number;
   quantity: number;
   unitPrice: number;
   discountAmount: number;
-  /** D-2: made to the customer's measure - the line gets a SKU of its own on create (A-4). */
+  /** D-2: hàng làm riêng theo số đo khách - dòng được cấp SKU riêng khi tạo (A-4). */
   customization?: OrderItemCustomization;
 }
 
@@ -50,15 +50,15 @@ interface SkuOption {
 interface OrderLinesEditorProps {
   lines: OrderLineDraft[];
   onChange: (lines: OrderLineDraft[]) => void;
-  /** Where the goods are expected to ship from; stock is read there. Empty until a branch is chosen. */
+  /** Kho dự kiến xuất hàng; tồn đọc tại đây. Rỗng cho tới khi chọn chi nhánh. */
   stockLocation: { id: string; type: LocationType } | null;
   error?: string;
-  /** Offer "Thông số riêng" per line - on create only (`PATCH /orders/:id` takes no specs). */
+  /** Hiện "Thông số riêng" cho từng dòng - chỉ khi tạo (`PATCH /orders/:id` không nhận thông số). */
   allowCustomization?: boolean;
 }
 
 
-/** Product search + the lines of the order. Stock is shown per line and never blocks (contract §2: an order is taken even when the goods are not on the shelf). */
+/** Tìm sản phẩm và các dòng đơn. Tồn hiển thị theo dòng và không bao giờ chặn (contract §2: vẫn nhận đơn khi hàng chưa có trên kệ). */
 export function OrderLinesEditor({
   lines,
   onChange,
@@ -114,7 +114,7 @@ export function OrderLinesEditor({
       stale = true;
       clearTimeout(timer);
     };
-    // `stockLocation` is covered by `searchKey`.
+    // `stockLocation` đã nằm trong `searchKey`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wanted, term, searchKey]);
 

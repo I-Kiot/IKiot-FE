@@ -22,10 +22,7 @@ export interface AsyncData<T> {
 }
 
 /**
- * `load` phải được `useCallback` với đúng các tham số của request: đổi tham số là đổi hàm, và
- * đổi hàm là tải lại. `reloadKey` buộc tải lại khi tham số không đổi (nút "Làm mới", sự kiện
- * realtime). Khi người dùng đổi kỳ / địa điểm nhanh hơn server trả lời, câu trả lời của lần tải
- * cũ bị bỏ qua nên không bao giờ ghi đè số liệu mới.
+ * `load` phải được `useCallback` đúng các tham số request (đổi tham số là đổi hàm, đổi hàm là tải lại). `reloadKey` buộc tải lại khi tham số không đổi. Câu trả lời của lần tải cũ bị bỏ để không ghi đè số liệu mới.
  */
 export function useAsyncData<T>(load: () => Promise<T>, reloadKey = 0): AsyncData<T> {
   const [loaded, setLoaded] = useState<Loaded<T> | null>(null);

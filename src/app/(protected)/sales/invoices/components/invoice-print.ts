@@ -7,9 +7,8 @@ const escapeHtml = (value: string | null | undefined) =>
   (value ?? "").replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
 /**
- * Opens the browser's print dialog for one issued invoice. Built from the row already on screen, so
- * printing costs no request. Every string is escaped: customer and product names are typed by users
- * and this is document.write into a window on our own origin.
+ * Mở hộp thoại in của trình duyệt cho một hoá đơn đã phát hành, dựng từ dòng đang hiển thị nên không tốn request.
+ * Mọi chuỗi đều được escape: tên khách và sản phẩm do người dùng nhập, và nội dung được document.write vào cửa sổ cùng origin.
  */
 export function printInvoice(invoice: Invoice) {
   const win = window.open("", "_blank");
@@ -19,7 +18,7 @@ export function printInvoice(invoice: Invoice) {
   const number = invoice.invoiceNumber ?? invoice.invoiceCode;
   const rows = invoice.items
     .map((item, index) => {
-      // `discountAmount` on a mapped invoice line is per unit.
+      // `discountAmount` của dòng hoá đơn là theo đơn vị (mỗi cái).
       const total = item.quantity * (item.unitPrice - item.discountAmount);
       return `<tr>
         <td class="center">${index + 1}</td>

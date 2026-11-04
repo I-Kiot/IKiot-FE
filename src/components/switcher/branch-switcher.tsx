@@ -80,7 +80,7 @@ export function BranchSwitcher() {
     handleAssignManagerSuccess,
   } = useBranchSwitcher();
 
-  // D-4: the warehouses a location can name as its damaged-goods warehouse.
+  // D-4: kho mà một địa điểm có thể chọn làm kho hàng hỏng.
   const damagedWarehouses = dbWarehouses
     .filter((w) => w.isSellable === false)
     .map((w) => ({ id: w.id, name: w.name }));
@@ -102,7 +102,7 @@ export function BranchSwitcher() {
     );
   }
 
-  // Non-TENANT_OWNER user: Show static branch/warehouse info without dropdown trigger
+  // Không phải TENANT_OWNER: chỉ hiện tên chi nhánh/kho, không có dropdown
   if (role !== "TENANT_OWNER") {
     return (
       <SidebarMenu>
@@ -139,7 +139,7 @@ export function BranchSwitcher() {
     );
   }
 
-  // TENANT_OWNER user: Show full interactive dropdown switcher
+  // TENANT_OWNER: hiện dropdown chuyển đổi đầy đủ
   return (
     <>
       <SidebarMenu>
@@ -366,7 +366,6 @@ export function BranchSwitcher() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      {/* Dialog for creating a new branch */}
       <BranchFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
@@ -374,7 +373,6 @@ export function BranchSwitcher() {
         damagedWarehouses={damagedWarehouses}
       />
 
-      {/* Dialog for editing a branch */}
       <BranchFormDialog
         open={isEditBranchDialogOpen}
         onOpenChange={setIsEditBranchDialogOpen}
@@ -405,7 +403,6 @@ export function BranchSwitcher() {
         onSuccess={handleAssignManagerSuccess}
       />
 
-      {/* Dialog for creating a new warehouse */}
       <WarehouseFormDialog
         open={isWarehouseDialogOpen}
         onOpenChange={setIsWarehouseDialogOpen}
@@ -413,7 +410,6 @@ export function BranchSwitcher() {
         damagedWarehouses={damagedWarehouses}
       />
 
-      {/* Dialog for editing a warehouse */}
       <WarehouseFormDialog
         open={isEditWarehouseDialogOpen}
         onOpenChange={setIsEditWarehouseDialogOpen}
@@ -437,7 +433,6 @@ export function BranchSwitcher() {
         }
       />
 
-      {/* Confirmation Dialog for deletion */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

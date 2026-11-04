@@ -10,8 +10,8 @@ import { useSalesBranch } from "./_hooks/use-sales-branch";
 import { DirectSaleTab } from "./components/direct-sale-tab";
 
 /**
- * Bán tại quầy (POS), toàn màn hình. Đến 2026-10-16 trang này còn một tab "Tạo đơn hàng" (đơn tay) bên cạnh;
- * tách ra `/sales/orders/new` vì hai kiểu đơn đặt cạnh nhau dễ nhầm. Link cũ `?mode=order` chuyển sang đó.
+ * Bán tại quầy (POS), toàn màn hình. Tab đơn tay tách sang `/sales/orders/new` vì hai kiểu đơn cạnh nhau dễ nhầm;
+ * link cũ `?mode=order` chuyển sang đó.
  */
 function CheckOutContent() {
   const router = useRouter();

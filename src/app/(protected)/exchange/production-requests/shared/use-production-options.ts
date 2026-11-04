@@ -1,6 +1,3 @@
-// [Hook – Production] The pick-lists a production request is built from: the workshops it can be
-// sent to and the locations goods can be delivered to. Loaded once per dialog opening; products
-// are searched as typed (`MovementProductSearch`, catalogue scope).
 "use client";
 
 import * as React from "react";
@@ -30,7 +27,7 @@ export function useProductionOptions(): ProductionOptions {
   React.useEffect(() => {
     let stale = false;
     Promise.all([
-      // Only workshops take production requests (SUPPLIER_NOT_WORKSHOP otherwise).
+      // Chỉ xưởng mới nhận yêu cầu sản xuất (không thì BE trả SUPPLIER_NOT_WORKSHOP).
       supplierApi.getList({ type: "WORKSHOP", limit: 100 }),
       stockMovementApi.getLocationOptions(),
     ])

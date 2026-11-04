@@ -54,7 +54,6 @@ const FaqSection = () => {
   return (
     <section id="faq" className="py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div className="mx-auto max-w-2xl text-center mb-16">
           <Badge variant="outline" className="mb-4">Hỏi đáp</Badge>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
@@ -65,7 +64,6 @@ const FaqSection = () => {
           </p>
         </div>
 
-        {/* FAQ Content */}
         <div className="max-w-4xl mx-auto">
           <div className='bg-transparent'>
             <div className='p-0'>
@@ -87,7 +85,6 @@ const FaqSection = () => {
             </div>
           </div>
 
-          {/* Contact Support CTA */}
           <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">
               Bạn vẫn còn câu hỏi khác? Chúng tôi luôn sẵn sàng hỗ trợ.

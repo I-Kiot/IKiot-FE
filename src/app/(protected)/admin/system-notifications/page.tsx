@@ -31,7 +31,6 @@ export default function SystemNotificationsPage() {
   );
   const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
 
-  // Fetch initial notifications
   useEffect(() => {
     setLoading(true);
     listSystemNotifications()
@@ -43,7 +42,6 @@ export default function SystemNotificationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Listen to socket system-notification events in real-time
   useEffect(() => {
     try {
       const socket = getSocket();
@@ -64,7 +62,6 @@ export default function SystemNotificationsPage() {
     }
   }, []);
 
-  // Mark single system notification as read
   const handleMarkAsRead = async (id: string) => {
     try {
       const res = await markSystemNotificationAsRead(id);
@@ -105,7 +102,6 @@ export default function SystemNotificationsPage() {
     }
   };
 
-  // Mark all system notifications as read
   const handleMarkAllAsRead = async () => {
     try {
       const res = await markAllSystemNotificationsAsRead();
@@ -122,12 +118,11 @@ export default function SystemNotificationsPage() {
     }
   };
 
-  // Delete a single notification
   const handleDeleteOne = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const target = systemNotifications.find((n) => n.id === id);
     const wasUnread = target && !target.isRead;
-    // Optimistic
+    // Xoá khỏi UI trước (lạc quan), gọi API sau.
     setSystemNotifications((prev) => prev.filter((n) => n.id !== id));
     if (wasUnread) decrementUnreadCount();
     try {
@@ -140,7 +135,6 @@ export default function SystemNotificationsPage() {
     }
   };
 
-  // Delete all notifications
   const handleDeleteAll = async () => {
     const prevList = systemNotifications;
     setSystemNotifications([]);
@@ -266,7 +260,6 @@ export default function SystemNotificationsPage() {
                   <span className="text-[10px] text-muted-foreground font-mono whitespace-nowrap">
                     {new Date(notif.createdAt).toLocaleString("vi-VN")}
                   </span>
-                  {/* Delete button - visible on hover */}
                   <button
                     onClick={(e) => handleDeleteOne(e, notif.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity rounded p-1 hover:bg-destructive/10 hover:text-destructive cursor-pointer"

@@ -34,13 +34,11 @@ const navigationItems = [
   { name: "Trang chủ", href: "#hero" },
   { name: "Tính năng", href: "#features" },
   { name: "Giải pháp", href: "#features", hasMegaMenu: true },
-  // { name: "Đội ngũ", href: "#team" },
   { name: "Bảng giá", href: "#pricing" },
   { name: "Hỏi đáp", href: "#faq" },
   { name: "Liên hệ", href: "#contact" },
 ];
 
-// Solutions menu items for mobile
 const solutionsItems = [
   { title: "Tính năng cốt lõi" },
   { name: "Bán hàng & POS", href: "#features" },
@@ -58,7 +56,6 @@ const solutionsItems = [
   { name: "AI dự báo xu hướng", href: "#features" },
 ];
 
-// Smooth scroll function
 const smoothScrollTo = (targetId: string) => {
   if (targetId.startsWith("#")) {
     const element = document.querySelector(targetId);
@@ -80,7 +77,6 @@ export function LandingNavbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center space-x-2">
           <Link
             href="/landing"
@@ -91,7 +87,6 @@ export function LandingNavbar() {
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
         <NavigationMenu className="hidden xl:flex">
           <NavigationMenuList>
             {navigationItems.map((item) => (
@@ -125,7 +120,6 @@ export function LandingNavbar() {
           </NavigationMenuList>
         </NavigationMenu>
 
-        {/* Desktop CTA */}
         <div className="hidden xl:flex items-center space-x-2">
           <ModeToggle variant="ghost" />
           {user ? (
@@ -156,7 +150,6 @@ export function LandingNavbar() {
           )}
         </div>
 
-        {/* Mobile Menu */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild className="xl:hidden">
             <Button variant="ghost" size="icon" className="cursor-pointer">
@@ -169,7 +162,6 @@ export function LandingNavbar() {
             className="w-full sm:w-[400px] p-0 gap-0 [&>button]:hidden overflow-hidden flex flex-col"
           >
             <div className="flex flex-col h-full">
-              {/* Header */}
               <SheetHeader className="space-y-0 p-4 pb-2 border-b">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-primary/10 rounded-lg">
@@ -202,7 +194,6 @@ export function LandingNavbar() {
                 </div>
               </SheetHeader>
 
-              {/* Navigation Links */}
               <div className="flex-1 overflow-y-auto">
                 <nav className="p-6 space-y-1">
                   {navigationItems.map((item) => (
@@ -269,9 +260,7 @@ export function LandingNavbar() {
                 </nav>
               </div>
 
-              {/* Footer Actions */}
               <div className="border-t p-6 space-y-4">
-                {/* Primary Actions */}
                 {user ? (
                   <div className="space-y-3">
                     <p className="truncate text-sm text-muted-foreground">

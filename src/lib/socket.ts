@@ -5,17 +5,10 @@ import { getAccessToken } from '@/lib/auth';
 let socket: Socket | null = null;
 
 /**
- * The one Socket.IO connection.
+ * Kết nối Socket.IO duy nhất. Handshake **phải** mang access token: backend verify JWT và disconnect nếu thiếu,
+ * khi đó realtime (thông báo, xác nhận thanh toán) ngừng âm thầm.
  *
- * **The handshake must carry the access token.** The rewritten backend verifies the JWT in
- * `handleConnection` and calls `disconnect(true)` when there isn't one - the old Express
- * server accepted anonymous sockets, so this file connected without credentials and every
- * realtime feature (payment confirmation at the till, plan activation, the notification
- * inbox) silently stopped working against the new API.
- *
- * `auth` is passed as a **function**, not an object: socket.io re-invokes it on every
- * reconnect, so a socket that drops after the access token has rotated comes back with the
- * current one instead of the token it happened to be created with.
+ * `auth` là hàm để socket.io gọi lại mỗi lần reconnect, lấy đúng token mới sau khi token đã xoay vòng.
  */
 export function getSocket(): Socket {
   if (!socket) {
@@ -29,11 +22,8 @@ export function getSocket(): Socket {
 }
 
 /**
- * Drops the connection so the next `getSocket()` authenticates afresh.
- *
- * Rooms are joined server-side from the verified token, so a socket outlives the session
- * that opened it: without this, signing out and back in as somebody else keeps delivering
- * the previous account's notifications over the old connection.
+ * Ngắt kết nối để `getSocket()` kế tiếp xác thực lại. Room được join phía server theo token đã verify,
+ * nên socket sống lâu hơn session mở nó; không ngắt thì đăng nhập user khác vẫn nhận thông báo của user trước.
  */
 export function resetSocket(): void {
   socket?.disconnect();

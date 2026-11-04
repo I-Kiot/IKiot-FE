@@ -62,7 +62,7 @@ interface BranchFormDialogProps {
   onSubmit: (values: BranchFormValues) => void
   defaultValues?: Partial<BranchFormValues>
   title?: string
-  /** Non-sellable warehouses to pick a default damaged-goods warehouse from. */
+  /** Các kho không bán được, để chọn kho hàng hỏng mặc định. */
   damagedWarehouses?: DamagedLocationOption[]
 }
 

@@ -1,13 +1,5 @@
 /**
- * Who may do what with the shift roster.
- *
- * These were sets of role names mirroring the old backend's `permissions.json`. Their two
- * manager values no longer exist, so every gate here had collapsed to "TENANT_OWNER only" -
- * hiding rostering from the very staff the shop had granted it to. Each one now asks the
- * permission catalogue through `allows()`.
- *
- * The location scope below moved the same way: which slice of the roster you see follows
- * from **where you are posted**, not from a role name.
+ * Ai được làm gì với lịch làm. Mỗi cổng hỏi quyền qua `allows()`, không theo tên role. Phạm vi xem lịch theo nơi làm việc (chi nhánh/kho) của tài khoản.
  */
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionBranchId, getSessionWarehouseId } from "@/lib/auth";
@@ -30,15 +22,14 @@ export function canUpdateSchedule(userRole?: string | null): boolean {
   return allows(userRole, 'schedules', 'update');
 }
 
-/** BM không được sửa/xóa ca được gán cho chính mình. */
+/** Không được sửa/xóa ca mà chính mình được gán. */
 export function isBranchManagerOwnScheduleAssignee(
   _userRole?: string | null,
   sessionUserId?: string | null,
   assigneeUserId?: string | null,
 ): boolean {
   if (!sessionUserId || !assigneeUserId) return false;
-  // Anybody who manages the roster is barred from editing the shift they are on -
-  // the rule was never about the role, only about being both parties at once.
+  // Không tự sửa ca của chính mình, bất kể role: đây là việc hai bên là cùng một người.
   return String(sessionUserId) === String(assigneeUserId);
 }
 
@@ -84,7 +75,7 @@ export function canManageShiftTemplates(userRole?: string | null): boolean {
 }
 
 export function canFilterScheduleByStaff(userRole?: string | null): boolean {
-  // Anyone who can see more than their own shifts can filter within them.
+  // Ai xem được nhiều hơn ca của mình thì được lọc theo nhân viên.
   return allows(userRole, 'schedules', 'read_all') ||
     allows(userRole, 'schedules', 'readBR') ||
     allows(userRole, 'schedules', 'readWH');
@@ -94,7 +85,7 @@ export function getScheduleListScope(
   userRole?: string | null,
 ): ScheduleListScope | null {
   if (!userRole) return null;
-  // Where you are posted decides the slice - an owner is posted nowhere and sees everything.
+  // Nơi làm việc quyết định phạm vi; chủ shop không gắn với nơi nào nên thấy tất cả.
   if (getSessionBranchId()) return "branch";
   if (getSessionWarehouseId()) return "warehouse";
   if (userRole === "TENANT_OWNER" || userRole === "ADMIN") return "all";

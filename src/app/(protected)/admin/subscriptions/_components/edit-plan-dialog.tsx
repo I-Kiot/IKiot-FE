@@ -42,7 +42,7 @@ type EditPlanDialogProps = {
   onSubmit: (id: string, payload: UpdatePlanPayload) => Promise<boolean>;
 };
 
-// number input onChange helper: empty string -> NaN so zod flags "required"
+// Ô số: chuỗi rỗng -> NaN để zod báo lỗi "bắt buộc".
 const numberChange =
   (onChange: (v: number) => void) =>
   (e: React.ChangeEvent<HTMLInputElement>) =>

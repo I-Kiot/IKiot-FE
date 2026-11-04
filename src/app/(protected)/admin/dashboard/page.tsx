@@ -19,24 +19,19 @@ export default function Dashboard2() {
           actions={<QuickActions />}
         />
 
-        {/* Main Dashboard Grid */}
         <div className="@container/main space-y-6">
-          {/* Top Row - Key Metrics */}
           <MetricsOverview />
 
-          {/* Second Row - Charts in 6-6 columns */}
           <div className="grid gap-6 grid-cols-1 @5xl:grid-cols-2">
             <SalesChart />
             <RevenueBreakdown />
           </div>
 
-          {/* Third Row - Two Column Layout */}
           <div className="grid gap-6 grid-cols-1 @5xl:grid-cols-2">
             <RecentTransactions />
             <TopTenants />
           </div>
 
-          {/* Fourth Row - Tenant growth & subscription status */}
           <TenantInsights />
         </div>
       </div>

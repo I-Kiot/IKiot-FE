@@ -22,15 +22,15 @@ import { cn } from "@/lib/utils";
 import type { OrderItemCustomization, OrderItemSpec } from "@/types/order-flow";
 
 type Props = {
-  /** What the line is, for the title. */
+  /** Dòng là gì, dùng cho tiêu đề. */
   label: string;
-  /** The SKU the customer picked - its attributes are the starting point. */
+  /** SKU khách đã chọn - thuộc tính của nó là điểm bắt đầu. */
   productItemId: string;
   sku?: string | null;
   value: OrderItemCustomization | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** `undefined` = the line is no longer made to measure. */
+  /** `undefined` = dòng không còn làm riêng nữa. */
   onSave: (value: OrderItemCustomization | undefined) => void;
 };
 
@@ -75,10 +75,9 @@ function legacySpecs(c: OrderItemCustomization | undefined): SpecDraft[] {
 }
 
 /**
- * D-2 (làm lại 2026-10-16): thông số khách đặt riêng cho một dòng, dựa trên **thuộc tính của sản phẩm** - mỗi thuộc
- * tính điền sẵn giá trị của SKU khách chọn, đổi ô nào thì ô đó là yêu cầu riêng (lưu kèm giá trị gốc). Thuộc tính
- * sản phẩm chưa có thì thêm ngay ở đây. Kèm thông số tự do, ghi chú và ảnh bản thiết kế cho xưởng. Lưu là dòng
- * thành hàng làm riêng: hệ thống tạo mã hàng riêng mang đúng các giá trị này (A-4).
+ * D-2 (làm lại 2026-10-16): thông số khách đặt riêng cho một dòng, dựa trên **thuộc tính của sản phẩm**. Mỗi thuộc tính điền sẵn giá trị SKU khách chọn;
+ * đổi ô nào thì ô đó là yêu cầu riêng (lưu kèm giá trị gốc). Thiếu thuộc tính thì thêm ngay tại đây. Có thêm thông số tự do, ghi chú và ảnh cho xưởng.
+ * Lưu thì dòng thành hàng làm riêng; hệ thống tạo mã riêng mang đúng các giá trị này (A-4).
  */
 export function CustomizationDialog({ label, productItemId, sku, value, open, onOpenChange, onSave }: Props) {
   const [productId, setProductId] = React.useState<string | null>(null);

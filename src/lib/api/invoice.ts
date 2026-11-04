@@ -1,4 +1,4 @@
-// [API – Invoice] Read-only: invoices are produced by the order lifecycle, never created from here.
+// Chỉ đọc: hóa đơn sinh ra từ vòng đời đơn hàng, không tạo từ đây.
 import client from "@/lib/api/client";
 import { useAuthStore } from "@/store/auth-store";
 import { branchIdOf } from "@/lib/location-key";
@@ -7,7 +7,7 @@ import type { Paginated } from "@/types/order-flow";
 
 export const invoiceApi = {
   getList: async (params?: InvoiceQuery): Promise<Paginated<InvoiceDto>> => {
-    // Same scoping the order list uses: the sidebar's branch narrows it, "Tổng" does not.
+    // Cùng phạm vi như danh sách đơn: chi nhánh ở sidebar thu hẹp, còn "Tổng" thì không.
     const branchId = branchIdOf(useAuthStore.getState().locationKey);
     const res = await client.get<Paginated<InvoiceDto>>("/invoices", {
       params: { ...(branchId ? { branchId } : {}), ...params },

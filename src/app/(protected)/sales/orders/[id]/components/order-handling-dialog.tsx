@@ -43,8 +43,8 @@ interface AssigneeOption {
 }
 
 /**
- * D-7: hand the order to someone else, or re-tag its priority, without opening the edit form
- * (`PATCH /orders/:id/assignee`, `/priority`, A-8). Allowed until the order ships - a packed order too.
+ * D-7: giao đơn cho người khác hoặc đổi độ ưu tiên mà không mở form sửa (`PATCH /orders/:id/assignee`, `/priority`, A-8).
+ * Được phép tới khi đơn giao đi, kể cả đơn đã đóng gói.
  */
 export function OrderHandlingDialog({ order, open, onOpenChange, onSaved }: Props) {
   const [assignees, setAssignees] = React.useState<AssigneeOption[] | null>(null);
@@ -61,7 +61,7 @@ export function OrderHandlingDialog({ order, open, onOpenChange, onSaved }: Prop
       .then((staff) => {
         if (stale) return;
         const options = staff.map((s) => ({ id: s.id, name: s.fullName || s.phoneNumber }));
-        // A shop owner is not in the staff list but can be in charge; so is whoever is in charge now.
+        // Chủ shop không có trong danh sách nhân viên nhưng vẫn có thể phụ trách; người đang phụ trách hiện tại cũng luôn có trong danh sách.
         const extra = [
           me?.id ? { id: me.id, name: `${me.fullName || "Tôi"} (tôi)` } : null,
           order.assignee ? { id: order.assignee.id, name: order.assignee.name } : null,

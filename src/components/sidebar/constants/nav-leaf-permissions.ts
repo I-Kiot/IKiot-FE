@@ -1,22 +1,11 @@
 /**
- * Which top-level (no submenu) entries to draw.
- *
- * `sidebarRoleConfig` lists what an account kind *can* reach and the filters decide what
- * this particular role may - but until now only submenus were filtered, so a leaf could
- * only be all-or-nothing. That is why "Tổng quan" and "Sổ thu chi" were left
- * out of the `STAFF` block entirely: the same mistake `giaoDich` carried until 2026-09-09,
- * an entry no permission could ever reveal.
- *
- * Each key names the permission its screen is gated on server-side. A URL that is absent
- * from the map is drawn for everyone - the leaves that need no permission beyond an
- * account, and the ones nothing has been decided for yet.
+ * Các mục sidebar không có submenu cần vẽ. `sidebarRoleConfig` quy định loại tài khoản tới được đâu, còn bộ lọc quyền quyết định role này được thấy gì.
+ * Trước đây bộ lọc chỉ áp cho submenu nên leaf chỉ bật/tắt được toàn bộ. URL không có trong map thì ai cũng thấy.
  */
 import { allows } from "./role-permissions";
 
 const LEAF_NAV_PERMISSION: Record<string, readonly [string, string]> = {
-  // Both screens read the `/stats/*` aggregations - `reports:read` in `StatsController`.
-  // "Sổ thu chi" is one of them (`/stats/cashflow` + `/stats/cashflow/transactions`), not
-  // the `cash_flows` module, so `cash_flows:read` is the wrong gate for it.
+  // Hai màn đọc các tổng hợp `/stats/*` nên cần `reports:read` (StatsController), kể cả Sổ thu chi; không dùng `cash_flows:read`.
   "/dashboard": ["reports", "read"],
   "/reports": ["reports", "read"],
   "/cashflow": ["reports", "read"],

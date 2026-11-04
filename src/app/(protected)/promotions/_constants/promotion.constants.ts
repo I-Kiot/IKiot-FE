@@ -1,4 +1,3 @@
-// [Constants – Promotion]
 import type { Promotion, PromotionStatus, DiscountType, ApplicableRuleType } from '@/types/promotion'
 
 export type PromotionDisplayStatus = PromotionStatus | 'SCHEDULED' | 'EXPIRED'

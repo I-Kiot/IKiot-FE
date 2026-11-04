@@ -16,8 +16,7 @@ const TYPE_HINTS: Partial<Record<ProductType, string>> = {
 }
 
 /**
- * Loại sản phẩm - chỉ chọn lúc tạo, BE không cho đổi sau (sản phẩm đã có tồn không thể thành combo).
- * Mọi phiên bản theo loại này. Chỉ một lựa chọn (màn combo) thì không hiện ô chọn, chỉ hiện ghi chú.
+ * Loại sản phẩm: chỉ chọn lúc tạo, BE không cho đổi sau (hàng đã có tồn không thể thành combo). Chỉ một lựa chọn thì không hiện ô chọn.
  */
 export function ProductTypeSelect({
   value,

@@ -1,8 +1,6 @@
-// [Table – Orchestrator Fulfillment]
 "use client";
 
-// Bảng Đóng hàng bằng TanStack Table cho đồng bộ với các màn khác.
-// Phân trang ở server (`manualPagination`), cùng cách staffs-table.tsx làm.
+// Phân trang ở server (`manualPagination`), giống staffs-table.tsx.
 
 import { useMemo } from "react";
 import { flexRender, getCoreRowModel, type PaginationState, useReactTable } from "@tanstack/react-table";

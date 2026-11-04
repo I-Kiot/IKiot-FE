@@ -22,7 +22,6 @@ export function SidebarConfigProvider({ children }: { children: React.ReactNode 
     side: "left"
   })
 
-  // Load from local storage
   React.useEffect(() => {
     try {
       const saved = localStorage.getItem("sidebar-layout-config")

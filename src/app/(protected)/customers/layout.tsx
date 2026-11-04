@@ -1,4 +1,3 @@
-// [Layout – Customers]
 import { CustomersProvider } from './_context/customers-provider'
 import { CustomersDialogs } from './_components/dialogs/customers-dialogs'
 

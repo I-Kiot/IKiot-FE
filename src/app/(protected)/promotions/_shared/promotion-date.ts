@@ -1,9 +1,5 @@
-// [Utils – Promotion date/time]
-// Đồng bộ với BE WorkingScheduleDateUtils (VIETNAM_TIMEZONE_OFFSET_MINUTES) - múi giờ
-// Việt Nam cố định UTC+7 (không có DST). `<input type="date">` chỉ trả về ngày theo lịch
-// địa phương của trình duyệt (vd. "2026-07-20"), không có thông tin timezone - nếu convert
-// thẳng bằng `new Date(str).toISOString()` thì bị hiểu nhầm là UTC midnight, lệch tới 7 giờ
-// so với giờ VN thực tế (khuyến mãi "bắt đầu hôm nay" sẽ chưa active cho tới 7h sáng UTC).
+// Đồng bộ BE (VIETNAM_TIMEZONE_OFFSET_MINUTES): giờ VN cố định UTC+7. `<input type="date">` chỉ trả ngày lịch địa phương, không có timezone;
+// `new Date(str).toISOString()` sẽ hiểu là UTC midnight, lệch 7 giờ so với giờ VN.
 const VN_OFFSET_MS = 7 * 60 * 60 * 1000
 
 /** "YYYY-MM-DD" (ngày VN) -> ISO UTC tại 00:00:00.000 giờ VN của ngày đó. */

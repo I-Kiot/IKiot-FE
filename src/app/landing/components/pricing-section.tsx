@@ -48,14 +48,13 @@ export function PricingSection() {
     return `/sign-up?plan=${yearly ? `${plan.planCode}_YEARLY` : plan.planCode}`;
   };
 
-  // Pick the plan to show for a tier based on the monthly/yearly toggle.
+  // Chọn gói hiển thị cho mỗi tier theo công tắc tháng/năm.
   const selectedOf = (group: PlanTierGroup): Plan | undefined =>
     isYearly && group.yearly ? group.yearly : group.monthly;
 
   return (
     <section id="pricing" className="py-24 sm:py-32 bg-muted/70">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div className="mx-auto max-w-2xl text-center mb-12">
           <Badge variant="outline" className="mb-4">
             Gói dịch vụ iKiot
@@ -68,7 +67,6 @@ export function PricingSection() {
             lớn.
           </p>
 
-          {/* Billing Toggle */}
           {hasAnyYearly && (
             <>
               <div className="flex items-center justify-center mb-2">
@@ -103,7 +101,6 @@ export function PricingSection() {
           )}
         </div>
 
-        {/* Pricing Cards */}
         {loading ? (
           <div className="mx-auto flex max-w-6xl items-center justify-center rounded-xl border py-24 text-muted-foreground">
             <Loader2 className="mr-2 size-5 animate-spin" />
@@ -137,7 +134,6 @@ export function PricingSection() {
                           : ""
                       }`}
                     >
-                      {/* Plan Header */}
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-lg font-medium tracking-tight">
@@ -154,7 +150,6 @@ export function PricingSection() {
                         </div>
                       </div>
 
-                      {/* Pricing */}
                       <div>
                         <div className="text-4xl font-bold mb-1">
                           {formatVnd(plan.price)}
@@ -168,7 +163,6 @@ export function PricingSection() {
                         </div>
                       </div>
 
-                      {/* CTA Button */}
                       <div>
                         <Button
                           className={`w-full cursor-pointer my-2 ${
@@ -187,7 +181,6 @@ export function PricingSection() {
                         </Button>
                       </div>
 
-                      {/* Features */}
                       <div>
                         <ul role="list" className="space-y-3 text-sm">
                           {includesPrevious && (
@@ -219,7 +212,6 @@ export function PricingSection() {
           </div>
         )}
 
-        {/* Enterprise Note */}
         <div className="mt-16 text-center">
           <p className="text-muted-foreground">
             Bạn cần gói tính năng tùy chỉnh hoặc có câu hỏi thắc mắc?{" "}

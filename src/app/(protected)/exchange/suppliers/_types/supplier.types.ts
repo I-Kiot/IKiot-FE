@@ -1,4 +1,3 @@
-// [UI Types – Supplier]
 import { z } from 'zod'
 
 export type SuppliersDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'payDebt'

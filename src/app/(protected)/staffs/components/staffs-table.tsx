@@ -86,9 +86,7 @@ export function StaffsTable() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
-  // The global switcher wins over these manual filters (same precedence the
-  // provider applies when fetching) - lock them and reflect the active scope
-  // instead of showing a stale "Tất cả" while the list is actually filtered.
+  // Bộ lọc chi nhánh/kho toàn cục ưu tiên hơn bộ lọc thủ công (cùng thứ tự với provider khi tải): khóa bộ lọc và hiện đúng phạm vi đang áp dụng.
   const isLocationLocked = locationKey !== "all";
   const lockedLocation = parseLocationKey(locationKey);
   const lockedBranchId =

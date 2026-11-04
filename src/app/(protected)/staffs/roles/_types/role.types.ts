@@ -1,4 +1,3 @@
-// [Types – Roles feature]
 import { z } from 'zod'
 
 export type RolesDialogType = 'add' | 'edit' | 'delete'
@@ -26,12 +25,7 @@ export function splitPermissionKey(key: string) {
 }
 
 /**
- * Nhãn tiếng Việt cho từng hành động.
- *
- * Danh mục quyền của backend chỉ kèm nhãn cho *tài nguyên* (`label`), còn `action` là mã
- * thô. 29 mã dưới đây là toàn bộ những gì `prisma/seed.ts` phát ra; mã lạ rơi về chính nó
- * chứ không bị ẩn - một quyền không đọc được vẫn phải chọn được, còn hơn là biến mất khỏi
- * màn hình phân quyền.
+ * Nhãn tiếng Việt cho từng mã action (danh mục BE chỉ có nhãn cho tài nguyên). Mã lạ rơi về chính nó, không bị ẩn khỏi màn phân quyền.
  */
 export const ACTION_LABELS: Record<string, string> = {
   create: 'Tạo mới',

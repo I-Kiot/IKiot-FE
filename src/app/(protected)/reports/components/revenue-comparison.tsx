@@ -34,7 +34,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
   )
 }
 
-/** Revenue at the fixed calendar milestones, each against the same elapsed span of the period before - independent of the period picker. */
+/** Doanh thu tại các mốc lịch cố định, mỗi mốc so với cùng khoảng đã trôi của kỳ trước; không phụ thuộc bộ chọn kỳ. */
 export function RevenueComparison() {
   const { comparison, isLoading } = useDashboard()
 

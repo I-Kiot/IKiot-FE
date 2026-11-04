@@ -58,7 +58,6 @@ export function AvatarCropDialog({
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-6 py-4">
-          {/* Cropping Frame */}
           <div
             className="relative w-64 h-64 overflow-hidden rounded-lg bg-black/5 border cursor-move"
             onMouseDown={handleMouseDown}
@@ -85,11 +84,9 @@ export function AvatarCropDialog({
                 className="max-w-none max-h-none pointer-events-none absolute"
               />
             )}
-            {/* Circular overlay representing the cropped region */}
             <div className="absolute inset-0 rounded-full border-2 border-primary pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
           </div>
 
-          {/* Sliders */}
           <div className="w-full space-y-4">
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs text-muted-foreground">

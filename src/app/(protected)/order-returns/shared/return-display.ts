@@ -1,5 +1,4 @@
-// [Display – Order returns] Badges shared by the return list and its dialogs (D-6).
-// Labels come from `@/types/order-flow`; this file only decides how they look.
+// Badge dùng chung cho danh sách và dialog đơn trả (D-6). Nhãn lấy từ `@/types/order-flow`; file này chỉ quyết định màu sắc.
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
@@ -18,7 +17,7 @@ export interface BadgeDisplay {
   variant: BadgeVariant;
 }
 
-/** Waiting on staff = info, being checked = warning, done = success, ended = error. */
+/** Chờ nhân viên = info, đang kiểm = warning, xong = success, kết thúc lỗi = error. */
 const STATUS_VARIANT: Record<OrderReturnStatus, BadgeVariant> = {
   REQUESTED: "info",
   INSPECTING: "warning",
@@ -49,7 +48,7 @@ export function returnConditionDisplay(condition: ReturnCondition): BadgeDisplay
   };
 }
 
-/** A return still open: it can be received, inspected or cancelled. */
+/** Đơn trả còn mở: có thể nhận hàng, kiểm hàng hoặc huỷ. */
 export function isOpenReturn(status: OrderReturnStatus): boolean {
   return status === "REQUESTED" || status === "INSPECTING";
 }

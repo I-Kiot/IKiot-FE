@@ -1,9 +1,7 @@
 import type { ProductType } from '@/types/product'
 
 /**
- * Một màn danh mục: `/products` (hàng hoá + dịch vụ) và `/combos` dùng chung toàn bộ component,
- * khác nhau ở đây. `productType` của sản phẩm cố định lúc tạo và quyết định nó nằm ở màn nào;
- * BE không có mặc định cho bộ lọc nên mỗi màn tự gửi `listTypes`.
+ * `/products` và `/combos` dùng chung component, chỉ khác cấu hình này. `productType` cố định lúc tạo; BE không có mặc định cho bộ lọc nên mỗi màn tự gửi `listTypes`.
  */
 export type ProductScreen = {
   /** Gửi lên GET /products. */

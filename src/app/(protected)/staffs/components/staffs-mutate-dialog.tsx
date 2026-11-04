@@ -159,10 +159,7 @@ function applyWorkplaceValidation(
   data: { branchId?: string; warehouseId?: string },
   ctx: z.RefinementCtx,
 ) {
-  // One rule for everybody now. The old backend had a per-role version of this - a
-  // BRANCH_MANAGER had to have a branch, a WAREHOUSE_MANAGER a warehouse - and those roles
-  // no longer exist; what survives is "exactly one workplace", which the backend enforces
-  // for every account.
+  // Một quy tắc cho mọi tài khoản: đúng một nơi làm việc (chi nhánh hoặc kho), backend cũng kiểm tra như vậy.
   const workplaceError = validateStaffWorkplace(
     data.branchId,
     data.warehouseId,
@@ -317,10 +314,7 @@ export function StaffsMutateDialog({
   const userRole = getSessionRole();
   const lockBranchOnCreate = shouldLockBranchOnCreate(getSessionBranchId());
   const canAssignWarehouse = canAssignWarehouseOnStaffForm(userRole);
-  // "Promoting to manager" was a role change. Running a location is an appointment now
-  // (`PATCH /branches/:id/manager`), so what is left here is simply whether this account
-  // may set somebody's role and workplace - which is `users:create` while hiring and
-  // `users:update` while editing, exactly as the two backend routes are gated.
+  // Quyền set role và nơi làm việc: users:create khi thêm, users:update khi sửa (khớp hai route backend). Bổ nhiệm quản lý là PATCH /branches/:id/manager, không phải đổi role.
   const canEditRoleWorkplace = canEditStaffRoleAndWorkplace(userRole, isEdit);
 
   const {
@@ -349,10 +343,7 @@ export function StaffsMutateDialog({
   const watchedLastName = form.watch("lastName");
   const avatarFullName = `${watchedLastName} ${watchedFirstName}`.trim();
 
-  // Every branch and warehouse is selectable. Until 2026-09-12 a location with *any*
-  // active employee was hidden here as "already has a manager" - a leftover of the fixed
-  // BRANCH_MANAGER role. Running a location is `Branch.managerId` now, appointed from the
-  // branch screen, so hiring somebody into a branch says nothing about who manages it.
+  // Mọi chi nhánh/kho đều chọn được. Người quản lý là Branch.managerId, bổ nhiệm ở màn chi nhánh, nên thêm nhân viên vào chi nhánh không nói gì về ai quản lý.
   const visibleBranchOptions = branchOptions;
   const visibleWarehouseOptions = warehouseOptions;
 
@@ -452,11 +443,7 @@ export function StaffsMutateDialog({
           accountNote: editData.accountNote?.trim() || "",
         };
 
-        // The "promote to manager" branches lived here, each one editing the person and
-        // then calling assignManager in the same submit. Promotion is not a thing a staff
-        // form does any more: the role is just another field, and appointing somebody to
-        // run a location is its own action (`PATCH /branches/:id/manager`), reachable from
-        // the branch and warehouse screens.
+        // Thăng quản lý không làm ở form nhân viên: bổ nhiệm người điều hành chi nhánh/kho là PATCH /branches/:id/manager, làm ở màn chi nhánh/kho.
         if (canEditRoleWorkplace) {
           profilePayload.roleId = editData.roleId;
           profilePayload.branchId = editData.branchId || null;
@@ -491,7 +478,7 @@ export function StaffsMutateDialog({
       }
       onOpenChange(false);
     } catch {
-      // Error toast handled in provider / above
+      // Provider đã toast lỗi.
     }
   }
 

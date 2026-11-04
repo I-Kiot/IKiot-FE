@@ -1,4 +1,4 @@
-/** Today as `YYYY-MM-DD` in the browser's calendar - what an `<input type="date">` holds and compares against. */
+/** Hôm nay dạng `YYYY-MM-DD` theo lịch trình duyệt, đúng giá trị mà `<input type="date">` giữ và so sánh. */
 export function todayIso(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -6,9 +6,8 @@ export function todayIso(): string {
 }
 
 /**
- * True when a `YYYY-MM-DD` value is before today. `min` on a date input only greys out the picker -
- * a typed or pasted date still goes through - so every promised-date field checks this as well.
- * ISO dates compare correctly as strings.
+ * True khi giá trị `YYYY-MM-DD` trước hôm nay. `min` của input date chỉ làm mờ picker, ngày gõ tay
+ * hoặc dán vẫn lọt, nên mọi field ngày hứa hẹn đều phải kiểm tra thêm. ISO so sánh đúng theo chuỗi.
  */
 export function isPastDate(value: string): boolean {
   return value.length >= 10 && value.slice(0, 10) < todayIso();

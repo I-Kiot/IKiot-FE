@@ -1,4 +1,3 @@
-// [Table – Expanded Panel Brand]
 'use client'
 
 import { useLayoutEffect, useRef, useState } from 'react'

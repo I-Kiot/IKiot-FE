@@ -1,4 +1,3 @@
-// [Utils – Dashboard Formatters]
 export const formatVND = (value: number): string =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
 
@@ -26,9 +25,8 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   SEPAY: 'SePay',
 }
 
-// Backend returns only buckets that have orders (sparse). Fill the full
-// fromDate..toDate range so the chart still shows every date/month mark
-// even when a bucket has no data.
+// Backend chỉ trả bucket có đơn (sparse). Điền đủ khoảng fromDate..toDate để biểu đồ vẫn có mốc
+// cho mọi ngày/tháng kể cả khi bucket không có dữ liệu.
 export function generateDateBuckets(fromDate: string, toDate: string, groupBy: 'day' | 'month'): string[] {
   const buckets: string[] = []
   const start = new Date(`${fromDate}T00:00:00Z`)
@@ -79,7 +77,7 @@ export const COMPARISON_LABELS: Record<string, { title: string; current: string;
   year: { title: 'Năm nay', current: 'Năm nay', previous: 'Năm ngoái' },
 }
 
-/** `2026-10-15` -> `15/10`; a month bucket `2026-10` -> `T10/2026`. */
+/** `2026-10-15` -> `15/10`; bucket tháng `2026-10` -> `T10/2026`. */
 export function formatBucket(bucket: string | undefined): string {
   if (!bucket) return ''
   if (/^\d{4}-\d{2}$/.test(bucket)) return `T${bucket.slice(5)}/${bucket.slice(0, 4)}`
@@ -91,7 +89,7 @@ export function formatDayVi(day: string): string {
   return `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`
 }
 
-/** An ISO instant as a local-calendar `dd/MM`. */
+/** Thời điểm ISO hiển thị dạng `dd/MM` theo múi giờ Việt Nam. */
 export function formatInstantShort(iso: string): string {
   const day = new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
   return `${day.slice(8, 10)}/${day.slice(5, 7)}`

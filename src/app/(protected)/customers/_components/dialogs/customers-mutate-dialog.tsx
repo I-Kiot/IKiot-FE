@@ -1,4 +1,3 @@
-// [Dialog – Mutate Customer]
 'use client'
 
 import { useEffect } from 'react'

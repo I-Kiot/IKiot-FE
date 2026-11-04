@@ -32,7 +32,7 @@ export function Chat() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
-  // 1. Role verification check
+  // 1. Kiểm tra quyền truy cập
   const isTenantOwner = canUseAIChat(user?.role)
 
   if (!isTenantOwner) {
@@ -58,22 +58,18 @@ export function Chat() {
   return (
     <TooltipProvider delayDuration={0}>
       <div className="h-full flex rounded-none border-y-0 border-x-0 overflow-hidden bg-background shadow-none relative">
-        {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
-
-        {/* Conversations Sidebar - Responsive & Animatable width */}
         <div className={cn(
           "bg-background flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden relative h-full",
           isSidebarCollapsed ? "w-0 border-r-0" : "w-[270px] border-r",
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
           "lg:relative fixed inset-y-0 left-0 z-50"
         )}>
-          {/* Mobile close button */}
           {isSidebarOpen && (
             <button
               onClick={() => setIsSidebarOpen(false)}
@@ -96,11 +92,9 @@ export function Chat() {
             isSending={isSending}
           />
         </div>
-
-        {/* Chat Panel - Flexible Width */}
         <div className="flex-1 flex flex-col min-w-0 bg-background/50 backdrop-blur-md relative h-full">
           
-          {/* Sidebar Toggle Button for Desktop - Placed next to sidebar header in chat area */}
+          {/* Nút bật/tắt sidebar trên desktop, đặt cạnh header sidebar trong vùng chat */}
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="hidden lg:flex absolute left-4 top-4 z-30 h-9 w-9 rounded-xl border bg-background hover:bg-muted shadow-sm items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95"
@@ -112,11 +106,9 @@ export function Chat() {
               <ChevronLeft className="h-4.5 w-4.5 text-muted-foreground" />
             )}
           </button>
-
-          {/* Chat Header */}
           <ChatHeader onToggleSidebar={() => setIsSidebarOpen(true)} />
 
-          {/* Messages Container with strict height/scroll locks */}
+          {/* Khung tin nhắn có khoá chiều cao và scroll cứng */}
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-muted/5">
             {isLoadingMessages ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3">
@@ -135,8 +127,6 @@ export function Chat() {
                   onSelectSuggestion={handleSelectSuggestion}
                   onSendMessage={sendMessage}
                 />
-
-                {/* Message Input */}
                 <MessageInput
                   onSendMessage={sendMessage}
                   disabled={isSending || isLoadingMessages}

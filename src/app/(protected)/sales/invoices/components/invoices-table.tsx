@@ -64,14 +64,14 @@ function mapInvoice(dto: InvoiceDto): Invoice {
       productName: line.description,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
-      // The invoice stores each line net; what was knocked off is the difference.
+      // Hoá đơn lưu giá từng dòng đã trừ; phần giảm là chênh lệch so với giá gốc.
       discountAmount: line.quantity > 0 ? Math.max(0, (gross - Math.abs(line.amount)) / line.quantity) : 0,
     };
   });
 
   return {
     id: dto.id,
-    // PENDING invoices have no number yet; the order's code stands in so the row is still findable.
+    // Hoá đơn PENDING chưa có số; tạm dùng mã đơn để dòng vẫn tìm được.
     invoiceCode: dto.invoiceNumber ?? dto.order.code,
     invoiceNumber: dto.invoiceNumber,
     type: dto.type,
@@ -106,7 +106,7 @@ function mapInvoice(dto: InvoiceDto): Invoice {
 
 export function InvoicesTable() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  // Filtered on the server, like the order list: the 100-row window then holds only what is asked for.
+  // Lọc ở server như danh sách đơn, để 100 dòng đầu chỉ chứa dữ liệu được hỏi.
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentType | "all">("all");
   const [loading, setLoading] = useState(true);
   const locationKey = useAuthStore((state) => state.locationKey);
@@ -192,8 +192,7 @@ export function InvoicesTable() {
     },
   });
 
-  // An invoice named by `?id=` or by the global search's "open-item" event: drop a fulfilment filter
-  // that would hide it, then expand its row once it has loaded.
+  // Mở theo `?id=` hoặc sự kiện tìm kiếm toàn cục: bỏ bộ lọc fulfilment đang che hoá đơn, rồi mở dòng sau khi đã tải.
   const [openId, setOpenId] = useState<string | null>(null);
 
   const requestOpen = (invoiceId: string) => {
@@ -231,7 +230,7 @@ export function InvoicesTable() {
     if (index === -1) return;
     const pageSize = table.getState().pagination.pageSize || 10;
     table.setPageIndex(Math.floor(index / pageSize));
-    // Wait for pagination re-render before setting expanded state
+    // Chờ phân trang render xong rồi mới set trạng thái mở rộng.
     const t = setTimeout(() => {
       setExpanded({ [openId]: true });
       setOpenId(null);
@@ -264,9 +263,7 @@ export function InvoicesTable() {
 
   return (
     <div className="space-y-4">
-      {/* Search + Filters + Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Left Side: Filter Options */}
         <div className="flex flex-wrap items-center gap-2 flex-1">
           <div className="relative w-full md:max-w-sm">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -330,7 +327,7 @@ export function InvoicesTable() {
             value={fulfillmentFilter}
             onValueChange={(value) => {
               setFulfillmentFilter(value as FulfillmentType | "all");
-              // The selection belongs to rows that are about to be replaced.
+              // Lựa chọn thuộc các dòng sắp bị thay bằng dữ liệu mới.
               setRowSelection({});
               setExpanded({});
             }}
@@ -349,7 +346,6 @@ export function InvoicesTable() {
           </Select>
         </div>
 
-        {/* Right Side: Bulk Actions & Hide/Show Columns */}
         <div className="flex items-center gap-2 self-end md:self-auto">
           {hasSelected && (
             <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-md p-1 animate-in slide-in-from-right-4 duration-200">
@@ -413,7 +409,6 @@ export function InvoicesTable() {
         </div>
       </div>
 
-      {/* Table grid */}
       <div className="rounded-md border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/50">
@@ -440,7 +435,6 @@ export function InvoicesTable() {
             {!loading && (
               table.getRowModel().rows.map((row, index, rows) => (
                 <Fragment key={row.id}>
-                  {/* Master Data Row */}
                   <TableRow
                     data-state={row.getIsSelected() ? "selected" : undefined}
                     onClick={() => row.toggleExpanded()}
@@ -468,7 +462,7 @@ export function InvoicesTable() {
                     ))}
                   </TableRow>
 
-                  {/* Expansion Detail Row (CSS Grid Smooth Height Animation) */}
+                  {/* Dùng CSS grid để chiều cao chuyển động mượt khi mở rộng. */}
                   <TableRow
                     className={cn(
                       "hover:bg-transparent transition-colors border-transparent",

@@ -16,13 +16,12 @@ import { TOKEN_EXPIRED_CODES, messageForCode } from "@/lib/api/error-codes";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3800";
 
-// Create axios instance
 const client: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Send cookies with requests
+  withCredentials: true,
 });
 
 let isRefreshing = false;
@@ -41,9 +40,7 @@ const processQueue = (
     } else if (token) {
       prom.onSuccess(token);
     } else {
-      // Neither branch used to fire when the refresh came back without a usable token,
-      // and a queued request that is never resolved *or* rejected is a spinner that
-      // never stops. Failing them is the honest outcome: the refresh did not work.
+      // Refresh không ra token dùng được thì phải reject các request đang chờ; để treo thì spinner quay mãi.
       prom.onFailed(
         new AxiosError("Token refresh produced no access token"),
       );
@@ -53,9 +50,6 @@ const processQueue = (
   failedQueue = [];
 };
 
-/**
- * Request interceptor - Add access token to headers
- */
 client.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken();
@@ -68,9 +62,6 @@ client.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-/**
- * Response interceptor - Handle 401 and auto-refresh token
- */
 client.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
@@ -78,10 +69,8 @@ client.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Don't refresh for auth endpoints (login, register, refresh, etc.).
-    // These 401s mean "bad credentials / email not registered", not "token
-    // expired" - refreshing then redirecting would just bounce the user back
-    // to /sign-in and swallow the real error message.
+    // Không refresh với endpoint auth: 401 ở đó là sai thông tin / email chưa đăng ký, không phải token hết hạn.
+    // Refresh rồi redirect sẽ đẩy người dùng về /sign-in và nuốt mất lỗi thật.
     const isAuthEndpoint =
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/firebase-login") ||
@@ -100,13 +89,8 @@ client.interceptors.response.use(
       | { code?: string; message?: string }
       | undefined;
 
-    // Dịch `message` sang tiếng Việt ngay tại biên, theo `code`.
-    //
-    // Backend trả `message` bằng **tiếng Anh** (nó là câu cho log/Swagger), còn `code` mới
-    // là thứ ổn định. Khoảng 30 file trong app đọc thẳng `error.response.data.message` rồi
-    // đổ lên toast; sửa từng chỗ là 30 lần lặp lại cùng một việc, nên chỗ dịch đặt ở đây -
-    // một biên duy nhất, đúng nơi response đi vào app. Mã không có trong bảng thì giữ
-    // nguyên message của backend.
+    // Dịch `message` sang tiếng Việt tại biên theo `code`: backend trả `message` tiếng Anh, còn `code` mới ổn định.
+    // Mã không có trong bảng thì giữ nguyên message của backend.
     const localized = messageForCode(errorBody?.code);
     if (localized && errorBody) errorBody.message = localized;
     const isTokenExpired =
@@ -146,16 +130,11 @@ client.interceptors.response.use(
           { refreshToken: refreshTokenFromStorage },
           { withCredentials: true },
         );
-        // The backend wraps every body as `{ success, data }`, so the tokens are one
-        // level down. Destructuring `response.data` gave `undefined` for both: the string
-        // "undefined" went into localStorage, the queued requests below resolved with
-        // neither a token nor an error and hung forever, and the presented refresh token
-        // had already been rotated away server-side - so the session was gone every 15
-        // minutes. `loginUser` in ../auth.ts handles both shapes; this did not.
+        // Backend bọc body trong `{ success, data }`, token nằm lớp dưới. Đọc thẳng `response.data` từng làm
+        // token thành `undefined` và phiên mất sau 15 phút. Xử lý cả hai dạng như `loginUser` trong ../auth.ts.
         const body = response.data?.data ?? response.data;
         const accessToken: string | undefined = body?.accessToken;
-        // Rotation always issues a new one; keeping the presented token as the fallback
-        // means a backend that stopped rotating would degrade rather than sign everyone out.
+        // Backend rotate thì luôn cấp refresh token mới; giữ token cũ làm dự phòng để nếu backend ngừng rotate chỉ xuống cấp, không đăng xuất mọi người.
         const refreshToken: string = body?.refreshToken ?? refreshTokenFromStorage;
         if (!accessToken) {
           throw new Error("Refresh response carried no access token");
@@ -172,7 +151,6 @@ client.interceptors.response.use(
         clearCachedUser();
         resetSocket();
 
-        // Redirect to login
         if (typeof window !== "undefined") {
           window.location.href = "/sign-in";
         }

@@ -34,11 +34,11 @@ interface Product {
 
 interface ProductSearchProps {
   onProductSelect: (product: Product) => void;
-  /** See `useCheckoutProducts`: undefined keeps the sale's own branch. */
+  /** Xem `useCheckoutProducts`: undefined giữ chi nhánh của đơn bán. */
   location?: CheckoutLocation | null;
-  /** Manual orders are taken even when the goods are not on the shelf. */
+  /** Đơn tay vẫn nhận hàng dù không có trên kệ. */
   allowOutOfStock?: boolean;
-  /** Hide the "Mua nhanh" chips. */
+  /** Ẩn các chip "Mua nhanh". */
   hideQuickItems?: boolean;
 }
 
@@ -47,7 +47,7 @@ const formatVND = (value: number) =>
     value,
   );
 
-/** The branch a sale is scoped to: the account's own posting, else the sidebar switcher. */
+/** Chi nhánh phạm vi bán: chi nhánh gán cho tài khoản, nếu không thì theo switcher sidebar. */
 function resolveBranchId(): string {
   const cachedUser = getCachedUser() as { branchId?: string } | null;
   if (cachedUser?.branchId) return cachedUser.branchId;
@@ -74,11 +74,9 @@ export function ProductSearch({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [quickItems, setQuickItems] = useState<Product[]>([]);
 
-  // Fetch search results from the custom API hook
   const { products, loading } = useCheckoutProducts(query, location);
   const locationKey = useAuthStore((state) => state.locationKey);
-  // Whether `stock` is one branch's figure (a branch is selected / the account is posted
-  // to one) or already the whole shop's - decides how the stock badge is worded.
+  // `stock` là tồn của một chi nhánh hay của toàn shop; quyết định cách ghi nhãn tồn trên badge.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const hasBranchScope = useMemo(
     () => (location !== undefined ? Boolean(location) : Boolean(resolveBranchId())),
@@ -86,7 +84,6 @@ export function ProductSearch({
     [locationKey, location?.id],
   );
 
-  // Fetch initial active products for quick purchase on mount or location changes
   useEffect(() => {
     if (hideQuickItems) return;
     const branchId = resolveBranchId();
@@ -135,7 +132,6 @@ export function ProductSearch({
       });
   }, [locationKey, location?.id, location?.type, hideQuickItems]);
 
-  // Map API products response to flat list of variants (ProductItems)
   const results = useMemo(() => {
     return products.flatMap((product) =>
       (product.items || []).map((item) => ({
@@ -163,7 +159,6 @@ export function ProductSearch({
     );
   }, [products]);
 
-  // Focus search input on F2
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "F2") {
@@ -175,7 +170,6 @@ export function ProductSearch({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Automatically open dropdown when query starts, and reset index
   useEffect(() => {
     if (query.trim()) {
       setIsOpen(true);
@@ -185,7 +179,7 @@ export function ProductSearch({
     }
   }, [query]);
 
-  // Barcode auto-add feature: if there's an exact barcode/code match, select it immediately
+  // Quét mã vạch: nếu khớp đúng barcode/mã thì thêm ngay, không cần chọn.
   useEffect(() => {
     if (!query.trim()) return;
 
@@ -204,7 +198,6 @@ export function ProductSearch({
     }
   }, [results, query, onProductSelect]);
 
-  // Click outside listener to close dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -220,7 +213,6 @@ export function ProductSearch({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Keyboard navigation inside dropdown
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen) return;
 
@@ -244,7 +236,7 @@ export function ProductSearch({
 
   const handleSelect = (product: Product) => {
     if (product.status !== "ACTIVE") {
-      return; // Do not add inactive products
+      return;
     }
     // Quầy chỉ bán hàng có trên kệ (combo: đủ cả bộ). Click, Enter và nút "Mua nhanh" đều đi qua đây;
     // trước đây chỉ làm mờ dòng nên bấm vào vẫn thêm được và đến lúc thanh toán BE mới từ chối.
@@ -259,7 +251,6 @@ export function ProductSearch({
 
   return (
     <div className="space-y-3 w-full">
-      {/* Search Input Box */}
       <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -272,7 +263,6 @@ export function ProductSearch({
           className="pl-9 h-12 w-full text-lg font-bold border-primary/20 focus-visible:ring-primary shadow-xs"
         />
 
-        {/* Floating Autocomplete Dropdown */}
         {isOpen && query.trim() !== "" && (
           <div
             ref={dropdownRef}
@@ -303,7 +293,6 @@ export function ProductSearch({
                         "hover:bg-muted/60",
                     )}
                   >
-                    {/* Thumbnail */}
                     <div className="size-10 rounded border overflow-hidden bg-muted flex items-center justify-center shrink-0">
                       {product.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -317,7 +306,6 @@ export function ProductSearch({
                       )}
                     </div>
 
-                    {/* Info details */}
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-foreground text-base truncate">
                         {product.name}
@@ -329,7 +317,6 @@ export function ProductSearch({
                       </div>
                     </div>
 
-                    {/* Price and Stock status */}
                     <div className="text-right shrink-0 space-y-1">
                       <div className="font-bold text-foreground text-lg">
                         {formatVND(product.retailPrice)}
@@ -372,7 +359,6 @@ export function ProductSearch({
         )}
       </div>
 
-      {/* Quick Click Items Grid */}
       {!hideQuickItems && quickItems.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold text-muted-foreground flex items-center gap-1">

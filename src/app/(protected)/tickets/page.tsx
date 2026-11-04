@@ -59,7 +59,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-// ─── Validation Schema ───────────────────────────────────────────────────────
 const ticketSchema = z.object({
   title: z.string().min(5, "Tiêu đề phải có ít nhất 5 ký tự"),
   description: z.string().min(10, "Mô tả phải có ít nhất 10 ký tự"),
@@ -67,7 +66,6 @@ const ticketSchema = z.object({
 });
 type TicketFormValues = z.infer<typeof ticketSchema>;
 
-// ─── Helper Functions ─────────────────────────────────────────────────────────
 const getPriorityLabel = (p: string) => {
   const map: Record<string, string> = {
     LOW: "Thấp",
@@ -125,7 +123,6 @@ const formatDate = (d: string) =>
     minute: "2-digit",
   });
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TenantTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,7 +173,6 @@ export default function TenantTicketsPage() {
     defaultValues: { title: "", description: "", priority: "MEDIUM" },
   });
 
-  // ── Fetch my tickets
   const fetchTickets = () => {
     setLoading(true);
     listMyTickets()
@@ -192,7 +188,6 @@ export default function TenantTicketsPage() {
     fetchTickets();
   }, []);
 
-  // ── Auto-open ticket from URL query parameter (ticketId or id)
   useEffect(() => {
     if (tickets.length > 0) {
       const searchParams = new URLSearchParams(window.location.search);
@@ -208,7 +203,7 @@ export default function TenantTicketsPage() {
     }
   }, [tickets]);
 
-  // ── Listen to custom 'open-item' event for instant opening when already on the same page
+  // Lắng nghe event 'open-item' để mở ticket ngay khi đã đứng ở trang này.
   useEffect(() => {
     const handleOpenItem = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -227,7 +222,6 @@ export default function TenantTicketsPage() {
     return () => window.removeEventListener("open-item", handleOpenItem);
   }, [tickets]);
 
-  // ── Real-time ticket updates
   useEffect(() => {
     try {
       const socket = getSocket();
@@ -260,7 +254,6 @@ export default function TenantTicketsPage() {
     }
   }, []);
 
-  // ── Auto-scroll chat
   useEffect(() => {
     if (selectedTicket) {
       const timer = setTimeout(() => {
@@ -270,7 +263,6 @@ export default function TenantTicketsPage() {
     }
   }, [selectedTicket, selectedTicket?.messages]);
 
-  // ── Submit new ticket
   const onSubmit = async (values: TicketFormValues) => {
     setSubmitting(true);
     try {
@@ -290,7 +282,6 @@ export default function TenantTicketsPage() {
     }
   };
 
-  // ── Send reply in thread
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTicket || !replyMessage.trim()) return;
@@ -318,7 +309,6 @@ export default function TenantTicketsPage() {
     }
   };
 
-  // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6">
       <PageHeader
@@ -332,7 +322,6 @@ export default function TenantTicketsPage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        {/* ── Create New Ticket Form ── */}
         <Card className="lg:col-span-2 shadow-xs">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
@@ -444,7 +433,6 @@ export default function TenantTicketsPage() {
           </CardContent>
         </Card>
 
-        {/* ── Ticket History List ── */}
         <div className="lg:col-span-3 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">
@@ -540,7 +528,6 @@ export default function TenantTicketsPage() {
         </div>
       </div>
 
-      {/* ── Ticket Thread Dialog ── */}
       <Dialog
         open={!!selectedTicket}
         onOpenChange={() => setSelectedTicket(null)}
@@ -548,7 +535,6 @@ export default function TenantTicketsPage() {
         <DialogContent className="sm:max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden border">
           {selectedTicket && (
             <>
-              {/* Dialog Header */}
               <DialogHeader className="p-6 pb-4 border-b flex flex-row items-start justify-between space-y-0 shrink-0">
                 <div className="space-y-1 pr-6">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -577,7 +563,6 @@ export default function TenantTicketsPage() {
                 </div>
               </DialogHeader>
 
-              {/* Chat Thread */}
               <ScrollArea className="flex-1 min-h-0 bg-background">
                 <div className="p-6 pr-10 space-y-4">
                   {selectedTicket.messages.length === 0 ? (
@@ -624,9 +609,7 @@ export default function TenantTicketsPage() {
                 </div>
               </ScrollArea>
 
-              {/* Reply Input Footer */}
               <div className="pb-6 pt-1 relative px-6 bg-background shrink-0 z-20">
-                {/* Top fade gradient overlay */}
                 <div className="absolute top-0 left-0 right-0 h-10 -translate-y-full bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
                 {selectedTicket.status === "CLOSED" ? (
                   <div className="flex items-center justify-center p-3 bg-muted/30 border border-dashed rounded-lg text-muted-foreground text-xs gap-1.5">
@@ -664,7 +647,6 @@ export default function TenantTicketsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Confirm Delete Dialog ── */}
       <Dialog open={!!ticketToDelete} onOpenChange={() => setTicketToDelete(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

@@ -1,4 +1,4 @@
-// [API – Shipment] Track C. Contract: Ikiot_BE/docs/api-contract-order-flow.md §4.
+// Track C. Hợp đồng: Ikiot_BE/docs/api-contract-order-flow.md §4.
 import client from '@/lib/api/client';
 import type {
   CreateShipmentPayload,

@@ -1,11 +1,4 @@
-/**
- * A role is a **row the shop owner created**, not one of three fixed values.
- *
- * The rewritten backend replaced `User.role` (BRANCH_MANAGER | WAREHOUSE_MANAGER | STAFF)
- * with `User.roleId` pointing at a tenant-owned `Role` the owner defines and grants
- * permissions to - see `GET /roles`. So there is no union to enumerate here any more, and
- * what a screen shows is the role's own name.
- */
+/** Vai trò là dòng do chủ cửa hàng tạo (`User.roleId` → `Role` của tenant, xem `GET /roles`), không phải union cố định; màn hình hiện đúng tên vai trò. */
 export interface StaffRoleRef {
   id: string;
   name: string;
@@ -103,7 +96,7 @@ export interface CreateStaffPayload {
 
 export interface UpdateStaffPayload {
   firstName?: string;
-  /** The tenant role this account holds - `PATCH /users/:id` accepts it. */
+  /** Vai trò của tenant mà tài khoản đang giữ; `PATCH /users/:id` nhận trường này. */
   roleId?: string;
   lastName?: string;
   email?: string;
@@ -127,7 +120,7 @@ export interface StaffManagerActionPayload {
 }
 
 export interface StaffRoleOption {
-  /** The role row id - what `POST /users` and `?roleId=` want. */
+  /** Id dòng `Role` - thứ `POST /users` và `?roleId=` cần. */
   value: string;
   label: string;
 }

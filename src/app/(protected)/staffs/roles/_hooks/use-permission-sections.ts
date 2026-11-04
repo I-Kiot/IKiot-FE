@@ -1,4 +1,3 @@
-// [Hook – Permission sections]
 import { useMemo } from 'react'
 import { Boxes } from 'lucide-react'
 import type { PermissionResourceGroup } from '@/types/role'
@@ -31,9 +30,7 @@ export function itemState(keys: string[], selected: Set<string>): CheckState {
 }
 
 /**
- * Ghép cấu hình nhóm với danh mục thật BE trả về: bỏ mã không còn trong danh mục (hoặc thuộc bộ quyền cơ
- * bản BE đã lọc), lấy mô tả BE làm `hint` khi có, gom mọi mã chưa được xếp vào nhóm "Khác", và tách riêng
- * các quyền chung (`ALWAYS_ON_PERMISSIONS`) có trong danh mục.
+ * Ghép cấu hình nhóm với danh mục BE trả về: bỏ mã không còn trong danh mục hoặc thuộc quyền nền BE đã lọc, lấy mô tả BE làm `hint`, gom mã chưa xếp nhóm vào "Khác", tách `ALWAYS_ON_PERMISSIONS`.
  */
 export function usePermissionSections(groups: PermissionResourceGroup[]) {
   return useMemo(() => {
@@ -116,9 +113,7 @@ export function usePermissionSections(groups: PermissionResourceGroup[]) {
 }
 
 /**
- * Bật / tắt một loạt ô. Bật: thêm mã của ô và `requires`. Tắt: chỉ gỡ những mã không còn ô nào khác (đang
- * bật, ngoài các ô vừa tắt) cần đến - một mã có thể thuộc nhiều ô ("Tạo đơn" và "Xem đơn của chi nhánh mình" cùng chứa
- * `orders:read`), tắt ô này không được làm hỏng ô kia.
+ * Bật/tắt một loạt ô. Bật: thêm mã của ô và `requires`. Tắt: chỉ gỡ mã không còn ô bật nào cần đến, vì một mã có thể thuộc nhiều ô (ví dụ `orders:read`).
  */
 export function toggleItems(
   selected: Set<string>,

@@ -1,4 +1,3 @@
-// [Dialogs – Roles orchestrator]
 'use client'
 
 import { useRoles } from '../../_context/roles-provider'

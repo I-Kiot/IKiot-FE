@@ -56,7 +56,7 @@ export function PromotionPickerDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>(selectedPromotionIds);
 
-  // Re-sync the working selection with the invoice's current one whenever the dialog opens
+  // Đồng bộ lại lựa chọn đang làm việc với hóa đơn mỗi khi dialog mở.
   useEffect(() => {
     if (open) setSelectedIds(selectedPromotionIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps

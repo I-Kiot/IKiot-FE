@@ -4,7 +4,7 @@ import type {
   StockMovementDetail,
 } from "@/types/stock-movement";
 
-/** Safe number parsing for spinner/keyboard number inputs. */
+/** Phân tích số an toàn cho ô nhập số kiểu spinner / bàn phím. */
 export function parseNumberInput(value: string, fallback = 0): number {
   if (value.trim() === "") return fallback;
   const parsed = Number(value);

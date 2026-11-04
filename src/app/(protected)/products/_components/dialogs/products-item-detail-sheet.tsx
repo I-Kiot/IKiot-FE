@@ -298,9 +298,7 @@ export function ProductsItemDetailSheet({
                   </span>
                 </InfoRow>
               </div>
-              {/* Khi đang xem theo một chi nhánh/kho, "Tổng tồn kho" ở trên là tồn TẠI ĐÓ và
-                  có thể là 0 vì nơi đó chưa nhập hàng về. Số toàn chuỗi trả lời câu khác:
-                  cửa hàng có mặt hàng này không, để còn đề nghị chuyển kho. */}
+              {/* Đang xem theo chi nhánh/kho: "Tổng tồn kho" là tồn tại đó (có thể 0). Số toàn chuỗi cho biết cửa hàng có mặt hàng không, để đề nghị chuyển kho. */}
               {item.stockAllLocations !== undefined &&
                 item.stockAllLocations !== (item.stock ?? 0) && (
                   <div className="px-4">

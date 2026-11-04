@@ -49,9 +49,9 @@ export function ContactSection() {
   });
 
   function onSubmit(values: z.infer<typeof contactFormSchema>) {
-    // Here you would typically send the form data to your backend
+    // Chỗ này sẽ gửi dữ liệu form lên backend.
     console.log(values);
-    // You could also show a success message or redirect
+    // Có thể hiện thông báo thành công hoặc chuyển trang sau khi gửi.
     form.reset();
   }
 
@@ -72,7 +72,6 @@ export function ContactSection() {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Contact Options */}
           <div className="space-y-6 order-2 lg:order-1">
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader>
@@ -144,7 +143,6 @@ export function ContactSection() {
             </Card>
           </div>
 
-          {/* Contact Form */}
           <div className="lg:col-span-2 order-1 lg:order-2">
             <Card>
               <CardHeader>

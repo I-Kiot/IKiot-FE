@@ -43,11 +43,7 @@ const GENDER_LABELS: Record<StaffGender, string> = {
 };
 
 /**
- * A role's display name.
- *
- * There used to be a fixed table of three here, because the old backend had exactly three
- * roles. Roles are rows the shop owner creates now, so the name comes with the data and
- * the only thing left to decide is what to show when a staff member has no role yet.
+ * Tên hiển thị của vai trò. Vai trò do chủ shop tạo nên tên đi kèm dữ liệu; chỉ cần quyết định hiển thị gì khi nhân viên chưa có vai trò.
  */
 export function getStaffRoleLabel(roleName?: string | null): string {
   return roleName?.trim() || "Chưa phân quyền";
@@ -178,8 +174,7 @@ export function getApiFieldErrors(
 }
 
 export function getApiErrorMessage(error: unknown): string {
-  // `code` trước tiên: nó không đổi khi backend sửa câu chữ hoặc dịch sang tiếng Anh.
-  // Phần dưới là đường lùi cho backend cũ, vốn chỉ trả `message`.
+  // `code` trước: không đổi khi backend sửa câu chữ. Phần dưới là đường lùi cho backend cũ chỉ trả `message`.
   const mapped = messageForCode(getApiErrorBody(error)?.code);
   if (mapped) return mapped;
 

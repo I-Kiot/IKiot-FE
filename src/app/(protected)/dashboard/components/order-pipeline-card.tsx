@@ -24,9 +24,7 @@ interface StageDisplay {
 }
 
 /**
- * "Đang giao" gom PICKED_UP + SHIPPING nhưng danh sách đơn chỉ lọc được một trạng thái, nên nó mở
- * SHIPPING - phần lớn của nhóm. "Giao thất bại" không phải trạng thái đơn mà là chuyến giao FAILED,
- * nên nó mở màn Giao hàng.
+ * "Đang giao" gom PICKED_UP + SHIPPING, danh sách đơn chỉ lọc được một trạng thái nên mở SHIPPING. "Giao thất bại" là chuyến FAILED nên mở màn Giao hàng.
  */
 const STAGE_DISPLAY: Record<OrderPipelineKey, StageDisplay> = {
   PENDING_CONFIRMATION: { label: "Chờ xác nhận", icon: ClipboardList, tone: "amber", href: "/sales/orders?status=PENDING_CONFIRMATION" },

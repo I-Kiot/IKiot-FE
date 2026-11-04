@@ -1,4 +1,3 @@
-// [Table – Orchestrator Customer]
 'use client'
 
 import { Fragment, useEffect, useMemo, useState } from 'react'
@@ -77,8 +76,7 @@ export function CustomersTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
-    // The phone number is drawn under the name rather than in its own column, so the
-    // default global filter (which only reads column values) could never match it.
+    // SĐT hiện dưới tên chứ không có cột riêng, nên bộ lọc toàn cục (chỉ đọc giá trị cột) không bao giờ khớp được.
     globalFilterFn: (row, _columnId, filterValue: string) => {
       const needle = String(filterValue ?? '').trim().toLowerCase()
       if (!needle) return true

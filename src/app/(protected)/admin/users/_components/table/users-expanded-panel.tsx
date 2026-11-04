@@ -92,7 +92,6 @@ export function UsersExpandedPanel({
           <TabsTrigger value="transactions" className="cursor-pointer">Lịch sử giao dịch ({tenant.invoices?.length || 0})</TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Owner Info */}
         <TabsContent value="owner" className="focus-visible:outline-none">
           <div className="w-full space-y-4 pt-2">
             <div className="flex items-center justify-between pb-2 border-b">
@@ -161,7 +160,6 @@ export function UsersExpandedPanel({
                 </span>
               </div>
 
-              {/* Gói dịch vụ */}
               <div className="flex justify-between border-b pb-2 items-center">
                 <span className="text-muted-foreground">Gói dịch vụ:</span>
                 {isEditing ? (
@@ -182,7 +180,6 @@ export function UsersExpandedPanel({
                 )}
               </div>
 
-              {/* Thời gian hết hạn */}
               <div className="flex justify-between border-b pb-2 items-center">
                 <span className="text-muted-foreground">Thời gian hết hạn:</span>
                 <span className="font-semibold text-foreground">
@@ -192,7 +189,6 @@ export function UsersExpandedPanel({
                 </span>
               </div>
 
-              {/* Trạng thái tài khoản */}
               <div className="flex justify-between border-b pb-2 items-center md:col-span-2">
                 <span className="text-muted-foreground">Trạng thái tài khoản:</span>
                 {isEditing ? (
@@ -216,7 +212,6 @@ export function UsersExpandedPanel({
           </div>
         </TabsContent>
 
-        {/* Tab 2: Store Info */}
         <TabsContent value="store" className="focus-visible:outline-none">
           <div className="w-full space-y-4 pt-2">
             <div className="flex items-center gap-2 pb-2 border-b">
@@ -269,7 +264,6 @@ export function UsersExpandedPanel({
           </div>
         </TabsContent>
 
-        {/* Tab 3: Transactions List */}
         <TabsContent value="transactions" className="focus-visible:outline-none">
           <div className="space-y-4 w-full">
             <div className="flex items-center justify-between">

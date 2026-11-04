@@ -27,16 +27,9 @@ function resolveStaffName(user: ApiScheduleUser): string {
 }
 
 /**
- * Everyone rostered on a shift.
- *
- * The response key is **`assignedUsers`** - `WorkingSchedule` has a join table, so a shift
- * carries a list of people, not one `userId`. This read `raw.userId`, which the API has
- * never sent: every schedule came back with an empty assignee list, so the roster showed
- * blank names and `staffPhone: ""` on every row. The old Mongo model did have a `userId`
- * array, which is where the name came from.
- *
- * The string/single-object branches are kept because the same mapper runs over
- * `GET /working-schedules/:id/users/:userId`, which answers one `user` rather than a list.
+ * Mọi người được xếp vào một ca. Key phản hồi là **`assignedUsers`** (ca có bảng nối nhiều người).
+ * Code cũ đọc `raw.userId`, API chưa từng gửi nên mọi ca hiện danh sách và tên trống.
+ * Nhánh chuỗi / object đơn được giữ vì cùng mapper chạy với `GET /working-schedules/:id/users/:userId` (trả một `user`).
  */
 function normalizeApiUsers(
   assigned: ApiWorkingSchedule["assignedUsers"],
@@ -201,11 +194,8 @@ export type ScheduleWorkplaceScope =
   | { type: "warehouse"; warehouseId: string };
 
 /**
- * The workplace a roster response should be narrowed to, or `null` for "show everything".
- *
- * A **posting** decides this now. The old test also demanded the BRANCH_MANAGER /
- * WAREHOUSE_MANAGER role, which no account carries, so it always returned `null` and
- * `filterScheduleToWorkplaceScope` handed back every assignee on a mixed shift.
+ * Nơi làm việc để thu hẹp danh sách ca, hoặc `null` nghĩa là hiện tất cả.
+ * Quyết định theo posting của tài khoản; trước đây còn đòi role BRANCH_MANAGER / WAREHOUSE_MANAGER mà không tài khoản nào có nên luôn trả `null`.
  */
 export function resolveScheduleWorkplaceScope(
   _role?: string | null,

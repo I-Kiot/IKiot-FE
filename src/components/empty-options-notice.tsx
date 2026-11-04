@@ -5,14 +5,8 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 /**
- * Chỗ đứng thay cho một dropdown rỗng.
- *
- * Một select bắt buộc mà không có lựa chọn nào là ngõ cụt: form không gửi được và không
- * nói vì sao. Mẫu này (lấy từ ô "Vai trò" trong dialog thêm nhân viên) nói rõ đang thiếu
- * dữ liệu gì và chỉ đúng chỗ tạo nó.
- *
- * Dùng `EmptyOptionsLink` cho lối đi sang trang khác; nếu chỗ tạo là một dialog ngay trong
- * màn hình hiện tại thì truyền `<button>` vào `children` (xem dialog xếp lịch làm).
+ * Chỗ đứng thay cho một dropdown rỗng. Select bắt buộc mà không có lựa chọn là ngõ cụt: form không gửi được và không nói vì sao.
+ * Hiển thị đang thiếu dữ liệu gì và chỉ chỗ tạo nó: dùng `EmptyOptionsLink` để sang trang khác; nếu chỗ tạo là dialog ngay trên màn hiện tại thì truyền `<button>` vào `children`.
  */
 export function EmptyOptionsNotice({
   className,

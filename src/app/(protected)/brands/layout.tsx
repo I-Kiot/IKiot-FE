@@ -1,4 +1,3 @@
-// [Layout – Brands]
 import { BrandsProvider } from './_context/brands-provider'
 import { BrandsDialogs } from './_components/dialogs/brands-dialogs'
 

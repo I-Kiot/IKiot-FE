@@ -18,15 +18,13 @@ export function useCircularTransition(): CircularTransitionHook {
 
     isTransitioningRef.current = true
 
-    // Set CSS variables for the circular reveal animation - exactly like tweakcn
+    // Tâm hiệu ứng reveal tròn lưu qua CSS var --x/--y, cách làm giống tweakcn.
     const x = (coords.x / window.innerWidth) * 100
     const y = (coords.y / window.innerHeight) * 100
 
-    // Set the CSS variables on document element
     document.documentElement.style.setProperty('--x', `${x}%`)
     document.documentElement.style.setProperty('--y', `${y}%`)
 
-    // Check if View Transitions API is supported
     if ('startViewTransition' in document) {
       const transition = (document as Document & { startViewTransition: (callback: () => void) => { finished: Promise<void> } }).startViewTransition(() => {
         callback()
@@ -36,7 +34,7 @@ export function useCircularTransition(): CircularTransitionHook {
         isTransitioningRef.current = false
       })
     } else {
-      // Fallback for browsers without View Transitions API
+      // Trình duyệt không có View Transitions API: đổi theme ngay, mở khóa sau 400ms.
       callback()
       setTimeout(() => {
         isTransitioningRef.current = false
@@ -45,7 +43,7 @@ export function useCircularTransition(): CircularTransitionHook {
   }, [])
 
   const toggleTheme = useCallback((event: React.MouseEvent) => {
-    // Get precise click coordinates - use clientX/clientY directly like tweakcn
+    // Toạ độ click (clientX/Y) làm tâm hiệu ứng, giống tweakcn.
     const coords = {
       x: event.clientX,
       y: event.clientY

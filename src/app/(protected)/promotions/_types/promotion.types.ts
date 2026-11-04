@@ -1,4 +1,3 @@
-// [UI Types – Promotion]
 import { z } from 'zod'
 
 export type PromotionsDialogType = 'add' | 'edit' | 'delete' | 'deleteMany'

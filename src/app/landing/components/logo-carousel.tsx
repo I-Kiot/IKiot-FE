@@ -2,7 +2,6 @@
 
 import { Card } from '@/components/ui/card'
 
-// Simple icon component for company logos
 const SimpleIcon = ({ iconSlug, size = 24 }: { iconSlug: string; size?: number }) => {
   const iconMap = {
     shopify:
@@ -43,7 +42,6 @@ const SimpleIcon = ({ iconSlug, size = 24 }: { iconSlug: string; size?: number }
   )
 }
 
-// Tech companies data
 const techCompanies = [
   { name: 'Shopify', id: 'shopify' },
   { name: 'Netflix', id: 'netflix' },
@@ -68,18 +66,13 @@ export function LogoCarousel() {
             Tương thích và kết nối đồng bộ cùng các thương hiệu bán lẻ hàng đầu
           </p>
 
-          {/* Logo Carousel with Fade Effect */}
           <div className="relative">
-            {/* Left Fade */}
             <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
 
-            {/* Right Fade */}
             <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
-            {/* Logo Container */}
             <div className="overflow-hidden">
               <div className="flex animate-logo-scroll space-x-8 sm:space-x-12">
-                {/* First set of logos */}
                 {techCompanies.map((company, index) => (
                   <Card
                     key={`first-${index}`}
@@ -93,7 +86,7 @@ export function LogoCarousel() {
                     </div>
                   </Card>
                 ))}
-                {/* Second set for seamless loop - identical to first */}
+                {/* Bộ logo thứ hai để lặp mượt, giống hệt bộ đầu */}
                 {techCompanies.map((company, index) => (
                   <Card
                     key={`second-${index}`}

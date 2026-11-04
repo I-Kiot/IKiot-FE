@@ -34,7 +34,7 @@ export function MessageInput({
       onSendMessage(trimmedMessage);
       setMessage("");
 
-      // Reset textarea height
+      // Đặt lại chiều cao textarea
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
@@ -53,7 +53,7 @@ export function MessageInput({
     const value = e.target.value;
     setMessage(value);
 
-    // Auto-resize textarea
+    // Tự co giãn chiều cao textarea
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       const scrollHeight = textareaRef.current.scrollHeight;
@@ -64,10 +64,8 @@ export function MessageInput({
 
   return (
     <div className="pb-4 pt-1 relative px-4 md:px-6">
-      {/* Top fade gradient overlay */}
       <div className="absolute top-0 left-0 right-0 h-10 -translate-y-full bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
       <div className="flex items-end gap-3 max-w-4xl mx-auto">
-        {/* Message input */}
         <div className="flex-1 relative">
           <Textarea
             ref={textareaRef}
@@ -84,8 +82,6 @@ export function MessageInput({
             rows={1}
           />
         </div>
-
-        {/* Send button */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

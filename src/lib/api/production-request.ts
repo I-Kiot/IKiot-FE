@@ -1,4 +1,4 @@
-// [API – Production request] Track B. Contract: Ikiot_BE/docs/api-contract-order-flow.md §3.
+// Track B. Hợp đồng: Ikiot_BE/docs/api-contract-order-flow.md §3.
 import client from '@/lib/api/client';
 import type {
   CreateProductionRequestPayload,
@@ -30,7 +30,7 @@ export const productionRequestApi = {
     return res.data.data;
   },
 
-  /** DRAFT only; `items`, when sent, replaces every line. */
+  /** Chỉ cho DRAFT; `items` nếu gửi lên sẽ thay toàn bộ dòng. */
   update: async (
     id: string,
     payload: Partial<CreateProductionRequestPayload>,
@@ -53,7 +53,7 @@ export const productionRequestApi = {
     return res.data.data;
   },
 
-  /** "Thêm vào yêu cầu" from the production list - DRAFT requests only. */
+  /** "Thêm vào yêu cầu" từ danh sách sản xuất; chỉ cho yêu cầu DRAFT. */
   addItem: async (
     id: string,
     payload: ProductionRequestLinePayload,
@@ -69,7 +69,7 @@ export const productionRequestApi = {
     await client.delete(`/production-requests/${id}`);
   },
 
-  /** B-5: record goods the workshop delivered. The only way workshop goods enter stock. */
+  /** B-5: ghi nhận hàng xưởng đã giao; đây là đường duy nhất để hàng xưởng nhập kho. */
   receive: async (
     id: string,
     payload: ReceiveProductionPayload,
@@ -81,7 +81,7 @@ export const productionRequestApi = {
     return res.data.data;
   },
 
-  /** B-4: what has to be made, worked out when read. */
+  /** B-4: số lượng cần sản xuất, tính khi đọc. */
   getProductionList: async (params?: ProductionListQuery): Promise<ProductionListPage> => {
     const res = await client.get<ProductionListPage>('/production-list', { params });
     return {

@@ -1,4 +1,4 @@
-// [Context – Dashboard Data]
+// [Context – Dữ liệu Dashboard]
 'use client'
 
 import React, { useEffect, useState } from 'react'
@@ -23,7 +23,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [branchOptions, setBranchOptions] = useState<LocationOption[]>([])
   const [warehouseOptions, setWarehouseOptions] = useState<LocationOption[]>([])
 
-  // Used to resolve a low-stock row's locationId to its actual branch/warehouse name.
+  // Dùng để đổi locationId của dòng sắp hết hàng thành tên chi nhánh/kho thực tế.
   useEffect(() => {
     branchApi
       .getList({ limit: 100 })

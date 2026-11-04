@@ -6,8 +6,8 @@ import { useAuthStore } from "@/store/auth-store";
 import type { Branch } from "@/types/branch";
 
 /**
- * The branch the sidebar switcher (or the account's own posting) pins the sale to, or "" when the
- * view is the whole chain / a warehouse - in which case the seller picks where the sale happens.
+ * Chi nhánh mà switcher sidebar (hoặc chi nhánh gán cho tài khoản) ghim đơn bán vào. Rỗng khi xem toàn chuỗi
+ * hoặc kho: người bán tự chọn nơi bán.
  */
 function lockedBranchId(): string {
   const user = getCachedUser() as { branchId?: string } | null;
@@ -22,9 +22,9 @@ function lockedBranchId(): string {
 }
 
 export interface SalesBranch {
-  /** The branch the sale is booked to; "" until one is picked. */
+  /** Chi nhánh ghi nhận đơn; "" cho tới khi người bán chọn. */
   branchId: string;
-  /** True when the switcher/posting fixed the branch - the selector must not let it change. */
+  /** True khi switcher hoặc tài khoản đã cố định chi nhánh: selector không được đổi. */
   locked: boolean;
   branches: Branch[];
   ready: boolean;
@@ -37,7 +37,7 @@ export function useSalesBranch(): SalesBranch {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [ready, setReady] = useState(false);
   const [picked, setPicked] = useState("");
-  // `locationKey` is the signal that the switcher moved; the value itself is read from storage.
+  // `locationKey` chỉ là tín hiệu switcher đã đổi; giá trị thật được đọc từ storage.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const locked = useMemo(() => lockedBranchId(), [locationKey]);
 
@@ -57,7 +57,7 @@ export function useSalesBranch(): SalesBranch {
     };
   }, []);
 
-  // A pinned branch is never changed from here.
+  // Chi nhánh đã ghim không đổi được từ đây.
   const setBranchId = useCallback(
     (id: string) => {
       if (!locked) setPicked(id);

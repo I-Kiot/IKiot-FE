@@ -10,9 +10,8 @@ import { useSalesBranch } from "@/app/(protected)/check-out/_hooks/use-sales-bra
 import { CreateOrderForm } from "./components/create-order-form";
 
 /**
- * Tạo đơn hàng (đơn tay: đặt trước, giao tận nơi hoặc hẹn lấy). Màn riêng trong menu Đơn hàng từ 2026-10-16 -
- * trước đó là tab thứ hai của /check-out, cạnh bán tại quầy, và hai kiểu đơn dễ bị nhầm với nhau. /check-out
- * giờ chỉ còn bán tại quầy; link cũ `/check-out?mode=order` được chuyển về đây.
+ * Tạo đơn tay (đặt trước, giao tận nơi hoặc hẹn lấy). Từ 2026-10-16 có màn riêng trong menu Đơn hàng; trước đó là tab của /check-out.
+ * Link cũ `/check-out?mode=order` được chuyển về đây.
  */
 function CreateOrderContent() {
   const sales = useSalesBranch();
@@ -47,7 +46,7 @@ function CreateOrderContent() {
 }
 
 export default function CreateOrderPage() {
-  // useSearchParams (inside CreateOrderForm, for `replacementFor`) needs a Suspense boundary.
+  // useSearchParams (trong CreateOrderForm, cho `replacementFor`) cần Suspense boundary.
   return (
     <Suspense fallback={null}>
       <CreateOrderContent />

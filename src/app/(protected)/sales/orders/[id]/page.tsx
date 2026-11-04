@@ -42,19 +42,19 @@ function errorMessage(error: unknown): string {
   return messageForCode(getApiErrorBody(error)?.code) ?? "Không tải được đơn hàng";
 }
 
-/** D-3: one order in full (`GET /orders/:id`, contract §2) - where it is in the journey, its lines and their stock, the money and the delivery. The header holds the edits (`OrderActions`, D-7); the journey's next step - pack, hand over, pick up, ship, deliver, the QR, D-9 confirm the shipper's cash - sits right-aligned under the step bar (`OrderJourneyActions`), reusing the dialogs of /fulfillments, /shipments and /shipper. */
+/** Chi tiết đơn (`GET /orders/:id`, contract §2). Nút sửa nằm ở header; các bước hành trình nằm dưới thanh bước (`OrderJourneyActions`). */
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params.id;
   const canView = allows(getSessionRole(), "orders", "read");
   const [state, setState] = useState<LoadState | null>(null);
-  // Bumped after a journey step: those routes answer with a fulfillment / shipment, not the order.
+  // Tăng sau mỗi bước hành trình: các route đó trả về fulfillment/shipment chứ không phải đơn.
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!canView || !id) return;
-    // A newer reload cancels this one, so an older answer landing late cannot overwrite a newer one.
+    // Lần tải mới huỷ lần này, nên kết quả cũ về muộn không đè kết quả mới.
     let cancelled = false;
     orderJourneyApi
       .getById(id)
@@ -63,8 +63,7 @@ export default function OrderDetailPage() {
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        // A failed re-read after a step keeps the order on screen (and any open sheet with it);
-        // only a first load with nothing to show becomes the error page.
+        // Đọc lại lỗi sau một bước vẫn giữ đơn (và sheet đang mở) trên màn; chỉ lần tải đầu không có gì để hiện mới thành trang lỗi.
         if (reloadKey > 0) toast.error("Không tải lại được đơn hàng, vui lòng tải lại trang");
         setState((previous) => {
           if (previous?.id === id && previous.kind === "loaded") return previous;
@@ -77,7 +76,7 @@ export default function OrderDetailPage() {
   }, [id, canView, reloadKey]);
 
   const goBack = () => router.push("/sales/orders");
-  // A result for another id (navigated between orders) counts as still loading.
+  // Kết quả của id khác (vừa chuyển sang đơn khác) coi như vẫn đang tải.
   const current = state?.id === id ? state : null;
 
   if (!canView || current?.kind === "error") {
@@ -149,7 +148,7 @@ export default function OrderDetailPage() {
         <div className="space-y-6 lg:col-span-2">
           <OrderLinesCard items={order.items} />
           <OrderPaymentCard order={order} />
-             {/* Always mounted, even with no button to show: it holds the delivery sheet open across the reload after a delivery. */}
+             {/* Luôn mount dù không có nút nào: giữ sheet giao hàng mở qua lần tải lại sau khi giao. */}
           <OrderJourneyActions
             order={order}
             onChanged={replaceOrder}
