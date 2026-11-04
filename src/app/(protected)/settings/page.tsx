@@ -1516,7 +1516,7 @@ export default function SettingsPage() {
                       <p className="text-xs text-muted-foreground">
                         {sepayLinked
                           ? "Tài khoản đã được liên kết với cổng SePay - bạn có thể nhận thanh toán đơn hàng qua mã QR."
-                          : "Sau khi lưu thông tin ngân hàng, quản trị viên sẽ liên kết tài khoản của bạn với cổng SePay. Bạn sẽ nhận được thông báo khi hoàn tất."}
+                          : "Sau khi lưu thông tin ngân hàng, quản trị viên sẽ thêm tài khoản vào SePay (chủ tài khoản xác nhận với ngân hàng). Hệ thống tự nhận ra và gửi thông báo cho bạn khi liên kết xong."}
                       </p>
                     </div>
 

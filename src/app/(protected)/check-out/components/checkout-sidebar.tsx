@@ -51,6 +51,8 @@ interface CheckoutSidebarProps {
   /** Names of the promotions currently assigned, for display next to the discount amount. */
   promotionNames: string[];
   paymentMethod: "CASH" | "SEPAY";
+  /** Tài khoản của shop chưa liên kết SePay: khoá "Chuyển khoản" (BE cũng từ chối). */
+  sepayNotLinked: boolean;
   customerPay: number;
   note: string;
   selectedCustomer: Customer | null;
@@ -84,6 +86,7 @@ export function CheckoutSidebar({
   promotionDiscount,
   promotionNames,
   paymentMethod,
+  sepayNotLinked,
   customerPay,
   note,
   selectedCustomer,
@@ -440,10 +443,12 @@ export function CheckoutSidebar({
                 ] as const
               ).map(({ method, label, Icon }) => {
                 const isSelected = paymentMethod === method;
+                const isDisabled = method === "SEPAY" && sepayNotLinked;
                 return (
                   <button
                     key={method}
                     type="button"
+                    disabled={isDisabled}
                     onClick={() => {
                       onPaymentMethodChange(method);
                       onCustomerPayChange(grandTotal);
@@ -453,6 +458,7 @@ export function CheckoutSidebar({
                       isSelected
                         ? "bg-primary/5 border-primary text-primary font-bold shadow-xs"
                         : "bg-background border-border text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                      isDisabled && "cursor-not-allowed opacity-50 hover:bg-background hover:text-muted-foreground",
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
@@ -464,6 +470,11 @@ export function CheckoutSidebar({
                 );
               })}
             </div>
+            {sepayNotLinked && (
+              <p className="text-xs text-muted-foreground">
+                Tài khoản ngân hàng của cửa hàng chưa liên kết SePay nên chưa thu được bằng mã QR.
+              </p>
+            )}
           </div>
 
           {/* Customer Pay Input - chỉ hiện khi CASH */}

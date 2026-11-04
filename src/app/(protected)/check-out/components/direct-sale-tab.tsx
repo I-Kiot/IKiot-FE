@@ -14,6 +14,7 @@ import { OrderQrDialog } from "./order-qr-dialog";
 import { PromotionPickerDialog } from "./promotion-picker-dialog";
 import { orderApi } from "@/lib/api/order";
 import { promotionApi } from "@/lib/api/promotion";
+import { getMyTenant } from "@/lib/api/tenant";
 import type { PromotionCalculateResponse } from "@/types/promotion";
 import { getCachedUser } from "@/lib/auth";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -78,6 +79,22 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     createNewInvoice("1", "Hóa đơn 1"),
   ]);
   const [activeTabId, setActiveTabId] = useState<string>("1");
+  const [sepayNotLinked, setSepayNotLinked] = useState(false);
+
+  // Không đọc được thì để nguyên: BE vẫn từ chối phát QR khi chưa liên kết.
+  useEffect(() => {
+    getMyTenant()
+      .then((tenant) => {
+        if (tenant.hasSepayKey) return;
+        setSepayNotLinked(true);
+        setInvoices((prev) =>
+          prev.map((inv) =>
+            inv.paymentMethod === "SEPAY" ? { ...inv, paymentMethod: "CASH" } : inv,
+          ),
+        );
+      })
+      .catch(() => {});
+  }, []);
   const [direction, setDirection] = useState<"horizontal" | "vertical">("horizontal");
 
   useEffect(() => {
@@ -605,6 +622,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
                 (p) => p.promoName,
               )}
               paymentMethod={activeInvoice.paymentMethod}
+              sepayNotLinked={sepayNotLinked}
               customerPay={activeInvoice.customerPay}
               note={activeInvoice.note}
               selectedCustomer={activeInvoice.selectedCustomer}

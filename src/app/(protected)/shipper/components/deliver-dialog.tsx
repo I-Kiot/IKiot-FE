@@ -2,7 +2,7 @@
 
 // Dialog "Đã giao" của shipper (POST /shipments/:id/deliver): chụp ảnh bằng chứng, chọn cách thu tiền.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { shipmentApi } from "@/lib/api/shipment";
+import { getMyTenant } from "@/lib/api/tenant";
 import { uploadImage } from "@/lib/api/upload";
 import type { DeliveryCollectionMethod, Shipment } from "@/types/order-flow";
 import { formatVND, reportShipmentError } from "../../shipments/components/shipment-ui";
@@ -47,6 +48,19 @@ export function DeliverDialog({ shipment, open, onClose, onDelivered, onNeedsRel
   const [method, setMethod] = useState<DeliveryCollectionMethod>(nothingDue ? "NONE" : "CASH");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [sepayNotLinked, setSepayNotLinked] = useState(false);
+
+  // Không đọc được thì để nguyên: BE vẫn từ chối thu QR khi chưa liên kết.
+  useEffect(() => {
+    if (!open || nothingDue) return;
+    getMyTenant()
+      .then((tenant) => {
+        if (tenant.hasSepayKey) return;
+        setSepayNotLinked(true);
+        setMethod((current) => (current === "BANK_TRANSFER_QR" ? "CASH" : current));
+      })
+      .catch(() => {});
+  }, [open, nothingDue]);
 
   const busy = submitting || uploading > 0;
   const canSubmit = !busy && photoUrls.length > 0;
@@ -144,9 +158,14 @@ export function DeliverDialog({ shipment, open, onClose, onDelivered, onNeedsRel
                   <RadioGroupItem value="CASH" /> Tiền mặt
                 </Label>
                 <Label className="flex items-center gap-2 font-normal">
-                  <RadioGroupItem value="BANK_TRANSFER_QR" /> Chuyển khoản QR
+                  <RadioGroupItem value="BANK_TRANSFER_QR" disabled={sepayNotLinked} /> Chuyển khoản QR
                 </Label>
               </RadioGroup>
+              {sepayNotLinked && (
+                <p className="text-xs text-muted-foreground">
+                  Tài khoản ngân hàng của cửa hàng chưa liên kết SePay nên chưa thu được bằng mã QR.
+                </p>
+              )}
               {method === "BANK_TRANSFER_QR" && (
                 <p className="text-xs text-muted-foreground">
                   Sau khi xác nhận sẽ hiện mã QR cho khách quét. Đơn hoàn thành khi tiền về tài khoản.
