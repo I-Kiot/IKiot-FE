@@ -430,7 +430,6 @@ export interface PickupQrPayment {
 }
 
 export interface PickupCollectResult {
-  order: OrderDetail;
   /** Null khi thu tiền mặt (đã ghi luôn). */
   payment: PickupQrPayment | null;
 }

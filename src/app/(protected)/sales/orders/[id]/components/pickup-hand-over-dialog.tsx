@@ -21,7 +21,7 @@ import type { OrderDetail } from "@/types/order-flow";
 type Props = {
   order: OrderDetail;
   onClose: () => void;
-  onHandedOver: (order: OrderDetail) => void;
+  onHandedOver: () => void;
 };
 
 /**
@@ -36,12 +36,12 @@ export function PickupHandOverDialog({ order, onClose, onHandedOver }: Props) {
   const submit = async () => {
     setSaving(true);
     try {
-      const updated = await orderJourneyApi.pickupHandOver(order.id, {
+      await orderJourneyApi.pickupHandOver(order.id, {
         receiverName: receiverName.trim() || undefined,
         note: note.trim() || undefined,
       });
       toast.success(`Đơn ${order.code} đã giao cho khách`);
-      onHandedOver(updated);
+      onHandedOver();
     } catch (error) {
       toast.error(getApiErrorBody(error)?.message ?? "Không giao được hàng, vui lòng thử lại");
     } finally {

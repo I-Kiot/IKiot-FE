@@ -26,7 +26,7 @@ type Props = {
   order: OrderDetail;
   onClose: () => void;
   /** Đã thu xong (tiền mặt, hoặc tiền QR đã về): trang đọc lại đơn. */
-  onCollected: (order: OrderDetail) => void;
+  onCollected: () => void;
 };
 
 /**
@@ -51,7 +51,7 @@ export function PickupCollectDialog({ order, onClose, onCollected }: Props) {
         return;
       }
       toast.success("Đã thu tiền mặt");
-      onCollected(result.order);
+      onCollected();
     } catch (error) {
       toast.error(getApiErrorBody(error)?.message ?? "Không thu được tiền, vui lòng thử lại");
     } finally {
@@ -65,7 +65,7 @@ export function PickupCollectDialog({ order, onClose, onCollected }: Props) {
       const fresh = await orderJourneyApi.getById(order.id);
       if (fresh.paymentStatus === "PAID") {
         toast.success("Đã nhận chuyển khoản");
-        onCollected(fresh);
+        onCollected();
       }
     } catch {
       // Lần hỏi sau sẽ thử lại.

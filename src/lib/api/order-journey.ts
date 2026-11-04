@@ -132,9 +132,8 @@ export const orderJourneyApi = {
   },
 
   /** Đơn khách tới lấy đã thu đủ: giao hàng cho khách, trừ tồn, PACKED → COMPLETED. */
-  pickupHandOver: async (id: string, payload: PickupHandOverPayload = {}): Promise<OrderDetail> => {
-    const res = await client.post<Envelope<{ order: OrderDetail }>>(`/orders/${id}/pickup/hand-over`, payload);
-    return res.data.data.order;
+  pickupHandOver: async (id: string, payload: PickupHandOverPayload = {}): Promise<void> => {
+    await client.post(`/orders/${id}/pickup/hand-over`, payload);
   },
 
   /** PICKED_UP → SHIPPING (C-2): trừ tồn kho đúng phần đã khoá lúc đóng gói. Trả về lần giao của đơn. */
