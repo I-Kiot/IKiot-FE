@@ -7,7 +7,7 @@
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Banknote, PackageCheck, QrCode, Truck, Send, MapPinCheck, PackageOpen, Undo2 } from "lucide-react";
+import { Banknote, HandHelping, PackageCheck, QrCode, Truck, Send, MapPinCheck, PackageOpen, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
@@ -23,9 +23,20 @@ import { ShipmentNoteDialog } from "../../../../shipments/components/shipment-de
 import { reportShipmentError } from "../../../../shipments/components/shipment-ui";
 import { DeliverySheet } from "../../../../shipper/components/delivery-sheet";
 import { ConfirmRemittanceDialog } from "./confirm-remittance-dialog";
+import { PickupCollectDialog } from "./pickup-collect-dialog";
+import { PickupHandOverDialog } from "./pickup-hand-over-dialog";
 
 /** Dialog bước nào đang mở. Sheet giao hàng giữ riêng (xem `sheetShipmentId`). */
-type OpenStep = "pack" | "handOver" | "pickUp" | "ship" | "remittance" | "confirmReturned" | null;
+type OpenStep =
+  | "pack"
+  | "handOver"
+  | "pickUp"
+  | "ship"
+  | "remittance"
+  | "confirmReturned"
+  | "pickupCollect"
+  | "pickupHandOver"
+  | null;
 
 type OrderShipment = OrderDetail["shipments"][number];
 
@@ -140,6 +151,11 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
     order.status === "PACKED" && !pickup && !awaitingPickUp && permissions.canHandOver;
   const showAwaitingPickUp = order.status === "PACKED" && awaitingPickUp !== undefined;
   const showPickUp = showAwaitingPickUp && permissions.canActOnDelivery(awaitingPickUp);
+  // Khách tới lấy: đang chờ khách ở quầy. Thu nốt tiền trước, đủ tiền mới giao hàng cho khách. Cùng nhóm quyền với bước trừ tồn.
+  const pickupWaiting = pickup && order.status === "PACKED";
+  const showPickupCollect = pickupWaiting && order.paymentStatus !== "PAID" && permissions.canShip;
+  const showPickupHandOver = pickupWaiting && order.paymentStatus === "PAID" && permissions.canShip;
+  const showAwaitingPickup = pickupWaiting && !permissions.canShip;
   const showShip = order.status === "PICKED_UP" && permissions.canShip;
   // Không có nút thì nói vì sao đơn đứng ở đây - kể cả người phụ trách (ASSIGNEE_MAY_SHIP tắt).
   const showAwaitingShip = order.status === "PICKED_UP" && !permissions.canShip;
@@ -158,11 +174,13 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
     showHandOver ||
     showPickUp ||
     showShip ||
+    showPickupCollect ||
+    showPickupHandOver ||
     showDeliver ||
     showQr ||
     showConfirmReturned ||
     awaitingCash;
-  const hasRow = hasButton || showAwaitingPickUp || showAwaitingShip;
+  const hasRow = hasButton || showAwaitingPickUp || showAwaitingShip || pickupWaiting;
 
   /** Đóng dialog; bỏ cờ ?confirmCash để tải lại trang hay lần xác nhận sau không tự mở lại dialog. */
   const closeStep = () => {
@@ -214,6 +232,15 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
               Chờ {awaitingPickUp.driver?.name ?? "shipper"} lấy hàng
             </Badge>
           )}
+          {pickupWaiting && (
+            <Badge variant="info" className="self-start sm:self-auto">
+              {showAwaitingPickup
+                ? "Chờ khách tới lấy - cần người có quyền \"Bắt đầu vận chuyển\" tại kho xuất để thu tiền và giao"
+                : order.paymentStatus === "PAID"
+                  ? "Đã thu đủ tiền, chờ giao hàng cho khách"
+                  : "Chờ khách tới lấy và thanh toán phần còn lại"}
+            </Badge>
+          )}
           {showAwaitingShip && (
             <Badge variant="info" className="self-start sm:self-auto">
               Chờ người có quyền &quot;Bắt đầu vận chuyển&quot; tại kho xuất xác nhận (bước trừ tồn kho)
@@ -244,6 +271,18 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
                 <Button onClick={() => setOpenStep("ship")} className={STEP_BUTTON_CLASS}>
                   <Truck className="size-4" />
                   Bắt đầu vận chuyển
+                </Button>
+              )}
+              {showPickupCollect && (
+                <Button onClick={() => setOpenStep("pickupCollect")} className={STEP_BUTTON_CLASS}>
+                  <Banknote className="size-4" />
+                  Thu tiền còn lại
+                </Button>
+              )}
+              {showPickupHandOver && (
+                <Button onClick={() => setOpenStep("pickupHandOver")} className={STEP_BUTTON_CLASS}>
+                  <HandHelping className="size-4" />
+                  Giao hàng cho khách
                 </Button>
               )}
               {showDeliver && onTheRoad && (
@@ -304,6 +343,20 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
           confirmLabel="Xác nhận"
           onClose={closeStep}
           onConfirm={ship}
+        />
+      )}
+      {openStep === "pickupCollect" && (
+        <PickupCollectDialog
+          order={order}
+          onClose={closeStep}
+          onCollected={closeAndReload}
+        />
+      )}
+      {openStep === "pickupHandOver" && (
+        <PickupHandOverDialog
+          order={order}
+          onClose={closeStep}
+          onHandedOver={closeAndReload}
         />
       )}
       {openStep === "confirmReturned" && failedShipment && (
