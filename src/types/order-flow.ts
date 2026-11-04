@@ -401,6 +401,8 @@ export interface OrderJourneyQuery extends PageQuery {
   assigneeId?: string;
   branchId?: string;
   priority?: OrderPriority;
+  /** Lọc theo hình thức giao, vd `STORE_PICKUP` cho đơn chờ khách lấy. */
+  fulfillmentType?: FulfillmentType;
   stockSummary?: StockCheckStatus;
   cashRemittanceStatus?: RemittanceStatus;
   /** Khoảng ngày tạo đơn, ISO. */
