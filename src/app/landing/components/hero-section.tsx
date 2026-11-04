@@ -15,15 +15,12 @@ export function HeroSection() {
       id="hero"
       className="relative overflow-hidden bg-gradient-to-b from-background to-background/80 pt-16 sm:pt-20 pb-16"
     >
-      {/* Background Pattern */}
       <div className="absolute inset-0">
-        {/* Dot pattern overlay using reusable component */}
         <DotPattern className="opacity-100" size="md" fadeStyle="ellipse" />
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="mx-auto max-w-4xl text-center">
-          {/* Announcement Badge */}
           <div className="mb-8 flex justify-center">
             <Badge variant="outline" className="px-4 py-2 border-foreground">
               <Star className="w-3 h-3 mr-2 fill-current" />
@@ -32,19 +29,16 @@ export function HeroSection() {
             </Badge>
           </div>
 
-          {/* Main Headline */}
           <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
             Thiết lập chuỗi cửa hàng nhanh gọn, chi phí tối ưu
           </h1>
 
-          {/* Subheading */}
           <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl">
             Đồng bộ hóa bán hàng POS, quản lý tồn kho real-time giữa các chi
             nhánh. Tích hợp AI phân tích sản phẩm trend, báo cáo lãi lỗ và đưa
             ra lời khuyên nhập hàng thông minh.
           </p>
 
-          {/* CTA Buttons */}
           <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" className="text-base cursor-pointer" asChild>
               <Link href={user ? homeHref : "/sign-up"}>
@@ -66,14 +60,11 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* Hero Image/Visual */}
         <div className="mx-auto mt-20 max-w-6xl">
           <div className="relative group">
-            {/* Top background glow effect - positioned above the image */}
             <div className="absolute top-2 lg:-top-8 left-1/2 transform -translate-x-1/2 w-[90%] mx-auto h-24 lg:h-80 bg-primary/50 rounded-full blur-3xl"></div>
 
             <div className="relative rounded-xl border bg-card shadow-2xl overflow-hidden">
-              {/* Light mode dashboard video */}
               <video
                 src="/ikiot-tvc.mp4"
                 className="w-full rounded-xl object-cover block aspect-video"
@@ -83,10 +74,10 @@ export function HeroSection() {
                 playsInline
               />
 
-              {/* Bottom fade effect - gradient overlay that fades the image to background (only in dark mode) */}
+              {/* Hiệu ứng mờ đáy: gradient làm ảnh tan vào nền (chỉ ở dark mode) */}
               <div className="absolute bottom-0 left-0 w-full h-32 md:h-40 lg:h-48 bg-gradient-to-b from-background/0 via-background/70 to-background rounded-b-xl hidden dark:block"></div>
 
-              {/* Overlay play button for demo (only in dark mode) */}
+              {/* Nút play demo phủ lên video, chỉ ở dark mode */}
               <div className="absolute inset-0 items-center justify-center hidden dark:flex">
                 <Button
                   size="lg"

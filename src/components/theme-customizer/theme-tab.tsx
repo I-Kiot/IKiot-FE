@@ -59,7 +59,6 @@ export function ThemeTab({
   };
 
   const handleRandomTheme = () => {
-    // Apply a random theme from all presets
     const allThemes = [...colorThemes, ...tweakcnThemes];
     const randomTheme = allThemes[Math.floor(Math.random() * allThemes.length)];
     setSelectedTheme(randomTheme.value);
@@ -93,7 +92,6 @@ export function ThemeTab({
 
   return (
     <div className="p-4 space-y-6">
-      {/* Theme Presets */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-medium">Chủ đề</Label>
@@ -215,7 +213,6 @@ export function ThemeTab({
 
       <Separator />
 
-      {/* Radius Selection */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">Bo góc</Label>
         <div className="grid grid-cols-5 gap-2">
@@ -239,7 +236,6 @@ export function ThemeTab({
 
       <Separator />
 
-      {/* Border Selection */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">Đường viền</Label>
         <div className="grid grid-cols-3 gap-2">
@@ -267,7 +263,6 @@ export function ThemeTab({
 
       <Separator />
 
-      {/* Mode Section */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">Chế độ hiển thị</Label>
         <div className="grid grid-cols-2 gap-2">

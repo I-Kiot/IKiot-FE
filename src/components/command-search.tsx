@@ -129,7 +129,6 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
   const commandRef = React.useRef<HTMLDivElement>(null);
 
   const searchItems: SearchItem[] = [
-    // Dashboards
     {
       title: "Dashboard 1",
       url: "/dashboard",
@@ -143,12 +142,10 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
       icon: LayoutPanelLeft,
     },
 
-    // Apps
     { title: "Mail", url: "/mail", group: "Apps", icon: Mail },
     { title: "Tasks", url: "/tasks", group: "Apps", icon: CheckSquare },
     { title: "Calendar", url: "/calendar", group: "Apps", icon: Calendar },
 
-    // Auth Pages
     { title: "Sign In 1", url: "/sign-in", group: "Auth Pages", icon: Shield },
     { title: "Sign Up 1", url: "/sign-up", group: "Auth Pages", icon: Shield },
     {
@@ -158,7 +155,6 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
       icon: Shield,
     },
 
-    // Errors
     {
       title: "Unauthorized",
       url: "/errors/unauthorized",
@@ -190,7 +186,6 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
       icon: AlertTriangle,
     },
 
-    // Settings
     {
       title: "User Settings",
       url: "/settings/user",
@@ -228,7 +223,6 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
       icon: Link2,
     },
 
-    // Pages
     { title: "FAQs", url: "/faqs", group: "Pages", icon: HelpCircle },
     { title: "Pricing", url: "/pricing", group: "Pages", icon: CreditCard },
   ];
@@ -247,7 +241,7 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
   const handleSelect = (url: string) => {
     router.push(url);
     onOpenChange(false);
-    // Bounce effect like Vercel
+    // Hiệu ứng nảy kiểu Vercel
     if (commandRef.current) {
       commandRef.current.style.transform = "scale(0.96)";
       setTimeout(() => {

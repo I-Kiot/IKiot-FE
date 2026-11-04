@@ -1,12 +1,6 @@
 /**
- * Which order-journey submenu entries to draw (P0-7, 2026-10-02) - "Đơn hàng" and
- * "Vận hành". Each URL names the permission its list route is gated on server-side
- * (Ikiot_BE/docs/api-contract-order-flow.md), the same way `nav-exchange-permissions.ts`
- * does for "Giao dịch". `getAllowedSidebarUrls` reads the result, so an entry filtered out
- * here is also refused when its URL is typed by hand.
- *
- * "Hoá đơn" (`/sales/invoices`) is deliberately absent: it was drawn for everyone before
- * this file existed, and a URL missing from the map keeps that behaviour.
+ * Các mục submenu của hành trình đơn (P0-7): "Đơn hàng" và "Vận hành". Mỗi URL ghi quyền mà route danh sách cần ở backend (docs/api-contract-order-flow.md).
+ * `getAllowedSidebarUrls` đọc kết quả này nên mục bị lọc ở đây cũng bị chặn khi gõ URL tay. "Hoá đơn" không có trong map nên vẫn hiện như cũ.
  */
 import { allows } from "./role-permissions";
 

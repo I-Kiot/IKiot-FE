@@ -33,13 +33,13 @@ export function ColorPicker({ label, cssVar, value, onChange }: ColorPickerProps
     onChange(cssVar, newValue)
   }
 
-  // Get current computed color for display
+  // Lấy màu hiện tại (đã tính) để hiển thị
   const displayColor = React.useMemo(() => {
     if (localValue && localValue.startsWith('#')) {
       return localValue
     }
 
-    // Try to get computed value from CSS
+    // Thử lấy giá trị đã tính từ CSS
     const computed = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim()
     if (computed && computed.startsWith('#')) {
       return computed

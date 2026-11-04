@@ -23,7 +23,6 @@ import {
 import { type NavItem } from "./types";
 
 export const sidebarItems = {
-  // Quản lý
   tongQuan: {
     title: "Tổng quan",
     url: "/dashboard",
@@ -51,11 +50,7 @@ export const sidebarItems = {
     ],
   },
   /**
-   * Bản dành cho chủ cửa hàng: giống `nhanVien` cộng thêm "Phân quyền".
-   *
-   * Trang đó gác bằng `canManageRoles` (bản sao của `OwnerOrAdminGuard` ở backend), mà
-   * `nhanVien` thì dùng chung cho cả nhân viên thường - hiện link cho họ chỉ để họ bấm
-   * vào và gặp màn hình từ chối.
+   * Bản cho chủ shop: giống `nhanVien` và thêm "Phân quyền" (gác bằng `canManageRoles`). `nhanVien` dùng chung cho cả nhân viên, nên hiện link với họ chỉ để họ gặp màn từ chối.
    */
   nhanVienChuCuaHang: {
     title: "Nhân viên",
@@ -69,7 +64,6 @@ export const sidebarItems = {
     ],
   },
 
-  // Quản lý bán hàng
   hangHoa: {
     title: "Hàng hóa",
     url: "/products",
@@ -95,10 +89,7 @@ export const sidebarItems = {
       { title: "Phiếu xưởng giao", url: "/exchange/production-deliveries" },
     ],
   },
-  // `giaoDichBranch` (a BRANCH_MANAGER-only variant without "Nhập hàng") lived here until
-  // 2026-09-09. Its only reader was the BRANCH_MANAGER block deleted on 2026-09-07, so it
-  // was config nothing could match. Per-role trimming of this menu is a permission question
-  // now - see `nav-exchange-permissions.ts`.
+  // `giaoDichBranch` (biến thể BRANCH_MANAGER, đã bỏ 2026-09-09) không còn. Thu gọn menu theo quyền do bộ lọc quyền xử lý, không do cấu hình này.
   donHang: {
     title: "Đơn hàng",
     url: "/#",
@@ -110,7 +101,7 @@ export const sidebarItems = {
       { title: "Hoá đơn", url: "/sales/invoices" },
     ],
   },
-  // Order journey (P0-7, 2026-10-02): packing and delivery, one entry per track C screen.
+  // Hành trình đơn (P0-7, 2026-10-02): đóng gói và giao hàng, mỗi màn track C một mục.
   vanHanh: {
     title: "Vận hành",
     url: "/#",
@@ -133,7 +124,6 @@ export const sidebarItems = {
     icon: Factory,
   },
 
-  // CRM
   khachHang: {
     title: "Khách hàng",
     url: "/customers",
@@ -145,7 +135,6 @@ export const sidebarItems = {
     icon: Ticket,
   },
 
-  // ADMIN Quản lý
   adminDashboard: {
     title: "Dashboard",
     url: "/admin/dashboard",
@@ -192,14 +181,12 @@ export const sidebarItems = {
     icon: LifeBuoy,
   },
 
-  // ADMIN Cài đặt
   cauHinhHeThong: {
     title: "Cấu hình hệ thống",
     url: "/admin/settings",
     icon: Settings,
   },
 
-  // CSKH (Tenant)
   tenantPhanAnh: {
     title: "Phản ánh",
     url: "/tickets",

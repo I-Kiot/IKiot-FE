@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { LandingPageContent } from './landing-page-content'
 
-// Metadata for the landing page
 export const metadata: Metadata = {
   title: 'iKiot - Hệ thống quản lý chuỗi cửa hàng thế hệ mới thông minh',
   description: 'Hệ thống quản lý chuỗi cửa hàng thế hệ mới giúp vận hành nhanh gọn, tối ưu chi phí và tích hợp công nghệ AI phân tích xu hướng mua hàng, lãi lỗ.',

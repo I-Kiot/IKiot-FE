@@ -1,6 +1,6 @@
 import { type LucideIcon } from "lucide-react";
 
-/** The account kinds the backend actually issues (`User.systemRole`). */
+/** Các loại tài khoản backend thực sự cấp (`User.systemRole`). */
 export type UserRole = "ADMIN" | "TENANT_OWNER" | "STAFF" | "CUSTOMER";
 
 export interface NavSubItem {

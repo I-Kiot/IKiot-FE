@@ -6,14 +6,13 @@ interface ComingSoonPageProps {
   breadcrumbs: BreadcrumbEntry[];
   title: string;
   description: string;
-  /** Which task builds the real screen, e.g. "D-1" - shown so nobody files it as a bug. */
+  /** Task nào làm màn thật, vd. "D-1" - ghi ra để không ai báo nhầm là bug. */
   task: string;
 }
 
 /**
- * Placeholder for a screen of the order journey that a Phase 1 track has not built yet
- * (P0-7). The route and its sidebar entry exist up front so no two tracks edit the sidebar;
- * the owning track replaces this page in its own folder.
+ * Chỗ giữ chỗ cho một màn của hành trình đơn mà track Phase 1 chưa làm (P0-7). Route và mục sidebar có sẵn từ đầu để các track không sửa sidebar cùng lúc;
+ * track sở hữu sẽ thay trang này trong thư mục của mình.
  */
 export function ComingSoonPage({ breadcrumbs, title, description, task }: ComingSoonPageProps) {
   return (

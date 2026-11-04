@@ -29,8 +29,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (!user) {
       return defaultUserData;
     }
-    // Line one is the person's name, line two the phone number they sign in with -
-    // phoneNumber is the required identifier on the backend User, email is optional.
+    // Dòng 1 là họ tên, dòng 2 là số điện thoại đăng nhập (bắt buộc ở backend; email là tuỳ chọn).
     const name =
       [user.profile?.lastName, user.profile?.firstName]
         .filter(Boolean)
@@ -72,7 +71,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        {/* <SidebarNotification /> */}
         <NavUser user={formattedUser} role={user?.role} />
       </SidebarFooter>
     </Sidebar>

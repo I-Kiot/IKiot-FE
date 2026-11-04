@@ -18,7 +18,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!authStatus) {
       router.push("/sign-in");
     } else {
-      // Fetch latest profile from backend on mount (e.g. F5 refresh)
+      // Lấy profile mới nhất từ backend khi mount (vd. F5 reload)
       fetchMe()
         .then(() => {
           setAuthenticated(true);
@@ -35,28 +35,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (authenticated && user) {
       try {
-        // Rooms are no longer joined from here. The backend puts the socket into
-        // `user:<id>`, `tenant:<id>` and `admin` itself, from the JWT it verified on
-        // connect - the old server let any client join any room by name, including
-        // "admin", so this was also how a socket could subscribe to broadcasts meant for
-        // the operators.
+        // Không join room ở đây nữa: backend tự đưa socket vào `user:<id>`, `tenant:<id>`, `admin` từ JWT đã xác thực lúc connect.
+        // Server cũ cho client join room bất kỳ theo tên, kể cả "admin", nên socket có thể nghe broadcast dành cho vận hành.
         const { getSocket } = require("@/lib/socket");
         const socket = getSocket();
 
         if (user.role === "ADMIN") {
           
-          // Fetch initial unread count & open tickets count
+          // Lấy số thông báo chưa đọc và số ticket đang mở ban đầu
           const { useNotificationStore } = require("@/store/notification-store");
           useNotificationStore.getState().fetchUnreadCount();
           useNotificationStore.getState().fetchOpenTicketsCount();
 
-          // Listen for new system notifications to increment count
+          // Lắng nghe thông báo hệ thống mới để tăng số đếm
           const handleNewNotification = () => {
             useNotificationStore.getState().incrementUnreadCount();
           };
           socket.on("system-notification", handleNewNotification);
 
-          // Listen for ticket updates to refresh open tickets count
+          // Lắng nghe cập nhật ticket để làm mới số ticket đang mở
           const handleTicketUpdate = () => {
             useNotificationStore.getState().fetchOpenTicketsCount();
           };

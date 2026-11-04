@@ -1,7 +1,7 @@
 import { sidebarItems } from "./sidebar-items";
 import { type UserRole, type NavGroup } from "./types";
 
-// Reuse groups to minimize duplication and improve maintainability
+// Nhóm dùng chung, tránh lặp cấu hình
 const quanLyBanHangGroup = (
   items: (typeof sidebarItems)[keyof typeof sidebarItems][],
 ) => ({
@@ -19,9 +19,7 @@ const cskhGroup = {
 };
 
 
-// `BRANCH_MANAGER` and `WAREHOUSE_MANAGER` had entries here until 2026-09-07. Neither is
-// an account kind any more - a shop defines its own roles - so those two blocks were nav
-//configuration nothing could ever match.
+// BRANCH_MANAGER và WAREHOUSE_MANAGER từng có cấu hình menu riêng đến 2026-09-07. Nay không còn là loại tài khoản (shop tự định nghĩa role), nên hai khối đó đã bị xoá.
 export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
   ADMIN: [
     {
@@ -69,13 +67,8 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
 
 
 
-  // A shop's own roles are all STAFF accounts, so this is the config every custom role
-  // draws from: list everything a tenant can grant, and let the permission filters in
-  // `AppSidebar` decide what this particular role actually sees. Leaving a group out here
-  // is not a restriction, it is an entry nobody can ever reach - which is what happened to
-  // `giaoDich` until 2026-09-09, hiding imports/transfers even from a full-permission role,
-  // and to `tongQuan`/`soThuChi` until 2026-09-09. Those two are leaves, so they
-  // are gated by `nav-leaf-permissions.ts` rather than by a submenu filter.
+  // Mọi role tự tạo của shop đều là STAFF, nên đây là nguồn chung: liệt kê mọi nhóm shop có thể cấp, còn `AppSidebar` lọc theo quyền của từng role.
+  // Thiếu một nhóm ở đây không phải hạn chế mà là mục không ai tới được (giaoDich, tongQuan, soThuChi từng bị vậy đến 2026-09-09). Hai leaf được gác bởi nav-leaf-permissions.ts.
   STAFF: [
     {
       label: "Quản lý",

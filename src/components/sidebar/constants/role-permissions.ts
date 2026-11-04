@@ -1,36 +1,18 @@
 import { getCachedUser } from "@/lib/auth";
 
 /**
- * What the signed-in account is allowed to do.
- *
- * This file used to hold allowlists of **role names** - a copy of the old backend's fixed
- * six-role `permissions.json`. That model is gone: a shop defines its own roles and grants
- * each one a set of `(resource, action)` pairs from a code-owned catalogue, so an account
- * kind no longer implies any particular permission. The lists here were consequently
- * checking for `BRANCH_MANAGER` and `WAREHOUSE_MANAGER`, values nothing carries any more.
- *
- * `GET /auth/me` returns the caller's live permission list (`AuthService.me` hands back the
- * exact set `JwtStrategy` resolved for that request), and the helpers below ask it.
- *
- * **These gates decide what to draw, never what is allowed.** Every route is enforced
- * server-side; hiding a button the backend would refuse is a courtesy, and showing one it
- * would refuse is a bad error message, not a breach.
+ * Quyền của tài khoản đang đăng nhập. Các hàm ở đây chỉ quyết định hiển thị, không quyết định cho phép: backend vẫn kiểm tra mọi route.
+ * Danh sách quyền lấy từ `GET /auth/me`. Không dùng tên role (BRANCH_MANAGER, ...) nữa vì role do từng shop tự định nghĩa.
  */
 
-/** Mirrors `PermissionsGuard`: these two hold everything and short-circuit before any check. */
+/** Khớp với `PermissionsGuard`: hai role này có toàn quyền và được bỏ qua mọi kiểm tra. */
 function holdsEverything(role?: string | null): boolean {
   return role === "TENANT_OWNER" || role === "ADMIN";
 }
 
 /**
- * Whether the caller holds `resource:action`.
- *
- * The permission list is empty for owners and platform admins - empty means "not
- * applicable", never "nothing" - so the short-circuit above has to come first.
- *
- * A shift supervisor's temporary grants are in the list too, and they **expire by the
- * clock**: this reads a snapshot taken at the last `/auth/me`, so a supervisor whose shift
- * just ended may still see a button for a moment. The server re-evaluates every request.
+ * Caller có `resource:action` không. Chủ shop và admin có danh sách quyền rỗng (nghĩa là không áp dụng), nên phải kiểm tra `holdsEverything` trước.
+ * Quyền tạm của ca hết hạn theo giờ, nhưng đây chỉ đọc snapshot lúc `/auth/me` nên có thể còn hiện nút một lúc. Backend kiểm tra lại mọi request.
  */
 export function allows(
   role: string | null | undefined,
@@ -42,7 +24,6 @@ export function allows(
   return getCachedUser()?.permissions?.includes(`${resource}:${action}`) ?? false;
 }
 
-// Products
 export function canViewProducts(role?: string | null): boolean {
   return allows(role, 'products', 'read');
 }
@@ -56,7 +37,6 @@ export function canDeleteProduct(role?: string | null): boolean {
   return allows(role, 'products', 'delete');
 }
 
-// Brands
 export function canViewBrands(role?: string | null): boolean {
   return allows(role, 'brands', 'read');
 }
@@ -70,7 +50,6 @@ export function canDeleteBrand(role?: string | null): boolean {
   return allows(role, 'brands', 'delete');
 }
 
-// Categories
 export function canViewCategories(role?: string | null): boolean {
   return allows(role, 'categories', 'read');
 }
@@ -84,7 +63,6 @@ export function canDeleteCategory(role?: string | null): boolean {
   return allows(role, 'categories', 'delete');
 }
 
-// Suppliers
 export function canCreateSupplier(role?: string | null): boolean {
   return allows(role, 'suppliers', 'create');
 }
@@ -99,7 +77,6 @@ export function canRemoveInventoryLocation(role?: string | null): boolean {
   return allows(role, 'inventory', 'delete');
 }
 
-// Staff
 export function canManageStaff(role?: string | null): boolean {
   return allows(role, 'users', 'update');
 }
@@ -119,17 +96,16 @@ export function canDeleteStaff(role?: string | null): boolean {
   return allows(role, 'users', 'delete');
 }
 
-/** TENANT_OWNER can filter list by branch; BM is auto-scoped by BE. */
+/** TENANT_OWNER lọc danh sách theo chi nhánh; BM đã được backend tự giới hạn theo chi nhánh của mình. */
 export function canFilterStaffByBranch(role?: string | null): boolean {
   return role === "TENANT_OWNER";
 }
 
-/** TENANT_OWNER can filter list by warehouse. */
+/** TENANT_OWNER lọc danh sách theo kho. */
 export function canFilterStaffByWarehouse(role?: string | null): boolean {
   return role === "TENANT_OWNER";
 }
 
-/** BM create form: branch locked to their workplace. */
 /** Khoá ô chi nhánh khi người tạo đã thuộc về một chi nhánh cụ thể. */
 export function shouldLockBranchOnCreate(branchId?: string | null): boolean {
   return Boolean(branchId);
@@ -140,34 +116,16 @@ export function canAssignWarehouseOnStaffForm(role?: string | null): boolean {
   return role === "TENANT_OWNER";
 }
 
-/** Manager role/workplace cannot be edited via PATCH /staff - BE blocks. */
 /**
- * Whether this account may change somebody's role and workplace.
- *
- * It used to refuse when the *target* was a BRANCH_MANAGER or WAREHOUSE_MANAGER, because
- * moving a manager meant reassigning their location in the same edit. Those roles are gone
- * and appointment is its own endpoint, so the only question left is whether the caller may
- * update staff at all.
- */
-/**
- * Quản lý vai trò và phân quyền - chỉ chủ cửa hàng (và quản trị nền tảng).
- *
- * Đây là bản sao của `OwnerOrAdminGuard` ở backend, và nó **cố ý không** đi qua danh mục
- * quyền: nếu "sửa phân quyền" tự nó là một quyền chọn được, thì một vai trò tự tạo có thể
- * tự cấp cho mình quyền đó và mở rộng vô hạn.
+ * Quản lý vai trò và phân quyền: chỉ chủ shop và admin nền tảng. Cố ý không đi qua danh mục quyền, vì nếu "sửa phân quyền" là một quyền chọn được thì vai trò tự tạo có thể tự cấp cho mình.
  */
 export function canManageRoles(role?: string | null): boolean {
   return role === "TENANT_OWNER" || role === "ADMIN";
 }
 
 /**
- * Whether this account may set somebody's role and workplace on the staff form.
- *
- * It has to follow the form's mode, because the backend gates the two writes separately:
- * `POST /users` needs `users:create`, `PATCH /users/:id` needs `users:update`. Asking only
- * for `update` locked the role dropdown for a manager who may hire but not edit - and
- * `POST /users` **requires** a `roleId`, so that account could open the form and never
- * submit it.
+ * Có được đặt role và chi nhánh/kho của người khác trên form nhân viên không. Tạo cần `users:create`, sửa cần `users:update`.
+ * Chỉ kiểm tra `update` thì người được tạo nhân viên nhưng không sửa được sẽ bị khoá dropdown role, trong khi `POST /users` bắt buộc `roleId`.
  */
 export function canEditStaffRoleAndWorkplace(
   role: string | undefined | null,
@@ -187,29 +145,21 @@ export function canAssignWarehouseManager(role?: string | null): boolean {
   return allows(role, 'warehouses', 'assign_manager');
 }
 
-/** Thăng STAFF → BM/WM qua form sửa - chỉ TENANT_OWNER. */
-// Billing
 export function canManageBilling(role?: string | null): boolean {
   return allows(role, 'subscriptions', 'manage');
 }
 
-// AI Chat
 export function canUseAIChat(role?: string | null): boolean {
   return allows(role, 'ai_chat', 'create');
 }
 
-// Account settings
 /**
- * Editing the full profile through `PATCH /auth/me`.
- *
- * Not a catalogue pair: `AuthService.updateMe` branches on `systemRole` itself
- * (`canEditFullProfile`), so this mirrors that check rather than a permission.
+ * Sửa đầy đủ hồ sơ qua `PATCH /auth/me`. Không phải cặp quyền: `AuthService.updateMe` tự kiểm tra `systemRole`, nên hàm này đối chiếu lại logic đó.
  */
 export function canEditAccountProfile(role?: string | null): boolean {
   return holdsEverything(role);
 }
 
-// Promotions
 export function canViewPromotions(role?: string | null): boolean {
   return allows(role, 'promotions', 'read');
 }
@@ -223,7 +173,6 @@ export function canDeletePromotion(role?: string | null): boolean {
   return canCreatePromotion(role);
 }
 
-// Cash drawers
 /** Mở ca / chốt ca - `cash_drawers:open` trong danh mục quyền. */
 export function canManageCashDrawer(role?: string | null): boolean {
   return allows(role, 'cash_drawers', 'open');

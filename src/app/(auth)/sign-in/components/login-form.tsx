@@ -25,8 +25,8 @@ export function LoginForm2({
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
 
-  // Send each account to its home screen after a successful login - decided by what the
-  // role may open, not by the account kind (see `getHomeRoute`).
+  // Sau khi đăng nhập, đưa mỗi tài khoản về trang chủ theo quyền role được mở,
+  // (xem `getHomeRoute`), không theo loại tài khoản.
   const routeByRole = (role?: string) => {
     router.push(getHomeRoute(role));
     router.refresh();
@@ -51,7 +51,7 @@ export function LoginForm2({
 
       if (accessToken) {
         setTokens({ accessToken, refreshToken });
-        // Fetch detailed user profile
+        // Lấy thông tin profile chi tiết của user
         await useAuthStore.getState().fetchMe();
         const role = useAuthStore.getState().user?.role;
 
@@ -99,7 +99,7 @@ export function LoginForm2({
         response?: { data?: { message?: string } };
         message?: string;
       };
-      // The user closing the Google popup isn't an error worth shouting about.
+      // Người dùng tự đóng popup Google thì không phải lỗi cần báo.
       if (
         err.code === "auth/popup-closed-by-user" ||
         err.code === "auth/cancelled-popup-request"

@@ -21,7 +21,7 @@ import { assignFreeTrial } from "@/lib/api/subscription";
 import { useAuthStore } from "@/store/auth-store";
 import { usePhoneOtp } from "./hooks/use-phone-otp";
 
-// Skip SMS OTP entirely in local dev (sends "DEV_BYPASS" to the backend).
+// Bỏ qua OTP SMS hoàn toàn khi dev local (gửi `DEV_BYPASS` lên backend).
 const OTP_BYPASS = process.env.NEXT_PUBLIC_OTP_BYPASS === "true";
 
 export function SignupForm2({
@@ -57,14 +57,14 @@ export function SignupForm2({
     },
   });
 
-  // Final step: create the account. `otpCode` is verified by the backend.
+  // Bước cuối: tạo tài khoản. `otpCode` do backend xác thực.
   const completeSignup = async (data: SignupInput, otpCode: string) => {
     setIsLoading(true);
     try {
-      // 1. Register the tenant and user account
+      // 1. Đăng ký tenant và tài khoản user
       await registerUser(data, otpCode);
 
-      // 2. Programmatically login to obtain access/refresh tokens
+      // 2. Đăng nhập tự động để lấy access/refresh token
       const { accessToken, refreshToken } = await loginUser({
         phone: data.phoneNumber,
         password: data.password,
@@ -72,10 +72,10 @@ export function SignupForm2({
 
       if (accessToken) {
         setTokens({ accessToken, refreshToken });
-        // Fetch detailed user profile
+        // Lấy thông tin profile chi tiết của user
         await useAuthStore.getState().fetchMe();
 
-        // 3. Post to the subscription free trial endpoint
+        // 3. Gọi API đăng ký gói dùng thử
         try {
           await assignFreeTrial();
           toast.success(
@@ -146,9 +146,9 @@ export function SignupForm2({
     }
   };
 
-  // First step: validate the form, then send the OTP (or bypass in dev).
+  // Bước 1: validate form rồi gửi OTP (hoặc bỏ qua ở dev).
   const onSubmit = async (data: SignupInput) => {
-    // Pre-check uniqueness first - stop early (and keep the SMS) if taken.
+    // Kiểm tra trùng trước; nếu đã tồn tại thì dừng sớm để không tốn SMS.
     const isAvailable = await checkAvailability(data);
     if (!isAvailable) return;
 
@@ -181,7 +181,7 @@ export function SignupForm2({
       toast.error("Vui lòng nhập đủ 6 chữ số mã OTP.");
       return;
     }
-    // The backend verifies the code as part of registration.
+    // Backend xác thực mã OTP trong lúc đăng ký.
     await completeSignup(pendingData, otpCode.trim());
   };
 
@@ -284,7 +284,6 @@ export function SignupForm2({
       </div>
 
       <div className="grid gap-5">
-        {/* SECTION 1: Personal Info */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-foreground border-b pb-1">
             1. Thông tin cá nhân
@@ -368,7 +367,6 @@ export function SignupForm2({
           </div>
         </div>
 
-        {/* SECTION 2: Shop/Tenant Info */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-foreground border-b pb-1">
             2. Thông tin cửa hàng / doanh nghiệp
