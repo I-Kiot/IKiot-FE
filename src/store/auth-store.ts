@@ -65,22 +65,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   fetchMe: async () => {
     set({ isLoading: true, error: null });
     try {
-      // `getMe` answers `undefined` for an empty body rather than throwing, and the
-      // store models "signed out" as null.
+      // getMe trả undefined khi body rỗng (không throw); store biểu diễn chưa đăng nhập bằng null.
       const userData = (await getMe()) ?? null;
       set({ 
         user: userData, 
         isLoading: false,
         locationKey: getInitialLocationKey(userData)
       });
-      // Nothing to cache when the profile came back empty - writing null would only
-      // overwrite a good cached user with a blank one.
+      // Profile rỗng thì không cache: ghi null sẽ đè mất user đã cache tốt.
       if (userData) setCachedUser(userData);
     } catch (err: any) {
       console.error("Failed to fetch current user profile:", err);
       const errMsg = err?.response?.data?.message || err?.message || "Failed to load user profile";
       set({ error: errMsg, isLoading: false });
-      // If unauthorized, could clear tokens but let Axios interceptor handle 401 redirect
+      // 401 do Axios interceptor xử lý (xoá token, chuyển về trang đăng nhập).
     }
   },
 

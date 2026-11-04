@@ -1,7 +1,5 @@
-// Âm báo khi có thông báo mới. Dùng Web Audio thay vì file mp3 để không phải
-// quản lý asset. Trình duyệt chặn phát âm thanh trước khi user tương tác với
-// trang (autoplay policy) nên context được "mở khoá" ở lần click/phím đầu tiên;
-// trước đó, thông báo vẫn hiện toast nhưng im lặng.
+// Âm báo thông báo mới bằng Web Audio (không cần file mp3). Trình duyệt chặn âm thanh trước khi user
+// tương tác, nên context được mở khoá ở click/phím đầu; trước đó chỉ hiện toast.
 const MUTE_KEY = "ikiot:notification-sound-muted";
 
 let ctx: AudioContext | null = null;

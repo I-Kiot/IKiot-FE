@@ -77,7 +77,7 @@ export const useNotificationInboxStore = create<NotificationInboxState>((set, ge
   deleteOne: async (id) => {
     const target = get().items.find((item) => item.id === id);
     const wasUnread = target && !target.isRead;
-    // Optimistic remove
+    // Xoá lạc quan trên UI trước, gọi API sau.
     set((state) => ({
       items: state.items.filter((item) => item.id !== id),
       unreadCount: wasUnread ? Math.max(state.unreadCount - 1, 0) : state.unreadCount,
@@ -85,7 +85,7 @@ export const useNotificationInboxStore = create<NotificationInboxState>((set, ge
     try {
       await notificationApi.deleteOne(id);
     } catch {
-      get().fetchInbox(); // rollback
+      get().fetchInbox(); // Hoàn tác: tải lại danh sách từ server.
     }
   },
 

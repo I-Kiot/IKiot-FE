@@ -13,7 +13,7 @@ function iconLinks(): HTMLLinkElement[] {
   );
 }
 
-/** The favicon with a red dot in its top-right corner, as a data URL; null when the icon cannot be drawn. */
+/** Favicon có chấm đỏ góc trên phải, dạng data URL; trả null nếu không vẽ được. */
 function badgedIcon(source: string): Promise<string | null> {
   return new Promise((resolve) => {
     const image = new Image();
@@ -44,15 +44,14 @@ function badgedIcon(source: string): Promise<string | null> {
 }
 
 /**
- * Shows unread notifications on the browser tab: a "(3) " prefix on the title and a red dot on
- * the favicon, so someone working in another tab sees something is waiting. Cleared as soon
- * as the count reaches zero.
+ * Hiện thông báo chưa đọc trên tab trình duyệt: tiền tố "(3) " ở title và chấm đỏ ở favicon,
+ * để người đang làm tab khác biết có việc chờ. Xoá ngay khi số lượng về 0.
  */
 export function useTabBadge() {
   const unreadCount = useNotificationInboxStore((state) => state.unreadCount);
   const pathname = usePathname();
 
-  // Title. Next rewrites it on navigation, so the prefix is re-applied from the observer too.
+  // Next ghi đè title khi điều hướng nên tiền tố phải gắn lại qua MutationObserver.
   useEffect(() => {
     const apply = () => {
       const bare = document.title.replace(TITLE_PREFIX, "");
@@ -71,13 +70,12 @@ export function useTabBadge() {
     };
   }, [unreadCount, pathname]);
 
-  // Favicon.
   useEffect(() => {
     let cancelled = false;
     const links = iconLinks();
     if (links.length === 0) return;
 
-    // Remember the real icon once, so a later count of zero can put it back.
+    // Lưu icon gốc một lần để khi số lượng về 0 còn khôi phục được.
     for (const link of links) {
       if (!link.dataset.originalHref) link.dataset.originalHref = link.href;
     }

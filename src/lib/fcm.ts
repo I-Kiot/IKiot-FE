@@ -33,9 +33,8 @@ export function isPushEnabledHere(): boolean {
 }
 
 /**
- * FCM không chạy được ở mọi nơi: cần trình duyệt (không phải SSR), cần
- * ServiceWorker + Push API. Safari trên iOS chỉ hỗ trợ khi web app đã được
- * "Add to Home Screen". Luôn kiểm tra trước khi gọi bất cứ hàm nào bên dưới.
+ * FCM chỉ chạy khi có trình duyệt (không SSR), ServiceWorker và Push API. Safari iOS chỉ hỗ trợ
+ * khi đã "Add to Home Screen". Luôn gọi hàm này trước các hàm bên dưới.
  */
 export async function isPushSupported(): Promise<boolean> {
   if (typeof window === 'undefined') return false
@@ -44,11 +43,8 @@ export async function isPushSupported(): Promise<boolean> {
 }
 
 /**
- * Xin quyền, lấy FCM token, gửi về backend để lưu vào User.fcmTokens.
- *
- * Gọi hàm này từ một hành động có chủ đích của user (bấm nút "Bật thông báo"),
- * đừng gọi tự động lúc load trang: trình duyệt sẽ phạt nếu prompt quyền xuất
- * hiện mà không có tương tác, và user lỡ bấm "Chặn" thì không hỏi lại được nữa.
+ * Xin quyền, lấy FCM token rồi gửi về backend. Chỉ gọi từ thao tác bấm của user ("Bật thông báo"):
+ * prompt tự hiện lúc load trang dễ bị trình duyệt chặn, và user bấm "Chặn" thì không hỏi lại được.
  *
  * @returns token nếu thành công, null nếu user từ chối hoặc trình duyệt không hỗ trợ
  */
@@ -105,10 +101,8 @@ export async function disablePushNotifications(): Promise<void> {
 }
 
 /**
- * Nhận push khi tab đang mở và đang được focus.
- *
- * Lưu ý: lúc này service worker KHÔNG tự hiện popup - trình duyệt cố tình để
- * app tự quyết. Đó là chỗ nên bắn toast thay vì notification hệ thống.
+ * Nhận push khi tab đang mở và focus. Lúc này service worker KHÔNG tự hiện popup (trình duyệt để app
+ * tự quyết), nên bắn toast thay vì notification hệ thống.
  *
  * @returns hàm unsubscribe
  */
