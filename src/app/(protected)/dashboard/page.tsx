@@ -45,11 +45,7 @@ function WarehouseLayout() {
   );
 }
 
-/**
- * Từ xl trở lên cả dashboard vừa một màn hình (2026-10-20): khung cao bằng phần còn lại của màn
- * hình, các thẻ chia nhau chiều cao và tự cuộn bên trong. Màn hẹp hơn thì xếp chồng và cuộn trang
- * như cũ. Đơn gần đây là một tab của thẻ doanh thu thay vì một hàng riêng.
- */
+/** Từ xl trở lên cả dashboard vừa một màn hình: các thẻ chia nhau chiều cao, tự cuộn bên trong. Màn hẹp hơn thì xếp chồng và cuộn trang. */
 function SalesLayout() {
   const canSeeOrders = allows(getSessionRole(), "orders", "read");
 

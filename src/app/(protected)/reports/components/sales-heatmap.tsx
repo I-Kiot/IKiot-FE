@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
 import { formatCompactVND, formatNumber } from "@/lib/stats-format"
 
-// Monday first, as the working week reads in Vietnam; values are Postgres DOW (0 = Sunday).
+// Thứ Hai đứng đầu như tuần làm việc ở Việt Nam; giá trị là DOW của Postgres (0 = Chủ nhật).
 const WEEKDAYS = [
   { dow: 1, label: "T2" },
   { dow: 2, label: "T3" },
@@ -18,7 +18,7 @@ const WEEKDAYS = [
 ]
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 
-/** When the till is busy: revenue by weekday x hour of the shop's local day. */
+/** Lúc quầy đông khách: doanh thu theo thứ x giờ trong ngày địa phương của cửa hàng. */
 export function SalesHeatmap() {
   const { salesHeatmap, isLoading } = useDashboard()
 

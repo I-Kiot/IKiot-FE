@@ -21,9 +21,7 @@ export interface ResolvedRange {
   /** `YYYY-MM-DD`, ngày đầu kỳ. */
   fromDate: string;
   /**
-   * Gửi cho BE làm `toDate`. Kỳ kết thúc hôm nay thì là thời điểm hiện tại (ISO), để
-   * `/stats/overview` so với đúng khoảng đã trôi qua của kỳ trước (hôm nay đến 10h so với
-   * hôm qua đến 10h), không phải với cả ngày hôm qua.
+   * Gửi cho BE làm `toDate`. Kỳ kết thúc hôm nay thì là thời điểm hiện tại (ISO) để so với đúng khoảng đã trôi của kỳ trước, không phải cả ngày hôm qua.
    */
   toParam: string;
   /** `YYYY-MM-DD`, ngày cuối kỳ - để vẽ trục biểu đồ. */

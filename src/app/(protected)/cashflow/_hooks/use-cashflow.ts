@@ -38,9 +38,7 @@ export function useCashflow() {
   const [list, setList] = useState<CashflowList | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Changing any filter resets back to the first page. Reset in the setters
-  // (rather than an effect) to avoid a cascading re-render. The active
-  // branch/warehouse from the sidebar switcher scopes the ledger too.
+  // Đổi bộ lọc bất kỳ sẽ về trang đầu. Reset trong setter (không dùng effect) để tránh render lặp; chi nhánh/kho đang chọn ở sidebar cũng lọc sổ.
   const setRange = useCallback((value: CashflowRange) => {
     setRangeState(value)
     setPage(1)

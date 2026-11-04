@@ -56,16 +56,15 @@ export default function CashDrawersTodayPage() {
   const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
   const [activeBranchName, setActiveBranchName] = useState<string>("");
 
-  // Branch switcher for TENANT_OWNER
+  // Bộ chọn chi nhánh cho TENANT_OWNER
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchSessions, setBranchSessions] = useState<
     Record<string, { session: CashDrawerSession | null; isLoading: boolean }>
   >({});
 
-  // Staffs for opening cash drawer
+  // Nhân viên để mở két
   const [branchStaffs, setBranchStaffs] = useState<Staff[]>([]);
 
-  // Dialog State
   const [openBranchId, setOpenBranchId] = useState<string | null>(null);
   const [openBranchName, setOpenBranchName] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -74,7 +73,7 @@ export default function CashDrawersTodayPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isStaffLoading, setIsStaffLoading] = useState(false);
 
-  // Load session status for each branch
+  // Tải trạng thái phiên của từng chi nhánh
   const loadBranchSessions = async (branchList: Branch[]) => {
     const initialMap: Record<
       string,
@@ -101,7 +100,7 @@ export default function CashDrawersTodayPage() {
     });
   };
 
-  // 1. Resolve Active Branch
+  // 1. Xác định chi nhánh đang chọn
   useEffect(() => {
     if (!user) return;
 
@@ -130,7 +129,7 @@ export default function CashDrawersTodayPage() {
           .finally(() => setIsLoading(false));
       }
     } else {
-      // BRANCH_MANAGER or STAFF
+      // BRANCH_MANAGER hoặc STAFF
       if (user.branchId) {
         setActiveBranchId(user.branchId);
         branchApi
@@ -143,7 +142,7 @@ export default function CashDrawersTodayPage() {
     }
   }, [user, locationKey]);
 
-  // Fetch current session for the resolved branch, redirect if active
+  // Lấy phiên hiện tại của chi nhánh đã xác định, chuyển hướng nếu đang mở
   const fetchSession = async (branchId: string) => {
     try {
       const data = await cashDrawerApi.getCurrentSession(branchId);
@@ -163,7 +162,7 @@ export default function CashDrawersTodayPage() {
     }
   };
 
-  // 2. Fetch Session & Staffs when active branch is set
+  // 2. Lấy phiên và nhân viên khi đã có chi nhánh đang chọn
   useEffect(() => {
     if (!activeBranchId) return;
 
@@ -255,8 +254,7 @@ export default function CashDrawersTodayPage() {
       if (data && data.id) {
         router.push(`/cash-drawers/${data.id}`);
       } else {
-        // Defensive: the server answered without an id, so re-read state instead of
-        // leaving "chưa mở két" on screen until a manual reload.
+        // Phòng thủ: server trả về không có id, nên đọc lại trạng thái thay vì để "chưa mở két" tới khi reload thủ công.
         if (branches.length > 0) void loadBranchSessions(branches);
         if (activeBranchId) void fetchSession(activeBranchId);
       }
@@ -323,7 +321,7 @@ export default function CashDrawersTodayPage() {
     );
   }
 
-  // Branch Selector (Tenant Owner - "all" mode)
+  // Bộ chọn chi nhánh (Tenant Owner - chế độ "all")
   if (!activeBranchId && user?.role === "TENANT_OWNER") {
     return (
       <div className="flex flex-col gap-6 px-4  lg:px-6">
@@ -412,7 +410,7 @@ export default function CashDrawersTodayPage() {
           </div>
         </div>
 
-        {/* Dialog Mở két đầu ngày - must render inside this block */}
+        {/* Dialog Mở két đầu ngày - phải render trong khối này */}
         <Dialog
           open={isDialogOpen}
           onOpenChange={(open) => {
@@ -581,7 +579,6 @@ export default function CashDrawersTodayPage() {
         </div>
       </div>
 
-      {/* Dialog Mở két đầu ngày */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleOpenCashDrawer}>

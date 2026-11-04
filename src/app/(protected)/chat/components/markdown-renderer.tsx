@@ -7,7 +7,7 @@ interface MarkdownRendererProps {
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   if (!content) return null;
 
-  // Simple parser to convert basic Markdown to TSX without external libraries
+  // Parser markdown cơ bản sang TSX, không dùng thư viện ngoài
   const lines = content.split("\n");
   const parsedElements: React.ReactNode[] = [];
   let currentList: React.ReactNode[] = [];
@@ -15,14 +15,14 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   let codeBlockLines: string[] = [];
 
   const parseInlineStyles = (text: string): React.ReactNode[] => {
-    // Basic bold **text** parsing
+    // Xử lý in đậm **text**
     const parts = text.split(/\*\*([^*]+)\*\*/g);
     return parts.map((part, index) => {
-      // Every odd index is a bold text match
+      // Chỉ số lẻ là phần khớp in đậm
       if (index % 2 === 1) {
         return <strong key={index} className="font-semibold text-foreground">{part}</strong>;
       }
-      // Simple link [text](url) parsing
+      // Xử lý link [text](url)
       const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
       if (linkRegex.test(part)) {
         const linkParts = part.split(linkRegex);
@@ -43,7 +43,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
                   </a>
                 );
               }
-              if (subIndex % 3 === 2) return null; // Skip URL part as it is matched next to the text
+              if (subIndex % 3 === 2) return null; // Bỏ phần URL vì đã khớp cùng với text
               return subPart;
             })}
           </span>
@@ -65,10 +65,10 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   };
 
   lines.forEach((line, index) => {
-    // 1. Code block handling
+    // 1. Xử lý khối code
     if (line.trim().startsWith("```")) {
       if (inCodeBlock) {
-        // End of code block
+        // Kết thúc khối code
         parsedElements.push(
           <pre
             key={`code-${index}`}
@@ -80,7 +80,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
         codeBlockLines = [];
         inCodeBlock = false;
       } else {
-        // Start of code block
+        // Bắt đầu khối code
         flushList(index);
         inCodeBlock = true;
       }
@@ -92,7 +92,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       return;
     }
 
-    // 2. Heading handling
+    // 2. Xử lý heading
     if (line.startsWith("### ")) {
       flushList(index);
       parsedElements.push(
@@ -121,7 +121,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       return;
     }
 
-    // 3. Bullet list handling
+    // 3. Xử lý danh sách bullet
     if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
       const cleanLine = line.trim().slice(2);
       currentList.push(
@@ -132,16 +132,16 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       return;
     }
 
-    // If we reach a non-list line, flush the list
+    // Gặp dòng không phải list thì đẩy list ra
     flushList(index);
 
-    // 4. Empty line handling
+    // 4. Xử lý dòng trống
     if (line.trim() === "") {
       parsedElements.push(<div key={`space-${index}`} className="h-2" />);
       return;
     }
 
-    // 5. Normal paragraph handling
+    // 5. Xử lý đoạn văn thường
     parsedElements.push(
       <p key={`p-${index}`} className="text-sm text-muted-foreground leading-relaxed my-1">
         {parseInlineStyles(line)}
@@ -149,7 +149,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     );
   });
 
-  // Flush any remaining list at the end
+  // Đẩy nốt list còn lại ở cuối
   flushList(lines.length);
 
   return <div className="space-y-1">{parsedElements}</div>;

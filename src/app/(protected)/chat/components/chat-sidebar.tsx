@@ -57,7 +57,6 @@ export function ChatSidebar({
 
   return (
     <div className="flex flex-col h-full bg-muted/30 w-[270px] shrink-0 select-none">
-      {/* Brand Header */}
       <div className="p-4 border-b flex items-center gap-3 bg-card shrink-0">
         <div className="relative flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20 shadow-inner">
           <Sparkles className="h-4.5 w-4.5 animate-pulse" />
@@ -70,8 +69,6 @@ export function ChatSidebar({
           <p className="text-[10px] text-muted-foreground mt-1">Hoạt động</p>
         </div>
       </div>
-
-      {/* New Chat Button */}
       <div className="p-3 bg-card/50 border-b shrink-0">
         <Button
           onClick={onStartNewConversation}
@@ -82,8 +79,6 @@ export function ChatSidebar({
           <span className="text-xs font-medium">Cuộc hội thoại mới</span>
         </Button>
       </div>
-
-      {/* Chat Session List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1.5 mb-1">
           Lịch sử trò chuyện
@@ -119,8 +114,6 @@ export function ChatSidebar({
                     {conv.title}
                   </span>
                 </div>
-
-                {/* Actions Dropdown */}
                 <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 shrink-0">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

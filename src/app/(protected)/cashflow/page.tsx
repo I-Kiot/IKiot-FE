@@ -91,7 +91,6 @@ export default function CashflowPage() {
         }
       />
 
-      {/* Summary cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -132,7 +131,6 @@ export default function CashflowPage() {
         </Card>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <Select value={range} onValueChange={(v) => setRange(v as CashflowRange)}>
           <SelectTrigger className="w-40">
@@ -172,7 +170,6 @@ export default function CashflowPage() {
         </Select>
       </div>
 
-      {/* Transactions table */}
       <Card>
         <CardContent className="p-0">
           <Table>

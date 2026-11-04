@@ -19,7 +19,7 @@ const STATUS_COLOR: Record<string, string> = {
   RETURNED: "bg-orange-500",
 }
 
-/** Where this period's orders stand - every status, so cancelled and returned orders are visible rather than silently left out of revenue. */
+/** Trạng thái đơn trong kỳ, gồm mọi trạng thái để đơn huỷ và hoàn hiện ra thay vì lặng lẽ bị bỏ khỏi doanh thu. */
 export function OrderStatusChart() {
   const { ordersByStatus, isLoading } = useDashboard()
   const statuses = ordersByStatus?.statuses ?? []

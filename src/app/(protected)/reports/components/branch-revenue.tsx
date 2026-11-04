@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
 import { formatNumber, formatVND } from "@/lib/stats-format"
 
-/** Revenue share per branch - only meaningful when the viewer sees more than one. */
+/** Tỷ trọng doanh thu theo chi nhánh; chỉ có ý nghĩa khi người xem thấy từ hai chi nhánh trở lên. */
 export function BranchRevenue() {
   const { revenueByBranch, isLoading } = useDashboard()
   const branches = revenueByBranch?.branches ?? []
