@@ -347,6 +347,14 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     }
   }, [grandTotal]);
 
+  // Điền tiền khách đưa đúng bằng tổng hóa đơn và báo cho thu ngân; nút "Đủ tiền" và phím F4 cùng gọi hàm này.
+  const handleExactPay = () => {
+    updateActiveInvoice({ customerPay: grandTotal });
+    toast.info("Đã cập nhật số tiền khách trả khớp với hóa đơn!", {
+      id: "exact-pay",
+    });
+  };
+
   const handleCheckoutSubmit = () => {
     if (activeInvoice.items.length === 0) {
       toast.error("Không thể thanh toán đơn hàng trống!");
@@ -514,8 +522,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
       }
       if (e.key === "F4") {
         e.preventDefault();
-        updateActiveInvoice({ customerPay: grandTotal });
-        toast.info("Đã cập nhật số tiền khách trả khớp với hóa đơn!");
+        handleExactPay();
       }
     };
     window.addEventListener("keydown", handleShortcuts);
@@ -595,6 +602,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
               onCustomerPayChange={(pay) =>
                 updateActiveInvoice({ customerPay: pay })
               }
+              onExactPay={handleExactPay}
               onNoteChange={(note) => updateActiveInvoice({ note })}
               onCheckout={handleCheckoutSubmit}
               onCancel={handleCancelOrder}
