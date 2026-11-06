@@ -1,22 +1,16 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { stockMovementApi } from '@/lib/api/stock-movement'
 import { getStockMovementErrorMessage } from '@/app/(protected)/exchange/shared/stock-movement-error'
 import type { StockMovement, MovementStatus } from '@/types/stock-movement'
 
-export type ImportsDialogType = 'create'
-
 interface ImportsContextType {
   imports: StockMovement[]
-  total: number
   isLoading: boolean
-  open: ImportsDialogType | null
-  setOpen: (v: ImportsDialogType | null) => void
   statusFilter: MovementStatus | 'ALL'
   setStatusFilter: (v: MovementStatus | 'ALL') => void
-  fetchImports: () => Promise<void>
   handleUpdateDetails: (
     id: string,
     details: { productItemId: string; quantity: number; importPrice?: number; note?: string }[],
@@ -28,37 +22,46 @@ interface ImportsContextType {
 
 const ImportsContext = createContext<ImportsContextType | null>(null)
 
-export function ImportsProvider({ children }: { children: React.ReactNode }) {
-  const [imports, setImports] = useState<StockMovement[]>([])
-  const [total, setTotal] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
-  const [open, setOpen] = useState<ImportsDialogType | null>(null)
-  const [statusFilter, setStatusFilter] = useState<MovementStatus | 'ALL'>('ALL')
+type Props = {
+  children: React.ReactNode
+  /** Tăng lên khi dữ liệu đổi từ bên ngoài bảng (vừa tạo đơn trong dialog chung) để tải lại. */
+  refreshSignal: number
+}
 
-  const fetchImports = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const params = {
-        movementType: 'IMPORT' as const,
-        limit: 50,
-        ...(statusFilter !== 'ALL' && { status: statusFilter }),
-      }
-      const res = await stockMovementApi.getList(params)
-      setImports(res.data)
-      setTotal(res.data.length)
-    } catch (error) {
-      console.error(error)
-      setImports([])
-      setTotal(0)
-      toast.error(getStockMovementErrorMessage(error, 'Không thể tải danh sách nhập hàng'))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [statusFilter])
+/** Dữ liệu tab Nhà cung cấp. Chỉ lấy phiếu `SUPPLIER`: phiếu nhận hàng xưởng mở từ chi tiết yêu cầu sản xuất. */
+export function ImportsProvider({ children, refreshSignal }: Props) {
+  const [statusFilter, setStatusFilter] = useState<MovementStatus | 'ALL'>('ALL')
+  const [reloads, setReloads] = useState(0)
+  // Gắn kèm query đã trả lời: khi tag khác nghĩa là có yêu cầu mới đang chạy.
+  const query = `${statusFilter}|${refreshSignal}|${reloads}`
+  const [loaded, setLoaded] = useState<{ query: string; rows: StockMovement[] } | null>(null)
+  const isLoading = loaded?.query !== query
+  const imports = loaded?.rows ?? []
 
   useEffect(() => {
-    fetchImports()
-  }, [fetchImports])
+    let stale = false
+    stockMovementApi
+      .getList({
+        movementType: 'IMPORT',
+        importSource: 'SUPPLIER',
+        limit: 50,
+        ...(statusFilter !== 'ALL' && { status: statusFilter }),
+      })
+      .then((res) => {
+        if (!stale) setLoaded({ query, rows: res.data })
+      })
+      .catch((error) => {
+        if (stale) return
+        console.error(error)
+        toast.error(getStockMovementErrorMessage(error, 'Không thể tải danh sách nhập hàng'))
+        setLoaded({ query, rows: [] })
+      })
+    return () => {
+      stale = true
+    }
+  }, [statusFilter, query])
+
+  const reload = () => setReloads((n) => n + 1)
 
   const handleUpdateDetails = async (
     id: string,
@@ -67,7 +70,7 @@ export function ImportsProvider({ children }: { children: React.ReactNode }) {
     try {
       await stockMovementApi.updateDetails(id, { details })
       toast.success('Đã cập nhật danh sách hàng')
-      await fetchImports()
+      reload()
     } catch (error) {
       toast.error(getStockMovementErrorMessage(error, 'Không thể cập nhật danh sách hàng'))
       throw error
@@ -78,8 +81,7 @@ export function ImportsProvider({ children }: { children: React.ReactNode }) {
     try {
       await stockMovementApi.ship(id)
       toast.success('Đã giao hàng')
-      setOpen(null)
-      await fetchImports()
+      reload()
     } catch (error) {
       console.error(error)
       toast.error(getStockMovementErrorMessage(error, 'Không thể giao hàng, vui lòng thử lại'))
@@ -93,8 +95,7 @@ export function ImportsProvider({ children }: { children: React.ReactNode }) {
     try {
       await stockMovementApi.receive(id, { details: receivedDetails })
       toast.success('Đã nhận hàng')
-      setOpen(null)
-      await fetchImports()
+      reload()
     } catch (error) {
       console.error(error)
       toast.error(getStockMovementErrorMessage(error, 'Không thể nhận hàng, vui lòng thử lại'))
@@ -105,8 +106,7 @@ export function ImportsProvider({ children }: { children: React.ReactNode }) {
     try {
       await stockMovementApi.cancel(id)
       toast.success('Đã huỷ đơn nhập hàng')
-      setOpen(null)
-      await fetchImports()
+      reload()
     } catch (error) {
       console.error(error)
       toast.error(getStockMovementErrorMessage(error, 'Không thể huỷ đơn, vui lòng thử lại'))
@@ -117,13 +117,9 @@ export function ImportsProvider({ children }: { children: React.ReactNode }) {
     <ImportsContext.Provider
       value={{
         imports,
-        total,
         isLoading,
-        open,
-        setOpen,
         statusFilter,
         setStatusFilter,
-        fetchImports,
         handleUpdateDetails,
         handleShip,
         handleReceive,

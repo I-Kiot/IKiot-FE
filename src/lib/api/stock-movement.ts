@@ -28,10 +28,13 @@ type ApiRef =
 
 type ApiMovementDetail = {
   productItemId?: string | { id?: string; sku?: string; productName?: string };
+  /** BE trả kèm dòng hàng, nên không cần tải cả catalog chỉ để lấy tên. */
+  productItem?: { sku?: string | null; productName?: string | null };
   quantity?: number;
-  importPrice?: number;
-  receivedQuantity?: number;
-  note?: string;
+  importPrice?: number | null;
+  receivedQuantity?: number | null;
+  defectQuantity?: number | null;
+  note?: string | null;
 };
 
 /**
@@ -45,7 +48,10 @@ type ApiMovement = {
   tenantId?: string;
   movementType?: StockMovement["movementType"];
   status?: StockMovement["status"];
+  totalPrice?: number;
   fromSupplierId?: ApiRef;
+  /** BE trả kèm tên, nên người không có `suppliers:read` vẫn thấy nguồn hàng. */
+  fromSupplier?: { supplierName?: string } | null;
   fromLocation?: ApiLocationRef | null;
   toLocation?: ApiLocationRef | null;
   createdBy?: ApiRef;
@@ -142,11 +148,16 @@ function mapDetail(raw: ApiMovementDetail) {
 
   return {
     productItemId,
-    productName: typeof productRef === "string" ? "" : (productRef?.productName ?? ""),
-    sku: typeof productRef === "string" ? "" : (productRef?.sku ?? ""),
+    productName:
+      raw.productItem?.productName ??
+      (typeof productRef === "string" ? "" : (productRef?.productName ?? "")),
+    sku:
+      raw.productItem?.sku ??
+      (typeof productRef === "string" ? "" : (productRef?.sku ?? "")),
     quantity: raw.quantity ?? 0,
     importPrice: raw.importPrice ?? 0,
     receivedQuantity: raw.receivedQuantity ?? 0,
+    defectQuantity: raw.defectQuantity ?? 0,
     note: normalizeNote(raw.note),
   };
 }
@@ -158,8 +169,10 @@ function mapMovement(raw: ApiMovement): StockMovement {
     tenantId: String(raw.tenantId ?? ""),
     movementType: raw.movementType ?? "IMPORT",
     status: raw.status ?? "PENDING",
+    totalPrice: raw.totalPrice ?? 0,
     fromSupplierId: resolveRefId(raw.fromSupplierId),
-    supplierName: resolveSupplierName(raw.fromSupplierId),
+    supplierName:
+      raw.fromSupplier?.supplierName ?? resolveSupplierName(raw.fromSupplierId),
     fromLocationId: raw.fromLocation?.id,
     fromLocationName: raw.fromLocation?.name,
     fromLocationType: raw.fromLocation?.type,
