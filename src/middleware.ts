@@ -11,7 +11,13 @@ export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname === '/register') {
     return NextResponse.redirect(new URL('/sign-up', request.url))
   }
-  
+
+  // Yêu cầu sản xuất đã gộp vào màn Nhập hàng. Phải chuyển ở đây: guard của layout chỉ cho vào URL có trên sidebar nên page không được render.
+  if (request.nextUrl.pathname === '/exchange/production-requests') {
+    return NextResponse.redirect(new URL('/exchange/imports?source=WORKSHOP', request.url))
+  }
+
+
   return NextResponse.next()
 }
 

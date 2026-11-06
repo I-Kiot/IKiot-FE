@@ -159,12 +159,14 @@ function emptyMessageFor(pathname: string): EmptyMessage {
 
 type Props = {
   columnCount: number;
+  /** Lấy câu của route này thay vì route đang xem, cho bảng nằm trong màn gộp của route khác. */
+  messageRoute?: string;
 };
 
 // Một dòng chiếm trọn bề ngang bảng, hiện icon + tiêu đề + mô tả theo route đang xem.
-export function DataTableEmpty({ columnCount }: Props) {
+export function DataTableEmpty({ columnCount, messageRoute }: Props) {
   const pathname = usePathname();
-  const { icon: Icon, title, description } = emptyMessageFor(pathname);
+  const { icon: Icon, title, description } = emptyMessageFor(messageRoute ?? pathname);
 
   return (
     <TableRow className="hover:bg-transparent">

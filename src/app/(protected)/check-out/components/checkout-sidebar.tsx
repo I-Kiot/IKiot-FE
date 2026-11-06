@@ -61,6 +61,8 @@ interface CheckoutSidebarProps {
   onDiscountTypeChange: (type: "cash" | "percent") => void;
   onPaymentMethodChange: (method: "CASH" | "SEPAY") => void;
   onCustomerPayChange: (pay: number) => void;
+  /** Nút "Đủ tiền": điền tiền khách đưa bằng tổng hóa đơn và báo toast, cùng hành vi với phím F4. */
+  onExactPay: () => void;
   onNoteChange: (note: string) => void;
   onCheckout: () => void;
   onCancel: () => void;
@@ -95,6 +97,7 @@ export function CheckoutSidebar({
   onDiscountTypeChange,
   onPaymentMethodChange,
   onCustomerPayChange,
+  onExactPay,
   onNoteChange,
   onCheckout,
   onCancel,
@@ -476,7 +479,7 @@ export function CheckoutSidebar({
                 </Label>
                 <button
                   type="button"
-                  onClick={() => onCustomerPayChange(grandTotal)}
+                  onClick={onExactPay}
                   className="text-sm text-primary font-bold hover:underline cursor-pointer"
                 >
                   Đủ tiền (F4)

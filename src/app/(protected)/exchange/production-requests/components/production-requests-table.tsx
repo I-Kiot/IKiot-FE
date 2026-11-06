@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -24,8 +23,6 @@ import {
 import { DataTableEmpty } from "@/components/data-table/data-table-empty";
 import { DataTableLoading } from "@/components/data-table/data-table-loading";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { allows } from "@/components/sidebar/constants/role-permissions";
-import { getSessionRole } from "@/lib/auth";
 import { productionRequestApi } from "@/lib/api/production-request";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import {
@@ -40,15 +37,17 @@ import {
   requestStatusDisplay,
 } from "../shared/production-display";
 import { ProductionRequestDetailDialog } from "./production-request-detail-dialog";
-import { ProductionRequestFormDialog } from "./production-request-form-dialog";
 
 const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
-/** B-6: danh sách yêu cầu sản xuất (`GET /production-requests`, contract §3). */
-export function ProductionRequestsTable() {
-  const canCreate = allows(getSessionRole(), "production_requests", "create");
+type Props = {
+  /** Tăng lên khi dữ liệu đổi từ bên ngoài bảng (vừa tạo yêu cầu trong dialog chung) để tải lại. */
+  refreshSignal: number;
+};
 
+/** B-6: danh sách yêu cầu sản xuất (`GET /production-requests`, contract §3), tab Xưởng của màn Nhập hàng. */
+export function ProductionRequestsTable({ refreshSignal }: Props) {
   const [page, setPage] = React.useState(1);
 
   const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
@@ -56,10 +55,9 @@ export function ProductionRequestsTable() {
   const [search, setSearch] = React.useState("");
   const [term, setTerm] = React.useState("");
   const [reloads, setReloads] = React.useState(0);
-  const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<ProductionRequest | null>(null);
   // Gắn kèm query đã trả lời: khi tag khác nghĩa là có yêu cầu mới đang chạy.
-  const query = `${page}|${pageSize}|${status}|${term}|${reloads}`;
+  const query = `${page}|${pageSize}|${status}|${term}|${reloads}|${refreshSignal}`;
   const [loaded, setLoaded] = React.useState<{
     query: string;
     rows: ProductionRequest[];
@@ -141,12 +139,6 @@ export function ProductionRequestsTable() {
             )}
           </SelectContent>
         </Select>
-        {canCreate && (
-          <Button className="ml-auto" onClick={() => setCreating(true)}>
-            <Plus className="size-4" />
-            Tạo yêu cầu
-          </Button>
-        )}
       </div>
 
       <div className="rounded-md border">
@@ -182,7 +174,9 @@ export function ProductionRequestsTable() {
                 </TableRow>
               );
             })}
-            {!loading && rows.length === 0 && <DataTableEmpty columnCount={7} />}
+            {!loading && rows.length === 0 && (
+              <DataTableEmpty columnCount={7} messageRoute="/exchange/production-requests" />
+            )}
             {loading && rows.length === 0 && <DataTableLoading columnCount={7} />}
           </TableBody>
         </Table>
@@ -202,17 +196,6 @@ export function ProductionRequestsTable() {
         }}
       />
 
-      {creating && (
-        <ProductionRequestFormDialog
-          open
-          onOpenChange={setCreating}
-          onSaved={(created) => {
-            setCreating(false);
-            setSelected(created);
-            setReloads((n) => n + 1);
-          }}
-        />
-      )}
       <ProductionRequestDetailDialog
         key={selected ? `${selected.id}:${selected.status}:${selected.updatedAt}` : "none"}
         request={selected}

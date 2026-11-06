@@ -85,7 +85,6 @@ export const sidebarItems = {
       { title: "Chuyển kho", url: "/exchange/exports" },
       { title: "Điều chỉnh tồn kho", url: "/exchange/adjustments" },
       { title: "Danh sách cần sản xuất", url: "/exchange/production-list" },
-      { title: "Yêu cầu sản xuất", url: "/exchange/production-requests" },
       { title: "Phiếu xưởng giao", url: "/exchange/production-deliveries" },
     ],
   },

@@ -21,14 +21,21 @@ export interface StockMovementDetail {
   quantity: number;
   importPrice: number;
   receivedQuantity: number;
+  /** Số lỗi trong số nhận; phiếu xưởng chỉ tính tiền phần đạt. */
+  defectQuantity: number;
   note?: string;
 }
+
+/** Nguồn của phiếu IMPORT: mua từ nhà cung cấp, hoặc hàng xưởng giao theo yêu cầu sản xuất. */
+export type ImportSource = "SUPPLIER" | "WORKSHOP";
 
 export interface StockMovement {
   id: string;
   tenantId: string;
   movementType: MovementType;
   status: MovementStatus;
+  /** Tổng tiền backend đã tính; dùng khi cần số khớp công nợ thay vì tự nhân lại. */
+  totalPrice: number;
   fromSupplierId?: string;
   supplierName?: string;
   fromLocationId?: string;
@@ -121,6 +128,7 @@ export interface StockMovementQueryParams {
   limit?: number;
   status?: MovementStatus;
   movementType?: MovementType;
+  importSource?: ImportSource;
 }
 
 export interface StockMovementSupplierOption {

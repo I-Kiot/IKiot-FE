@@ -8,13 +8,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { getSessionBranchId } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogFooter } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -62,7 +56,6 @@ import type {
   StockMovementProductItemOption,
   StockMovementSupplierOption,
 } from "@/types/stock-movement";
-import { useImports } from "./imports-provider";
 import {
   EmptyOptionsNotice,
   EmptyOptionsLink,
@@ -243,14 +236,31 @@ function ImportDetailLine({
   );
 }
 
-export function ImportsCreateDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const { fetchImports } = useImports();
+type FormOptions = {
+  suppliers: StockMovementSupplierOption[];
+  locations: StockMovementLocationOption[];
+  catalogProducts: StockMovementProductItemOption[];
+};
+
+const EMPTY_OPTIONS: FormOptions = {
+  suppliers: [],
+  locations: [],
+  catalogProducts: [],
+};
+
+type ImportCreateFormProps = {
+  onCreated: () => void;
+  onCancel: () => void;
+  /** Báo lên dialog chung để khoá toggle và nút đóng trong lúc đang gửi. */
+  onSubmittingChange: (submitting: boolean) => void;
+};
+
+/** Form tạo đơn nhập từ nhà cung cấp, nằm trong dialog "Tạo mới". Chỉ mount khi dialog mở nên mỗi lần mở là form trống. */
+export function ImportCreateForm({
+  onCreated,
+  onCancel,
+  onSubmittingChange,
+}: ImportCreateFormProps) {
   const locationKey = useAuthStore((s) => s.locationKey);
   const effectiveScope = useMemo(
     () => getEffectiveLocationScope(locationKey),
@@ -262,7 +272,7 @@ export function ImportsCreateDialog({
     resolver: zodResolver(importFormSchema),
     defaultValues: {
       fromSupplierId: "",
-      toLocationId: "",
+      toLocationId: lockedLocationId || "",
       note: "",
       details: [],
     },
@@ -277,15 +287,13 @@ export function ImportsCreateDialog({
 
   const details = useWatch({ control: form.control, name: "details" }) ?? [];
 
-  const [suppliers, setSuppliers] = useState<StockMovementSupplierOption[]>([]);
-  const [locations, setLocations] = useState<StockMovementLocationOption[]>([]);
-  const [catalogProducts, setCatalogProducts] = useState<
-    StockMovementProductItemOption[]
-  >([]);
+  // `null` nghĩa là đang tải; tải lỗi thì thành danh sách rỗng.
+  const [options, setOptions] = useState<FormOptions | null>(null);
+  const isOptionsLoading = options === null;
+  const { suppliers, locations, catalogProducts } = options ?? EMPTY_OPTIONS;
   const [extraById, setExtraById] = useState(
     () => new Map<string, StockMovementProductItemOption>(),
   );
-  const [isOptionsLoading, setIsOptionsLoading] = useState(false);
 
   const visibleLocations = useMemo(
     () => filterLocationsByAuthScope(locations, effectiveScope),
@@ -374,33 +382,30 @@ export function ImportsCreateDialog({
   );
 
   useEffect(() => {
-    if (!open) return;
-    form.reset({
-      fromSupplierId: "",
-      toLocationId: lockedLocationId || "",
-      note: "",
-      details: [],
-    });
-    setExtraById(new Map());
-  }, [open, form, lockedLocationId]);
-
-  useEffect(() => {
-    if (!open) return;
-    setIsOptionsLoading(true);
+    let stale = false;
     Promise.all([
       stockMovementApi.getSupplierOptions(),
       stockMovementApi.getLocationOptions(),
       stockMovementApi.getCatalogProductItems(),
     ])
-      .then(([s, l, products]) => {
-        // Hàng của xưởng đi qua YCSX (B-5); nhập thường từ chối loại này.
-        setSuppliers(s.filter((supplier) => supplier.type !== "WORKSHOP"));
-        setLocations(l);
-        setCatalogProducts(products);
+      .then(([allSuppliers, allLocations, products]) => {
+        if (stale) return;
+        setOptions({
+          // Hàng của xưởng đi qua YCSX (B-5); nhập thường từ chối loại này.
+          suppliers: allSuppliers.filter((supplier) => supplier.type !== "WORKSHOP"),
+          locations: allLocations,
+          catalogProducts: products,
+        });
       })
-      .catch(() => toast.error("Không thể tải dữ liệu tạo đơn nhập hàng"))
-      .finally(() => setIsOptionsLoading(false));
-  }, [open]);
+      .catch(() => {
+        if (stale) return;
+        toast.error("Không thể tải dữ liệu tạo đơn nhập hàng");
+        setOptions(EMPTY_OPTIONS);
+      });
+    return () => {
+      stale = true;
+    };
+  }, []);
 
   async function onSubmit(data: ImportFormValues) {
     // Nhập hàng về kho. Backend cũng đã chặn từ 2026-09-07 (`assertCanActAt` cho đích của
@@ -423,6 +428,7 @@ export function ImportsCreateDialog({
       visibleLocations.find((l) => l.id === data.toLocationId)?.type ??
       "WAREHOUSE";
 
+    onSubmittingChange(true);
     try {
       await stockMovementApi.createImport({
         movementType: "IMPORT",
@@ -440,8 +446,7 @@ export function ImportsCreateDialog({
         })),
       });
       toast.success("Tạo đơn nhập hàng thành công");
-      onOpenChange(false);
-      await fetchImports();
+      onCreated();
     } catch (error) {
       toast.error(
         getStockMovementErrorMessage(
@@ -449,230 +454,228 @@ export function ImportsCreateDialog({
           "Không thể tạo đơn, vui lòng thử lại",
         ),
       );
+    } finally {
+      onSubmittingChange(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Tạo đơn nhập hàng mới</DialogTitle>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="fromSupplierId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Nhà cung cấp <span className="text-destructive">*</span>
-                    </FormLabel>
-                    {!isOptionsLoading && suppliers.length === 0 ? (
-                      <EmptyOptionsNotice>
-                        Cửa hàng chưa có nhà cung cấp nào. Hãy thêm nhà cung cấp ở{" "}
-                        <EmptyOptionsLink href="/exchange/suppliers">
-                          Giao dịch › Nhà cung cấp
-                        </EmptyOptionsLink>{" "}
-                        trước khi tạo đơn nhập hàng.
-                      </EmptyOptionsNotice>
-                    ) : (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-full cursor-pointer">
-                            <SelectValue
-                              placeholder={
-                                isOptionsLoading
-                                  ? "Đang tải..."
-                                  : "Chọn nhà cung cấp"
-                              }
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {suppliers.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="toLocationId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Kho nhận <span className="text-destructive">*</span>
-                    </FormLabel>
-                    {!isOptionsLoading && visibleLocations.length === 0 ? (
-                      // Rỗng vì hai lý do khác hẳn nhau: cửa hàng chưa tạo kho/chi nhánh
-                      // nào, hay có nhưng người này không được phân công chỗ nào.
-                      <EmptyOptionsNotice>
-                        {locations.length === 0 ? (
-                          <>
-                            Cửa hàng chưa có kho hay chi nhánh nào. Hãy tạo ở{" "}
-                            <EmptyOptionsLink href="/settings">
-                              Cài đặt › Chi nhánh / Kho tổng
-                            </EmptyOptionsLink>{" "}
-                            trước khi tạo đơn nhập hàng.
-                          </>
-                        ) : (
-                          "Bạn chưa được phân công kho hay chi nhánh nào để nhận hàng."
-                        )}
-                      </EmptyOptionsNotice>
-                    ) : (
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={!!lockedLocationId}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full cursor-pointer">
-                            <SelectValue
-                              placeholder={
-                                isOptionsLoading ? "Đang tải..." : "Chọn kho nhận"
-                              }
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {visibleLocations.map((l) => (
-                            <SelectItem key={l.id} value={l.id}>
-                              {l.name} (
-                              {l.type === "WAREHOUSE" ? "Kho" : "Chi nhánh"})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex min-h-0 flex-1 flex-col"
+      >
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
-              name="note"
+              name="fromSupplierId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Ghi chú đơn</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Ghi chú cho cả phiếu nhập (tùy chọn)"
-                      rows={2}
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel>
+                    Nhà cung cấp <span className="text-destructive">*</span>
+                  </FormLabel>
+                  {!isOptionsLoading && suppliers.length === 0 ? (
+                    <EmptyOptionsNotice>
+                      Cửa hàng chưa có nhà cung cấp nào. Hãy thêm nhà cung cấp ở{" "}
+                      <EmptyOptionsLink href="/exchange/suppliers">
+                        Giao dịch › Nhà cung cấp
+                      </EmptyOptionsLink>{" "}
+                      trước khi tạo đơn nhập hàng.
+                    </EmptyOptionsNotice>
+                  ) : (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full cursor-pointer">
+                          <SelectValue
+                            placeholder={
+                              isOptionsLoading
+                                ? "Đang tải..."
+                                : "Chọn nhà cung cấp"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {suppliers.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Separator />
+            <FormField
+              control={form.control}
+              name="toLocationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Kho nhận <span className="text-destructive">*</span>
+                  </FormLabel>
+                  {!isOptionsLoading && visibleLocations.length === 0 ? (
+                    // Rỗng vì hai lý do khác hẳn nhau: cửa hàng chưa tạo kho/chi nhánh
+                    // nào, hay có nhưng người này không được phân công chỗ nào.
+                    <EmptyOptionsNotice>
+                      {locations.length === 0 ? (
+                        <>
+                          Cửa hàng chưa có kho hay chi nhánh nào. Hãy tạo ở{" "}
+                          <EmptyOptionsLink href="/settings">
+                            Cài đặt › Chi nhánh / Kho tổng
+                          </EmptyOptionsLink>{" "}
+                          trước khi tạo đơn nhập hàng.
+                        </>
+                      ) : (
+                        "Bạn chưa được phân công kho hay chi nhánh nào để nhận hàng."
+                      )}
+                    </EmptyOptionsNotice>
+                  ) : (
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!!lockedLocationId}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full cursor-pointer">
+                          <SelectValue
+                            placeholder={
+                              isOptionsLoading ? "Đang tải..." : "Chọn kho nhận"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {visibleLocations.map((l) => (
+                          <SelectItem key={l.id} value={l.id}>
+                            {l.name} (
+                            {l.type === "WAREHOUSE" ? "Kho" : "Chi nhánh"})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Tìm hàng</h3>
-              <MovementProductSearch
-                usedIds={usedIds}
-                onPick={(item) => applyProduct(item)}
-                searchScope="catalog"
-                poolProducts={catalogProducts}
-                metaMode="price"
-                placeholder="Tìm theo tên, mã, SKU (toàn catalog)..."
-              />
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <h3 className="text-sm font-semibold">
-                  Hàng đã chọn ({fields.length})
-                </h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer"
-                  onClick={() => append({ ...EMPTY_DETAIL })}
-                >
-                  <Plus className="mr-1 size-4" />
-                  Thêm dòng trống
-                </Button>
-              </div>
-
-              {fields.map((f, idx) => {
-                const itemId = details[idx]?.productItemId ?? "";
-                const product = itemId ? productById.get(itemId) : undefined;
-                const lineProducts = catalogProducts.filter(
-                  (p) => p.id === itemId || !usedIds.has(p.id),
-                );
-                return (
-                  <ImportDetailLine
-                    key={f.id}
-                    form={form}
-                    index={idx}
-                    product={product}
-                    lineProducts={lineProducts}
-                    canRemove
-                    onRemove={() => {
-                      remove(idx);
-                      if (!itemId) return;
-                      setExtraById((prev) => {
-                        if (!prev.has(itemId)) return prev;
-                        const next = new Map(prev);
-                        next.delete(itemId);
-                        return next;
-                      });
-                    }}
-                    onPick={(item) => applyProduct(item, idx)}
+          <FormField
+            control={form.control}
+            name="note"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ghi chú đơn</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Ghi chú cho cả phiếu nhập (tùy chọn)"
+                    rows={2}
+                    className="resize-none"
+                    {...field}
                   />
-                );
-              })}
-            </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 px-4 py-3">
-              <p className="text-sm text-muted-foreground">
-                Tổng giá trị đơn hàng
-              </p>
-              <p
-                className="max-w-[60%] truncate text-lg font-bold tabular-nums"
-                title={formatMoneyVnd(total)}
-              >
-                {formatMoneyVnd(total)}
-              </p>
-            </div>
+          <Separator />
 
-            <DialogFooter>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">Tìm hàng</h3>
+            <MovementProductSearch
+              usedIds={usedIds}
+              onPick={(item) => applyProduct(item)}
+              searchScope="catalog"
+              poolProducts={catalogProducts}
+              metaMode="price"
+              placeholder="Tìm theo tên, mã, SKU (toàn catalog)..."
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <h3 className="text-sm font-semibold">
+                Hàng đã chọn ({fields.length})
+              </h3>
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 className="cursor-pointer"
-                onClick={() => onOpenChange(false)}
+                onClick={() => append({ ...EMPTY_DETAIL })}
               >
-                Huỷ
+                <Plus className="mr-1 size-4" />
+                Thêm dòng trống
               </Button>
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting || !canSubmit}
-                className="cursor-pointer"
-              >
-                <Plus className="mr-2 size-4" />
-                {form.formState.isSubmitting
-                  ? "Đang tạo..."
-                  : "Tạo đơn nhập hàng"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+            </div>
+
+            {fields.map((f, idx) => {
+              const itemId = details[idx]?.productItemId ?? "";
+              const product = itemId ? productById.get(itemId) : undefined;
+              const lineProducts = catalogProducts.filter(
+                (p) => p.id === itemId || !usedIds.has(p.id),
+              );
+              return (
+                <ImportDetailLine
+                  key={f.id}
+                  form={form}
+                  index={idx}
+                  product={product}
+                  lineProducts={lineProducts}
+                  canRemove
+                  onRemove={() => {
+                    remove(idx);
+                    if (!itemId) return;
+                    setExtraById((prev) => {
+                      if (!prev.has(itemId)) return prev;
+                      const next = new Map(prev);
+                      next.delete(itemId);
+                      return next;
+                    });
+                  }}
+                  onPick={(item) => applyProduct(item, idx)}
+                />
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 px-4 py-3">
+            <p className="text-sm text-muted-foreground">
+              Tổng giá trị đơn hàng
+            </p>
+            <p
+              className="max-w-[60%] truncate text-lg font-bold tabular-nums"
+              title={formatMoneyVnd(total)}
+            >
+              {formatMoneyVnd(total)}
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter className="border-t px-6 py-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="cursor-pointer"
+            disabled={form.formState.isSubmitting}
+            onClick={onCancel}
+          >
+            Huỷ
+          </Button>
+          <Button
+            type="submit"
+            disabled={form.formState.isSubmitting || !canSubmit}
+            className="cursor-pointer"
+          >
+            <Plus className="mr-2 size-4" />
+            {form.formState.isSubmitting ? "Đang tạo..." : "Tạo đơn nhập hàng"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
   );
 }

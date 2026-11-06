@@ -24,7 +24,7 @@ export default function ProductionDeliveriesPage() {
         description="Xưởng báo giao hàng theo yêu cầu sản xuất. Kiểm hàng thực tế rồi xác nhận - lúc đó mới nhập kho và ghi công nợ xưởng."
         actions={
           <Button variant="outline" asChild>
-            <Link href="/exchange/production-requests">Yêu cầu sản xuất</Link>
+            <Link href="/exchange/imports?source=WORKSHOP">Yêu cầu sản xuất</Link>
           </Button>
         }
       />

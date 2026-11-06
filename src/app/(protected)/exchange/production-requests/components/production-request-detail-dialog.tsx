@@ -30,13 +30,18 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { productionRequestApi } from "@/lib/api/production-request";
 import { getApiErrorBody } from "@/lib/api/error-codes";
-import { personName, type ProductionRequest } from "@/types/order-flow";
+import {
+  personName,
+  type ProductionReceipt,
+  type ProductionRequest,
+} from "@/types/order-flow";
 import {
   formatDate,
   formatDateTime,
   requestProgress,
   requestStatusDisplay,
 } from "../shared/production-display";
+import { ImportReceiptDialog } from "./import-receipt-dialog";
 import { ProductionRequestFormDialog } from "./production-request-form-dialog";
 import { ReceiveProductionDialog } from "./receive-production-dialog";
 
@@ -84,12 +89,15 @@ export function ProductionRequestDetailDialog({
   const canUpdate = allows(role, "production_requests", "update");
   const canDelete = allows(role, "production_requests", "delete");
   const canReceive = allows(role, "production", "receive");
+  // `GET /stock-movements/:id` cần quyền này; không có thì chỉ hiện thời gian và người nhận.
+  const canViewImport = allows(role, "stock_movement", "read");
 
   const [pending, setPending] = React.useState<Pending>(null);
   const [reason, setReason] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
   const [receiving, setReceiving] = React.useState(false);
+  const [viewingReceipt, setViewingReceipt] = React.useState<ProductionReceipt | null>(null);
 
   if (!request) return null;
 
@@ -128,7 +136,10 @@ export function ProductionRequestDetailDialog({
 
   return (
     <>
-      <Dialog open={!editing && !receiving && !pending} onOpenChange={onOpenChange}>
+      <Dialog
+        open={!editing && !receiving && !pending && !viewingReceipt}
+        onOpenChange={onOpenChange}
+      >
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -261,10 +272,19 @@ export function ProductionRequestDetailDialog({
               <ul className="space-y-1 text-muted-foreground">
                 {request.receipts.map((receipt) => (
                   <li key={receipt.stockMovementId}>
-                    {formatDateTime(receipt.receivedAt)} · {personName(receipt.receivedBy) || "-"} ·{" "}
-                    <Link href="/exchange/imports" className="underline">
-                      phiếu nhập
-                    </Link>
+                    {formatDateTime(receipt.receivedAt)} · {personName(receipt.receivedBy) || "-"}
+                    {canViewImport && (
+                      <>
+                        {" · "}
+                        <button
+                          type="button"
+                          className="cursor-pointer underline"
+                          onClick={() => setViewingReceipt(receipt)}
+                        >
+                          phiếu nhập
+                        </button>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -373,6 +393,13 @@ export function ProductionRequestDetailDialog({
             setReceiving(false);
             onChanged(updated);
           }}
+        />
+      )}
+      {viewingReceipt && (
+        <ImportReceiptDialog
+          movementId={viewingReceipt.stockMovementId}
+          receivedAt={viewingReceipt.receivedAt}
+          onClose={() => setViewingReceipt(null)}
         />
       )}
     </>

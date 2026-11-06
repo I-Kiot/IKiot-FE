@@ -24,7 +24,7 @@ export default function ProductionListPage() {
         description="Hàng các đơn đang cần mà tồn kho và hàng đã đặt xưởng chưa đủ - tính tại thời điểm xem"
         actions={
           <Button variant="outline" asChild>
-            <Link href="/exchange/production-requests">Yêu cầu sản xuất</Link>
+            <Link href="/exchange/imports?source=WORKSHOP">Yêu cầu sản xuất</Link>
           </Button>
         }
       />
