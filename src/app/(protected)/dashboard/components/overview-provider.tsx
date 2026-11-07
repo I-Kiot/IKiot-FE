@@ -17,9 +17,10 @@ interface OverviewContextValue {
   /** Kỳ đã quy ra ngày, tính đúng một lần lúc chọn - không tính lại mỗi lần render. */
   resolved: ResolvedRange;
   setRange: (range: OverviewRange) => void;
+  /** Nơi đang xem, cho số liệu đơn hàng. Kho cũng bán được và id địa điểm dùng chung, nên đang xem kho thì đây là id của kho. */
   branchId?: string;
+  /** Chỉ có khi đang xem kho; số liệu tồn kho ưu tiên giá trị này. */
   warehouseId?: string;
-  isWarehouse: boolean;
   /** Tăng khi có realtime hoặc bấm "Làm mới": tình trạng đơn, tồn kho, đơn gần đây tải lại; số liệu theo kỳ cũng tải lại vì `resolved` đổi. */
   liveVersion: number;
   refresh: () => void;
@@ -77,9 +78,8 @@ export function OverviewProvider({ children }: { children: React.ReactNode }) {
         range: rangeState.range,
         resolved: rangeState.resolved,
         setRange,
-        branchId,
+        branchId: branchId ?? warehouseId,
         warehouseId,
-        isWarehouse: Boolean(warehouseId),
         liveVersion,
         refresh,
       }}

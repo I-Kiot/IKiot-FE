@@ -4,11 +4,9 @@
 // tồn kho, sản phẩm bán chạy / chậm, đơn gần đây, thao tác nhanh, thông báo, hiệu suất cửa hàng.
 // Các phân tích sâu hơn nằm ở /reports.
 
-import Link from "next/link";
-import { Warehouse } from "lucide-react";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
-import { OverviewProvider, useOverview } from "./components/overview-provider";
+import { OverviewProvider } from "./components/overview-provider";
 import { DashboardHeader } from "./components/dashboard-header";
 import { KpiCards } from "./components/kpi-cards";
 import { RevenueChart } from "./components/revenue-chart";
@@ -18,32 +16,6 @@ import { ProductPerformanceCard } from "./components/product-performance-card";
 import { QuickActionsCard } from "./components/quick-actions-card";
 import { NotificationsCard } from "./components/notifications-card";
 import { StorePerformanceCard } from "./components/store-performance-card";
-
-/** Đang xem một kho: kho không bán hàng, nên chỉ còn tồn kho và các lối tắt. */
-function WarehouseLayout() {
-  return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="space-y-6 lg:col-span-2">
-        <div className="flex items-start gap-3 rounded-lg border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-          <Warehouse className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <span>
-            Bạn đang xem một <span className="font-medium text-foreground">kho</span>. Kho không phát sinh doanh thu bán
-            hàng, nên dashboard chỉ hiện tồn kho. Dòng tiền nhập hàng xem ở{" "}
-            <Link href="/reports" className="font-medium text-foreground underline underline-offset-4">
-              Báo cáo
-            </Link>
-            .
-          </span>
-        </div>
-        <StockAlertsCard />
-      </div>
-      <div className="space-y-6">
-        <QuickActionsCard />
-        <NotificationsCard />
-      </div>
-    </div>
-  );
-}
 
 /** Từ xl trở lên cả dashboard vừa một màn hình: các thẻ chia nhau chiều cao, tự cuộn bên trong. Màn hẹp hơn thì xếp chồng và cuộn trang. */
 function SalesLayout() {
@@ -79,18 +51,13 @@ function SalesLayout() {
   );
 }
 
-function DashboardBody() {
-  const { isWarehouse } = useOverview();
-  return isWarehouse ? <WarehouseLayout /> : <SalesLayout />;
-}
-
 export default function DashboardPage() {
   return (
     <OverviewProvider>
       {/* xl: cao bằng màn hình trừ header (3rem là py-6 của khung ngoài), giống trang chat. */}
       <div className="@container/main flex flex-1 flex-col gap-4 px-4 pb-8 lg:px-6 xl:h-[calc(100dvh-var(--header-height)-3rem)] xl:flex-none xl:overflow-y-auto xl:pb-0">
         <DashboardHeader />
-        <DashboardBody />
+        <SalesLayout />
       </div>
     </OverviewProvider>
   );
