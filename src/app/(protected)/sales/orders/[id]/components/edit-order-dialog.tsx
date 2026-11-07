@@ -26,10 +26,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { branchApi } from "@/lib/api/branch";
 import { depositChangeOf, getApiErrorBody, type MoneyGap } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
+import { useLineStockAt } from "../../shared/use-line-stock-at";
 import type { LocationType } from "@/types/location";
 import {
   FULFILLMENT_TYPE_LABELS,
   type OrderDetail,
+  type SourceLocation,
   type UpdateOrderPayload,
 } from "@/types/order-flow";
 import {
@@ -88,34 +90,63 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   );
   const [shippingFee, setShippingFee] = React.useState(String(order.shippingFee));
   const [note, setNote] = React.useState(order.note ?? "");
-  const [stockLocation, setStockLocation] = React.useState<{
+  const [branchSource, setBranchSource] = React.useState<{
     id: string;
     type: LocationType;
   } | null>(null);
   const [depositGap, setDepositGap] = React.useState<MoneyGap | null>(null);
   const [saving, setSaving] = React.useState(false);
 
-  // Tồn của dòng thêm mới được đọc tại kho xuất của chi nhánh, như khi tạo đơn.
+  // Đơn chỉ đóng gói được khi xuất từ một nơi, nên dòng thêm mới theo nguồn hàng của các dòng đang có.
+  const existingSource = order.items.find((line) => line.sourceLocation)?.sourceLocation ?? null;
+  const hasSource = existingSource !== null;
+  // Tồn của dòng thêm mới đọc tại nguồn hàng của đơn; đơn chưa có nguồn thì tại kho xuất của chi nhánh, như khi tạo đơn.
+  const [sourceOptions, setSourceOptions] = React.useState<SourceLocation[]>([]);
+  const [pickedSourceId, setPickedSourceId] = React.useState<string | null>(null);
+  const picked = sourceOptions.find((location) => location.id === pickedSourceId);
+  const current = picked ?? existingSource;
+  const stockLocation = current ? { id: current.id, type: current.type } : branchSource;
+  // Đóng gói xong hàng đã khoá tại nơi cũ nên chỉ đổi được khi còn CONFIRMED.
+  const sourceChanged = picked !== undefined && picked.id !== existingSource?.id;
+
+  useLineStockAt(stockLocation, lines, setLines);
+
   React.useEffect(() => {
     if (!linesEditable) return;
+    let stale = false;
+    orderJourneyApi
+      .sourceLocations()
+      .then((locations) => {
+        if (!stale) setSourceOptions(locations);
+      })
+      .catch(() => {
+        // Không tải được thì giữ nguồn hàng hiện tại.
+      });
+    return () => {
+      stale = true;
+    };
+  }, [linesEditable]);
+
+  React.useEffect(() => {
+    if (!linesEditable || hasSource) return;
     let stale = false;
     branchApi
       .getById(order.branch.id)
       .then((branch) => {
         if (stale) return;
-        setStockLocation(
+        setBranchSource(
           branch.defaultFulfillmentLocationId
             ? { id: branch.defaultFulfillmentLocationId, type: "WAREHOUSE" }
             : { id: branch.id, type: "BRANCH" },
         );
       })
       .catch(() => {
-        if (!stale) setStockLocation({ id: order.branch.id, type: "BRANCH" });
+        if (!stale) setBranchSource({ id: order.branch.id, type: "BRANCH" });
       });
     return () => {
       stale = true;
     };
-  }, [linesEditable, order.branch.id]);
+  }, [linesEditable, hasSource, order.branch.id]);
 
   const linesChanged = linesEditable && linesKey(lines) !== linesKey(initialLines);
   const pickup = fulfillmentType === "STORE_PICKUP";
@@ -149,6 +180,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
       requestedDeliveryDate: requestedDeliveryDate || undefined,
       shippingFee: Math.round(fee),
       note: note.trim() || undefined,
+      ...(sourceChanged ? { sourceLocationId: picked.id } : {}),
       // Chỉ gửi dòng khi có thay đổi: gửi dòng là server tính lại giá đơn.
       ...(linesChanged
         ? {
@@ -158,6 +190,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
               quantity: line.quantity,
               unitPrice: line.unitPrice,
               discountAmount: line.discountAmount,
+              ...(!line.id && current ? { sourceLocationId: current.id } : {}),
             })),
           }
         : {}),
@@ -199,6 +232,35 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
         </DialogHeader>
 
         <div className="max-h-[65vh] space-y-5 overflow-y-auto pr-1">
+          {(linesEditable || existingSource) && (
+            <div className="grid gap-2">
+              <Label>Nguồn hàng</Label>
+              <Select
+                value={stockLocation?.id ?? ""}
+                onValueChange={setPickedSourceId}
+                disabled={!linesEditable || sourceOptions.length === 0}
+              >
+                <SelectTrigger className="w-full" aria-label="Nguồn hàng">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(sourceOptions.length > 0 ? sourceOptions : existingSource ? [existingSource] : []).map(
+                    (location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.name}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {linesEditable
+                  ? "Cả đơn xuất từ một nơi, đổi được tới trước khi đóng gói. Yêu cầu sản xuất đang mở vẫn giao về nơi cũ."
+                  : "Đơn đã đóng gói nên không đổi được nguồn hàng."}
+              </p>
+            </div>
+          )}
+
           {linesEditable && (
             <div className="space-y-2">
               <Label>Hàng</Label>

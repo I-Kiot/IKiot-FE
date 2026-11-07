@@ -26,7 +26,11 @@ export function OrderDeliveryCard({ order }: { order: OrderDetail }) {
         <InfoRow label="SĐT nhận" value={order.recipientPhone ?? order.customer?.phone ?? "-"} />
         {pickup ? (
           <>
-            <InfoRow label="Nơi lấy hàng" value={order.branch.name} />
+            {/* Khách lấy tại nơi đóng gói, không phải nơi bán. */}
+            <InfoRow
+              label="Nơi lấy hàng"
+              value={order.items.find((line) => line.sourceLocation)?.sourceLocation?.name ?? order.branch.name}
+            />
             <InfoRow
               label="Ngày hẹn lấy"
               value={

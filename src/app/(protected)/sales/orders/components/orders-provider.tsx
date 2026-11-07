@@ -133,7 +133,7 @@ export function OrdersProvider({
   }, [keywordInput]);
 
   const params = useMemo<OrderJourneyQuery>(() => {
-    // Bộ chuyển chi nhánh ở header áp dụng cho danh sách. Đơn thuộc chi nhánh chứ không thuộc kho, nên chọn kho không lọc gì ở đây.
+    // Bộ chuyển chi nhánh ở header áp dụng cho danh sách. Chọn kho không lọc theo nơi bán, vì kho còn xử lý đơn của các chi nhánh.
     const scope = parseLocationKey(locationKey);
     return {
       page: listQuery.page,

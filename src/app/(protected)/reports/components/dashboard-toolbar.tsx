@@ -9,15 +9,13 @@ import { formatDayVi } from "@/lib/stats-format"
 
 /** Chọn kỳ tại một chỗ; kỳ này điều khiển mọi widget bên dưới, trừ so sánh mốc cố định. */
 export function DashboardToolbar() {
-  const { range, setRange, revenueDateRange, refetch, isLoading, isWarehouse } = useDashboard()
+  const { range, setRange, revenueDateRange, refetch, isLoading } = useDashboard()
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Calendar className="size-4" />
-        {isWarehouse ? (
-          <span>Dữ liệu kho theo kỳ đã chọn</span>
-        ) : revenueDateRange ? (
+        {revenueDateRange ? (
           <span>
             Kỳ báo cáo:{" "}
             <span className="font-medium text-foreground">

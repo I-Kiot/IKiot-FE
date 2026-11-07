@@ -152,15 +152,9 @@ async function loadReport(
   const resolved = resolveDashboardRange(range)
   const { fromDate, toDate } = resolved
 
-  if (warehouseId) {
-    const [cashflow, inventory] = await Promise.all([
-      statsApi.getCashflow({ fromDate, toDate, warehouseId }),
-      statsApi.getInventory({ warehouseId, lowStockThreshold }),
-    ])
-    return { ...EMPTY_REPORT, key, cashflow, inventory }
-  }
-
-  const dateParams = { fromDate, toDate, branchId }
+  // Kho cũng bán được, và id địa điểm dùng chung, nên báo cáo đơn hàng lọc theo đúng nơi đang xem. Sổ thu chi và tồn thì phân biệt kho với chi nhánh.
+  const place = branchId ?? warehouseId
+  const dateParams = { fromDate, toDate, branchId: place }
   const [
     revenueByPaymentMethod,
     revenueByStaff,
@@ -178,9 +172,13 @@ async function loadReport(
     optional(statsApi.getOrdersByStatus(dateParams)),
     optional(statsApi.getSalesHeatmap(dateParams)),
     optional(statsApi.getTopCustomers({ ...dateParams, limit: 5 })),
-    statsApi.getCashflow({ ...dateParams, flow: 'ORD' }),
-    statsApi.getInventory({ branchId, lowStockThreshold }),
-    optional(statsApi.getRevenueComparison({ branchId })),
+    warehouseId
+      ? statsApi.getCashflow({ fromDate, toDate, warehouseId })
+      : statsApi.getCashflow({ ...dateParams, flow: 'ORD' }),
+    warehouseId
+      ? statsApi.getInventory({ warehouseId, lowStockThreshold })
+      : statsApi.getInventory({ branchId, lowStockThreshold }),
+    optional(statsApi.getRevenueComparison({ branchId: place })),
   ])
 
   return {

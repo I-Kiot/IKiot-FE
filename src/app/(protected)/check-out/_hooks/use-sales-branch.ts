@@ -21,12 +21,20 @@ function lockedBranchId(): string {
   return "";
 }
 
+/** Một nơi bán: chi nhánh ở /check-out, chi nhánh hoặc kho ở màn tạo đơn. */
+export interface SalesPlace {
+  id: string;
+  name: string;
+  type?: "BRANCH" | "WAREHOUSE";
+  defaultFulfillmentLocationId?: string | null;
+}
+
 export interface SalesBranch {
-  /** Chi nhánh ghi nhận đơn; "" cho tới khi người bán chọn. */
+  /** Nơi ghi nhận đơn; "" cho tới khi người bán chọn. */
   branchId: string;
   /** True khi switcher hoặc tài khoản đã cố định chi nhánh: selector không được đổi. */
   locked: boolean;
-  branches: Branch[];
+  branches: SalesPlace[];
   ready: boolean;
   setBranchId: (id: string) => void;
 }

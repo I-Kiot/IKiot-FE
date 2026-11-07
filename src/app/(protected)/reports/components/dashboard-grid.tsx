@@ -1,7 +1,6 @@
 // [Báo cáo chi tiết – bố cục theo địa điểm đang chọn]
 'use client'
 
-import { Warehouse } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDashboard } from './dashboard-provider'
 import { DashboardToolbar } from './dashboard-toolbar'
@@ -15,25 +14,7 @@ import { CashflowInventory } from './customer-insights'
 import { RevenueBreakdown } from './revenue-breakdown'
 
 export function DashboardGrid() {
-  const { isWarehouse, revenueByBranch } = useDashboard()
-
-  // Kho không có doanh thu bán hàng, chỉ hiện các widget áp dụng cho kho.
-  if (isWarehouse) {
-    return (
-      <div className="@container/main space-y-6">
-        <DashboardToolbar />
-        <div className="flex items-start gap-3 rounded-lg border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-          <Warehouse className="mt-0.5 size-4 shrink-0" />
-          <span>
-            Bạn đang xem một <span className="font-medium text-foreground">kho</span>. Kho không phát
-            sinh doanh thu bán hàng, nên chỉ hiển thị <span className="font-medium text-foreground">dòng tiền</span> (nhập
-            hàng) và <span className="font-medium text-foreground">tồn kho</span>.
-          </span>
-        </div>
-        <CashflowInventory />
-      </div>
-    )
-  }
+  const { revenueByBranch } = useDashboard()
 
   const showBranches = (revenueByBranch?.branches.length ?? 0) > 1
 
