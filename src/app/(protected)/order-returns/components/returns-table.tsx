@@ -4,7 +4,7 @@ import * as React from "react";
 import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -131,10 +131,15 @@ export function ReturnsTable() {
             ))}
           </SelectContent>
         </Select>
-        <Button className="ml-auto" onClick={() => setCreating(true)}>
+        <PermissionButton
+          allowed={allows(role, "returns", "create")}
+          permission="returns:create"
+          className="ml-auto"
+          onClick={() => setCreating(true)}
+        >
           <Plus className="size-4" />
           Tạo đơn hoàn
-        </Button>
+        </PermissionButton>
       </div>
 
       <div className="rounded-md border">

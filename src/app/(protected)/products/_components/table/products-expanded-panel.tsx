@@ -5,6 +5,7 @@ import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -326,8 +327,10 @@ export function ProductsExpandedPanel({
         )}
 
         <div className="flex items-center justify-between mt-3">
-          {canDelete && product.status !== "DISCONTINUED" ? (
-            <Button
+          {product.status !== "DISCONTINUED" ? (
+            <PermissionButton
+              allowed={canDelete}
+              permission="products:delete"
               variant="destructive"
               size="sm"
               className="cursor-pointer"
@@ -339,14 +342,15 @@ export function ProductsExpandedPanel({
             >
               <Trash2 className="mr-2 size-4" />
               Xóa {screen.noun}
-            </Button>
+            </PermissionButton>
           ) : (
             <span />
           )}
 
           <div className="flex items-center gap-2">
-            {canAdd && (
-              <Button
+            <PermissionButton
+                allowed={canAdd}
+                permission="products:create"
                 size="sm"
                 variant="outline"
                 className="cursor-pointer"
@@ -357,10 +361,10 @@ export function ProductsExpandedPanel({
               >
                 <Plus className="mr-2 size-4" />
                 Thêm phiên bản
-              </Button>
-            )}
-            {canEdit && (
-              <Button
+              </PermissionButton>
+              <PermissionButton
+                allowed={canEdit}
+                permission="products:update"
                 size="sm"
                 className="cursor-pointer"
                 onClick={(e) => {
@@ -371,8 +375,7 @@ export function ProductsExpandedPanel({
               >
                 <Pencil className="mr-2 size-4" />
                 Chỉnh sửa
-              </Button>
-            )}
+              </PermissionButton>
           </div>
         </div>
       </div>

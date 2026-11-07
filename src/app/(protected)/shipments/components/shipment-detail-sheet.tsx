@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import {
   Dialog,
   DialogContent,
@@ -122,6 +123,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+const WHO_TRACK = "Chủ shop, shipper của lần giao, hoặc nhân viên có quyền điều phối giao hàng mới làm được.";
+
 export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged }: ShipmentDetailSheetProps) {
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [action, setAction] = useState<OpenAction>(null);
@@ -195,26 +198,45 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
 
             {!isFinished(shipment.status) && (
               <div className="flex flex-wrap gap-2">
-                {shipment.status === "PICKED_UP" && allowed.canShip && (
-                  <Button onClick={() => setAction("ship")}>Bắt đầu vận chuyển</Button>
+                {shipment.status === "PICKED_UP" && (
+                  <PermissionButton allowed={allowed.canShip} permission="orders:ship" onClick={() => setAction("ship")}>
+                    Bắt đầu vận chuyển
+                  </PermissionButton>
                 )}
-                {isOnTheRoad(shipment.status) && allowed.canTrack && (
+                {isOnTheRoad(shipment.status) && (
                   <>
-                    <Button variant="outline" onClick={() => setAction("outForDelivery")}>
+                    <PermissionButton
+                      allowed={allowed.canTrack}
+                      permission="shipments:update"
+                      who={WHO_TRACK}
+                      variant="outline"
+                      onClick={() => setAction("outForDelivery")}
+                    >
                       Cập nhật trạng thái đơn hàng
-                    </Button>
+                    </PermissionButton>
                     {shipment.status !== "FAILED" && (
-                      <Button variant="destructive" onClick={() => setAction("fail")}>
+                      <PermissionButton
+                        allowed={allowed.canTrack}
+                        permission="shipments:update"
+                        who={WHO_TRACK}
+                        variant="destructive"
+                        onClick={() => setAction("fail")}
+                      >
                         Giao hàng thất bại
-                      </Button>
+                      </PermissionButton>
                     )}
                   </>
                 )}
                 {/* Đang trên đường thì shipper đã cầm hàng: BE từ chối đổi, nên ẩn nút. */}
-                {shipment.carrierType === "INTERNAL" && allowed.canChangeDriver && !isOnTheRoad(shipment.status) && (
-                  <Button variant="outline" onClick={() => setAction("changeDriver")}>
+                {shipment.carrierType === "INTERNAL" && !isOnTheRoad(shipment.status) && (
+                  <PermissionButton
+                    allowed={allowed.canChangeDriver}
+                    permission="shipments:update"
+                    variant="outline"
+                    onClick={() => setAction("changeDriver")}
+                  >
                     Đổi shipper
-                  </Button>
+                  </PermissionButton>
                 )}
               </div>
             )}

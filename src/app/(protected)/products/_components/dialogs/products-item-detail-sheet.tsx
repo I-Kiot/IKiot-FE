@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import {
   Sheet,
   SheetContent,
@@ -327,15 +328,17 @@ export function ProductsItemDetailSheet({
                           <span className="font-semibold tabular-nums">
                             {sd.stock}
                           </span>
-                          {canRemoveLocation && sd.stock === 0 && (
-                            <Button
+                          {sd.stock === 0 && (
+                            <PermissionButton
+                              allowed={canRemoveLocation}
+                              permission="inventory:delete"
                               size="icon"
                               variant="ghost"
                               className="size-6 cursor-pointer text-muted-foreground hover:text-destructive"
                               onClick={() => setRemovingLocation(sd)}
                             >
                               <Trash2 className="size-3.5" />
-                            </Button>
+                            </PermissionButton>
                           )}
                         </div>
                       </div>
@@ -380,8 +383,9 @@ export function ProductsItemDetailSheet({
         </ScrollArea>
 
         <SheetFooter className="px-6 py-4 border-t shrink-0 grid grid-cols-[auto_0.5fr_auto] items-center">
-          {canDelete ? (
-            <Button
+          <PermissionButton
+              allowed={canDelete}
+              permission="products:delete"
               variant="destructive"
               onClick={() => {
                 if (hasLocations) {
@@ -395,17 +399,12 @@ export function ProductsItemDetailSheet({
             >
               <Trash2 className=" size-4" />
               Xóa phiên bản
-            </Button>
-          ) : (
-            <span />
-          )}
+            </PermissionButton>
           <div />
-          {canEdit && (
-            <Button variant="outline" onClick={onEdit}>
+          <PermissionButton allowed={canEdit} permission="products:update" variant="outline" onClick={onEdit}>
               <Pencil className=" size-4" />
               Chỉnh sửa
-            </Button>
-          )}
+            </PermissionButton>
         </SheetFooter>
 
         {canDelete && (

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -190,14 +191,20 @@ export function ProductionDeliveriesTable() {
                     <div className="text-xs text-muted-foreground">{personName(row.createdBy)}</div>
                   </TableCell>
                   <TableCell className="text-right">
-                    {row.status === "PENDING" && canReceive && (
+                    {row.status === "PENDING" && (
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" onClick={() => setReceiving(row)}>
+                        <PermissionButton allowed={canReceive} permission="production:receive" size="sm" onClick={() => setReceiving(row)}>
                           Nhận hàng
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setRefusing(row)}>
+                        </PermissionButton>
+                        <PermissionButton
+                          allowed={canReceive}
+                          permission="production:receive"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setRefusing(row)}
+                        >
                           Từ chối
-                        </Button>
+                        </PermissionButton>
                       </div>
                     )}
                   </TableCell>

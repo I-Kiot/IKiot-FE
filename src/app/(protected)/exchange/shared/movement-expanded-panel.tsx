@@ -230,6 +230,28 @@ export function MovementExpandedPanel({
     detail.status !== "COMPLETED" &&
     detail.status !== "CANCELLED";
 
+  const openStatus = !isReceived && detail.status !== "COMPLETED" && detail.status !== "CANCELLED";
+  const WHO_FROM = "Chỉ người thuộc nơi gửi của phiếu này mới làm được. Chủ shop chọn đúng nơi đó, hoặc Toàn bộ chuỗi, ở góc trên thanh bên.";
+  const WHO_TO = "Chỉ người thuộc nơi nhận của phiếu này mới làm được. Chủ shop chọn đúng nơi đó, hoặc Toàn bộ chuỗi, ở góc trên thanh bên.";
+  const WHO_ENDS = "Chỉ người thuộc nơi gửi hoặc nơi nhận của phiếu này mới làm được.";
+  const lockedActions = [
+    { when: mode === "transfer" && isDraft && !isSender, label: "Mở phiếu", who: WHO_FROM },
+    { when: mode === "transfer" && isOpening && !isSender, label: "Chốt phiếu (đóng)", who: WHO_FROM },
+    { when: mode === "transfer" && isClosed && !isSender, label: "Xuất hàng", who: WHO_FROM },
+    { when: mode === "transfer" && isInTransit && !isReceiver, label: "Xác nhận đã nhận", who: WHO_TO },
+    {
+      when: mode === "import" && isPending && !!detail.fromLocationId && !canActAsFromLocation,
+      label: "Giao hàng",
+      who: WHO_FROM,
+    },
+    {
+      when: mode === "import" && isInTransit && !canActAsToLocation,
+      label: "Nhận hàng",
+      who: WHO_TO,
+    },
+    { when: openStatus && !canCancel, label: mode === "import" ? "Huỷ đơn" : "Huỷ", who: WHO_ENDS },
+  ].filter((action) => action.when);
+
   const showReceivedColumn =
     isReceived ||
     (showReceiveForm &&
@@ -605,6 +627,7 @@ export function MovementExpandedPanel({
         canReceiveTransit={canReceiveTransit}
         canReturnGoods={canReturnGoods}
         canCancel={canCancel}
+        lockedActions={lockedActions}
         showReceiveForm={showReceiveForm}
         setShowReceiveForm={setShowReceiveForm}
         isActionLoading={isActionLoading}

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import {
   Dialog,
   DialogContent,
@@ -293,33 +294,61 @@ export function ProductionRequestDetailDialog({
 
           <DialogFooter className="flex-wrap gap-2 sm:justify-between">
             <div className="flex flex-wrap gap-2">
-              {isDraft && canDelete && (
-                <Button variant="ghost" onClick={() => setPending("delete")}>
+              {isDraft && (
+                <PermissionButton
+                  allowed={canDelete}
+                  permission="production_requests:delete"
+                  variant="ghost"
+                  onClick={() => setPending("delete")}
+                >
                   Xoá
-                </Button>
+                </PermissionButton>
               )}
-              {(isDraft || (request.status === "SENT" && !hasReceipts)) && canUpdate && (
-                <Button variant="ghost" onClick={() => setPending("cancel")}>
+              {(isDraft || (request.status === "SENT" && !hasReceipts)) && (
+                <PermissionButton
+                  allowed={canUpdate}
+                  permission="production_requests:update"
+                  variant="ghost"
+                  onClick={() => setPending("cancel")}
+                >
                   Huỷ yêu cầu
-                </Button>
+                </PermissionButton>
               )}
-              {request.status === "PARTIALLY_RECEIVED" && canUpdate && (
-                <Button variant="ghost" onClick={() => setPending("close")}>
+              {request.status === "PARTIALLY_RECEIVED" && (
+                <PermissionButton
+                  allowed={canUpdate}
+                  permission="production_requests:update"
+                  variant="ghost"
+                  onClick={() => setPending("close")}
+                >
                   Đóng (nhận thiếu)
-                </Button>
+                </PermissionButton>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              {isDraft && canUpdate && (
+              {isDraft && (
                 <>
-                  <Button variant="outline" onClick={() => setEditing(true)}>
+                  <PermissionButton
+                    allowed={canUpdate}
+                    permission="production_requests:update"
+                    variant="outline"
+                    onClick={() => setEditing(true)}
+                  >
                     Sửa
-                  </Button>
-                  <Button onClick={() => setPending("send")}>Đã gửi xưởng</Button>
+                  </PermissionButton>
+                  <PermissionButton
+                    allowed={canUpdate}
+                    permission="production_requests:update"
+                    onClick={() => setPending("send")}
+                  >
+                    Đã gửi xưởng
+                  </PermissionButton>
                 </>
               )}
-              {isOpen && canReceive && (
-                <Button onClick={() => setReceiving(true)}>Nhận hàng</Button>
+              {isOpen && (
+                <PermissionButton allowed={canReceive} permission="production:receive" onClick={() => setReceiving(true)}>
+                  Nhận hàng
+                </PermissionButton>
               )}
             </div>
           </DialogFooter>

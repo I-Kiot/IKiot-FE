@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import type { Category } from '@/types/category'
@@ -61,8 +61,9 @@ export function CategoriesExpandedPanel({
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {canEdit && (
-                      <Button
+                    <PermissionButton
+                        allowed={canEdit}
+                        permission="categories:update"
                         size="icon"
                         variant="ghost"
                         className="size-7 cursor-pointer"
@@ -72,10 +73,10 @@ export function CategoriesExpandedPanel({
                         }}
                       >
                         <Pencil className="size-3.5" />
-                      </Button>
-                    )}
-                    {canDelete && (
-                      <Button
+                      </PermissionButton>
+                      <PermissionButton
+                        allowed={canDelete}
+                        permission="categories:delete"
                         size="icon"
                         variant="ghost"
                         className="size-7 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -86,8 +87,7 @@ export function CategoriesExpandedPanel({
                         }}
                       >
                         <Trash2 className="size-3.5" />
-                      </Button>
-                    )}
+                      </PermissionButton>
                   </div>
                 </div>
                 <Separator />
@@ -104,8 +104,9 @@ export function CategoriesExpandedPanel({
         )}
 
         <div className="flex items-center justify-between mt-3">
-          {canDelete ? (
-            <Button
+          <PermissionButton
+              allowed={canDelete}
+              permission="categories:delete"
               variant="destructive"
               size="sm"
               className="cursor-pointer"
@@ -117,14 +118,12 @@ export function CategoriesExpandedPanel({
             >
               <Trash2 className="mr-2 size-4" />
               Xóa danh mục
-            </Button>
-          ) : (
-            <span />
-          )}
+            </PermissionButton>
 
           <div className="flex items-center gap-2">
-            {canAdd && (
-              <Button
+            <PermissionButton
+                allowed={canAdd}
+                permission="categories:create"
                 size="sm"
                 variant="outline"
                 className="cursor-pointer"
@@ -135,10 +134,10 @@ export function CategoriesExpandedPanel({
               >
                 <Plus className="mr-2 size-4" />
                 Thêm danh mục con
-              </Button>
-            )}
-            {canEdit && (
-              <Button
+              </PermissionButton>
+              <PermissionButton
+                allowed={canEdit}
+                permission="categories:update"
                 size="sm"
                 className="cursor-pointer"
                 onClick={(e) => {
@@ -149,8 +148,7 @@ export function CategoriesExpandedPanel({
               >
                 <Pencil className="mr-2 size-4" />
                 Chỉnh sửa
-              </Button>
-            )}
+              </PermissionButton>
           </div>
         </div>
       </div>

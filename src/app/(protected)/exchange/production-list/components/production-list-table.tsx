@@ -7,6 +7,7 @@ import { ChevronRight, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -276,11 +277,13 @@ export function ProductionListTable() {
                     </TableCell>
                     <TableCell className="text-right">
                       {/* Hàng chỉ nhập từ NCC thì bổ sung bằng "Tạo đơn nhập hàng", không đặt xưởng */}
-                      {canOrder && !row.isManufacturable && (
+                      {!row.isManufacturable && (
                         <span className="text-xs text-muted-foreground">Nhập từ NCC</span>
                       )}
-                      {canOrder && row.isManufacturable && (
-                        <Button
+                      {row.isManufacturable && (
+                        <PermissionButton
+                          allowed={canOrder}
+                          permission="production_requests:create"
                           size="sm"
                           variant={row.shortQuantity > 0 ? "default" : "outline"}
                           onClick={(event) => {
@@ -289,7 +292,7 @@ export function ProductionListTable() {
                           }}
                         >
                           Thêm vào yêu cầu
-                        </Button>
+                        </PermissionButton>
                       )}
                     </TableCell>
                   </TableRow>

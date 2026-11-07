@@ -2,6 +2,7 @@
 
 import { Download, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PermissionButton } from "@/components/permission-button";
 import { useSuppliers } from '../_context/suppliers-provider'
 import { getCachedUser } from '@/lib/auth'
 import {
@@ -17,8 +18,10 @@ export function SuppliersButtonGroup() {
 
   return (
     <div className="flex shrink-0 items-center gap-2">
-      {canDelete && selectedIds.length > 0 && (
-        <Button
+      {selectedIds.length > 0 && (
+        <PermissionButton
+          allowed={canDelete}
+          permission="suppliers:delete"
           variant="destructive"
           size="sm"
           className="cursor-pointer"
@@ -26,18 +29,22 @@ export function SuppliersButtonGroup() {
         >
           <Trash2 className="mr-2 size-4" />
           Xóa {selectedIds.length} mục
-        </Button>
+        </PermissionButton>
       )}
       <Button variant="outline" size="sm" className="cursor-pointer">
         <Download className="mr-2 size-4" />
         Xuất file
       </Button>
-      {canWrite && (
-        <Button size="sm" className="cursor-pointer" onClick={() => setOpen('add')}>
-          <Plus className="mr-2 size-4" />
-          Thêm nhà cung cấp
-        </Button>
-      )}
+      <PermissionButton
+        allowed={canWrite}
+        permission="suppliers:create"
+        size="sm"
+        className="cursor-pointer"
+        onClick={() => setOpen('add')}
+      >
+        <Plus className="mr-2 size-4" />
+        Thêm nhà cung cấp
+      </PermissionButton>
     </div>
   )
 }

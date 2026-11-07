@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Ban, Pencil, UserCog } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import type { OrderDetail, OrderStatus } from "@/types/order-flow";
@@ -19,7 +19,7 @@ const EDITABLE_STATUSES: readonly OrderStatus[] = [
 
 type Open = "edit" | "handling" | "cancel" | null;
 
-/** Nút trên header chi tiết đơn: sửa, huỷ và bàn giao (D-7). Các bước hành trình nằm dưới thanh bước (`OrderJourneyActions`). Mỗi nút chỉ hiện khi route tương ứng chấp nhận. */
+/** Nút trên header chi tiết đơn: sửa, huỷ và bàn giao (D-7). Các bước hành trình nằm dưới thanh bước (`OrderJourneyActions`). Không có quyền thì nút mờ và bấm vào báo cần quyền gì. */
 export function OrderActions({
   order,
   onChanged,
@@ -29,9 +29,8 @@ export function OrderActions({
 }) {
   const role = getSessionRole();
   const editable =
-    order.fulfillmentType !== "TAKEAWAY" &&
-    EDITABLE_STATUSES.includes(order.status) &&
-    allows(role, "orders", "update");
+    order.fulfillmentType !== "TAKEAWAY" && EDITABLE_STATUSES.includes(order.status);
+  const canUpdate = allows(role, "orders", "update");
   const [open, setOpen] = React.useState<Open>(null);
 
   if (!editable) return null;
@@ -44,30 +43,36 @@ export function OrderActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button
+      <PermissionButton
+        allowed={canUpdate}
+        permission="orders:update"
         variant="outline"
         onClick={() => setOpen("handling")}
         className="cursor-pointer"
       >
         <UserCog className="size-4" />
         Phụ trách / ưu tiên
-      </Button>
-      <Button
+      </PermissionButton>
+      <PermissionButton
+        allowed={canUpdate}
+        permission="orders:update"
         variant="outline"
         onClick={() => setOpen("edit")}
         className="cursor-pointer"
       >
         <Pencil className="size-4" />
         Sửa đơn
-      </Button>
-      <Button
+      </PermissionButton>
+      <PermissionButton
+        allowed={canUpdate}
+        permission="orders:update"
         variant="outline"
         onClick={() => setOpen("cancel")}
         className="cursor-pointer text-destructive hover:text-destructive"
       >
         <Ban className="size-4" />
         Huỷ đơn
-      </Button>
+      </PermissionButton>
 
       {/* Chỉ mount khi mở, để mỗi lần mở lấy đơn ở trạng thái hiện tại. */}
       {open === "edit" && (

@@ -1,7 +1,7 @@
 'use client'
 
 import { Plus, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { PermissionButton } from "@/components/permission-button";
 import { getCachedUser } from '@/lib/auth'
 import { canCreatePromotion, canDeletePromotion } from '@/components/sidebar/constants/role-permissions'
 import { usePromotions } from '../_context/promotions-provider'
@@ -14,8 +14,10 @@ export function PromotionsButtonGroup() {
 
   return (
     <div className="flex shrink-0 items-center gap-2">
-      {canDelete && selectedIds.length > 0 && (
-        <Button
+      {selectedIds.length > 0 && (
+        <PermissionButton
+          allowed={canDelete}
+          permission="promotions:delete"
           variant="destructive"
           size="sm"
           className="cursor-pointer"
@@ -23,14 +25,18 @@ export function PromotionsButtonGroup() {
         >
           <Trash2 className="mr-2 size-4" />
           Tắt {selectedIds.length} mục
-        </Button>
+        </PermissionButton>
       )}
-      {canWrite && (
-        <Button size="sm" className="cursor-pointer" onClick={() => setOpen('add')}>
-          <Plus className="mr-2 size-4" />
-          Thêm khuyến mãi
-        </Button>
-      )}
+      <PermissionButton
+        allowed={canWrite}
+        permission="promotions:create"
+        size="sm"
+        className="cursor-pointer"
+        onClick={() => setOpen('add')}
+      >
+        <Plus className="mr-2 size-4" />
+        Thêm khuyến mãi
+      </PermissionButton>
     </div>
   )
 }

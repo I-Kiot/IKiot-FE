@@ -74,7 +74,7 @@ export function isFinished(status: ShipmentStatus): boolean {
 }
 
 /**
- * Nút nào hiện cho người đăng nhập, chỉ để ẩn nút chắc chắn không bấm được. Luật thật (người phụ trách đơn, đúng kho)
+ * Nút nào bấm được với người đăng nhập; không được thì nút mờ và báo cần quyền. Luật thật (người phụ trách đơn, đúng kho)
  * do BE quyết; sai thì BE trả `ORDER_STEP_DENIED`.
  */
 export function shipmentActions(shipment?: Pick<ShipmentSummary, "driver"> | null) {

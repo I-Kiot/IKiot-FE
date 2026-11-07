@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
+import { allows } from "@/components/sidebar/constants/role-permissions";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,6 +75,8 @@ type EditRow = {
   receivedQuantity: number;
   note?: string;
 };
+
+const WHO_AT_LOCATION = "Chỉ người thuộc địa điểm kiểm kê của phiếu này mới làm được. Chủ shop chọn đúng địa điểm đó, hoặc Toàn bộ chuỗi, ở góc trên thanh bên.";
 
 export function AdjustmentsExpandedPanel({
   request,
@@ -497,17 +501,23 @@ export function AdjustmentsExpandedPanel({
         </div>
       )}
 
-      {canEditPending && (
+      {isPending && (
         <div className="flex gap-3">
-          <Button
+          <PermissionButton
+            allowed={canActAsFrom && allows(authScope.role, "stock_movement", "approve")}
+            permission="stock_movement:approve"
+            who={canActAsFrom ? undefined : WHO_AT_LOCATION}
             className="flex-1 cursor-pointer"
             onClick={() => void onApprove()}
             disabled={isActionLoading}
           >
             <CheckCircle className="mr-2 size-4" />
             Duyệt điều chỉnh
-          </Button>
-          <Button
+          </PermissionButton>
+          <PermissionButton
+            allowed={canActAsFrom && allows(authScope.role, "stock_movement", "cancel")}
+            permission="stock_movement:cancel"
+            who={canActAsFrom ? undefined : WHO_AT_LOCATION}
             variant="outline"
             className="flex-1 cursor-pointer"
             onClick={() => setCancelConfirmOpen(true)}
@@ -515,7 +525,7 @@ export function AdjustmentsExpandedPanel({
           >
             <XCircle className="mr-2 size-4" />
             Huỷ phiếu
-          </Button>
+          </PermissionButton>
         </div>
       )}
 

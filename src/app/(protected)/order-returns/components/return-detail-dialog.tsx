@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import {
   Dialog,
   DialogContent,
@@ -88,9 +88,8 @@ export function ReturnDetailDialog({
   const canReorder =
     current.status === "COMPLETED" &&
     hasDamaged &&
-    !current.replacementOrder &&
-    allows(role, "orders", "create") &&
-    allows(role, "returns", "create");
+    !current.replacementOrder;
+  const mayReorder = allows(role, "orders", "create") && allows(role, "returns", "create");
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -204,12 +203,14 @@ export function ReturnDetailDialog({
 
         <DialogFooter className="gap-2">
           {canReorder && (
-            <Button variant="outline" asChild>
+            <PermissionButton allowed={mayReorder} permission="returns:create" variant="outline" asChild>
               <Link href={`/sales/orders/new?replacementFor=${current.id}`}>Tạo đơn mua lại</Link>
-            </Button>
+            </PermissionButton>
           )}
-          {isOpenReturn(current.status) && canCancel && (
-            <Button
+          {isOpenReturn(current.status) && (
+            <PermissionButton
+              allowed={canCancel}
+              permission="returns:cancel"
               variant="outline"
               disabled={busy}
               onClick={() =>
@@ -217,20 +218,24 @@ export function ReturnDetailDialog({
               }
             >
               Huỷ đơn hoàn
-            </Button>
+            </PermissionButton>
           )}
-          {current.status === "REQUESTED" && canInspect && (
-            <Button
+          {current.status === "REQUESTED" && (
+            <PermissionButton
+              allowed={canInspect}
+              permission="returns:inspect"
               disabled={busy}
               onClick={() =>
                 run(() => orderReturnApi.receive(current.id), "Đã ghi nhận hàng hoàn về shop")
               }
             >
               Đã nhận hàng
-            </Button>
+            </PermissionButton>
           )}
-          {current.status === "INSPECTING" && canInspect && (
-            <Button
+          {current.status === "INSPECTING" && (
+            <PermissionButton
+              allowed={canInspect}
+              permission="returns:inspect"
               disabled={busy || !allJudged}
               onClick={() =>
                 run(
@@ -246,7 +251,7 @@ export function ReturnDetailDialog({
               }
             >
               Xác nhận kiểm hàng
-            </Button>
+            </PermissionButton>
           )}
         </DialogFooter>
       </DialogContent>

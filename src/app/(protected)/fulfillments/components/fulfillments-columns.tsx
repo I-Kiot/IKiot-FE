@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import type { PackableOrder } from "@/types/order-flow";
 
 /**
@@ -13,7 +13,7 @@ function productKindCount(order: PackableOrder): number {
 }
 
 interface FulfillmentsColumnsOptions {
-  /** Người dùng có quyền `orders:pack` - không có thì ẩn nút. */
+  /** Người dùng có quyền `orders:pack` - không có thì nút mờ và bấm vào báo cần quyền. */
   canPack: boolean;
   /** Mở dialog đóng gói cho đơn. */
   onPack: (order: PackableOrder) => void;
@@ -57,12 +57,11 @@ export function fulfillmentsColumns({ canPack, onPack }: FulfillmentsColumnsOpti
     {
       id: "actions",
       header: () => <span className="sr-only">Thao tác</span>,
-      cell: ({ row }) =>
-        canPack && (
-          <Button size="sm" onClick={() => onPack(row.original)}>
-            Đóng hàng
-          </Button>
-        ),
+      cell: ({ row }) => (
+        <PermissionButton allowed={canPack} permission="orders:pack" size="sm" onClick={() => onPack(row.original)}>
+          Đóng hàng
+        </PermissionButton>
+      ),
     },
   ];
 }
