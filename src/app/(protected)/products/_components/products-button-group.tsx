@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Plus, Trash2 } from 'lucide-react'
+import { Download, Plus, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PermissionButton } from "@/components/permission-button";
 import { useProducts } from '../_context/products-provider'
@@ -32,6 +32,19 @@ export function ProductsButtonGroup() {
         <Download className="mr-2 size-4" />
         Xuất file
       </Button>
+      {screen.importFile && (
+        <PermissionButton
+          allowed={canWrite}
+          permission="products:create"
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={() => setOpen('import')}
+        >
+          <Upload className="mr-2 size-4" />
+          Nhập file
+        </PermissionButton>
+      )}
       <PermissionButton
         allowed={canWrite}
         permission="products:create"

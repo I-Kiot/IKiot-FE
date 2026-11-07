@@ -18,6 +18,8 @@ export const ERROR_MESSAGES = {
   ADMIN_ONLY: "Chỉ quản trị viên hệ thống mới thực hiện được thao tác này",
   AI_CONVERSATION_NOT_FOUND: "Không tìm thấy cuộc hội thoại",
   AI_NOT_CONFIGURED: "Trợ lý AI chưa được cấu hình trên máy chủ",
+  BARCODE_DUPLICATE_IN_REQUEST: "Mã vạch bị trùng trong cùng một yêu cầu",
+  BARCODE_TAKEN: "Mã vạch đã tồn tại trong cửa hàng",
   BAD_REQUEST: "Yêu cầu không hợp lệ",
   BRANCH_ID_REQUIRED: "Cần chỉ rõ branchId",
   BRANCH_NOT_FOUND: "Không tìm thấy chi nhánh đang hoạt động",
@@ -110,6 +112,8 @@ export const ERROR_MESSAGES = {
   PLAN_NOT_FOUND: "Không tìm thấy gói dịch vụ hoặc gói đã ngừng bán",
   PLAN_QUOTA_EXCEEDED: "Đã đạt giới hạn của gói dịch vụ. Vui lòng nâng cấp gói.",
   PLAN_UPDATE_EMPTY: "Không có trường nào để cập nhật",
+  PRODUCT_CODE_DUPLICATE_IN_REQUEST: "Mã hàng bị trùng trong cùng một yêu cầu",
+  PRODUCT_CODE_TAKEN: "Mã hàng đã tồn tại trong cửa hàng",
   PRODUCT_DISCONTINUED: "Sản phẩm đã ngừng kinh doanh",
   PRODUCT_HAS_STOCK: "Không thể ngừng kinh doanh: sản phẩm vẫn còn tồn kho.",
   PRODUCT_IN_STOCK_MOVEMENT: "Không thể ngừng kinh doanh: sản phẩm đang nằm trong phiếu chuyển kho chưa hoàn tất.",
@@ -293,6 +297,9 @@ export const ERROR_MESSAGES = {
   PRODUCT_COMBO_INVALID:
     "Thành phần combo không hợp lệ: cần ít nhất một món, không trùng món, không chứa chính nó (kể cả qua combo khác), không lồng quá 5 tầng và không dùng hàng đã ngừng kinh doanh",
   PRODUCT_ITEM_IN_COMBO: "Mặt hàng đang là thành phần của một combo còn bán - gỡ khỏi combo trước",
+  // Nhập hàng hóa từ Excel (2026-10-20) - chi tiết từng dòng nằm trong `errors`, đọc qua `importErrorsOf`.
+  PRODUCT_IMPORT_FILE_INVALID: "File không đúng mẫu nhập hàng hóa",
+  PRODUCT_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có hàng hóa nào được tạo",
   PRODUCT_COMBO_COMPONENT_DISCONTINUED:
     "Combo có món thuộc hàng hoá đã ngừng kinh doanh - bỏ món đó khỏi combo (hoặc kinh doanh lại hàng hoá) trước",
   PRODUCT_ITEM_NOT_STOCKABLE: "Combo và dịch vụ không có tồn kho riêng - hãy nhập / chuyển từng món của combo",
@@ -449,4 +456,30 @@ export function depositChangeOf(error: unknown): MoneyGap | null {
 /** `ORDER_REMITTANCE_AMOUNT_MISMATCH` (A-10): số chủ shop đếm không khớp số shipper đã thu. */
 export function remittanceGapOf(error: unknown): MoneyGap | null {
   return moneyGapAt(error, "ORDER_REMITTANCE_AMOUNT_MISMATCH", "remittance");
+}
+
+/** Một lỗi của file nhập hàng hóa. Khớp `ImportError` của BE (`product-import.parser.ts`); `row` null = lỗi của cả file. */
+export interface ImportRowError {
+  row: number | null;
+  column: string | null;
+  message: string;
+}
+
+function isImportRowError(value: unknown): value is ImportRowError {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.message === "string" && (v.row === null || typeof v.row === "number");
+}
+
+/** Các lỗi theo dòng của `POST /products/import`; rỗng nếu lỗi không phải lỗi của file import. */
+export function importErrorsOf(error: unknown): { errors: ImportRowError[]; total: number } {
+  const body = getApiErrorBody(error) as (ApiErrorBody & { errorCount?: number }) | undefined;
+  if (
+    (body?.code !== "PRODUCT_IMPORT_FILE_INVALID" && body?.code !== "PRODUCT_IMPORT_ROWS_INVALID") ||
+    !Array.isArray(body.errors)
+  ) {
+    return { errors: [], total: 0 };
+  }
+  const errors = body.errors.filter(isImportRowError);
+  return { errors, total: body.errorCount ?? errors.length };
 }
