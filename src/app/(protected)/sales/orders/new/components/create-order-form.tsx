@@ -53,6 +53,8 @@ type DepositMethod = "CASH" | "BANK_TRANSFER";
 interface AssigneeOption {
   id: string;
   name: string;
+  /** Nơi làm việc; null là chủ shop, phụ trách được đơn ở mọi nơi. */
+  placeId: string | null;
 }
 
 const toNumber = (raw: string) => Math.max(0, Number(raw) || 0);
@@ -89,7 +91,7 @@ function OrderDraftForm({
   const [optionsReady, setOptionsReady] = React.useState(false);
 
   const [customer, setCustomer] = React.useState<PickedCustomer | null>(null);
-  const [assigneeId, setAssigneeId] = React.useState("");
+  const [pickedAssigneeId, setAssigneeId] = React.useState("");
   const [fulfillment, setFulfillment] =
     React.useState<FulfillmentChoice>("HOME_DELIVERY");
   const [priority, setPriority] = React.useState<OrderPriority>("NORMAL");
@@ -113,6 +115,9 @@ function OrderDraftForm({
     let stale = false;
     const me = getCachedUser() as {
       id?: string;
+      role?: string;
+      branchId?: string | null;
+      warehouseId?: string | null;
       fullName?: string;
       firstName?: string;
       lastName?: string;
@@ -125,6 +130,7 @@ function OrderDraftForm({
         const staff = staffList.map((s) => ({
           id: s.id,
           name: s.fullName || s.phoneNumber,
+          placeId: s.warehouseId || s.branchId || "",
         }));
         // Tài khoản tạo đơn cũng có thể là người phụ trách (chủ shop không có trong danh sách nhân viên).
         const mine: AssigneeOption[] =
@@ -133,6 +139,7 @@ function OrderDraftForm({
                 {
                   id: me.id,
                   name: `${me.fullName || [me.lastName, me.firstName].filter(Boolean).join(" ") || "Tôi"} (tôi)`,
+                  placeId: me.role === "TENANT_OWNER" ? null : me.warehouseId || me.branchId || "",
                 },
               ]
             : [];
@@ -160,6 +167,13 @@ function OrderDraftForm({
   }, []);
 
   const branch = branches.find((b) => b.id === branchId) ?? null;
+  // Chỉ người làm tại nơi bán mới phụ trách được đơn; đổi nơi bán thì người đã chọn ở nơi cũ bị bỏ chọn.
+  const assigneeOptions = assignees.filter(
+    (a) => a.placeId === null || a.placeId === branchId,
+  );
+  const assigneeId = assigneeOptions.some((a) => a.id === pickedAssigneeId)
+    ? pickedAssigneeId
+    : "";
   // Nơi xuất hàng mặc định: kho xuất mặc định của nơi bán, không có thì lấy chính nơi bán.
   const defaultFulfillment = branch?.defaultFulfillmentLocationId;
   const defaultSource = branch
@@ -233,7 +247,11 @@ function OrderDraftForm({
         if (original) setCustomer(original);
         setBranchId(order.branch.id);
         if (order.assignee) {
-          const person = { id: order.assignee.id, name: order.assignee.name };
+          const person = {
+            id: order.assignee.id,
+            name: order.assignee.name,
+            placeId: order.branch.id,
+          };
           setAssignees((prev) =>
             prev.some((a) => a.id === person.id) ? prev : [person, ...prev],
           );
@@ -494,16 +512,16 @@ function OrderDraftForm({
                   <Select
                     value={assigneeId}
                     onValueChange={setAssigneeId}
-                    disabled={!optionsReady}
+                    disabled={!optionsReady || !branch}
                   >
                     <SelectTrigger
                       className="w-full"
                       aria-label="Người phụ trách"
                     >
-                      <SelectValue placeholder="Chọn người" />
+                      <SelectValue placeholder={branch ? "Chọn người" : "Chọn nơi bán trước"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {assignees.map((a) => (
+                      {assigneeOptions.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.name}
                         </SelectItem>

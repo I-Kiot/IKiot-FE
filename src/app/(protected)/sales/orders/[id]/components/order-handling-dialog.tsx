@@ -54,16 +54,27 @@ export function OrderHandlingDialog({ order, open, onOpenChange, onSaved }: Prop
 
   React.useEffect(() => {
     let stale = false;
-    const me = getCachedUser() as { id?: string; fullName?: string } | null;
+    const me = getCachedUser() as {
+      id?: string;
+      role?: string;
+      branchId?: string | null;
+      warehouseId?: string | null;
+      fullName?: string;
+    } | null;
+    const placeId = order.branch.id;
+    const meEligible = me?.role === "TENANT_OWNER" || (me?.warehouseId || me?.branchId) === placeId;
     staffApi
       .getActiveForScheduleOptions()
       .catch(() => [])
       .then((staff) => {
         if (stale) return;
-        const options = staff.map((s) => ({ id: s.id, name: s.fullName || s.phoneNumber }));
+        // Chỉ người làm tại nơi bán của đơn mới phụ trách được.
+        const options = staff
+          .filter((s) => (s.warehouseId || s.branchId) === placeId)
+          .map((s) => ({ id: s.id, name: s.fullName || s.phoneNumber }));
         // Chủ shop không có trong danh sách nhân viên nhưng vẫn có thể phụ trách; người đang phụ trách hiện tại cũng luôn có trong danh sách.
         const extra = [
-          me?.id ? { id: me.id, name: `${me.fullName || "Tôi"} (tôi)` } : null,
+          me?.id && meEligible ? { id: me.id, name: `${me.fullName || "Tôi"} (tôi)` } : null,
           order.assignee ? { id: order.assignee.id, name: order.assignee.name } : null,
         ].filter((o): o is AssigneeOption => !!o && !options.some((s) => s.id === o.id));
         const unique = [...extra, ...options].filter(
@@ -74,7 +85,7 @@ export function OrderHandlingDialog({ order, open, onOpenChange, onSaved }: Prop
     return () => {
       stale = true;
     };
-  }, [order.assignee]);
+  }, [order.assignee, order.branch.id]);
 
   const assigneeChanged = !!assigneeId && assigneeId !== (order.assignee?.id ?? "");
   const priorityChanged = priority !== order.priority;
