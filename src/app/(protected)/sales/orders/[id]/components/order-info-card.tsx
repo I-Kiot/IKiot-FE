@@ -46,7 +46,7 @@ export function OrderInfoCard({ order }: { order: OrderDetail }) {
             </span>
           }
         />
-        <InfoRow label="Chi nhánh bán" value={order.branch?.name ?? "-"} />
+        <InfoRow label="Nơi bán" value={order.branch?.name ?? "-"} />
         <InfoRow label="Nguồn đơn" value={ORDER_CHANNEL_LABELS[order.channel] ?? order.channel} />
         {order.channelOrderRef && <InfoRow label="Mã đơn sàn" value={order.channelOrderRef} />}
         <InfoRow

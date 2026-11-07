@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
-import { useSalesBranch } from "@/app/(protected)/check-out/_hooks/use-sales-branch";
+import { useOrderSalesPlace } from "../shared/use-order-sales-place";
 import { CreateOrderForm } from "./components/create-order-form";
 
 /**
@@ -14,7 +14,7 @@ import { CreateOrderForm } from "./components/create-order-form";
  * Link cũ `/check-out?mode=order` được chuyển về đây.
  */
 function CreateOrderContent() {
-  const sales = useSalesBranch();
+  const sales = useOrderSalesPlace();
   const canCreate = allows(getSessionRole(), "orders", "create");
 
   return (

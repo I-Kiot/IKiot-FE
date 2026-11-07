@@ -13,6 +13,12 @@ export interface LocationRef {
   name: string;
 }
 
+/** `GET /orders/source-locations`: nơi đơn lấy hàng được. */
+export interface SourceLocation extends LocationRef {
+  type: "BRANCH" | "WAREHOUSE";
+  defaultFulfillmentLocationId?: string | null;
+}
+
 export interface Paginated<T> {
   data: T[];
   pagination: { page: number; limit: number; total: number; totalPages: number };
@@ -281,7 +287,7 @@ export interface OrderLine {
 
 /** Dòng như `GET /orders/:id` trả về: thêm nơi xuất hàng và thông số đặt riêng. */
 export interface OrderDetailLine extends OrderLine {
-  sourceLocation: LocationRef | null;
+  sourceLocation: (LocationRef & { type: SourceLocation["type"] }) | null;
   customization: OrderItemCustomization | null;
 }
 
@@ -499,6 +505,8 @@ export interface UpdateOrderPayload
   extends Partial<Omit<CreateOrderJourneyPayload, "branchId" | "items" | "discountType">> {
   items?: UpdateOrderLinePayload[];
   discountType?: "ORDER" | null;
+  /** Đổi nơi lấy hàng của cả đơn, chỉ khi còn CONFIRMED. */
+  sourceLocationId?: string;
 }
 
 /** @deprecated Sửa A-8 không còn là sửa nháp; dùng `UpdateOrderPayload`. */

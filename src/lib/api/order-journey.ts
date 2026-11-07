@@ -4,6 +4,7 @@ import client from '@/lib/api/client';
 import type {
   CancelOrderPayload,
   CancelOrderResult,
+  SourceLocation,
   ConfirmOrderPayload,
   CreateOrderJourneyPayload,
   HandOverReadyOrder,
@@ -94,6 +95,12 @@ export const orderJourneyApi = {
       `/orders/${id}/items/${itemId}/customization`,
       payload,
     );
+    return res.data.data;
+  },
+
+  /** Chi nhánh và kho mà đơn lấy hàng được (không có kho hàng hỏng). */
+  sourceLocations: async (): Promise<SourceLocation[]> => {
+    const res = await client.get<Envelope<SourceLocation[]>>('/orders/source-locations');
     return res.data.data;
   },
 

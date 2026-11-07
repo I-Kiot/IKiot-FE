@@ -35,6 +35,7 @@ import {
   ORDER_PRIORITY_LABELS,
   type CreateOrderJourneyPayload,
   type OrderPriority,
+  type SourceLocation,
 } from "@/types/order-flow";
 import {
   computeTotals,
@@ -44,6 +45,7 @@ import {
 import { CustomerPicker, type PickedCustomer } from "./customer-picker";
 import type { OrderLineDraft } from "./order-lines-editor";
 import { OrderCartLines } from "./order-cart-lines";
+import { useLineStockAt } from "../../shared/use-line-stock-at";
 
 type FulfillmentChoice = "HOME_DELIVERY" | "STORE_PICKUP";
 type DepositMethod = "CASH" | "BANK_TRANSFER";
@@ -77,6 +79,12 @@ function OrderDraftForm({
     code: string;
   } | null>(null);
 
+  const [sourceOptions, setSourceOptions] = React.useState<SourceLocation[]>([]);
+  // Nguồn hàng người bán chọn, gắn với chi nhánh lúc chọn: đổi nơi bán thì quay về kho mặc định của nơi đó.
+  const [pickedSource, setPickedSource] = React.useState<{
+    branchId: string;
+    id: string;
+  } | null>(null);
   const [assignees, setAssignees] = React.useState<AssigneeOption[]>([]);
   const [optionsReady, setOptionsReady] = React.useState(false);
 
@@ -136,13 +144,43 @@ function OrderDraftForm({
     };
   }, []);
 
+  React.useEffect(() => {
+    let stale = false;
+    orderJourneyApi
+      .sourceLocations()
+      .then((locations) => {
+        if (!stale) setSourceOptions(locations);
+      })
+      .catch(() => {
+        // Không tải được thì đơn vẫn tạo được, lấy hàng từ nơi mặc định của chi nhánh.
+      });
+    return () => {
+      stale = true;
+    };
+  }, []);
+
   const branch = branches.find((b) => b.id === branchId) ?? null;
-  // Tồn đọc tại nơi xuất hàng: kho fulfilment mặc định của chi nhánh, không có thì lấy chính chi nhánh.
-  const stockLocation = branch
-    ? branch.defaultFulfillmentLocationId
-      ? { id: branch.defaultFulfillmentLocationId, type: "WAREHOUSE" as const }
-      : { id: branch.id, type: "BRANCH" as const }
+  // Nơi xuất hàng mặc định: kho xuất mặc định của nơi bán, không có thì lấy chính nơi bán.
+  const defaultFulfillment = branch?.defaultFulfillmentLocationId;
+  const defaultSource = branch
+    ? defaultFulfillment
+      ? {
+          id: defaultFulfillment,
+          type: sourceOptions.find((location) => location.id === defaultFulfillment)?.type ?? ("WAREHOUSE" as const),
+        }
+      : { id: branch.id, type: branch.type ?? ("BRANCH" as const) }
     : null;
+  const picked =
+    pickedSource?.branchId === branchId
+      ? sourceOptions.find((location) => location.id === pickedSource.id)
+      : undefined;
+  // Cả đơn lấy từ một nơi vì đóng gói chỉ nhận đơn xuất từ một nơi. Tồn cũng đọc tại đây.
+  const stockLocation = picked ? { id: picked.id, type: picked.type } : defaultSource;
+  const stockLocationName = sourceOptions.find(
+    (location) => location.id === stockLocation?.id,
+  )?.name;
+
+  useLineStockAt(stockLocation, lines, setLines);
 
   // Khách tới lấy không có phí giao hàng: ô nhập ẩn và phí tính bằng 0 dù trước đó đã nhập.
   const pickup = fulfillment === "STORE_PICKUP";
@@ -263,6 +301,7 @@ function OrderDraftForm({
         productItemId: line.productItemId,
         quantity: line.quantity,
         unitPrice: line.unitPrice,
+        ...(stockLocation ? { sourceLocationId: stockLocation.id } : {}),
         ...(line.discountAmount > 0
           ? { discountAmount: line.discountAmount }
           : {}),
@@ -395,7 +434,7 @@ function OrderDraftForm({
           />
           <p className="text-xs text-muted-foreground">
             Tồn kho chỉ để tham khảo
-            {stockLocation ? ` (tại kho xuất mặc định của chi nhánh)` : ""}: đơn
+            {stockLocationName ? ` (tại ${stockLocationName})` : ""}: đơn
             vẫn tạo được khi hết hàng, hàng thiếu sẽ được đặt xưởng sau.
           </p>
           <OrderCartLines
@@ -424,6 +463,29 @@ function OrderDraftForm({
             </div>
             <div className="space-y-4">
               <SalesBranchSelect sales={sales} error={show(errors.branch)} />
+              <div className="space-y-1.5">
+                <Label className={sectionLabel}>Nguồn hàng</Label>
+                <Select
+                  value={stockLocation?.id ?? ""}
+                  onValueChange={(id) => setPickedSource({ branchId, id })}
+                  disabled={!branch || sourceOptions.length === 0}
+                >
+                  <SelectTrigger className="w-full" aria-label="Nguồn hàng">
+                    <SelectValue placeholder="Chọn nơi bán trước" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sourceOptions.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.name}
+                        {location.id === defaultSource?.id ? " (mặc định)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Cả đơn xuất từ một nơi, đổi được tới trước khi đóng gói.
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className={sectionLabel}>
