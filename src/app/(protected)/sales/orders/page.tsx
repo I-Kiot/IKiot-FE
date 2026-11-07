@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { OrdersProvider } from "./components/orders-provider";
@@ -27,14 +27,12 @@ export default function OrdersPage() {
         title="Đơn hàng"
         description="Theo dõi đơn theo trạng thái, mức ưu tiên và tình trạng hàng trên kệ"
         actions={
-          canCreate ? (
-            <Button asChild>
-              <Link href="/sales/orders/new">
-                <Plus className="size-4" />
-                Tạo đơn
-              </Link>
-            </Button>
-          ) : undefined
+          <PermissionButton allowed={canCreate} permission="orders:create" asChild>
+            <Link href="/sales/orders/new">
+              <Plus className="size-4" />
+              Tạo đơn
+            </Link>
+          </PermissionButton>
         }
       />
       {canView ? (

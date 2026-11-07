@@ -11,6 +11,7 @@ import { branchApi } from "@/lib/api/branch";
 import { canManageCashDrawer } from "@/components/sidebar/constants/role-permissions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -574,6 +575,9 @@ export default function CashDrawersTodayPage() {
                 Chi nhánh chưa mở két tiền cho hôm nay hoặc bạn chưa được bàn
                 giao phiên giữ két nào. Vui lòng liên hệ Quản lý chi nhánh.
               </p>
+              <PermissionButton allowed={false} permission="cash_drawers:open" size="lg" className="w-full mt-8 font-semibold">
+                <Plus className="h-4 w-4 me-2" /> Mở két đầu ngày
+              </PermissionButton>
             </>
           )}
         </div>

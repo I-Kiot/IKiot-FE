@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -86,8 +86,9 @@ export function BrandsExpandedPanel({
       </div>
       <Separator className="mt-4" />
       <div className="flex items-center justify-between mt-3">
-        {canDelete ? (
-          <Button
+        <PermissionButton
+            allowed={canDelete}
+            permission="brands:delete"
             variant="destructive"
             size="sm"
             className="cursor-pointer"
@@ -99,10 +100,10 @@ export function BrandsExpandedPanel({
           >
             <Trash2 className="mr-2 size-4" />
             Xóa
-          </Button>
-        ) : <span />}
-        {canEdit && (
-          <Button
+          </PermissionButton>
+          <PermissionButton
+            allowed={canEdit}
+            permission="brands:update"
             size="sm"
             className="cursor-pointer"
             onClick={(e) => {
@@ -113,8 +114,7 @@ export function BrandsExpandedPanel({
           >
             <Pencil className="mr-2 size-4" />
             Chỉnh sửa
-          </Button>
-        )}
+          </PermissionButton>
       </div>
     </div>
   )

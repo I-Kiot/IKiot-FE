@@ -9,7 +9,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Banknote, HandHelping, PackageCheck, QrCode, Truck, Send, MapPinCheck, PackageOpen, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getCachedUser, getSessionRole } from "@/lib/auth";
 import { orderJourneyApi } from "@/lib/api/order-journey";
@@ -67,13 +67,18 @@ function deliveredShipment(order: OrderDetail): OrderShipment | undefined {
 }
 
 /**
- * Chỉ để ẩn nút chắc chắn bị từ chối; luật thật ở BE (`assertOrderStepAccess`, `deliveryActorAccess`), sai thì trả `ORDER_STEP_DENIED`.
+ * Nút hiện theo trạng thái đơn; các cờ này chỉ quyết định bấm được hay báo cần quyền. Luật thật ở BE (`assertOrderStepAccess`, `deliveryActorAccess`), sai thì trả `ORDER_STEP_DENIED`.
  * Người phụ trách làm được mọi bước không cần quyền, trừ "Bắt đầu vận chuyển" (xem `ASSIGNEE_MAY_SHIP`).
  */
 /**
  * Người phụ trách bấm "Đã giao cho ĐVVC" (trừ tồn) không cần `orders:ship` khi cờ này bật. Đang tắt từ 2026-10-16 (chờ khách xác nhận); bật lại thì đổi cùng `ASSIGNEE_MAY_SHIP` ở BE (`order-handler.ts`).
  */
 const ASSIGNEE_MAY_SHIP = false;
+
+const WHO_STEP = "Chủ shop, người phụ trách đơn, hoặc nhân viên có quyền này tại kho xuất mới làm được.";
+const WHO_SHIP = "Chủ shop, hoặc nhân viên có quyền này tại kho xuất, mới làm được. Người phụ trách đơn không tự bấm được bước này.";
+const WHO_DELIVERY = "Chỉ shipper của lần giao, người phụ trách đơn hoặc chủ shop mới làm được.";
+const WHO_RETURNED = "Chủ shop, người phụ trách đơn, hoặc người có quyền xem đơn mới làm được.";
 
 function stepPermissions(order: OrderDetail) {
   const role = getSessionRole();
@@ -116,21 +121,21 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
   const wantsRemittance = useSearchParams().get("confirmCash") === "1";
   const permissions = stepPermissions(order);
   const awaitingCash =
-    order.status === "RECEIVED" &&
-    order.collection?.cashRemittanceStatus === "PENDING" &&
-    permissions.canConfirmCash;
+    order.status === "RECEIVED" && order.collection?.cashRemittanceStatus === "PENDING";
+  // Link trong thông báo chỉ tự mở dialog cho người xác nhận được.
+  const opensRemittance = wantsRemittance && awaitingCash && permissions.canConfirmCash;
 
   // Thông báo "Shipper đang giữ tiền mặt" dẫn tới đây kèm ?confirmCash=1: mở dialog ngay, nếu đơn thật sự
   // đang chờ tiền.
   const [openStep, setOpenStep] = React.useState<OpenStep>(() =>
-    wantsRemittance && awaitingCash ? "remittance" : null,
+    opensRemittance ? "remittance" : null,
   );
   // Đang ở sẵn đơn này khi bấm thông báo thì không có gì mount lại: bắt cờ vừa xuất hiện ngay trong lúc
   // render (không dùng effect).
   const [seenFlag, setSeenFlag] = React.useState(wantsRemittance);
   if (wantsRemittance !== seenFlag) {
     setSeenFlag(wantsRemittance);
-    if (wantsRemittance && awaitingCash) setOpenStep("remittance");
+    if (opensRemittance) setOpenStep("remittance");
   }
   // Sheet giao hàng mở theo id lưu ở đây, KHÔNG theo điều kiện hiện nút: giao bằng QR xong thì đơn sang
   // RECEIVED (nút "Giao hàng" biến mất) đúng lúc khách cần quét mã - sheet phải ở lại tới khi người dùng đóng.
@@ -143,31 +148,25 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
   const onTheRoad = shipmentOnTheRoad(order);
   const delivered = deliveredShipment(order);
 
-  const showPack = order.status === "CONFIRMED" && permissions.canPack;
+  const showPack = order.status === "CONFIRMED";
   // Đã gán shipper thì không giao lần nữa; chờ shipper (hoặc người bấm hộ) xác nhận đã lấy hàng.
   // Đơn khách tới lấy không đi qua vận chuyển (xem `pickup` bên dưới).
   const pickup = isStorePickup(order);
-  const showHandOver =
-    order.status === "PACKED" && !pickup && !awaitingPickUp && permissions.canHandOver;
+  const showHandOver = order.status === "PACKED" && !pickup && !awaitingPickUp;
   const showAwaitingPickUp = order.status === "PACKED" && awaitingPickUp !== undefined;
-  const showPickUp = showAwaitingPickUp && permissions.canActOnDelivery(awaitingPickUp);
+  const showPickUp = showAwaitingPickUp;
   // Khách tới lấy: đang chờ khách ở quầy. Thu nốt tiền trước, đủ tiền mới giao hàng cho khách. Cùng nhóm quyền với bước trừ tồn.
   const pickupWaiting = pickup && order.status === "PACKED";
-  const showPickupCollect = pickupWaiting && order.paymentStatus !== "PAID" && permissions.canShip;
-  const showPickupHandOver = pickupWaiting && order.paymentStatus === "PAID" && permissions.canShip;
-  const showAwaitingPickup = pickupWaiting && !permissions.canShip;
-  const showShip = order.status === "PICKED_UP" && permissions.canShip;
-  // Không có nút thì nói vì sao đơn đứng ở đây - kể cả người phụ trách (ASSIGNEE_MAY_SHIP tắt).
-  const showAwaitingShip = order.status === "PICKED_UP" && !permissions.canShip;
-  const showDeliver =
-    order.status === "SHIPPING" && permissions.canActOnDelivery(onTheRoad);
+  const showPickupCollect = pickupWaiting && order.paymentStatus !== "PAID";
+  const showPickupHandOver = pickupWaiting && order.paymentStatus === "PAID";
+  const showShip = order.status === "PICKED_UP";
+  const showDeliver = order.status === "SHIPPING" && onTheRoad !== undefined;
   const failedShipment = order.shipments.find((shipment) => shipment.status === "FAILED");
-  const showConfirmReturned =
-    isDeliveryFailed(order) && failedShipment !== undefined && permissions.canConfirmReturned;
+  const showConfirmReturned = isDeliveryFailed(order) && failedShipment !== undefined;
   const showQr =
     order.status === "RECEIVED" &&
     order.collection?.method === "BANK_TRANSFER_QR" &&
-    permissions.canActOnDelivery(delivered);
+    delivered !== undefined;
 
   const hasButton =
     showPack ||
@@ -180,7 +179,7 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
     showQr ||
     showConfirmReturned ||
     awaitingCash;
-  const hasRow = hasButton || showAwaitingPickUp || showAwaitingShip || pickupWaiting;
+  const hasRow = hasButton || showAwaitingPickUp || pickupWaiting;
 
   /** Đóng dialog; bỏ cờ ?confirmCash để tải lại trang hay lần xác nhận sau không tự mở lại dialog. */
   const closeStep = () => {
@@ -234,84 +233,129 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
           )}
           {pickupWaiting && (
             <Badge variant="info" className="self-start sm:self-auto">
-              {showAwaitingPickup
-                ? "Chờ khách tới lấy - cần người có quyền \"Bắt đầu vận chuyển\" tại kho xuất để thu tiền và giao"
-                : order.paymentStatus === "PAID"
-                  ? "Đã thu đủ tiền, chờ giao hàng cho khách"
-                  : "Chờ khách tới lấy và thanh toán phần còn lại"}
-            </Badge>
-          )}
-          {showAwaitingShip && (
-            <Badge variant="info" className="self-start sm:self-auto">
-              Chờ người có quyền &quot;Bắt đầu vận chuyển&quot; tại kho xuất xác nhận (bước trừ tồn kho)
+              {order.paymentStatus === "PAID"
+                ? "Đã thu đủ tiền, chờ giao hàng cho khách"
+                : "Chờ khách tới lấy và thanh toán phần còn lại"}
             </Badge>
           )}
           {/* Phải: nút bước kế tiếp, ở cuối chiều đọc của thanh các bước - như nút xác nhận ở chân mọi dialog. */}
           {hasButton && (
             <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row">
               {showPack && (
-                <Button onClick={() => setOpenStep("pack")} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canPack}
+                  permission="orders:pack"
+                  who={WHO_STEP}
+                  onClick={() => setOpenStep("pack")}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <PackageCheck className="size-4" />
                   Đóng đơn
-                </Button>
+                </PermissionButton>
               )}
               {showHandOver && (
-                <Button onClick={() => setOpenStep("handOver")} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canHandOver}
+                  permission="shipments:create"
+                  who={WHO_STEP}
+                  onClick={() => setOpenStep("handOver")}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <Send className="size-4" />
                   Giao cho ĐVVC
-                </Button>
+                </PermissionButton>
               )}
               {showPickUp && (
-                <Button onClick={() => setOpenStep("pickUp")} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canActOnDelivery(awaitingPickUp)}
+                  who={WHO_DELIVERY}
+                  onClick={() => setOpenStep("pickUp")}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <PackageOpen className="size-4" />
                   Xác nhận đã lấy hàng
-                </Button>
+                </PermissionButton>
               )}
               {showShip && (
-                <Button onClick={() => setOpenStep("ship")} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canShip}
+                  permission="orders:ship"
+                  who={WHO_SHIP}
+                  onClick={() => setOpenStep("ship")}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <Truck className="size-4" />
                   Bắt đầu vận chuyển
-                </Button>
+                </PermissionButton>
               )}
               {showPickupCollect && (
-                <Button onClick={() => setOpenStep("pickupCollect")} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canShip}
+                  permission="orders:ship"
+                  who={WHO_SHIP}
+                  onClick={() => setOpenStep("pickupCollect")}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <Banknote className="size-4" />
                   Thu tiền còn lại
-                </Button>
+                </PermissionButton>
               )}
               {showPickupHandOver && (
-                <Button onClick={() => setOpenStep("pickupHandOver")} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canShip}
+                  permission="orders:ship"
+                  who={WHO_SHIP}
+                  onClick={() => setOpenStep("pickupHandOver")}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <HandHelping className="size-4" />
                   Giao hàng cho khách
-                </Button>
+                </PermissionButton>
               )}
               {showDeliver && onTheRoad && (
-                <Button onClick={() => setSheetShipmentId(onTheRoad.id)} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canActOnDelivery(onTheRoad)}
+                  who={WHO_DELIVERY}
+                  onClick={() => setSheetShipmentId(onTheRoad.id)}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <MapPinCheck className="size-4" />
                   Giao hàng
-                </Button>
+                </PermissionButton>
               )}
               {showConfirmReturned && (
-                <Button
+                <PermissionButton
+                  allowed={permissions.canConfirmReturned}
+                  who={WHO_RETURNED}
                   variant="outline"
                   onClick={() => setOpenStep("confirmReturned")}
                   className={STEP_BUTTON_CLASS}
                 >
                   <Undo2 className="size-4" />
                   Xác nhận hàng đã hoàn về shop
-                </Button>
+                </PermissionButton>
               )}
               {showQr && delivered && (
-                <Button onClick={() => setSheetShipmentId(delivered.id)} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canActOnDelivery(delivered)}
+                  who={WHO_DELIVERY}
+                  onClick={() => setSheetShipmentId(delivered.id)}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <QrCode className="size-4" />
                   Mã QR thanh toán
-                </Button>
+                </PermissionButton>
               )}
               {awaitingCash && (
-                <Button onClick={() => setOpenStep("remittance")} className={STEP_BUTTON_CLASS}>
+                <PermissionButton
+                  allowed={permissions.canConfirmCash}
+                  permission="orders:confirm_cash"
+                  onClick={() => setOpenStep("remittance")}
+                  className={STEP_BUTTON_CLASS}
+                >
                   <Banknote className="size-4" />
                   Xác nhận đã nhận tiền
-                </Button>
+                </PermissionButton>
               )}
             </div>
           )}

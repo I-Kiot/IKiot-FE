@@ -33,17 +33,14 @@ export default function BillingSettings() {
         <BillingHistoryCard invoices={invoices} isLoading={isLoading} />
       </div>
 
-      {canManageBilling(user?.role) && (
-        <>
-          <Separator />
-          <Suspense fallback={null}>
-            <UpgradePlanSection
-              subscription={subscription}
-              onActivated={refresh}
-            />
-          </Suspense>
-        </>
-      )}
+      <Separator />
+      <Suspense fallback={null}>
+        <UpgradePlanSection
+          subscription={subscription}
+          onActivated={refresh}
+          canManage={canManageBilling(user?.role)}
+        />
+      </Suspense>
     </div>
   )
 }

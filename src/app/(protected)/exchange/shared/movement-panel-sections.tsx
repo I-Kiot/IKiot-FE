@@ -8,6 +8,7 @@ import {
 } from "react";
 import { CheckCircle, PackageCheck, Undo2, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Input } from "@/components/ui/input";
 import { QuantityStepper } from "@/app/(protected)/exchange/shared/quantity-stepper";
 import {
@@ -420,6 +421,7 @@ export function MovementActionBar({
   canReceiveTransit,
   canReturnGoods,
   canCancel,
+  lockedActions,
   showReceiveForm,
   setShowReceiveForm,
   isActionLoading,
@@ -446,6 +448,8 @@ export function MovementActionBar({
   canReceiveTransit: boolean;
   canReturnGoods: boolean;
   canCancel: boolean;
+  /** Bước của đầu kia phiếu: hiện mờ, bấm vào báo ai làm được. */
+  lockedActions: readonly { label: string; who: string }[];
   showReceiveForm: boolean;
   setShowReceiveForm: (v: boolean) => void;
   isActionLoading: boolean;
@@ -672,6 +676,16 @@ export function MovementActionBar({
               Đóng
             </Button>
           </div>
+        </div>
+      )}
+
+      {lockedActions.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-3">
+          {lockedActions.map((action) => (
+            <PermissionButton key={action.label} allowed={false} who={action.who} variant="outline" className="flex-1">
+              {action.label}
+            </PermissionButton>
+          ))}
         </div>
       )}
 

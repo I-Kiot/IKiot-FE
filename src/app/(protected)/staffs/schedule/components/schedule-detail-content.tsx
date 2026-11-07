@@ -14,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SCHEDULE_STATUS_MAP } from "@/app/(protected)/staffs/shared/schedule-status";
 import {
@@ -295,7 +295,7 @@ export function ScheduleDetailContent({
         </div>
       </div>
 
-      {(isLocked || canEdit || canDelete || readOnlyHint) && (
+      {(isLocked || onEdit || onDelete || readOnlyHint) && (
         <div className="border-t bg-muted/20 px-5 py-4">
           {isLocked ? (
             <div className="flex items-center gap-2 rounded-lg border border-dashed bg-background/60 px-4 py-3 text-sm text-muted-foreground">
@@ -322,8 +322,9 @@ export function ScheduleDetailContent({
                 </p>
               )}
               <div className="flex items-center justify-end gap-2">
-                {canEdit && (
-                  <Button
+                <PermissionButton
+                    allowed={canEdit}
+                    permission="schedules:update"
                     variant="outline"
                     size="sm"
                     className="cursor-pointer"
@@ -331,10 +332,10 @@ export function ScheduleDetailContent({
                   >
                     <Pencil className="mr-2 size-4" />
                     Sửa ca
-                  </Button>
-                )}
-                {canDelete && (
-                  <Button
+                  </PermissionButton>
+                  <PermissionButton
+                    allowed={canDelete}
+                    permission="schedules:delete"
                     variant="destructive"
                     size="sm"
                     className="cursor-pointer"
@@ -342,8 +343,7 @@ export function ScheduleDetailContent({
                   >
                     <Trash2 className="mr-2 size-4" />
                     Xóa ca làm
-                  </Button>
-                )}
+                  </PermissionButton>
               </div>
             </div>
           )}

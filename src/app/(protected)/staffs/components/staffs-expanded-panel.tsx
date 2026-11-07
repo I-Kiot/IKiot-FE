@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from "@/components/ui/separator";
 import {
   formatStaffDate,
@@ -88,22 +88,16 @@ export function StaffsExpandedPanel({
     canDeleteStaffRow(userRole);
   const showEdit = canUpdateStaff(userRole);
   const showAccountActions = canManageStaffAccount(userRole);
-  const showAssignBranchManager =
-    canAssignBranchManager(userRole) && Boolean(staff.branchId);
-  const showAssignWarehouseManager =
-    canAssignWarehouseManager(userRole) && Boolean(staff.warehouseId);
+  const showAssignBranchManager = Boolean(staff.branchId);
+  const showAssignWarehouseManager = Boolean(staff.warehouseId);
 
   if (!isExpanded) return null;
 
   const status = getStaffStatusDisplay(staff.status);
   const role = { label: staff.roleName, variant: STAFF_ROLE_BADGE_VARIANT };
-  const canActivate = showAccountActions && staff.status !== "ACTIVE";
-  const canDeactivate =
-    showAccountActions &&
-    staff.status === "ACTIVE" &&
-    canDeactivateStaffRow(userRole);
-  const canChangePassword =
-    showAccountActions && staff.status === "ACTIVE";
+  const canActivate = staff.status !== "ACTIVE";
+  const canDeactivate = staff.status === "ACTIVE";
+  const canChangePassword = staff.status === "ACTIVE";
 
   return (
     <div
@@ -228,8 +222,9 @@ export function StaffsExpandedPanel({
 
       <Separator className="mt-4" />
       <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
-        {showDelete ? (
-          <Button
+        <PermissionButton
+            allowed={showDelete}
+            permission="users:delete"
             variant="destructive"
             size="sm"
             className="cursor-pointer"
@@ -241,14 +236,13 @@ export function StaffsExpandedPanel({
           >
             <Trash2 className="mr-2 size-4" />
             Xóa nhân viên
-          </Button>
-        ) : (
-          <div />
-        )}
+          </PermissionButton>
 
         <div className="flex flex-wrap items-center gap-2">
           {showAssignBranchManager && (
-            <Button
+            <PermissionButton
+              allowed={canAssignBranchManager(userRole)}
+              permission="branches:assign_manager"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -259,10 +253,12 @@ export function StaffsExpandedPanel({
             >
               <UserCog className="mr-2 size-4" />
               Thay quản lý chi nhánh
-            </Button>
+            </PermissionButton>
           )}
           {showAssignWarehouseManager && (
-            <Button
+            <PermissionButton
+              allowed={canAssignWarehouseManager(userRole)}
+              permission="warehouses:assign_manager"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -276,10 +272,12 @@ export function StaffsExpandedPanel({
             >
               <Warehouse className="mr-2 size-4" />
               Thay quản lý kho
-            </Button>
+            </PermissionButton>
           )}
-          {showAccountActions && canActivate && (
-            <Button
+          {canActivate && (
+            <PermissionButton
+              allowed={showAccountActions}
+              permission="users:update"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -291,10 +289,12 @@ export function StaffsExpandedPanel({
             >
               <UserCheck className="mr-2 size-4" />
               Kích hoạt tài khoản
-            </Button>
+            </PermissionButton>
           )}
-          {showAccountActions && canDeactivate && (
-            <Button
+          {canDeactivate && (
+            <PermissionButton
+              allowed={showAccountActions && canDeactivateStaffRow(userRole)}
+              permission="users:update"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -306,10 +306,12 @@ export function StaffsExpandedPanel({
             >
               <Lock className="mr-2 size-4" />
               Khóa tài khoản
-            </Button>
+            </PermissionButton>
           )}
-          {showAccountActions && canChangePassword && (
-            <Button
+          {canChangePassword && (
+            <PermissionButton
+              allowed={showAccountActions}
+              permission="users:update"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -321,10 +323,11 @@ export function StaffsExpandedPanel({
             >
               <KeyRound className="mr-2 size-4" />
               Đổi mật khẩu
-            </Button>
+            </PermissionButton>
           )}
-          {showEdit && (
-            <Button
+          <PermissionButton
+              allowed={showEdit}
+              permission="users:update"
               size="sm"
               className="cursor-pointer"
               onClick={(e) => {
@@ -335,8 +338,7 @@ export function StaffsExpandedPanel({
             >
               <Pencil className="mr-2 size-4" />
               Chỉnh sửa
-            </Button>
-          )}
+            </PermissionButton>
         </div>
       </div>
     </div>

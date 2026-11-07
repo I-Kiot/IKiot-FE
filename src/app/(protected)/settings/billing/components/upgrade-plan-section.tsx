@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   initiateUpgrade,
@@ -28,11 +28,14 @@ interface UpgradePlanSectionProps {
   subscription: CurrentSubscription | null;
   /** Tải lại gói và hoá đơn khi thanh toán được xác nhận. */
   onActivated: () => void | Promise<void>;
+  /** Có quyền trả tiền nâng cấp / gia hạn gói không. Không có thì vẫn xem được các gói, nút mờ đi. */
+  canManage: boolean;
 }
 
 export function UpgradePlanSection({
   subscription,
   onActivated,
+  canManage,
 }: UpgradePlanSectionProps) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
@@ -254,7 +257,9 @@ export function UpgradePlanSection({
                     </div>
 
                     <div>
-                      <Button
+                      <PermissionButton
+                        allowed={canManage || disabled}
+                        permission="subscriptions:manage"
                         className={`w-full cursor-pointer my-2 ${
                           isExactCurrent
                             ? ""
@@ -278,7 +283,7 @@ export function UpgradePlanSection({
                           <Loader2 className="size-4 animate-spin mr-2" />
                         )}
                         {label}
-                      </Button>
+                      </PermissionButton>
                     </div>
 
                     <div>

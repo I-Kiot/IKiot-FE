@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
+import { PermissionButton } from "@/components/permission-button"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -28,6 +29,8 @@ import { Upload, Loader2, Key, Shield, Info } from "lucide-react"
 import { useAccountSettings } from "./hooks/use-account-settings"
 import { AvatarCropDialog } from "./components/avatar-crop-dialog"
 import { ChangePasswordDialog } from "./components/change-password-dialog"
+
+const WHO_OWNER = "Chỉ chủ shop mới làm được. Nhân viên nhờ chủ shop đổi giúp ở màn Nhân viên."
 
 export default function AccountSettings() {
   const {
@@ -322,8 +325,7 @@ export default function AccountSettings() {
             </CardContent>
           </Card>
 
-          {/* Chỉ hiện với Tenant Owner. */}
-          {isTenantOwner && (
+          {/* Chỉ chủ shop thao tác được; nhân viên vẫn thấy, nút mờ và báo lý do. */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base font-semibold">
@@ -344,7 +346,9 @@ export default function AccountSettings() {
                       </p>
                     </div>
                   </div>
-                  <Button
+                  <PermissionButton
+                    allowed={isTenantOwner}
+                    who={WHO_OWNER}
                     type="button"
                     variant="outline"
                     size="sm"
@@ -352,7 +356,7 @@ export default function AccountSettings() {
                     onClick={() => setIsPasswordDialogOpen(true)}
                   >
                     Đổi mật khẩu
-                  </Button>
+                  </PermissionButton>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 last:pb-0">
@@ -373,6 +377,7 @@ export default function AccountSettings() {
                   <div className="flex items-center self-start sm:self-center">
                     <Switch
                       id="two-factor"
+                      disabled={!isTenantOwner}
                       checked={twoFactorEnabled}
                       onCheckedChange={setTwoFactorEnabled}
                     />
@@ -380,10 +385,8 @@ export default function AccountSettings() {
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Chỉ hiện với Tenant Owner. */}
-          {isTenantOwner && (
+          {/* Chỉ chủ shop thao tác được; nhân viên vẫn thấy, nút mờ và báo lý do. */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-destructive">
@@ -402,17 +405,18 @@ export default function AccountSettings() {
                       Xóa vĩnh viễn tài khoản của bạn và toàn bộ dữ liệu đi kèm.
                     </p>
                   </div>
-                  <Button
+                  <PermissionButton
+                    allowed={isTenantOwner}
+                    who={WHO_OWNER}
                     variant="destructive"
                     type="button"
                     className="cursor-pointer"
                   >
                     Xóa tài khoản
-                  </Button>
+                  </PermissionButton>
                 </div>
               </CardContent>
             </Card>
-          )}
 
           <div className="flex space-x-2 pt-2">
             <Button

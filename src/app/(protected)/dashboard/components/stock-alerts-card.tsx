@@ -8,7 +8,7 @@ import Link from "next/link";
 import { ArchiveX, Clock3, PackageMinus, PackageX, PackagePlus, TrendingDown, Warehouse } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
@@ -154,14 +154,19 @@ export function StockAlertsCard() {
             );
           })}
         </Accordion>
-        {canImport && (
-          <Button asChild variant="outline" size="sm" className="mt-3 w-full">
-            <Link href="/exchange/imports">
-              <PackagePlus className="size-4" aria-hidden />
-              Tạo phiếu nhập hàng
-            </Link>
-          </Button>
-        )}
+        <PermissionButton
+          allowed={canImport}
+          permission="stock_movement:create"
+          asChild
+          variant="outline"
+          size="sm"
+          className="mt-3 w-full"
+        >
+          <Link href="/exchange/imports">
+            <PackagePlus className="size-4" aria-hidden />
+            Tạo phiếu nhập hàng
+          </Link>
+        </PermissionButton>
       </div>
     );
   }

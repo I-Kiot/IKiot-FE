@@ -6,7 +6,7 @@
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { SHIPMENT_PAGE_SIZE } from "@/lib/api/shipment";
 import type { HandOverReadyOrder } from "@/types/order-flow";
@@ -64,11 +64,14 @@ function readyOrdersColumns(
           return <Badge variant="info">Chờ {driver.name} lấy hàng</Badge>;
         }
         return (
-          canHandOver && (
-            <Button size="sm" onClick={() => onHandOver(row.original)}>
-              Giao cho ĐVVC
-            </Button>
-          )
+          <PermissionButton
+            allowed={canHandOver}
+            permission="shipments:create"
+            size="sm"
+            onClick={() => onHandOver(row.original)}
+          >
+            Giao cho ĐVVC
+          </PermissionButton>
         );
       },
     },

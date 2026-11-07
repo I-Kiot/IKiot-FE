@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Pencil, Power, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -143,12 +143,13 @@ export function PromotionsExpandedPanel({
               </div>
             )}
           </div>
-          {(canEdit || canDelete) && (
-            <>
+          <>
               <Separator className="mt-4" />
               <div className="flex items-center justify-between mt-3">
-                {promotion.status === 'INACTIVE' && canEdit ? (
-                  <Button
+                {promotion.status === 'INACTIVE' ? (
+                  <PermissionButton
+                    allowed={canEdit}
+                    permission="promotions:update"
                     variant="outline"
                     size="sm"
                     className="cursor-pointer"
@@ -160,9 +161,11 @@ export function PromotionsExpandedPanel({
                   >
                     <Power className="mr-2 size-4" />
                     Bật lại
-                  </Button>
-                ) : canDelete && promotion.status === 'ACTIVE' ? (
-                  <Button
+                  </PermissionButton>
+                ) : promotion.status === 'ACTIVE' ? (
+                  <PermissionButton
+                    allowed={canDelete}
+                    permission="promotions:delete"
                     variant="destructive"
                     size="sm"
                     className="cursor-pointer"
@@ -174,12 +177,13 @@ export function PromotionsExpandedPanel({
                   >
                     <Trash2 className="mr-2 size-4" />
                     Tắt
-                  </Button>
+                  </PermissionButton>
                 ) : (
                   <span />
                 )}
-                {canEdit && (
-                  <Button
+                <PermissionButton
+                    allowed={canEdit}
+                    permission="promotions:update"
                     size="sm"
                     className="cursor-pointer"
                     onClick={(e) => {
@@ -190,11 +194,9 @@ export function PromotionsExpandedPanel({
                   >
                     <Pencil className="mr-2 size-4" />
                     Chỉnh sửa
-                  </Button>
-                )}
+                  </PermissionButton>
               </div>
             </>
-          )}
         </TabsContent>
 
         <TabsContent value="history">

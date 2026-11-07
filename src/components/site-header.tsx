@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { CommandSearch, SearchTrigger } from "@/components/command-search";
@@ -40,8 +40,11 @@ export function SiteHeader() {
             <SearchTrigger onClick={() => setSearchOpen(true)} />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            {canOpenCheckout(user?.role) && (
-              <Button
+            {/* Tài khoản nền tảng không bán hàng nên không có nút này. */}
+            {user?.role !== "ADMIN" && (
+              <PermissionButton
+                allowed={canOpenCheckout(user?.role)}
+                permission="orders:create"
                 variant="default"
                 asChild
                 size="sm"
@@ -56,7 +59,7 @@ export function SiteHeader() {
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   Bán tại quầy
                 </a>
-              </Button>
+              </PermissionButton>
             )}
             {user?.role !== "ADMIN" && <NotificationBell />}
             <ModeToggle />

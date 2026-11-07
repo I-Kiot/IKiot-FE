@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { PermissionButton } from "@/components/permission-button";
 import { Button } from "@/components/ui/button";
 import { getSessionRole } from "@/lib/auth";
 import {
@@ -93,12 +94,15 @@ export function ImportsWorkspace() {
                 <Link href="/exchange/production-list">Danh sách cần sản xuất</Link>
               </Button>
             )}
-            {creatable.length > 0 && (
-              <Button className="cursor-pointer" onClick={() => setCreating(true)}>
-                <Plus className="size-4" />
-                Tạo mới
-              </Button>
-            )}
+            <PermissionButton
+              allowed={creatable.length > 0}
+              permission={source === "SUPPLIER" ? "stock_movement:create" : "production_requests:create"}
+              className="cursor-pointer"
+              onClick={() => setCreating(true)}
+            >
+              <Plus className="size-4" />
+              Tạo mới
+            </PermissionButton>
           </div>
         }
       />

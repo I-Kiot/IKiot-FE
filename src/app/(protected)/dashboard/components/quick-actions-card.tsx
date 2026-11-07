@@ -1,13 +1,15 @@
 "use client";
 
-// Lối tắt tới các việc làm hằng ngày. Ô nào người xem không có quyền thì ẩn hẳn, không hiện
-// rồi để họ bấm vào gặp màn hình từ chối.
+// Lối tắt tới các việc làm hằng ngày. Ô nào người xem không có quyền thì mờ đi, bấm vào báo cần quyền gì,
+// không đưa họ tới màn hình từ chối.
 
 import Link from "next/link";
 import { BarChart3, Boxes, FilePlus2, PackagePlus, Settings, TicketPercent, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { allows } from "@/components/sidebar/constants/role-permissions";
+import { warnNoPermission } from "@/components/permission-button";
 import { getSessionRole } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 import { WidgetCard } from "./widget-card";
 import { TONE_TILE, type Tone } from "../shared/tones";
 
@@ -31,18 +33,28 @@ const ACTIONS: QuickAction[] = [
 
 export function QuickActionsCard() {
   const role = getSessionRole();
-  const visible = ACTIONS.filter((action) => action.permission === null || allows(role, action.permission[0], action.permission[1]));
 
   return (
     <WidgetCard title="Thao tác nhanh" icon={Zap} tone="amber">
       <div className="grid grid-cols-3 gap-1 xl:grid-cols-6">
-        {visible.map((action) => {
+        {ACTIONS.map((action) => {
           const Icon = action.icon;
+          const { permission } = action;
+          const allowed = permission === null || allows(role, permission[0], permission[1]);
           return (
             <Link
               key={action.href}
               href={action.href}
-              className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border border-transparent p-1.5 text-center transition-colors hover:border-border hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+              aria-disabled={!allowed}
+              onClick={(event) => {
+                if (allowed) return;
+                event.preventDefault();
+                warnNoPermission(permission?.join(":"));
+              }}
+              className={cn(
+                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border border-transparent p-1.5 text-center transition-colors hover:border-border hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring",
+                !allowed && "cursor-not-allowed opacity-50",
+              )}
             >
               <span className={`flex size-8 items-center justify-center rounded-lg ${TONE_TILE[action.tone]}`}>
                 <Icon className="size-4" aria-hidden />
