@@ -2,6 +2,8 @@
 // Quầy bán vẫn dùng `orderApi` (`order.ts`), đã POST tới `/orders/pos` từ A-2.
 import client from '@/lib/api/client';
 import type {
+  CancelOrderPayload,
+  CancelOrderResult,
   ConfirmOrderPayload,
   CreateOrderJourneyPayload,
   HandOverReadyOrder,
@@ -95,8 +97,9 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  cancel: async (id: string, reason?: string): Promise<OrderDetail> => {
-    const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/cancel`, { reason });
+  /** Huỷ đơn trước khi hàng rời kho. Đơn đang giữ tiền thì bắt buộc `refundAmount` (0 = shop giữ lại). */
+  cancel: async (id: string, payload: CancelOrderPayload): Promise<CancelOrderResult> => {
+    const res = await client.post<Envelope<CancelOrderResult>>(`/orders/${id}/cancel`, payload);
     return res.data.data;
   },
 

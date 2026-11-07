@@ -434,6 +434,21 @@ export interface PickupCollectResult {
   payment: PickupQrPayment | null;
 }
 
+export type RefundMethod = "CASH" | "BANK_TRANSFER";
+
+/** `POST /orders/:id/cancel`. Đơn đang giữ tiền thì bắt buộc `refundAmount`: 0 là shop giữ lại toàn bộ. */
+export interface CancelOrderPayload {
+  reason?: string;
+  refundAmount?: number;
+  refundMethod?: RefundMethod;
+}
+
+export interface CancelOrderResult {
+  refund: { held: number; refunded: number; kept: number } | null;
+  /** Yêu cầu sản xuất của các dòng còn mở: huỷ đơn không đụng tới, người dùng tự xử lý. */
+  openProductionRequests: { id: string }[];
+}
+
 /** `POST /orders/:id/pickup/hand-over`: giao hàng cho khách tại quầy. */
 export interface PickupHandOverPayload {
   receiverName?: string;

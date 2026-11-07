@@ -7,7 +7,7 @@ import {
   type OrderDetail,
 } from "@/types/order-flow";
 import { formatDateTime, formatVND } from "../../shared/order-display";
-import { isStorePickup } from "@/lib/order-pickup";
+import { amountStillDue, isStorePickup } from "@/lib/order-pickup";
 import { InfoRow } from "./order-info-card";
 
 /** The money: totals, deposit, what the shipper collects (journey GĐ1 – Bước 1, 7). */
@@ -41,15 +41,15 @@ export function OrderPaymentCard({ order }: { order: OrderDetail }) {
               : "Không cọc"
           }
         />
-        <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
-          <span className="text-sm font-medium">
-            {pickup ? "Còn phải thu khi khách lấy hàng" : "Còn phải thu khi giao"}
-          </span>
-          {/* `amountDue` của BE là tổng trừ cọc, chưa trừ khoản đã thu tại quầy. */}
-          <span className="text-base font-semibold">
-            {formatVND(pickup && order.paymentStatus === "PAID" ? 0 : order.amountDue)}
-          </span>
-        </div>
+        {/* Đơn đã huỷ không còn gì để thu. */}
+        {order.status !== "CANCELLED" && (
+          <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
+            <span className="text-sm font-medium">
+              {pickup ? "Còn phải thu khi khách lấy hàng" : "Còn phải thu khi giao"}
+            </span>
+            <span className="text-base font-semibold">{formatVND(amountStillDue(order))}</span>
+          </div>
+        )}
 
         {collection && (
           <div className="space-y-2 pt-2">
