@@ -9,11 +9,13 @@ import {
   type ShipmentStatus,
   ORDER_STATUS_LABELS,
   STOCK_CHECK_STATUS_LABELS,
+  type FulfillmentType,
   type OrderPaymentStatus,
   type OrderPriority,
   type OrderStatus,
   type StockCheckStatus,
 } from "@/types/order-flow";
+import { PICKUP_WAITING_LABEL } from "@/lib/order-pickup";
 
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
@@ -61,10 +63,15 @@ const STOCK_VARIANT: Record<StockCheckStatus, BadgeVariant> = {
 export function orderStatusDisplay(
   status: OrderStatus,
   latestShipmentStatus?: ShipmentStatus | null,
+  fulfillmentType?: FulfillmentType,
 ): BadgeDisplay {
   // Giao thất bại thì đơn vẫn SHIPPING (hàng còn ngoài); hiện lý do shipper báo.
   if (isDeliveryFailed({ status, latestShipmentStatus: latestShipmentStatus ?? null })) {
     return { label: SHIPMENT_STATUS_LABELS.FAILED, variant: "error" };
+  }
+  // Đơn khách tới lấy đã đóng gói thì đang chờ khách ở cửa hàng, không chờ bên vận chuyển.
+  if (status === "PACKED" && fulfillmentType === "STORE_PICKUP") {
+    return { label: PICKUP_WAITING_LABEL, variant: "info" };
   }
   return {
     label: ORDER_STATUS_LABELS[status] ?? status,

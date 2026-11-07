@@ -2,6 +2,8 @@
 // Quầy bán vẫn dùng `orderApi` (`order.ts`), đã POST tới `/orders/pos` từ A-2.
 import client from '@/lib/api/client';
 import type {
+  CancelOrderPayload,
+  CancelOrderResult,
   ConfirmOrderPayload,
   CreateOrderJourneyPayload,
   HandOverReadyOrder,
@@ -13,6 +15,9 @@ import type {
   PackableOrder,
   PackResult,
   Paginated,
+  PickupCollectPayload,
+  PickupCollectResult,
+  PickupHandOverPayload,
   Shipment,
   ConfirmRemittancePayload,
   OrderPriority,
@@ -92,8 +97,9 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  cancel: async (id: string, reason?: string): Promise<OrderDetail> => {
-    const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/cancel`, { reason });
+  /** Huỷ đơn trước khi hàng rời kho. Đơn đang giữ tiền thì bắt buộc `refundAmount` (0 = shop giữ lại). */
+  cancel: async (id: string, payload: CancelOrderPayload): Promise<CancelOrderResult> => {
+    const res = await client.post<Envelope<CancelOrderResult>>(`/orders/${id}/cancel`, payload);
     return res.data.data;
   },
 
@@ -114,12 +120,23 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** Một trang đơn PACKED (đã đóng gói, chờ giao cho vận chuyển) trong phạm vi chi nhánh của người gọi. */
+  /** Một trang đơn PACKED giao tận nơi (đã đóng gói, chờ giao cho vận chuyển) trong phạm vi chi nhánh của người gọi. Đơn khách tới lấy không qua vận chuyển nên không có trong danh sách này. */
   listHandOverReady: async (page: number, limit: number): Promise<Paginated<HandOverReadyOrder>> => {
     const res = await client.get<Paginated<HandOverReadyOrder>>('/orders', {
-      params: { status: 'PACKED', page, limit },
+      params: { status: 'PACKED', fulfillmentType: 'HOME_DELIVERY', page, limit },
     });
     return { data: res.data.data, pagination: res.data.pagination };
+  },
+
+  /** Đơn khách tới lấy, đang chờ khách (PACKED): thu số còn lại tại quầy. Tiền mặt ghi luôn; QR trả `payment.qrUrl` chờ tiền về. */
+  pickupCollect: async (id: string, payload: PickupCollectPayload): Promise<PickupCollectResult> => {
+    const res = await client.post<Envelope<PickupCollectResult>>(`/orders/${id}/pickup/collect`, payload);
+    return res.data.data;
+  },
+
+  /** Đơn khách tới lấy đã thu đủ: giao hàng cho khách, trừ tồn, PACKED → COMPLETED. */
+  pickupHandOver: async (id: string, payload: PickupHandOverPayload = {}): Promise<void> => {
+    await client.post(`/orders/${id}/pickup/hand-over`, payload);
   },
 
   /** PICKED_UP → SHIPPING (C-2): trừ tồn kho đúng phần đã khoá lúc đóng gói. Trả về lần giao của đơn. */

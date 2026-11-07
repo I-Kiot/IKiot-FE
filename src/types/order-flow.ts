@@ -320,6 +320,8 @@ export interface OrderListItem {
   shippedBy: UserRef | null;
   shippedAt: string | null;
   fulfillmentType: FulfillmentType;
+  /** Khách tới lấy, đã đóng gói, quá ngày hẹn lấy mà chưa tới. */
+  pickupOverdue: boolean;
   subtotal: number;
   shippingFee: number;
   channelFee: number;
@@ -379,7 +381,7 @@ export const ORDER_SORTS = ["createdAt", "requestedDeliveryDate", "priority"] as
 export type OrderSort = (typeof ORDER_SORTS)[number];
 
 /** Đơn chưa xuất cần được chú ý (bộ lọc `attention` của BE). */
-export type OrderAttention = "SHORT" | "DUE_SOON";
+export type OrderAttention = "SHORT" | "DUE_SOON" | "PICKUP_OVERDUE";
 
 /** `GET /orders/alerts`. */
 export interface OrderAlerts {
@@ -387,6 +389,8 @@ export interface OrderAlerts {
   short: number;
   /** Đơn có ngày giao hẹn là hôm nay, trong `dueSoonDays` ngày tới, hoặc đã qua. */
   dueSoon: number;
+  /** Đơn khách tới lấy đã đóng gói mà quá ngày hẹn lấy: cần liên hệ khách. */
+  pickupOverdue: number;
   dueSoonDays: number;
 }
 
@@ -397,6 +401,8 @@ export interface OrderJourneyQuery extends PageQuery {
   assigneeId?: string;
   branchId?: string;
   priority?: OrderPriority;
+  /** Lọc theo hình thức giao, vd `STORE_PICKUP` cho đơn chờ khách lấy. */
+  fulfillmentType?: FulfillmentType;
   stockSummary?: StockCheckStatus;
   cashRemittanceStatus?: RemittanceStatus;
   /** Khoảng ngày tạo đơn, ISO. */
@@ -405,6 +411,48 @@ export interface OrderJourneyQuery extends PageQuery {
   sort?: OrderSort;
   /** Bỏ đơn quầy (`TAKEAWAY`). POS dùng chung `GET /orders` nên BE chỉ bỏ khi được yêu cầu; mọi màn hành trình đều gửi `true`. */
   excludePos?: boolean;
+}
+
+/** `POST /orders/:id/pickup/collect`: số tiền do server tính, client chỉ chọn cách thu. */
+export type PickupCollectMethod = Exclude<CollectionMethod, "NONE">;
+
+export interface PickupCollectPayload {
+  method: PickupCollectMethod;
+  note?: string;
+}
+
+/** Khoản QR đang chờ tiền về của đơn khách tới lấy. */
+export interface PickupQrPayment {
+  reference: string;
+  amount: number;
+  status: string;
+  qrUrl: string;
+}
+
+export interface PickupCollectResult {
+  /** Null khi thu tiền mặt (đã ghi luôn). */
+  payment: PickupQrPayment | null;
+}
+
+export type RefundMethod = "CASH" | "BANK_TRANSFER";
+
+/** `POST /orders/:id/cancel`. Đơn đang giữ tiền thì bắt buộc `refundAmount`: 0 là shop giữ lại toàn bộ. */
+export interface CancelOrderPayload {
+  reason?: string;
+  refundAmount?: number;
+  refundMethod?: RefundMethod;
+}
+
+export interface CancelOrderResult {
+  refund: { held: number; refunded: number; kept: number } | null;
+  /** Yêu cầu sản xuất của các dòng còn mở: huỷ đơn không đụng tới, người dùng tự xử lý. */
+  openProductionRequests: { id: string }[];
+}
+
+/** `POST /orders/:id/pickup/hand-over`: giao hàng cho khách tại quầy. */
+export interface PickupHandOverPayload {
+  receiverName?: string;
+  note?: string;
 }
 
 export interface CreateOrderLinePayload {

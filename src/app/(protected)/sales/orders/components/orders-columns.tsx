@@ -1,3 +1,4 @@
+import { amountStillDue } from "@/lib/order-pickup";
 import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
@@ -70,7 +71,11 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
     accessorKey: "status",
     header: ORDERS_COLUMN_LABELS.status,
     cell: ({ row }) => {
-      const display = orderStatusDisplay(row.original.status, row.original.latestShipmentStatus);
+      const display = orderStatusDisplay(
+        row.original.status,
+        row.original.latestShipmentStatus,
+        row.original.fulfillmentType,
+      );
       return <Badge variant={display.variant}>{display.label}</Badge>;
     },
   },
@@ -201,7 +206,7 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
     id: "amountDue",
     header: ORDERS_COLUMN_LABELS.amountDue,
     cell: ({ row }) => (
-      <span className="text-sm font-medium">{formatVND(row.original.amountDue)}</span>
+      <span className="text-sm font-medium">{formatVND(amountStillDue(row.original))}</span>
     ),
   },
   {

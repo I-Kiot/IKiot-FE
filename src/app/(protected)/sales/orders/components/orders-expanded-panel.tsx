@@ -1,3 +1,4 @@
+import { amountStillDue } from "@/lib/order-pickup";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -119,7 +120,7 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
               : "-"
           }
         />
-        <InfoRow label="Còn phải thu" value={<strong>{formatVND(order.amountDue)}</strong>} />
+        <InfoRow label="Còn phải thu" value={<strong>{formatVND(amountStillDue(order))}</strong>} />
         {order.collection && (
           <InfoRow
             label="Tiền shipper thu"

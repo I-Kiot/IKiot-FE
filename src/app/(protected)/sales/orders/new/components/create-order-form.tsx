@@ -144,10 +144,14 @@ function OrderDraftForm({
       : { id: branch.id, type: "BRANCH" as const }
     : null;
 
+  // Khách tới lấy không có phí giao hàng: ô nhập ẩn và phí tính bằng 0 dù trước đó đã nhập.
+  const pickup = fulfillment === "STORE_PICKUP";
+  const effectiveShippingFee = pickup ? 0 : shippingFee;
+
   const totals = computeTotals({
     lines,
     orderDiscount,
-    shippingFee,
+    shippingFee: effectiveShippingFee,
     depositType,
     depositValue,
   });
@@ -265,7 +269,7 @@ function OrderDraftForm({
         ...(line.customization ? { customization: line.customization } : {}),
       })),
       customerId: customer.id,
-      ...(shippingFee > 0 ? { shippingFee } : {}),
+      ...(effectiveShippingFee > 0 ? { shippingFee: effectiveShippingFee } : {}),
       ...(orderDiscount > 0
         ? { discountType: "ORDER" as const, discountValue: orderDiscount }
         : {}),
@@ -278,10 +282,10 @@ function OrderDraftForm({
             },
           }
         : {}),
-      ...(fulfillment === "HOME_DELIVERY" && recipientName.trim()
+      ...(recipientName.trim()
         ? { recipientName: recipientName.trim() }
         : {}),
-      ...(fulfillment === "HOME_DELIVERY" && recipientPhone.trim()
+      ...(recipientPhone.trim()
         ? { recipientPhone: recipientPhone.trim() }
         : {}),
       ...(fulfillment === "HOME_DELIVERY" && deliveryAddress.trim()
@@ -498,7 +502,7 @@ function OrderDraftForm({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="requested-date" className={sectionLabel}>
-                  Thời gian khách hẹn giao
+                  {fulfillment === "STORE_PICKUP" ? "Ngày khách hẹn lấy hàng" : "Thời gian khách hẹn giao"}
                 </Label>
                 <Input
                   id="requested-date"
@@ -511,31 +515,36 @@ function OrderDraftForm({
                   <p className="text-sm text-destructive">{errors.requestedDate}</p>
                 )}
               </div>
+              {/* Khách tới lấy cũng ghi người sẽ đến nhận để quầy đối chiếu; chỉ địa chỉ là của giao tận nơi. */}
+              <div className="space-y-1.5">
+                <Label htmlFor="recipient-name" className={sectionLabel}>
+                  {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận"}
+                </Label>
+                <Input
+                  id="recipient-name"
+                  value={recipientName}
+                  onChange={(event) => setRecipientName(event.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="recipient-phone" className={sectionLabel}>
+                  {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận"}
+                </Label>
+                <Input
+                  id="recipient-phone"
+                  inputMode="tel"
+                  value={recipientPhone}
+                  onChange={(event) => setRecipientPhone(event.target.value)}
+                />
+              </div>
+              {fulfillment === "STORE_PICKUP" && (
+                <p className="text-sm text-muted-foreground sm:col-span-2">
+                  Khách tới cửa hàng nhận hàng: không có phí giao hàng, không cần địa chỉ. Đơn đóng gói xong sẽ nằm ở
+                  &quot;Chờ khách lấy&quot; cho tới khi thu đủ tiền và giao tại quầy.
+                </p>
+              )}
               {fulfillment === "HOME_DELIVERY" && (
                 <>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recipient-name" className={sectionLabel}>
-                      Người nhận
-                    </Label>
-                    <Input
-                      id="recipient-name"
-                      value={recipientName}
-                      onChange={(event) => setRecipientName(event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recipient-phone" className={sectionLabel}>
-                      SĐT người nhận
-                    </Label>
-                    <Input
-                      id="recipient-phone"
-                      inputMode="tel"
-                      value={recipientPhone}
-                      onChange={(event) =>
-                        setRecipientPhone(event.target.value)
-                      }
-                    />
-                  </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="delivery-address" className={sectionLabel}>
                       Địa chỉ giao hàng
@@ -562,17 +571,19 @@ function OrderDraftForm({
         <CardContent className="px-4">
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="shipping-fee" className={sectionLabel}>
-                  Phí giao hàng
-                </Label>
-                <MoneyInput
-                  id="shipping-fee"
-                  className="text-right"
-                  value={shippingFee}
-                  onChange={setShippingFee}
-                />
-              </div>
+              {!pickup && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="shipping-fee" className={sectionLabel}>
+                    Phí giao hàng
+                  </Label>
+                  <MoneyInput
+                    id="shipping-fee"
+                    className="text-right"
+                    value={shippingFee}
+                    onChange={setShippingFee}
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="order-discount" className={sectionLabel}>
                   Giảm giá cả đơn

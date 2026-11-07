@@ -55,7 +55,7 @@ export function NavMain({
   const orderAlerts = useOrderAlertsStore((state) => state.alerts);
   const fetchOrderAlerts = useOrderAlertsStore((state) => state.fetchAlerts);
   const locationKey = useAuthStore((state) => state.locationKey);
-  const orderAlertCount = orderAlerts ? orderAlerts.short + orderAlerts.dueSoon : 0;
+  const orderAlertCount = orderAlerts ? orderAlerts.short + orderAlerts.dueSoon + orderAlerts.pickupOverdue : 0;
 
   // Làm mới khi poll mỗi phút và khi đổi trang, để badge theo kịp đơn bán và phiếu nhập kho mà không cần socket riêng.
   useEffect(() => {

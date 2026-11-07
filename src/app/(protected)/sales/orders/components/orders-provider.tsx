@@ -10,6 +10,7 @@ import { parseLocationKey } from "@/lib/location-key";
 import { useAuthStore } from "@/store/auth-store";
 import {
   ORDER_STATUSES,
+  type FulfillmentType,
   type OrderAttention,
   type OrderJourneyQuery,
   type OrderListItem,
@@ -27,6 +28,8 @@ export interface OrdersListQuery {
   search: string;
   status: OrderStatus | "all";
   priority: OrderPriority | "all";
+  /** Hình thức giao, vd chỉ đơn khách tới lấy. */
+  fulfillmentType: FulfillmentType | "all";
   stockSummary: StockCheckStatus | "all";
   /** Lối tắt từ banner: đơn thiếu hàng trên kệ, hoặc đơn sắp đến hạn giao. */
   attention: OrderAttention | "all";
@@ -43,6 +46,7 @@ const DEFAULT_LIST_QUERY: OrdersListQuery = {
   search: "",
   status: "all",
   priority: "all",
+  fulfillmentType: "all",
   stockSummary: "all",
   attention: "all",
   cashRemittanceStatus: "all",
@@ -137,6 +141,8 @@ export function OrdersProvider({
       search: listQuery.search || undefined,
       status: listQuery.status === "all" ? undefined : listQuery.status,
       priority: listQuery.priority === "all" ? undefined : listQuery.priority,
+      fulfillmentType:
+        listQuery.fulfillmentType === "all" ? undefined : listQuery.fulfillmentType,
       stockSummary:
         listQuery.stockSummary === "all" ? undefined : listQuery.stockSummary,
       cashRemittanceStatus:

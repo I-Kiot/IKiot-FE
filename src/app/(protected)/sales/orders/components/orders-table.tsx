@@ -41,12 +41,14 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { cn } from "@/lib/utils";
 import { useOrderAlertsStore } from "@/store/order-alerts-store";
 import {
+  FULFILLMENT_TYPE_LABELS,
   ORDER_PRIORITIES,
   ORDER_PRIORITY_LABELS,
   ORDER_STATUS_LABELS,
   REMITTANCE_STATUS_LABELS,
   STOCK_CHECK_STATUSES,
   STOCK_CHECK_STATUS_LABELS,
+  type FulfillmentType,
   type OrderPriority,
   type OrderSort,
   type OrderStatus,
@@ -116,6 +118,7 @@ export function OrdersTable() {
     listQuery.search !== "" ||
     listQuery.status !== "all" ||
     listQuery.priority !== "all" ||
+    listQuery.fulfillmentType !== "all" ||
     listQuery.stockSummary !== "all" ||
     listQuery.attention !== "all" ||
     listQuery.cashRemittanceStatus !== "all" ||
@@ -124,7 +127,8 @@ export function OrdersTable() {
 
   const columnCount = table.getVisibleLeafColumns().length;
   const alerts = useOrderAlertsStore((state) => state.alerts);
-  const showAlertBanner = !!alerts && (alerts.short > 0 || alerts.dueSoon > 0);
+  const showAlertBanner =
+    !!alerts && (alerts.short > 0 || alerts.dueSoon > 0 || alerts.pickupOverdue > 0);
 
   return (
     <div className="space-y-4">
@@ -157,6 +161,18 @@ export function OrdersTable() {
               )}
             >
               {alerts.dueSoon} đơn sắp tới ngày giao (trong {alerts.dueSoonDays} ngày, kể cả quá hạn)
+            </button>
+          )}
+          {alerts.pickupOverdue > 0 && (
+            <button
+              type="button"
+              onClick={() => updateQuery({ attention: "PICKUP_OVERDUE" })}
+              className={cn(
+                "cursor-pointer underline-offset-2 hover:underline",
+                listQuery.attention === "PICKUP_OVERDUE" && "font-semibold underline",
+              )}
+            >
+              {alerts.pickupOverdue} đơn khách quá hạn lấy hàng (cần liên hệ khách)
             </button>
           )}
           {listQuery.attention !== "all" && (
@@ -215,6 +231,22 @@ export function OrdersTable() {
                   {ORDER_PRIORITY_LABELS[priority]}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={listQuery.fulfillmentType}
+            onValueChange={(value) =>
+              updateQuery({ fulfillmentType: value as FulfillmentType | "all" })
+            }
+          >
+            <SelectTrigger className="h-9 w-44 cursor-pointer text-sm">
+              <SelectValue placeholder="Hình thức giao" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Mọi hình thức giao</SelectItem>
+              <SelectItem value="STORE_PICKUP">Khách tới lấy</SelectItem>
+              <SelectItem value="HOME_DELIVERY">{FULFILLMENT_TYPE_LABELS.HOME_DELIVERY}</SelectItem>
             </SelectContent>
           </Select>
 
