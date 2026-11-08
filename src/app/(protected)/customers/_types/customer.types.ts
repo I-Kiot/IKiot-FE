@@ -7,6 +7,7 @@ export const customerFormSchema = z.object({
   // Để trống thì BE tự sinh (KH000001, KH000002, ...).
   customerCode: z.string().optional(),
   phone: z.string().optional(),
+  email: z.string().trim().email('Email không hợp lệ').optional().or(z.literal('')),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
   address: z.string().optional(),
   dob: z.string().optional(),
