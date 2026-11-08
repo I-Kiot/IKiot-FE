@@ -16,6 +16,9 @@ import {
   stockDisplay,
 } from "../shared/order-display";
 
+/** Trạng thái mà ngày hẹn giao không còn ý nghĩa đếm ngược. */
+const DELIVERY_ENDED_STATUSES: ReadonlySet<string> = new Set(["RECEIVED", "COMPLETED", "CANCELLED", "RETURNED"]);
+
 export const ORDERS_COLUMN_LABELS: Record<string, string> = {
   code: "Mã đơn",
   customer: "Khách hàng",
@@ -128,9 +131,11 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
     accessorKey: "requestedDeliveryDate",
     header: ORDERS_COLUMN_LABELS.requestedDeliveryDate,
     // Trong vòng 10 ngày thì hiện đếm ngược thay cho ngày; xa hơn giữ nguyên ngày.
+    // Đơn đã giao xong, huỷ hoặc hoàn thì không còn gì để đếm ngược, chỉ hiện ngày hẹn.
     cell: ({ row }) => {
       const value = row.original.requestedDeliveryDate;
-      const days = value ? daysUntilPlainDate(value) : null;
+      const ended = DELIVERY_ENDED_STATUSES.has(row.original.status);
+      const days = value && !ended ? daysUntilPlainDate(value) : null;
       if (value && days !== null && days <= 10) {
         const overdue = days < 0;
         return (
