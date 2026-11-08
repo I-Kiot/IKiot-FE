@@ -112,6 +112,10 @@ export function CustomersExpandedPanel({
               <span>{customer.phone || '-'}</span>
             </div>
             <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">Email</span>
+              <span className="break-all">{customer.email || '-'}</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
               <span className="text-xs text-muted-foreground">Giới tính</span>
               <Badge
                 variant="secondary"
