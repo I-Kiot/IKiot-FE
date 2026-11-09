@@ -75,6 +75,8 @@ type OrdersContextType = {
   updateQuery: (patch: Partial<Omit<OrdersListQuery, "page">>) => void;
   updatePage: (page: number) => void;
   resetFilters: () => void;
+  /** Thay vài trường của một dòng sau khi đổi ngay tại danh sách (người phụ trách, shipper), không tải lại cả trang. */
+  patchOrder: (id: string, patch: Partial<OrderListItem>) => void;
 };
 
 const OrdersContext = React.createContext<OrdersContextType | null>(null);
@@ -195,6 +197,17 @@ export function OrdersProvider({
     setListQuery((prev) => ({ ...prev, page }));
   }, []);
 
+  const patchOrder = useCallback((id: string, patch: Partial<OrderListItem>) => {
+    setResult((prev) =>
+      prev
+        ? {
+            ...prev,
+            orders: prev.orders.map((order) => (order.id === id ? { ...order, ...patch } : order)),
+          }
+        : prev,
+    );
+  }, []);
+
   const resetFilters = useCallback(() => {
     setKeywordInput("");
     setListQuery((prev) => ({ ...DEFAULT_LIST_QUERY, limit: prev.limit }));
@@ -215,6 +228,7 @@ export function OrdersProvider({
         updateQuery,
         updatePage,
         resetFilters,
+        patchOrder,
       }}
     >
       {children}
