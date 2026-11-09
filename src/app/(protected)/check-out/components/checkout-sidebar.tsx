@@ -40,6 +40,8 @@ interface Customer {
 interface CheckoutSidebarProps {
   totalQuantity: number;
   subtotal: number;
+  /** Nút Thanh toán bấm được: giỏ có tiền, hoặc có dòng giảm giá vượt thành tiền (bấm để thấy lỗi thay vì nút khóa im lặng). */
+  canCheckout: boolean;
   /** Tổng đã tính đủ (tạm tính - giảm giá/khuyến mãi + VAT), nguồn duy nhất cho hiển thị và thanh toán. */
   grandTotal: number;
   discount: number;
@@ -81,6 +83,7 @@ const formatVND = (value: number) =>
 export function CheckoutSidebar({
   totalQuantity,
   subtotal,
+  canCheckout,
   grandTotal,
   discount,
   discountType,
@@ -550,10 +553,10 @@ export function CheckoutSidebar({
         <Button
           type="button"
           onClick={onCheckout}
-          disabled={subtotal === 0}
+          disabled={!canCheckout}
           className={cn(
             "w-full h-11 text-lg font-bold shadow-md cursor-pointer transition-all duration-200",
-            subtotal > 0
+            canCheckout
               ? "bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.01]"
               : "bg-muted text-muted-foreground",
           )}
@@ -564,7 +567,8 @@ export function CheckoutSidebar({
           type="button"
           variant="outline"
           onClick={onCancel}
-          disabled={subtotal === 0}
+          // Theo số món, không theo tiền: giỏ giảm giá về 0 đ vẫn phải hủy được.
+          disabled={totalQuantity === 0}
           className="w-full h-9 text-base cursor-pointer text-red-500 hover:bg-red-50 hover:text-red-600 border-red-200"
         >
           Hủy đơn hàng
