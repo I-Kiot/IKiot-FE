@@ -4,7 +4,7 @@ import * as React from "react";
 import { Ban, Pencil, UserCog } from "lucide-react";
 import { PermissionButton } from "@/components/permission-button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
-import { getSessionRole } from "@/lib/auth";
+import { getSessionRole, getSessionUserId } from "@/lib/auth";
 import type { OrderDetail, OrderStatus } from "@/types/order-flow";
 import { CancelOrderDialog } from "./cancel-order-dialog";
 import { EditOrderDialog } from "./edit-order-dialog";
@@ -31,6 +31,9 @@ export function OrderActions({
   const editable =
     order.fulfillmentType !== "TAKEAWAY" && EDITABLE_STATUSES.includes(order.status);
   const canUpdate = allows(role, "orders", "update");
+  // Người đang phụ trách giao lại được đơn của mình dù không có `orders:update` (BE `assertReassignAccess`).
+  const me = getSessionUserId();
+  const canReassign = canUpdate || (me !== undefined && order.assignee?.id === me);
   const [open, setOpen] = React.useState<Open>(null);
 
   if (!editable) return null;
@@ -44,8 +47,9 @@ export function OrderActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <PermissionButton
-        allowed={canUpdate}
+        allowed={canReassign}
         permission="orders:update"
+        who="Chủ shop, người đang phụ trách đơn, hoặc nhân viên có quyền này mới đổi được."
         variant="outline"
         onClick={() => setOpen("handling")}
         className="cursor-pointer"
@@ -97,6 +101,7 @@ export function OrderActions({
           open
           onOpenChange={close}
           onSaved={done}
+          canSetPriority={canUpdate}
         />
       )}
     </div>

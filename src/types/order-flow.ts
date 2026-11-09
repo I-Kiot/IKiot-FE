@@ -359,6 +359,14 @@ export interface OrderListItem {
   items: OrderLine[];
   /** Trạng thái lần giao mới nhất; giao thất bại vẫn để đơn SHIPPING, nên trường này phân biệt được. */
   latestShipmentStatus: ShipmentStatus | null;
+  /** Lần giao mới nhất (chỉ ở danh sách); ô chọn shipper đổi người qua `PATCH /shipments/:id/driver`. */
+  latestShipment: { id: string; status: ShipmentStatus; carrierType: CarrierType } | null;
+}
+
+/** `GET /orders/:id/assignees`: người nhận được đơn này. */
+export interface AssigneeOption extends UserRef {
+  isOwner: boolean;
+  isCurrent: boolean;
 }
 
 /** Đơn còn SHIPPING mà lần giao mới nhất thất bại, đang chờ phiếu hoàn. */
@@ -369,7 +377,8 @@ export function isDeliveryFailed(order: {
   return order.status === "SHIPPING" && order.latestShipmentStatus === "FAILED";
 }
 
-export interface OrderDetail extends Omit<OrderListItem, "items" | "itemCount" | "stockSummary"> {
+export interface OrderDetail
+  extends Omit<OrderListItem, "items" | "itemCount" | "stockSummary" | "latestShipment"> {
   items: OrderDetailLine[];
   shipments: {
     id: string;
