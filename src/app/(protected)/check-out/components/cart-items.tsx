@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
 interface CartItem {
@@ -94,8 +95,14 @@ export function CartItems({
         </TableHeader>
         <TableBody>
           {items.map((item, index) => {
-            const rowTotal =
-              item.quantity * (item.unitPrice - item.discountAmount);
+            // Giảm giá vượt đơn giá không bị cắt nữa: hiện 0 đ kèm cảnh báo, thanh toán sẽ bị chặn.
+            const isOverDiscounted = item.discountAmount > item.unitPrice;
+            const rowTotal = Math.max(
+              0,
+              item.quantity * (item.unitPrice - item.discountAmount),
+            );
+            // Tồn được đọc lại khi đổi nơi bán, nên số lượng đã chọn có thể vượt số còn ở nơi bán mới.
+            const isShort = item.quantity > item.availableStock;
 
             return (
               <TableRow
@@ -121,6 +128,11 @@ export function CartItems({
                         {item.stockAllLocations ?? 0}
                       </span>
                     </div>
+                    {isShort && (
+                      <span className="text-sm font-medium text-destructive mt-0.5">
+                        Chỉ còn {item.availableStock} tại nơi bán
+                      </span>
+                    )}
                   </div>
                 </TableCell>
 
@@ -176,14 +188,21 @@ export function CartItems({
                 </TableCell>
 
                 <TableCell>
-                  <div className="flex justify-end">
+                  <div className="flex flex-col items-end gap-0.5">
+                    {/* Không giới hạn bằng `max`: cắt im lặng làm thu ngân không biết số mình gõ đã bị đổi. */}
                     <MoneyInput
                       value={item.discountAmount}
-                      // Giảm giá không vượt đơn giá.
-                      max={item.unitPrice}
                       onChange={(val) => onDiscountChange(item.productItemId, val)}
-                      className="w-24 h-9 text-right text-base font-bold text-red-500 tabular-nums px-1.5 focus-visible:ring-primary"
+                      className={cn(
+                        "w-24 h-9 text-right text-base font-bold text-red-500 tabular-nums px-1.5 focus-visible:ring-primary",
+                        isOverDiscounted && "border-destructive",
+                      )}
                     />
+                    {isOverDiscounted && (
+                      <span className="text-xs font-medium text-destructive">
+                        Giảm giá vượt thành tiền
+                      </span>
+                    )}
                   </div>
                 </TableCell>
 

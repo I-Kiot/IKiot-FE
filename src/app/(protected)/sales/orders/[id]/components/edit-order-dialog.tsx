@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { branchApi } from "@/lib/api/branch";
-import { depositChangeOf, getApiErrorBody, type MoneyGap } from "@/lib/api/error-codes";
+import { depositChangeOf, getApiErrorBody, messageForCode, type MoneyGap } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { useLineStockAt } from "../../shared/use-line-stock-at";
 import type { LocationType } from "@/types/location";
@@ -165,8 +165,15 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
     requestedDeliveryDate !== (order.requestedDeliveryDate ?? "") && isPastDate(requestedDeliveryDate)
       ? PAST_DATE_MESSAGE
       : undefined;
+  // Giao tận nơi phải đủ người nhận, SĐT, địa chỉ - cùng luật BE kiểm tra (ORDER_DELIVERY_INFO_REQUIRED).
+  const deliveryError =
+    fulfillmentType === "HOME_DELIVERY" &&
+    (!recipientName.trim() || !recipientPhone.trim() || !deliveryAddress.trim())
+      ? "Đơn giao tận nơi cần đủ người nhận, số điện thoại và địa chỉ giao."
+      : undefined;
   const valid =
     !dateError &&
+    !deliveryError &&
     Number.isFinite(fee) &&
     fee >= 0 &&
     (!linesChanged || (lines.length > 0 && lines.every((l) => l.quantity >= 1)));
@@ -212,7 +219,9 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
       if (gap) {
         setDepositGap(gap);
       } else {
-        toast.error(getApiErrorBody(error)?.message ?? "Không lưu được đơn hàng");
+        // Mã lỗi trước (câu tiếng Việt), rồi mới tới message của BE.
+        const body = getApiErrorBody(error);
+        toast.error(messageForCode(body?.code) ?? body?.message ?? "Không lưu được đơn hàng");
       }
     } finally {
       setSaving(false);
@@ -302,18 +311,19 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
               {dateError && <p className="text-xs text-destructive">{dateError}</p>}
             </div>
             <div className="grid gap-2">
-              <Label>{pickup ? "Người đến lấy hàng" : "Người nhận"}</Label>
+              <Label>{pickup ? "Người đến lấy hàng" : "Người nhận *"}</Label>
               <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} />
             </div>
             <div className="grid gap-2">
-              <Label>{pickup ? "SĐT người đến lấy" : "Số điện thoại người nhận"}</Label>
+              <Label>{pickup ? "SĐT người đến lấy" : "Số điện thoại người nhận *"}</Label>
               <Input value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} />
             </div>
             {!pickup && (
               <>
                 <div className="grid gap-2 sm:col-span-2">
-                  <Label>Địa chỉ giao</Label>
+                  <Label>Địa chỉ giao *</Label>
                   <Input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
+                  {deliveryError && <p className="text-xs text-destructive">{deliveryError}</p>}
                 </div>
                 <div className="grid gap-2">
                   <Label>Phí giao hàng</Label>

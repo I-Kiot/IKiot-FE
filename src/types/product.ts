@@ -170,6 +170,8 @@ export interface ProductSearchParams {
   supplierId?: string;
   locationId?: string;
   locationType?: LocationType;
+  /** Id phiên bản nối bằng dấu phẩy: chỉ lấy sản phẩm chứa các phiên bản này (POS đọc lại tồn của giỏ). Gửi chuỗi vì axios mã hoá mảng thành `itemIds[]=`. */
+  itemIds?: string;
   page?: number;
   limit?: number;
 }

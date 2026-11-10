@@ -13,11 +13,21 @@ import { ReceiptDialog } from "./receipt-dialog";
 import { OrderQrDialog } from "./order-qr-dialog";
 import { PromotionPickerDialog } from "./promotion-picker-dialog";
 import { orderApi } from "@/lib/api/order";
+import { productApi } from "@/lib/api/product";
 import { promotionApi } from "@/lib/api/promotion";
 import { getMyTenant } from "@/lib/api/tenant";
 import type { PromotionCalculateResponse } from "@/types/promotion";
 import { getCachedUser } from "@/lib/auth";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Customer {
   id: string;
@@ -58,6 +68,10 @@ interface InvoiceState {
   /** Khuyến mãi gán tay qua picker "Gán giảm giá": tối đa 2, và nếu có 2 thì cả hai phải cộng dồn được. */
   selectedPromotionIds: string[];
 }
+
+// Định dạng tiền cho thông báo lỗi thanh toán, cùng cách hiển thị với giỏ hàng.
+const formatVND = (value: number) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
 
 const createNewInvoice = (id: string, name: string): InvoiceState => ({
   id,
@@ -111,6 +125,83 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
   // Chi nhánh bán được xác định giống nhau cho preview khuyến mãi và payload đơn cuối.
   const resolveBranchId = (): string => salesBranchId;
 
+  // Đọc lại tồn của mọi dòng trong mọi hóa đơn nháp khi đổi nơi bán (nơi bán dùng chung cho các tab).
+  // Tồn trong giỏ được chụp lúc thêm hàng, nên không đọc lại thì giỏ vẫn hiện tồn của nơi cũ.
+  // Không tự giảm số lượng: thu ngân có thể đổi nơi bán lại; dòng thiếu được đánh dấu và bị chặn lúc thanh toán.
+  useEffect(() => {
+    if (!salesBranchId) return;
+    const allItemIds = invoices.flatMap((invoice) =>
+      invoice.items.map((item) => item.productItemId),
+    );
+    // BE nhận tối đa 100 id một lần; 10 hóa đơn nháp cùng lúc hiếm khi vượt.
+    const itemIds = [...new Set(allItemIds)].slice(0, 100);
+    if (itemIds.length === 0) return;
+
+    // Đổi nơi bán liên tục thì response của nơi bán cũ về sau sẽ bị bỏ qua.
+    let stale = false;
+    productApi
+      .search({
+        itemIds: itemIds.join(","),
+        locationId: salesBranchId,
+        locationType: "BRANCH",
+        limit: 100,
+      })
+      .then((res) => {
+        if (stale) return;
+        const freshById = new Map<
+          string,
+          { stock: number; stockAllLocations: number; availableStock: number }
+        >();
+        for (const product of res.data) {
+          for (const item of product.items ?? []) {
+            freshById.set(item.id, {
+              stock: item.stock ?? 0,
+              stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
+              availableStock: item.availableStock ?? item.stock ?? 0,
+            });
+          }
+        }
+
+        // Ghép trên `prev` mới nhất theo productItemId, để dòng vừa thêm trong lúc chờ không bị mất.
+        setInvoices((prev) =>
+          prev.map((invoice) => ({
+            ...invoice,
+            items: invoice.items.map((line) => {
+              const fresh = freshById.get(line.productItemId);
+              if (!fresh) return line;
+              return { ...line, ...fresh };
+            }),
+          })),
+        );
+
+        const shortNames = new Set<string>();
+        for (const invoice of invoices) {
+          for (const line of invoice.items) {
+            const fresh = freshById.get(line.productItemId);
+            if (fresh && line.quantity > fresh.availableStock) {
+              shortNames.add(line.name);
+            }
+          }
+        }
+        if (shortNames.size > 0) {
+          toast.warning(
+            `Không đủ hàng tại nơi bán đã chọn: ${[...shortNames].join(", ")}`,
+          );
+        }
+      })
+      .catch((error) => {
+        if (stale) return;
+        console.error("Lỗi khi tải lại tồn kho theo nơi bán:", error);
+        toast.error("Không tải lại được tồn kho tại nơi bán đã chọn.");
+      });
+
+    return () => {
+      stale = true;
+    };
+    // Chỉ chạy khi đổi nơi bán; dòng thêm sau đó đã mang tồn đúng của nơi bán mới từ ô tìm hàng.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [salesBranchId]);
+
   // Preview giảm giá cho khuyến mãi gán tay của hóa đơn đang chọn.
   // Kèm signature (giỏ + id khuyến mãi) lúc tính; kết quả cũ còn đang bay sẽ bị bỏ qua khi render, không xoá bằng setState trong effect.
   const [promotionResult, setPromotionResult] = useState<
@@ -122,6 +213,8 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState<any | null>(null);
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
+  // Hóa đơn đang chờ xác nhận hủy; null = hộp xác nhận đóng.
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; tabName: string } | null>(null);
   const [qrOrderData, setQrOrderData] = useState<{
     orderId: string;
     qrUrl: string;
@@ -310,10 +403,12 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     toast.info("Đã xóa sản phẩm khỏi giỏ hàng.");
   };
 
+  // Mỗi dòng không xuống dưới 0, khớp "Thành tiền" trong giỏ: giảm giá vượt thành tiền không còn bị cắt ở ô nhập
+  // (thanh toán sẽ chặn), nên không chặn ở đây thì "Tổng tiền hàng" hiện số âm.
   const subtotal = useMemo(() => {
     return activeInvoice.items.reduce(
       (acc, item) =>
-        acc + item.quantity * (item.unitPrice - item.discountAmount),
+        acc + Math.max(0, item.quantity * (item.unitPrice - item.discountAmount)),
       0,
     );
   }, [activeInvoice.items]);
@@ -358,6 +453,33 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
   const handleCheckoutSubmit = () => {
     if (activeInvoice.items.length === 0) {
       toast.error("Không thể thanh toán đơn hàng trống!");
+      return;
+    }
+
+    // Giảm giá nhập theo từng cái, nên vượt đơn giá cũng là vượt thành tiền dòng. Từ chối, không tự cắt (BE cũng từ chối đơn như vậy).
+    const overDiscounted = activeInvoice.items.filter(
+      (item) => item.discountAmount > item.unitPrice,
+    );
+    if (overDiscounted.length > 0) {
+      const details = overDiscounted
+        .map(
+          (item) =>
+            `${item.name} (${formatVND(item.discountAmount * item.quantity)} > ${formatVND(item.unitPrice * item.quantity)})`,
+        )
+        .join(", ");
+      toast.error(`Giảm giá vượt thành tiền dòng: ${details}`);
+      return;
+    }
+
+    // Tồn có thể đã đổi khi đổi nơi bán; chặn ở đây thay vì để BE báo "Hàng trên kệ không đủ".
+    const shortLines = activeInvoice.items.filter(
+      (item) => item.quantity > item.availableStock,
+    );
+    if (shortLines.length > 0) {
+      const details = shortLines
+        .map((item) => `${item.name} (cần ${item.quantity}, còn ${item.availableStock})`)
+        .join(", ");
+      toast.error(`Không đủ hàng tại nơi bán đã chọn: ${details}`);
       return;
     }
 
@@ -414,10 +536,11 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
       customerId: activeInvoice.selectedCustomer?.id,
       branchId: resolvedBranchId,
       paymentMethod: activeInvoice.paymentMethod,
+      // POS nhập giảm giá theo từng cái, còn BE hiểu `discountAmount` là giảm của cả dòng: nhân số lượng để hai bên cùng một con số.
       items: activeInvoice.items.map((item) => ({
         productItemId: item.productItemId,
         quantity: item.quantity,
-        discountAmount: item.discountAmount,
+        discountAmount: item.discountAmount * item.quantity,
       })),
       customerPay: activeInvoice.customerPay,
       note: activeInvoice.note,
@@ -497,17 +620,24 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     });
   };
 
+  // Mở hộp xác nhận hủy trong ứng dụng thay cho `confirm()` của trình duyệt (hộp gốc chặn trang và chặn test tự động).
+  // Ghi lại đúng hóa đơn lúc mở hộp: đổi tab trong lúc hộp đang mở cũng không xóa nhầm hóa đơn khác.
   const handleCancelOrder = () => {
-    if (
-      confirm(
-        `Bạn có chắc chắn muốn hủy giỏ hàng của ${activeInvoice.tabName}?`,
-      )
-    ) {
-      updateActiveInvoice(
-        createNewInvoice(activeInvoice.id, activeInvoice.tabName),
-      );
-      toast.info("Đã hủy và làm trống đơn hàng.");
-    }
+    setCancelTarget({ id: activeInvoice.id, tabName: activeInvoice.tabName });
+  };
+
+  // Xác nhận hủy: làm trống đúng hóa đơn đã ghi lại, không gọi BE nên không tạo đơn.
+  const handleConfirmCancel = () => {
+    if (!cancelTarget) return;
+    setInvoices((prev) =>
+      prev.map((invoice) =>
+        invoice.id === cancelTarget.id
+          ? createNewInvoice(invoice.id, invoice.tabName)
+          : invoice,
+      ),
+    );
+    setCancelTarget(null);
+    toast.info("Đã hủy và làm trống đơn hàng.");
   };
 
   useEffect(() => {
@@ -527,7 +657,8 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     };
     window.addEventListener("keydown", handleShortcuts);
     return () => window.removeEventListener("keydown", handleShortcuts);
-  }, [activeInvoice, grandTotal]);
+    // `salesBranchId` phải có ở đây: thiếu thì F9 ngay sau khi đổi nơi bán vẫn gửi đơn theo nơi bán cũ.
+  }, [activeInvoice, grandTotal, salesBranchId]);
 
   // Staff quay lại danh sách sản phẩm, các role khác quay lại trang chủ
 
@@ -576,6 +707,10 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
                 0,
               )}
               subtotal={subtotal}
+              canCheckout={
+                subtotal > 0 ||
+                activeInvoice.items.some((item) => item.discountAmount > item.unitPrice)
+              }
               grandTotal={grandTotal}
               discount={activeInvoice.discount}
               discountType={activeInvoice.discountType}
@@ -642,6 +777,30 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         onOpenChange={setIsReceiptOpen}
         order={receiptOrder}
       />
+
+      <Dialog
+        open={cancelTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setCancelTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Hủy giỏ hàng của {cancelTarget?.tabName}?</DialogTitle>
+            <DialogDescription>
+              Toàn bộ sản phẩm, khách hàng và giảm giá trong hóa đơn này sẽ bị xóa. Không có đơn nào được tạo.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setCancelTarget(null)}>
+              Không
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleConfirmCancel}>
+              Hủy đơn hàng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {qrOrderData && (
         <OrderQrDialog
