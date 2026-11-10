@@ -59,13 +59,16 @@ import { InvoicesExpandedPanel } from "./invoices-expanded-panel";
 function mapInvoice(dto: InvoiceDto): Invoice {
   const lines = dto.lines.map((line) => {
     const gross = line.quantity * line.unitPrice;
+    const lineTotal = Math.abs(line.amount);
     return {
       productItemId: line.orderItemId ?? line.id,
       productName: line.description,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
-      // Hoá đơn lưu giá từng dòng đã trừ; phần giảm là chênh lệch so với giá gốc.
-      discountAmount: line.quantity > 0 ? Math.max(0, (gross - Math.abs(line.amount)) / line.quantity) : 0,
+      // Hoá đơn lưu thành tiền dòng đã trừ giảm giá; phần giảm của cả dòng là chênh lệch so với giá gốc × số lượng.
+      // Trước đây chia cho số lượng (giảm mỗi cái) trong khi bảng hiển thị coi là giảm cả dòng: mua 2 chỉ trừ 1 lần.
+      discountAmount: Math.max(0, gross - lineTotal),
+      lineTotal,
     };
   });
 

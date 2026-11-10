@@ -9,6 +9,12 @@ export interface CashDrawerUserRef {
   email?: string;
 }
 
+/** Một người có thể giữ két, cho ô chọn ở màn mở két và báo cáo cuối ca. BE chỉ trả tên, không trả hồ sơ. */
+export interface CashierOption {
+  id: string;
+  fullName: string;
+}
+
 export interface CashDrawerBranchRef {
   id: string;
   name: string;
