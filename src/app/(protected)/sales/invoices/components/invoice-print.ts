@@ -18,14 +18,13 @@ export function printInvoice(invoice: Invoice) {
   const number = invoice.invoiceNumber ?? invoice.invoiceCode;
   const rows = invoice.items
     .map((item, index) => {
-      // `discountAmount` của dòng hoá đơn là theo đơn vị (mỗi cái).
-      const total = item.quantity * (item.unitPrice - item.discountAmount);
+      const total = item.lineTotal;
       return `<tr>
         <td class="center">${index + 1}</td>
         <td>${escapeHtml(item.productName)}</td>
         <td class="right">${item.quantity}</td>
         <td class="right">${formatVND(item.unitPrice)}</td>
-        <td class="right">${item.discountAmount > 0 ? `-${formatVND(item.discountAmount * item.quantity)}` : "-"}</td>
+        <td class="right">${item.discountAmount > 0 ? `-${formatVND(item.discountAmount)}` : "-"}</td>
         <td class="right">${formatVND(total)}</td>
       </tr>`;
     })

@@ -111,8 +111,7 @@ export function InvoicesExpandedPanel({
               </TableHeader>
               <TableBody>
                 {invoice.items.map((item, index) => {
-                  const itemTotal =
-                    item.quantity * item.unitPrice - item.discountAmount;
+                  const itemTotal = item.lineTotal;
                   return (
                     <TableRow
                       key={item.productItemId}

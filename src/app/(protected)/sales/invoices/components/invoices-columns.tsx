@@ -22,7 +22,10 @@ export interface InvoiceItem {
   productName: string;
   quantity: number;
   unitPrice: number;
+  /** Tiền giảm của cả dòng (không phải mỗi cái). */
   discountAmount: number;
+  /** Thành tiền dòng sau giảm, lấy thẳng từ hoá đơn - không tính lại để khỏi lệch số lẻ. */
+  lineTotal: number;
 }
 
 export interface Invoice {
