@@ -220,6 +220,43 @@ export const NullableMoneyInput = React.forwardRef<
   );
 });
 
+type NullableCountInputProps = {
+  value: number | null | undefined;
+  onChange: (value: number | null) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+};
+
+/** Ô nhập số lượng nguyên dương (lượt dùng, số lần...) - không có ký hiệu tiền; để trống = null. */
+export const NullableCountInput = React.forwardRef<
+  HTMLInputElement,
+  NullableCountInputProps
+>(function NullableCountInput(
+  { value, onChange, placeholder = "0", className, disabled },
+  ref,
+) {
+  return (
+    <Input
+      ref={ref}
+      type="text"
+      inputMode="numeric"
+      placeholder={placeholder}
+      disabled={disabled}
+      className={cn("h-9 w-full text-sm tabular-nums tracking-tight", className)}
+      value={
+        Number.isFinite(value) && (value as number) > 0
+          ? (value as number).toLocaleString("vi-VN")
+          : ""
+      }
+      onChange={(e) => {
+        const digits = e.target.value.replace(/[^\d]/g, "");
+        onChange(digits === "" ? null : Number(digits));
+      }}
+    />
+  );
+});
+
 const PRODUCT_TRIGGER_CLASS =
   "!h-auto min-h-11 w-full min-w-0 items-start justify-between gap-2 overflow-hidden px-3 py-2.5 text-left text-sm !whitespace-normal " +
   "data-[size=default]:!h-auto data-[size=default]:min-h-11 " +

@@ -25,7 +25,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { MoneyInput, NullableMoneyInput } from '@/app/(protected)/exchange/shared/form-fields'
+import { MoneyInput, NullableCountInput, NullableMoneyInput } from '@/app/(protected)/exchange/shared/form-fields'
 import {
   Select,
   SelectContent,
@@ -583,7 +583,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Giới hạn lượt dùng (để trống nếu không giới hạn)</FormLabel>
                     <FormControl>
-                      <NullableMoneyInput value={field.value} onChange={field.onChange} />
+                      <NullableCountInput placeholder="Không giới hạn" value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -596,7 +596,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Giới hạn lượt dùng / khách hàng</FormLabel>
                     <FormControl>
-                      <NullableMoneyInput value={field.value} onChange={field.onChange} />
+                      <NullableCountInput placeholder="Không giới hạn" value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
