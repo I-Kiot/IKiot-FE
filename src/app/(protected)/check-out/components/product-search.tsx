@@ -47,6 +47,29 @@ const formatVND = (value: number) =>
     value,
   );
 
+function normalizeSearchText(value: string): string {
+  return value.normalize("NFC").toLocaleLowerCase("vi").trim();
+}
+
+/**
+ * Mức khớp với từ khóa, nhỏ hơn = sát hơn: trùng hẳn mã/SKU/mã vạch → trùng tên → mã bắt đầu bằng từ khóa →
+ * tên bắt đầu bằng từ khóa → tên chứa từ khóa → còn lại (biến thể đi kèm vì cùng sản phẩm với dòng khớp).
+ */
+function matchRank(
+  p: { productName: string; productCode: string; sku: string; barcode: string },
+  q: string,
+): number {
+  if (!q) return 0;
+  const codes = [p.productCode, p.sku, p.barcode].map((c) => normalizeSearchText(c || "")).filter(Boolean);
+  const name = normalizeSearchText(p.productName || "");
+  if (codes.some((c) => c === q)) return 0;
+  if (name === q) return 1;
+  if (codes.some((c) => c.startsWith(q))) return 2;
+  if (name.startsWith(q)) return 3;
+  if (name.includes(q)) return 4;
+  return 5;
+}
+
 /** Chi nhánh phạm vi bán: chi nhánh gán cho tài khoản, nếu không thì theo switcher sidebar. */
 function resolveBranchId(): string {
   const cachedUser = getCachedUser() as { branchId?: string } | null;
@@ -133,8 +156,9 @@ export function ProductSearch({
   }, [locationKey, location?.id, location?.type, hideQuickItems]);
 
   const results = useMemo(() => {
-    return products.flatMap((product) =>
+    const flattened = products.flatMap((product) =>
       (product.items || []).map((item) => ({
+        productName: product.name,
         id: item.id,
         productCode: item.productCode,
         sku: item.sku,
@@ -157,7 +181,14 @@ export function ProductSearch({
         )?.url,
       })),
     );
-  }, [products]);
+    // BE trả theo ngày tạo; xếp lại: khớp từ khóa sát nhất trước, cùng mức khớp thì hàng bán được ngay lên trên.
+    // `sort` ổn định nên phần còn lại giữ thứ tự BE.
+    const q = normalizeSearchText(query);
+    return flattened
+      .map((p) => ({ p, rank: matchRank(p, q), sellable: p.status === "ACTIVE" && p.availableStock > 0 }))
+      .sort((a, b) => a.rank - b.rank || Number(b.sellable) - Number(a.sellable))
+      .map(({ p }) => p);
+  }, [products, query]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
