@@ -26,7 +26,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { customerApi } from "@/lib/api/customer";
 import { orderReturnApi } from "@/lib/api/order-return";
-import { getApiErrorBody } from "@/lib/api/error-codes";
+import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { staffApi } from "@/lib/api/staff";
 import { getCachedUser } from "@/lib/auth";
@@ -209,6 +209,7 @@ function OrderDraftForm({
   });
 
   const customerError = customer ? undefined : "Chọn một khách hàng hoặc thêm khách mới.";
+  const isHomeDelivery = fulfillment === "HOME_DELIVERY";
   const errors = {
     customer: customerError,
     branch: branchId ? undefined : "Chọn nơi bán.",
@@ -216,6 +217,13 @@ function OrderDraftForm({
     lines: lines.length > 0 ? undefined : "Đơn hàng cần ít nhất một mặt hàng.",
     deposit: totals.depositError ?? undefined,
     requestedDate: isPastDate(requestedDate) ? PAST_DATE_MESSAGE : undefined,
+    // Giao tận nơi phải đủ người nhận, SĐT, địa chỉ (BE từ chối bằng ORDER_DELIVERY_INFO_REQUIRED); khách tới lấy thì không bắt buộc.
+    recipientName:
+      isHomeDelivery && !recipientName.trim() ? "Nhập tên người nhận." : undefined,
+    recipientPhone:
+      isHomeDelivery && !recipientPhone.trim() ? "Nhập SĐT người nhận." : undefined,
+    deliveryAddress:
+      isHomeDelivery && !deliveryAddress.trim() ? "Nhập địa chỉ giao hàng." : undefined,
   };
   const valid =
     !errors.customer &&
@@ -223,7 +231,10 @@ function OrderDraftForm({
     !errors.assignee &&
     !errors.lines &&
     !errors.deposit &&
-    !errors.requestedDate;
+    !errors.requestedDate &&
+    !errors.recipientName &&
+    !errors.recipientPhone &&
+    !errors.deliveryAddress;
 
   // Chọn khách sẽ điền một lần các thông tin giao hàng đã có, không ghi đè nội dung đã gõ.
   // D-11: khi đã có danh sách chọn, sao chép khách, chi nhánh, người phụ trách, giao hàng và các dòng hỏng của đơn trả.
@@ -368,7 +379,9 @@ function OrderDraftForm({
       }
       router.push(`/sales/orders/${created.id}`);
     } catch (error) {
-      toast.error(getApiErrorBody(error)?.message ?? "Không tạo được đơn hàng");
+      // Mã lỗi trước (câu tiếng Việt, không đổi khi BE sửa câu chữ), rồi mới tới message của BE.
+      const body = getApiErrorBody(error);
+      toast.error(messageForCode(body?.code) ?? body?.message ?? "Không tạo được đơn hàng");
       setSubmitting(false);
     }
   }
@@ -598,17 +611,20 @@ function OrderDraftForm({
               {/* Khách tới lấy cũng ghi người sẽ đến nhận để quầy đối chiếu; chỉ địa chỉ là của giao tận nơi. */}
               <div className="space-y-1.5">
                 <Label htmlFor="recipient-name" className={sectionLabel}>
-                  {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận"}
+                  {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận *"}
                 </Label>
                 <Input
                   id="recipient-name"
                   value={recipientName}
                   onChange={(event) => setRecipientName(event.target.value)}
                 />
+                {show(errors.recipientName) && (
+                  <p className="text-sm text-destructive">{errors.recipientName}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="recipient-phone" className={sectionLabel}>
-                  {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận"}
+                  {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận *"}
                 </Label>
                 <Input
                   id="recipient-phone"
@@ -616,6 +632,9 @@ function OrderDraftForm({
                   value={recipientPhone}
                   onChange={(event) => setRecipientPhone(event.target.value)}
                 />
+                {show(errors.recipientPhone) && (
+                  <p className="text-sm text-destructive">{errors.recipientPhone}</p>
+                )}
               </div>
               {fulfillment === "STORE_PICKUP" && (
                 <p className="text-sm text-muted-foreground sm:col-span-2">
@@ -627,7 +646,7 @@ function OrderDraftForm({
                 <>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="delivery-address" className={sectionLabel}>
-                      Địa chỉ giao hàng
+                      Địa chỉ giao hàng *
                     </Label>
                     <Input
                       id="delivery-address"
@@ -636,6 +655,9 @@ function OrderDraftForm({
                         setDeliveryAddress(event.target.value)
                       }
                     />
+                    {show(errors.deliveryAddress) && (
+                      <p className="text-sm text-destructive">{errors.deliveryAddress}</p>
+                    )}
                   </div>
                 </>
               )}
