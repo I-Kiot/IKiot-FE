@@ -19,6 +19,15 @@ import { getMyTenant } from "@/lib/api/tenant";
 import type { PromotionCalculateResponse } from "@/types/promotion";
 import { getCachedUser } from "@/lib/auth";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Customer {
   id: string;
@@ -204,6 +213,8 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [receiptOrder, setReceiptOrder] = useState<any | null>(null);
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
+  // Hóa đơn đang chờ xác nhận hủy; null = hộp xác nhận đóng.
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; tabName: string } | null>(null);
   const [qrOrderData, setQrOrderData] = useState<{
     orderId: string;
     qrUrl: string;
@@ -609,17 +620,24 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     });
   };
 
+  // Mở hộp xác nhận hủy trong ứng dụng thay cho `confirm()` của trình duyệt (hộp gốc chặn trang và chặn test tự động).
+  // Ghi lại đúng hóa đơn lúc mở hộp: đổi tab trong lúc hộp đang mở cũng không xóa nhầm hóa đơn khác.
   const handleCancelOrder = () => {
-    if (
-      confirm(
-        `Bạn có chắc chắn muốn hủy giỏ hàng của ${activeInvoice.tabName}?`,
-      )
-    ) {
-      updateActiveInvoice(
-        createNewInvoice(activeInvoice.id, activeInvoice.tabName),
-      );
-      toast.info("Đã hủy và làm trống đơn hàng.");
-    }
+    setCancelTarget({ id: activeInvoice.id, tabName: activeInvoice.tabName });
+  };
+
+  // Xác nhận hủy: làm trống đúng hóa đơn đã ghi lại, không gọi BE nên không tạo đơn.
+  const handleConfirmCancel = () => {
+    if (!cancelTarget) return;
+    setInvoices((prev) =>
+      prev.map((invoice) =>
+        invoice.id === cancelTarget.id
+          ? createNewInvoice(invoice.id, invoice.tabName)
+          : invoice,
+      ),
+    );
+    setCancelTarget(null);
+    toast.info("Đã hủy và làm trống đơn hàng.");
   };
 
   useEffect(() => {
@@ -759,6 +777,30 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         onOpenChange={setIsReceiptOpen}
         order={receiptOrder}
       />
+
+      <Dialog
+        open={cancelTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setCancelTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Hủy giỏ hàng của {cancelTarget?.tabName}?</DialogTitle>
+            <DialogDescription>
+              Toàn bộ sản phẩm, khách hàng và giảm giá trong hóa đơn này sẽ bị xóa. Không có đơn nào được tạo.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setCancelTarget(null)}>
+              Không
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleConfirmCancel}>
+              Hủy đơn hàng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {qrOrderData && (
         <OrderQrDialog
