@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { getCachedUser } from "@/lib/auth";
 import { useSalesBranch } from "./_hooks/use-sales-branch";
 import { DirectSaleTab } from "./components/direct-sale-tab";
+import { PickSalesBranchDialog } from "./components/pick-sales-branch-dialog";
 
 /**
  * Bán tại quầy (POS), toàn màn hình. Tab đơn tay tách sang `/sales/orders/new` vì hai kiểu đơn cạnh nhau dễ nhầm;
@@ -33,7 +34,12 @@ function CheckOutContent() {
   return (
     <div className="h-screen w-full flex flex-col bg-background overflow-hidden">
       <div className="flex-1 min-h-0">
-        <DirectSaleTab sales={sales} />
+        {/* Chỉ dựng màn bán khi đã có chi nhánh: mọi lệnh tìm/tải hàng bên trong cần một nơi bán cụ thể. */}
+        {sales.branchId ? (
+          <DirectSaleTab sales={sales} />
+        ) : (
+          <PickSalesBranchDialog sales={sales} backHref={backHref} />
+        )}
       </div>
 
       <Button asChild variant="outline" size="sm" className="fixed bottom-6 left-6 z-30 shadow-md">
