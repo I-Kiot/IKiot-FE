@@ -17,15 +17,50 @@ function PopoverTrigger({
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
 }
 
+/**
+ * A modal Dialog locks scrolling with react-remove-scroll, which cancels every wheel /
+ * touchmove that reaches `document` from outside the dialog. A popover is portalled to
+ * <body>, i.e. outside it, so a scrollable list inside one (CascadeSelect, comboboxes)
+ * would not scroll while a dialog is open. Stopping the native event at the popover keeps
+ * it from reaching that listener; the popover's own lists still scroll normally.
+ * Native listeners on purpose: React's synthetic stopPropagation runs at the React root,
+ * which in the App Router is `document` itself - too late to stop a listener there.
+ */
+function stopScrollLock(node: HTMLElement | null) {
+  if (!node) return
+  const stop = (e: Event) => e.stopPropagation()
+  node.addEventListener("wheel", stop, { passive: true })
+  node.addEventListener("touchmove", stop, { passive: true })
+  return () => {
+    node.removeEventListener("wheel", stop)
+    node.removeEventListener("touchmove", stop)
+  }
+}
+
 function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  ref,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  const composedRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (typeof ref === "function") ref(node)
+      else if (ref) ref.current = node
+      const cleanup = stopScrollLock(node)
+      return () => {
+        cleanup?.()
+        if (typeof ref === "function") ref(null)
+        else if (ref) ref.current = null
+      }
+    },
+    [ref]
+  )
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
+        ref={composedRef}
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}

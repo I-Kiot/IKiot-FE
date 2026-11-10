@@ -15,6 +15,7 @@ import {
   priorityDisplay,
   stockDisplay,
 } from "../shared/order-display";
+import { AssigneeCell, DriverCell } from "./orders-person-cells";
 
 export const ORDERS_COLUMN_LABELS: Record<string, string> = {
   code: "Mã đơn",
@@ -110,19 +111,14 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
   {
     id: "assignee",
     header: ORDERS_COLUMN_LABELS.assignee,
-    cell: ({ row }) => (
-      <span className="text-sm">{row.original.assignee?.name ?? "-"}</span>
-    ),
+    // Chọn người ngay tại dòng khi đơn chưa đi giao (2026-11-08).
+    cell: ({ row }) => <AssigneeCell order={row.original} />,
   },
   {
     id: "driver",
     header: ORDERS_COLUMN_LABELS.driver,
-    // Chỉ có nghĩa khi hàng đang trên đường đi.
-    cell: ({ row }) => (
-      <span className="text-sm">
-        {row.original.status === "SHIPPING" ? (row.original.driver?.name ?? "-") : "-"}
-      </span>
-    ),
+    // Hiện shipper của lần giao mới nhất; đổi được khi hàng còn ở shop.
+    cell: ({ row }) => <DriverCell order={row.original} />,
   },
   {
     accessorKey: "requestedDeliveryDate",

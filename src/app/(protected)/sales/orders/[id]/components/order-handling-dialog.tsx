@@ -21,8 +21,7 @@ import {
 } from "@/components/ui/select";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
-import { staffApi } from "@/lib/api/staff";
-import { getCachedUser } from "@/lib/auth";
+import { getSessionUserId } from "@/lib/auth";
 import {
   ORDER_PRIORITIES,
   ORDER_PRIORITY_LABELS,
@@ -35,6 +34,8 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: (order: OrderDetail) => void;
+  /** Đổi ưu tiên cần `orders:update`; người đang phụ trách không có quyền này chỉ giao lại đơn được. */
+  canSetPriority: boolean;
 };
 
 interface AssigneeOption {
@@ -46,7 +47,7 @@ interface AssigneeOption {
  * D-7: giao đơn cho người khác hoặc đổi độ ưu tiên mà không mở form sửa (`PATCH /orders/:id/assignee`, `/priority`, A-8).
  * Được phép tới khi đơn giao đi, kể cả đơn đã đóng gói.
  */
-export function OrderHandlingDialog({ order, open, onOpenChange, onSaved }: Props) {
+export function OrderHandlingDialog({ order, open, onOpenChange, onSaved, canSetPriority }: Props) {
   const [assignees, setAssignees] = React.useState<AssigneeOption[] | null>(null);
   const [assigneeId, setAssigneeId] = React.useState(order.assignee?.id ?? "");
   const [priority, setPriority] = React.useState<OrderPriority>(order.priority);
@@ -54,38 +55,27 @@ export function OrderHandlingDialog({ order, open, onOpenChange, onSaved }: Prop
 
   React.useEffect(() => {
     let stale = false;
-    const me = getCachedUser() as {
-      id?: string;
-      role?: string;
-      branchId?: string | null;
-      warehouseId?: string | null;
-      fullName?: string;
-    } | null;
-    const placeId = order.branch.id;
-    const meEligible = me?.role === "TENANT_OWNER" || (me?.warehouseId || me?.branchId) === placeId;
-    staffApi
-      .getActiveForScheduleOptions()
+    const me = getSessionUserId();
+    // BE trả đúng những người nhận được đơn này (nhân viên tại nơi bán và chủ shop), cùng luật với lúc lưu.
+    orderJourneyApi
+      .assignees(order.id)
       .catch(() => [])
-      .then((staff) => {
+      .then((people) => {
         if (stale) return;
-        // Chỉ người làm tại nơi bán của đơn mới phụ trách được.
-        const options = staff
-          .filter((s) => (s.warehouseId || s.branchId) === placeId)
-          .map((s) => ({ id: s.id, name: s.fullName || s.phoneNumber }));
-        // Chủ shop không có trong danh sách nhân viên nhưng vẫn có thể phụ trách; người đang phụ trách hiện tại cũng luôn có trong danh sách.
-        const extra = [
-          me?.id && meEligible ? { id: me.id, name: `${me.fullName || "Tôi"} (tôi)` } : null,
-          order.assignee ? { id: order.assignee.id, name: order.assignee.name } : null,
-        ].filter((o): o is AssigneeOption => !!o && !options.some((s) => s.id === o.id));
-        const unique = [...extra, ...options].filter(
-          (option, index, all) => all.findIndex((o) => o.id === option.id) === index,
-        );
-        setAssignees(unique);
+        const options = people.map((person) => {
+          const tags = [person.isOwner ? "chủ shop" : null, person.id === me ? "tôi" : null].filter(Boolean);
+          return { id: person.id, name: tags.length > 0 ? `${person.name} (${tags.join(", ")})` : person.name };
+        });
+        // Người đang phụ trách luôn có trong danh sách, kể cả khi đã chuyển nơi làm.
+        if (order.assignee && !options.some((o) => o.id === order.assignee?.id)) {
+          options.unshift({ id: order.assignee.id, name: order.assignee.name });
+        }
+        setAssignees(options);
       });
     return () => {
       stale = true;
     };
-  }, [order.assignee, order.branch.id]);
+  }, [order.assignee, order.id]);
 
   const assigneeChanged = !!assigneeId && assigneeId !== (order.assignee?.id ?? "");
   const priorityChanged = priority !== order.priority;
@@ -130,7 +120,11 @@ export function OrderHandlingDialog({ order, open, onOpenChange, onSaved }: Prop
           </div>
           <div className="grid gap-2">
             <Label>Mức ưu tiên</Label>
-            <Select value={priority} onValueChange={(value) => setPriority(value as OrderPriority)}>
+            <Select
+              value={priority}
+              onValueChange={(value) => setPriority(value as OrderPriority)}
+              disabled={!canSetPriority}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>

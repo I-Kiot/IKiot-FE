@@ -2,6 +2,7 @@
 // Quầy bán vẫn dùng `orderApi` (`order.ts`), đã POST tới `/orders/pos` từ A-2.
 import client from '@/lib/api/client';
 import type {
+  AssigneeOption,
   CancelOrderPayload,
   CancelOrderResult,
   SourceLocation,
@@ -78,6 +79,13 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
+  /** Người phụ trách được đơn này. Chủ shop, người đang phụ trách và người có `orders:update` mới gọi được (cùng luật với `assign`). */
+  assignees: async (id: string): Promise<AssigneeOption[]> => {
+    const res = await client.get<Envelope<AssigneeOption[]>>(`/orders/${id}/assignees`);
+    return res.data.data;
+  },
+
+  /** Đổi người phụ trách: chủ shop, người đang phụ trách (giao lại), hoặc `orders:update`. */
   assign: async (id: string, assigneeId: string): Promise<OrderDetail> => {
     const res = await client.patch<Envelope<OrderDetail>>(`/orders/${id}/assignee`, {
       assigneeId,
