@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CheckoutTabs } from "./checkout-tabs";
 import { ProductSearch } from "./product-search";
 import { SalesBranchSelect } from "./sales-branch-select";
+import { CancelCartDialog } from "./cancel-cart-dialog";
 import type { SalesBranch } from "../_hooks/use-sales-branch";
 import { CartItems } from "./cart-items";
 import { CheckoutSidebar } from "./checkout-sidebar";
@@ -19,15 +20,6 @@ import { getMyTenant } from "@/lib/api/tenant";
 import type { PromotionCalculateResponse } from "@/types/promotion";
 import { getCachedUser } from "@/lib/auth";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface Customer {
   id: string;
@@ -637,7 +629,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
       ),
     );
     setCancelTarget(null);
-    toast.info("Đã hủy và làm trống đơn hàng.");
+    toast.success("Đã huỷ và làm trống đơn hàng");
   };
 
   useEffect(() => {
@@ -750,6 +742,15 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         </ResizablePanel>
       </ResizablePanelGroup>
 
+      <CancelCartDialog
+        open={cancelTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setCancelTarget(null);
+        }}
+        tabName={cancelTarget?.tabName ?? ""}
+        onConfirm={handleConfirmCancel}
+      />
+
       <CustomerDialog
         open={isCustomerModalOpen}
         onOpenChange={setIsCustomerModalOpen}
@@ -777,30 +778,6 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         onOpenChange={setIsReceiptOpen}
         order={receiptOrder}
       />
-
-      <Dialog
-        open={cancelTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setCancelTarget(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Hủy giỏ hàng của {cancelTarget?.tabName}?</DialogTitle>
-            <DialogDescription>
-              Toàn bộ sản phẩm, khách hàng và giảm giá trong hóa đơn này sẽ bị xóa. Không có đơn nào được tạo.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setCancelTarget(null)}>
-              Không
-            </Button>
-            <Button type="button" variant="destructive" onClick={handleConfirmCancel}>
-              Hủy đơn hàng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {qrOrderData && (
         <OrderQrDialog
