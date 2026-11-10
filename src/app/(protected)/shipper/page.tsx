@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { shipmentApi } from "@/lib/api/shipment";
 import type { ShipmentSummary } from "@/types/order-flow";
-import { formatVND, ShipmentStatusBadge } from "../shipments/components/shipment-ui";
+import { amountDueText, formatVND, ShipmentStatusBadge } from "../shipments/components/shipment-ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeliverySheet } from "./components/delivery-sheet";
 import { DeliveryHistory } from "./components/delivery-history";
@@ -36,7 +36,7 @@ function DeliveryCard({ shipment, onOpen }: { shipment: ShipmentSummary; onOpen:
             {[shipment.scheduledDate?.slice(0, 10), shipment.scheduledSlot].filter(Boolean).join(" · ") ||
               "Chưa hẹn giờ"}
           </span>
-          <span className="font-semibold">Thu {formatVND(shipment.order.amountDue)}</span>
+          <span className="font-semibold">{shipment.order.amountDue > 0 ? `Thu ${formatVND(shipment.order.amountDue)}` : amountDueText(shipment)}</span>
         </div>
       </CardContent>
     </Card>

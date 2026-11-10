@@ -21,6 +21,7 @@ import {
 } from "@/types/order-flow";
 import { ShipmentNoteDialog } from "../../shipments/components/shipment-detail-sheet";
 import {
+  amountDueText,
   formatVND,
   isOnTheRoad,
   reportShipmentError,
@@ -230,7 +231,7 @@ export function DeliverySheet({
               </Field>
               <Field label="Còn phải thu">
                 <span className="font-semibold">
-                  {formatVND(shipment.order.amountDue)}
+                  {amountDueText(shipment)}
                 </span>
               </Field>
               <Field label="Ghi chú">{shipment.note}</Field>
