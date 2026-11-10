@@ -1,12 +1,37 @@
 import client from "./client";
 import type {
   CashDrawerSession,
+  CashDrawerUserRef,
+  CashierOption,
   OpenSessionPayload,
   ShiftLogPayload,
   FinalizeSessionPayload,
 } from "@/types/cash-drawer";
 
+const toCashierOption = (row: CashDrawerUserRef): CashierOption => ({
+  id: row.id,
+  fullName:
+    [row.profile?.lastName, row.profile?.firstName].filter(Boolean).join(" ").trim() || "Nhân viên",
+});
+
 export const cashDrawerApi = {
+  /** Ai nhận được két khi mở két đầu ngày (quyền `cash_drawers:open`). Thay cho `GET /users`, vốn cần `users:read`. */
+  getEligibleStaff: async (branchId?: string): Promise<CashierOption[]> => {
+    const res = await client.get<{ success: boolean; data: CashDrawerUserRef[] }>(
+      "/cash-drawer-sessions/eligible-staff",
+      { params: branchId ? { branchId } : undefined },
+    );
+    return (res.data.data || []).map(toCashierOption);
+  },
+
+  /** Ai nhận được bàn giao của phiên này. Chỉ người đang giữ két gọi được; không gồm chính họ. */
+  getHandoverCandidates: async (id: string): Promise<CashierOption[]> => {
+    const res = await client.get<{ success: boolean; data: CashDrawerUserRef[] }>(
+      `/cash-drawer-sessions/${id}/handover-candidates`,
+    );
+    return (res.data.data || []).map(toCashierOption);
+  },
+
   getCurrentSession: async (branchId?: string): Promise<CashDrawerSession> => {
     const res = await client.get<{ success: boolean; data: CashDrawerSession }>(
       "/cash-drawer-sessions/current",

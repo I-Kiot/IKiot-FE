@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { parseLocationKey } from "@/lib/location-key";
 import { cashDrawerApi } from "@/lib/api/cash-drawer";
-import { staffApi } from "@/lib/api/staff";
 import { branchApi } from "@/lib/api/branch";
 import { canManageCashDrawer } from "@/components/sidebar/constants/role-permissions";
 import { PageHeader } from "@/components/page-header";
@@ -39,9 +38,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Staff } from "@/types/staff";
 import type { Branch } from "@/types/branch";
-import type { CashDrawerSession } from "@/types/cash-drawer";
+import type { CashDrawerSession, CashierOption } from "@/types/cash-drawer";
 
 const BREADCRUMBS = [
   { label: "Trang chủ", href: "/dashboard" },
@@ -64,7 +62,7 @@ export default function CashDrawersTodayPage() {
   >({});
 
   // Nhân viên để mở két
-  const [branchStaffs, setBranchStaffs] = useState<Staff[]>([]);
+  const [branchStaffs, setBranchStaffs] = useState<CashierOption[]>([]);
 
   const [openBranchId, setOpenBranchId] = useState<string | null>(null);
   const [openBranchName, setOpenBranchName] = useState<string>("");
@@ -163,34 +161,39 @@ export default function CashDrawersTodayPage() {
     }
   };
 
-  // 2. Lấy phiên và nhân viên khi đã có chi nhánh đang chọn
+  // 2. Lấy phiên khi đã có chi nhánh đang chọn. Danh sách người nhận két không tải ở đây: chỉ người mở két cần nó,
+  // nên tải lúc bấm "Mở két đầu ngày" (xem `loadEligibleStaff`). Tải sẵn từng làm mọi nhân viên vào màn này gọi
+  // `GET /users` - không có `users:read` thì nhận 403 và một toast lỗi trên màn họ không định thao tác gì.
   useEffect(() => {
     if (!activeBranchId) return;
 
     setIsLoading(true);
     fetchSession(activeBranchId);
-
-    staffApi
-      .getList({
-        branchId: activeBranchId,
-        status: "ACTIVE",
-        limit: 100,
-      })
-      .then((res) => {
-        const valid = res.data || [];
-        setBranchStaffs(valid);
-        const me = valid.find((s) => s.id === user?.id);
-        if (me) {
-          setSelectedStaffId(me.id);
-        } else if (valid.length > 0) {
-          setSelectedStaffId(valid[0].id);
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Không thể tải danh sách nhân viên");
-      });
   }, [activeBranchId, user]);
+
+  /** Tải người nhận được két của chi nhánh, chọn sẵn chính mình nếu có. Trả false khi lỗi để dialog không mở với danh sách rỗng giả. */
+  const loadEligibleStaff = async (branchId: string): Promise<boolean> => {
+    setSelectedStaffId("");
+    setIsStaffLoading(true);
+    try {
+      const valid = await cashDrawerApi.getEligibleStaff(branchId);
+      setBranchStaffs(valid);
+      const me = valid.find((s) => s.id === user?.id);
+      setSelectedStaffId(me?.id ?? valid[0]?.id ?? "");
+      return true;
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể tải danh sách nhân viên nhận két");
+      return false;
+    } finally {
+      setIsStaffLoading(false);
+    }
+  };
+
+  const handleOpenSingleBranch = async () => {
+    if (!activeBranchId) return;
+    if (await loadEligibleStaff(activeBranchId)) setIsDialogOpen(true);
+  };
 
   const handleGridBranchClick = async (
     branchId: string,
@@ -198,31 +201,7 @@ export default function CashDrawersTodayPage() {
   ) => {
     setOpenBranchId(branchId);
     setOpenBranchName(branchName);
-    setSelectedStaffId("");
-    setIsStaffLoading(true);
-
-    try {
-      const res = await staffApi.getList({
-        branchId,
-        status: "ACTIVE",
-        limit: 100,
-      });
-      const valid = res.data || [];
-      setBranchStaffs(valid);
-
-      const me = valid.find((s) => s.id === user?.id);
-      if (me) {
-        setSelectedStaffId(me.id);
-      } else if (valid.length > 0) {
-        setSelectedStaffId(valid[0].id);
-      }
-      setIsDialogOpen(true);
-    } catch (err) {
-      console.error(err);
-      toast.error("Không thể tải danh sách nhân viên của chi nhánh này");
-    } finally {
-      setIsStaffLoading(false);
-    }
+    if (await loadEligibleStaff(branchId)) setIsDialogOpen(true);
   };
 
   const handleOpenCashDrawer = async (e: React.FormEvent) => {
@@ -481,9 +460,7 @@ export default function CashDrawersTodayPage() {
                       <SelectContent>
                         {branchStaffs.map((staff) => (
                           <SelectItem key={staff.id} value={staff.id}>
-                            {staff.fullName} (
-                            {staff.roleName}
-                            )
+                            {staff.fullName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -558,9 +535,15 @@ export default function CashDrawersTodayPage() {
               <Button
                 size="lg"
                 className="w-full font-semibold shadow-md shadow-primary/20 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
-                onClick={() => setIsDialogOpen(true)}
+                onClick={handleOpenSingleBranch}
+                disabled={isStaffLoading}
               >
-                <Plus className="h-4 w-4 me-2" /> Mở két đầu ngày
+                {isStaffLoading ? (
+                  <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 me-2" />
+                )}
+                Mở két đầu ngày
               </Button>
             </>
           ) : (
@@ -643,9 +626,7 @@ export default function CashDrawersTodayPage() {
                     <SelectContent>
                       {branchStaffs.map((staff) => (
                         <SelectItem key={staff.id} value={staff.id}>
-                          {staff.fullName} (
-                          {staff.roleName}
-                          )
+                          {staff.fullName}
                         </SelectItem>
                       ))}
                     </SelectContent>

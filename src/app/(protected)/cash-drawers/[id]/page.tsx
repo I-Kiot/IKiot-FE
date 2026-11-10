@@ -6,7 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { parseLocationKey } from "@/lib/location-key";
 import { cashDrawerApi } from "@/lib/api/cash-drawer";
-import { staffApi } from "@/lib/api/staff";
 import { canManageCashDrawer } from "@/components/sidebar/constants/role-permissions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -42,8 +41,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { CashDrawerSession, CashDrawerUserRef } from "@/types/cash-drawer";
-import type { Staff } from "@/types/staff";
+import type { CashDrawerSession, CashDrawerUserRef, CashierOption } from "@/types/cash-drawer";
 
 export default function CashDrawerDetailPage() {
   const params = useParams();
@@ -59,7 +57,7 @@ export default function CashDrawerDetailPage() {
   const [reportAmount, setReportAmount] = useState<string>("");
   const [nextStaffId, setNextStaffId] = useState<string>("");
   const [reportNote, setReportNote] = useState<string>("");
-  const [branchStaffs, setBranchStaffs] = useState<Staff[]>([]);
+  const [branchStaffs, setBranchStaffs] = useState<CashierOption[]>([]);
 
   // Dialog states for "Chốt két" (Manager)
   const [isCloseOpen, setIsCloseOpen] = useState(false);
@@ -142,30 +140,23 @@ export default function CashDrawerDetailPage() {
     prevLocationKeyRef.current = locationKey;
   }, [locationKey, session, user, router]);
 
-  // Tải nhân viên đang hoạt động cho dropdown ca kế tiếp
+  // Người nhận bàn giao: route riêng của két (quyền `cash_drawers:report`, chỉ người đang giữ két), không phải
+  // `GET /users` - thu ngân không có `users:read`. BE lọc bằng đúng điều kiện nó kiểm khi nhận log, và bỏ chính mình.
   useEffect(() => {
     if (!isReportOpen || !session) return;
-
-    const branchId = session.branchId;
-    if (!branchId) return;
-
-    const fetchStaffs = async () => {
-      try {
-        const response = await staffApi.getList({
-          branchId,
-          status: "ACTIVE",
-          limit: 100,
-        });
-        // Không lọc theo role: mọi dòng /users đã là nhân viên của tenant; backend kiểm tra trạng thái và chi nhánh khi mở két hoặc bàn giao.
-        const filtered = response.data || [];
-        setBranchStaffs(filtered);
-      } catch (error) {
+    let stale = false;
+    cashDrawerApi
+      .getHandoverCandidates(session.id)
+      .then((list) => {
+        if (!stale) setBranchStaffs(list);
+      })
+      .catch((error) => {
         console.error(error);
-        toast.error("Không thể tải danh sách nhân viên");
-      }
+        toast.error("Không thể tải danh sách nhân viên nhận bàn giao");
+      });
+    return () => {
+      stale = true;
     };
-
-    fetchStaffs();
   }, [isReportOpen, session]);
 
   const handleOpenReport = () => {
@@ -746,7 +737,7 @@ export default function CashDrawerDetailPage() {
                     </SelectItem>
                     {nextStaffCandidates.map((staff) => (
                       <SelectItem key={staff.id} value={staff.id}>
-                        {staff.fullName} ({staff.roleName})
+                        {staff.fullName}
                       </SelectItem>
                     ))}
                   </SelectContent>
