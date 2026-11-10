@@ -44,6 +44,12 @@ export function formatVND(value: number): string {
   return VND.format(value);
 }
 
+/** "Còn phải thu" của một lần giao: số tiền nếu còn, "Đã thu" khi shipper đã giao và không còn gì, "Không phải thu" khi đơn đã trả đủ từ trước. */
+export function amountDueText(shipment: { status: string; order: { amountDue: number } }): string {
+  if (shipment.order.amountDue > 0) return formatVND(shipment.order.amountDue);
+  return shipment.status === "DELIVERED" ? "Đã thu" : "Không phải thu";
+}
+
 const STATUS_VARIANT: Record<ShipmentStatus, "info" | "warning" | "success" | "error" | "secondary" | "muted"> = {
   CREATED: "secondary",
   PICKED_UP: "info",

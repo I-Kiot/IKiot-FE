@@ -177,6 +177,7 @@ export const ERROR_MESSAGES = {
   STAFF_NOT_FOUND: "Không tìm thấy nhân viên",
   STAFF_SELF_EDIT_DENIED: "Không thể tự sửa hồ sơ của mình ở đây - dùng /auth/me",
   STAFF_SINGLE_LOCATION_REQUIRED: "Nhân viên chỉ được trực thuộc một chi nhánh hoặc một kho",
+  STAFF_WORKPLACE_REQUIRED: "Nhân viên phải thuộc một chi nhánh hoặc một kho",
   STATS_LOCATION_DENIED: "Bạn chỉ xem được báo cáo của địa điểm mình",
   STOCK_MOVEMENT_ADJUST_HAS_DESTINATION: "Phiếu kiểm kê không có địa điểm nhận",
   STOCK_MOVEMENT_ADJUST_NEGATIVE: "Điều chỉnh làm tồn kho xuống dưới 0",

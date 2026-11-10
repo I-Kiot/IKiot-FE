@@ -18,7 +18,7 @@ import {
   type ShipmentSummary,
 } from "@/types/order-flow";
 import { PagedTable, usePagedList, type PageParams } from "./paged-table";
-import { carrierLabel, formatVND, ShipmentStatusBadge } from "./shipment-ui";
+import { amountDueText, carrierLabel, ShipmentStatusBadge } from "./shipment-ui";
 
 /** Bộ lọc của tab (không gồm trang). */
 interface ShipmentFilters {
@@ -68,7 +68,7 @@ const shipmentsColumns: ColumnDef<ShipmentSummary>[] = [
   {
     id: "amountDue",
     header: () => <div className="text-right">Còn phải thu</div>,
-    cell: ({ row }) => <div className="text-right">{formatVND(row.original.order.amountDue)}</div>,
+    cell: ({ row }) => <div className="text-right">{amountDueText(row.original)}</div>,
   },
   {
     accessorKey: "createdAt",

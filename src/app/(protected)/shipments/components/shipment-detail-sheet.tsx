@@ -23,8 +23,8 @@ import { shipmentApi } from "@/lib/api/shipment";
 import { personName, type Shipment } from "@/types/order-flow";
 import { ChangeDriverDialog } from "./driver-dialogs";
 import {
+  amountDueText,
   carrierLabel,
-  formatVND,
   isFinished,
   isOnTheRoad,
   reportShipmentError,
@@ -192,7 +192,7 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
                 {[shipment.scheduledDate?.slice(0, 10), shipment.scheduledSlot].filter(Boolean).join(" · ")}
               </Field>
               <Field label="Lắp đặt">{shipment.requiresInstallation ? "Có" : "Không"}</Field>
-              <Field label="Còn phải thu">{formatVND(shipment.order.amountDue)}</Field>
+              <Field label="Còn phải thu">{amountDueText(shipment)}</Field>
               <Field label="Ghi chú">{shipment.note}</Field>
             </div>
 
