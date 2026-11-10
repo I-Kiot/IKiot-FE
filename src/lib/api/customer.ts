@@ -14,6 +14,7 @@ function mapCustomer(cust: any): Customer {
     customerCode: cust.customerCode || `KH-${id ? id.slice(-6).toUpperCase() : Math.floor(1000 + Math.random() * 9000)}`,
     name: cust.name,
     phone: cust.phone || '',
+    email: cust.email || '',
     gender: cust.gender || 'OTHER',
     address: cust.address || '',
     dob: cust.dob || '',

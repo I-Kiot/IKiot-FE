@@ -24,6 +24,7 @@ export interface Customer {
   customerCode: string
   name: string
   phone: string
+  email: string
   gender: CustomerGender
   address: string
   dob: string
@@ -51,6 +52,7 @@ export interface CustomerCreatePayload {
   customerCode?: string
   name: string
   phone?: string
+  email?: string | null
   gender: CustomerGender
   address?: string
   dob?: string
