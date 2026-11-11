@@ -1,47 +1,18 @@
 "use client";
 
 // Màn "Đơn giao của tôi" (C-7): các lần giao chưa kết thúc mà mình là shipper, kèm số tiền còn phải thu.
+// Tab "Đang giao" lọc được như tab "Lịch sử giao" (`CurrentDeliveries`).
 // Bấm một đơn để mở chi tiết: đang đi giao, đã giao (ảnh + thu tiền), giao không thành. Dùng được trên điện thoại.
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { shipmentApi } from "@/lib/api/shipment";
-import type { ShipmentSummary } from "@/types/order-flow";
-import { amountDueText, formatVND, ShipmentStatusBadge } from "../shipments/components/shipment-ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeliverySheet } from "./components/delivery-sheet";
 import { DeliveryHistory } from "./components/delivery-history";
-
-type MineState = { status: "loading" } | { status: "error" } | { status: "ready"; shipments: ShipmentSummary[] };
-
-/** Một đơn trong danh sách: mã, người nhận, địa chỉ, giờ hẹn, số còn phải thu. */
-function DeliveryCard({ shipment, onOpen }: { shipment: ShipmentSummary; onOpen: () => void }) {
-  return (
-    <Card className="cursor-pointer py-4 transition-colors hover:bg-muted/40" onClick={onOpen}>
-      <CardContent className="space-y-2 px-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium">{shipment.order.code}</span>
-          <ShipmentStatusBadge status={shipment.status} />
-        </div>
-        <p className="text-sm">
-          {shipment.recipientName ?? shipment.order.customerName}
-          {shipment.recipientPhone && <span className="text-muted-foreground"> · {shipment.recipientPhone}</span>}
-        </p>
-        {shipment.deliveryAddress && <p className="text-sm text-muted-foreground">{shipment.deliveryAddress}</p>}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            {[shipment.scheduledDate?.slice(0, 10), shipment.scheduledSlot].filter(Boolean).join(" · ") ||
-              "Chưa hẹn giờ"}
-          </span>
-          <span className="font-semibold">{shipment.order.amountDue > 0 ? `Thu ${formatVND(shipment.order.amountDue)}` : amountDueText(shipment)}</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { CurrentDeliveries, type MineState } from "./components/current-deliveries";
 
 /** Màn đơn giao của tôi. `?tab=history&open=<id>` / `?open=<id>` là đích của đường dẫn trong thông báo. */
 function ShipperScreen() {
@@ -90,21 +61,8 @@ function ShipperScreen() {
           <TabsTrigger value="history">Lịch sử giao</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="current" className="flex flex-col gap-6 outline-none">
-          {state.status === "loading" && <p className="text-center text-muted-foreground">Đang tải...</p>}
-          {state.status === "error" && (
-            <p className="text-center text-muted-foreground">Không tải được danh sách - bấm Tải lại để thử lại</p>
-          )}
-          {state.status === "ready" && state.shipments.length === 0 && (
-            <p className="text-center text-muted-foreground">Bạn không có đơn nào cần giao</p>
-          )}
-          {state.status === "ready" && state.shipments.length > 0 && (
-            <div className="grid gap-3 md:grid-cols-2">
-              {state.shipments.map((shipment) => (
-                <DeliveryCard key={shipment.id} shipment={shipment} onOpen={() => setOpenId(shipment.id)} />
-              ))}
-            </div>
-          )}
+        <TabsContent value="current" className="outline-none">
+          <CurrentDeliveries state={state} onOpen={setOpenId} />
         </TabsContent>
 
         <TabsContent value="history" className="outline-none">
