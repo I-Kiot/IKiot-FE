@@ -92,7 +92,7 @@ export const ERROR_MESSAGES = {
   ORDER_DISCOUNT_VALUE_REQUIRED: "Giảm giá cả đơn cần discountValue lớn hơn 0",
   ORDER_LINE_DISCOUNT_EXCEEDS_TOTAL: "Giảm giá vượt quá giá trị dòng hàng",
   ORDER_NOT_FOUND: "Không tìm thấy đơn hàng",
-  ORDER_NOT_PENDING_SEPAY: "Đơn hàng không còn ở trạng thái chờ thanh toán SePay",
+  ORDER_NOT_PENDING_SEPAY: "Đơn không còn chờ thanh toán QR",
   ORDER_PAYMENT_CONFLICT: "Đơn hàng vừa được thanh toán hoặc đã bị hủy, vui lòng tải lại",
   ORDER_PROMOTION_ALLOCATION_MISMATCH: "Không khớp được giảm giá với dòng hàng trong đơn",
   ORDER_STATUS_CONFLICT: "Trạng thái đơn hàng vừa thay đổi, vui lòng tải lại",
@@ -356,7 +356,18 @@ export const ERROR_MESSAGES = {
   ORDER_STEP_DENIED: "Chỉ chủ shop, người phụ trách đơn, hoặc người có quyền tại kho này mới làm được bước này",
   SHIPMENT_DELIVER_INTERNAL_ONLY: "Đơn giao qua đơn vị vận chuyển ngoài sẽ được hãng cập nhật, không xác nhận tay được",
   SHIPMENT_ORDER_NOT_SHIPPING: "Đơn chưa ở trạng thái Đang vận chuyển",
+  ORDER_USE_PAY_OFFLINE: "Không chuyển đơn sang Hoàn thành bằng tay - hãy dùng nút thu tiền (thanh toán tại quầy)",
+  ORDER_EDIT_LOCKED_BY_PAYMENT: "Đơn đã thanh toán đủ nên không sửa hàng hay giá được nữa - muốn đổi thì hoàn tiền / tạo đơn hoàn",
+  ORDER_TOTAL_BELOW_PAID: "Tổng tiền sau khi sửa thấp hơn số khách đã trả",
+  STOCK_MOVEMENT_CONFLICT: "Phiếu vừa được người khác cập nhật, đã tải lại dữ liệu mới",
+  ORDER_REFUND_EXCEEDS_PAID: "Số tiền hoàn vượt quá số shop đang giữ",
+  ORDER_RETURN_REFUND_REQUIRED: "Đơn đang giữ tiền của khách - hãy nhập số tiền hoàn (nhập 0 nếu shop giữ lại)",
+  ORDER_NO_HELD_MONEY: "Đơn này không còn tiền giữ treo cần quyết định - có thể vừa được xử lý, đã tải lại",
   ORDER_COLLECTION_AMOUNT_MISMATCH: "Số tiền thu phải đúng bằng số còn phải thu",
+  SEPAY_TRANSACTION_NOT_FOUND: "Không tìm thấy giao dịch SePay này",
+  SEPAY_TRANSACTION_ALREADY_RESOLVED: "Giao dịch này đã được xử lý trước đó - đã tải lại danh sách",
+  SEPAY_TRANSACTION_NOT_REFUNDABLE: "Giao dịch này không có khoản thu chưa gắn đơn để hoàn - hãy chọn \"Đã đối chiếu với đơn\" hoặc \"Bỏ qua\"; phần khách trả dư của đơn đã chốt thì hoàn tại đơn đó",
+  QR_PAYMENT_EXPIRED: "Mã QR đã hết hạn - tạo mã mới hoặc thu tiền mặt",
   ORDER_QR_PAYMENT_NOT_PENDING: "Khoản chuyển khoản QR không còn chờ - có thể khách vừa chuyển xong",
   // Hoàn hàng
   ORDER_RETURN_CONDITION_REQUIRED: "Cần chọn tình trạng cho từng dòng hàng hoàn",
@@ -436,6 +447,20 @@ export function shortStockLinesOf(error: unknown): ShortStockLine[] {
   const body = getApiErrorBody(error);
   if (body?.code !== "INSUFFICIENT_STOCK" || !Array.isArray(body.errors)) return [];
   return body.errors.filter(isShortStockLine);
+}
+
+/** `STOCK_MOVEMENT_CONFLICT`: hai người thao tác cùng lúc trên một phiếu; màn hình nên tải lại. */
+export function isStockMovementConflict(error: unknown): boolean {
+  return getApiErrorBody(error)?.code === "STOCK_MOVEMENT_CONFLICT";
+}
+
+/** `ORDER_TOTAL_BELOW_PAID`: tổng mới thấp hơn số đã trả; BE trả kèm `paid` và `grandTotal` ở cấp trên cùng. */
+export function totalBelowPaidOf(error: unknown): { paid: number; grandTotal: number } | null {
+  const body = getApiErrorBody(error) as (ApiErrorBody & Record<string, unknown>) | undefined;
+  if (body?.code !== "ORDER_TOTAL_BELOW_PAID") return null;
+  const { paid, grandTotal } = body;
+  if (typeof paid !== "number" || typeof grandTotal !== "number") return null;
+  return { paid, grandTotal };
 }
 
 /** Chênh lệch tiền backend trả kèm mã lỗi: `{ held, amount, difference }`. */

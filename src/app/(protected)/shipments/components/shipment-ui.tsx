@@ -24,6 +24,9 @@ const STALE_CODES = new Set([
   "SHIPMENT_ORDER_NOT_PACKED",
   "SHIPMENT_FULFILLMENT_NOT_HANDED_OVER",
   "SHIPMENT_ALREADY_OPEN",
+  "ORDER_QR_PAYMENT_NOT_PENDING",
+  // Không còn gì phải thu (tiền vừa về): thu tiền mặt / tạo lại mã đều vô nghĩa, tải lại để thấy số mới.
+  "ORDER_COLLECTION_AMOUNT_MISMATCH",
 ]);
 
 /** Hiện lỗi của một thao tác giao hàng; trả về `true` nếu màn hình cần tải lại vì dữ liệu đã cũ. */
@@ -44,7 +47,7 @@ export function formatVND(value: number): string {
   return VND.format(value);
 }
 
-/** "Còn phải thu" của một lần giao: số tiền nếu còn, "Đã thu" khi shipper đã giao và không còn gì, "Không phải thu" khi đơn đã trả đủ từ trước. */
+/** "Còn phải thu" của một lần giao: số tiền nếu còn (server trừ mọi khoản đã nhận, kể cả chuyển thiếu), "Đã thu" khi shipper đã giao và không còn gì, "Không phải thu" khi đơn đã trả đủ từ trước. */
 export function amountDueText(shipment: { status: string; order: { amountDue: number } }): string {
   if (shipment.order.amountDue > 0) return formatVND(shipment.order.amountDue);
   return shipment.status === "DELIVERED" ? "Đã thu" : "Không phải thu";

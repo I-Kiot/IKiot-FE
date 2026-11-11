@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MovementDetailHeader } from "@/app/(protected)/exchange/shared/movement-detail-header";
+import { MovementActors } from "@/app/(protected)/exchange/shared/movement-actors";
 import { MovementOrderNote } from "@/app/(protected)/exchange/shared/movement-order-note";
 import { CancelConfirmDialog } from "@/app/(protected)/exchange/shared/cancel-confirm-dialog";
 import {
@@ -271,6 +272,8 @@ export function AdjustmentsExpandedPanel({
           }
         />
       </div>
+
+      <MovementActors detail={detail} />
 
       <MovementOrderNote note={detail.note} />
 

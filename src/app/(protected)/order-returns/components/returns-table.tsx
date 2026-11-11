@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Plus, Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { PermissionButton } from "@/components/permission-button";
@@ -51,8 +52,10 @@ export function ReturnsTable() {
 
   const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
   const [status, setStatus] = React.useState<string>(ALL);
-  const [search, setSearch] = React.useState("");
-  const [term, setTerm] = React.useState("");
+  // Link từ lịch sử đơn hàng mang theo `?search=<mã phiếu>`.
+  const initialSearch = useSearchParams().get("search") ?? "";
+  const [search, setSearch] = React.useState(initialSearch);
+  const [term, setTerm] = React.useState(initialSearch.trim());
   /** Tăng khi có thay đổi làm danh sách phải đọc lại (vd. vừa tạo đơn trả). */
   const [reloads, setReloads] = React.useState(0);
   const [creating, setCreating] = React.useState(false);

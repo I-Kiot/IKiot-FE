@@ -1,5 +1,13 @@
 import client from '@/lib/api/client';
-import type { Order, OrderCreatePayload, OrderCreateResponse, OrderStatus, OrderPaymentMethod } from '@/types/order';
+import type {
+  CancelPosSaleOptions,
+  Order,
+  OrderCreatePayload,
+  OrderCreateResponse,
+  OrderStatus,
+  OrderPaymentMethod,
+  PosQrResponse,
+} from '@/types/order';
 import { useAuthStore } from '@/store/auth-store';
 import { branchIdOf } from '@/lib/location-key';
 
@@ -44,6 +52,16 @@ export const orderApi = {
       `/orders/${id}/pay-offline`,
       { paymentMethod: 'CASH', ...payload },
     );
+    return res.data.data;
+  },
+  /** Hủy đơn quầy đang chờ QR SePay: hàng trả về kho. Đơn đã giữ tiền (chuyển thiếu) thì gửi `refundAmount` (0 = giữ hết) và `refundMethod`. */
+  cancelPosSale: async (id: string, options: CancelPosSaleOptions = {}): Promise<Order> => {
+    const res = await client.post<{ success: boolean; data: Order }>(`/orders/pos/${id}/cancel`, options);
+    return res.data.data;
+  },
+  /** Tạo mã QR cho số còn phải thu của đơn quầy (sau khi khách chuyển thiếu, hoặc mã cũ hết hạn). */
+  createPosQr: async (id: string): Promise<PosQrResponse> => {
+    const res = await client.post<{ success: boolean; data: PosQrResponse }>(`/orders/pos/${id}/qr`);
     return res.data.data;
   },
   getById: async (id: string): Promise<Order> => {

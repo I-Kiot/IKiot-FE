@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export type SuppliersDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'payDebt'
+export type SuppliersDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'payDebt' | 'ledger'
 
 export const supplierFormSchema = z.object({
   supplierName: z.string().min(1, 'Tên nhà cung cấp là bắt buộc'),

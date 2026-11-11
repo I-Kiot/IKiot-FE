@@ -13,10 +13,23 @@ export interface StatsOverview {
   orderCount: number;
   customerCount: number;
   aov: number;
-  /** Doanh thu − phí ship − phí sàn − giá vốn. Ước tính: dòng chưa có giá vốn tính là 0. */
+  /** Doanh thu thuần − giá vốn thực − phí vận chuyển thực − phí sàn. Dòng giữ hàng chưa có giá vốn tính là 0. */
   grossProfit: number;
-  /** Số dòng hàng chưa có giá vốn - > 0 thì lợi nhuận đang bị thổi lên. */
+  /** Số dòng bán có giữ hàng mà giá vốn = 0 - > 0 thì lợi nhuận đang bị thổi lên. */
   linesMissingCost: number;
+  /** Doanh thu bán (chưa trừ hàng trả); revenue = grossSales + returns + otherIncome. */
+  grossSales?: number;
+  /** Tiền hàng trả lại trong kỳ (số âm). */
+  returns?: number;
+  goodsRevenue?: number;
+  shippingRevenue?: number;
+  otherIncome?: number;
+  costOfGoods?: number;
+  shippingCost?: number;
+  channelFee?: number;
+  returnCount?: number;
+  /** Đơn hoàn tất trong kỳ chưa có trong sổ doanh thu (đơn cũ trước khi có sổ). */
+  journalGap?: JournalGap;
   changePct: {
     revenue: number | null;
     orderCount: number | null;
@@ -28,11 +41,19 @@ export interface StatsOverview {
   previousPeriod: { fromDate: string; toDate: string };
 }
 
+export interface JournalGap {
+  ordersWithoutJournal: number;
+  firstJournalAt: string | null;
+}
+
 export interface RevenueSeriesPoint {
   /** `YYYY-MM-DDTHH` (giờ), `YYYY-MM-DD` (ngày) hoặc `YYYY-MM` (tháng), theo giờ Việt Nam. */
   bucket: string;
+  /** Doanh thu thuần của mốc - có thể âm khi hàng trả lớn hơn bán. */
   revenue: number;
   orderCount: number;
+  /** Hàng trả trong mốc (số âm). */
+  returns?: number;
 }
 
 export type RevenueGroupBy = 'hour' | 'day' | 'month';
@@ -109,12 +130,18 @@ export interface SlowProducts {
 }
 
 export interface RevenueByPaymentMethodItem {
+  /** 'UNKNOWN' khi khoản thu không có phương thức. */
   paymentMethod: string;
+  /** Tiền thực thu ròng của phương thức = received - refunded - change. */
   revenue: number;
   orderCount: number;
+  received?: number;
+  refunded?: number;
+  change?: number;
 }
 
 export interface RevenueByPaymentMethod {
+  basis?: 'CASH';
   breakdown: RevenueByPaymentMethodItem[];
 }
 
@@ -126,7 +153,11 @@ export interface RevenueByStaffItem {
   aov: number;
 }
 
+/** Người được tính: phụ trách đơn, người lên đơn hoặc người thu tiền. */
+export type RevenueByStaffGroupBy = 'assignee' | 'creator' | 'collector';
+
 export interface RevenueByStaff {
+  groupBy?: RevenueByStaffGroupBy;
   staff: RevenueByStaffItem[];
 }
 
@@ -136,11 +167,41 @@ export interface CashflowByType {
   count: number;
 }
 
+/** Hạng mục dòng tiền (`cash_flows.category`). */
+export type CashflowCategory =
+  | 'ORDER_PAYMENT'
+  | 'ORDER_REFUND'
+  | 'SALE_CHANGE'
+  | 'SUPPLIER_PAYMENT'
+  | 'UNALLOCATED_RECEIPT'
+  | 'UNALLOCATED_REFUND';
+
+/** Quỹ chứa tiền: két chi nhánh, quỹ chủ (shipper nộp thẳng chủ) hoặc tài khoản ngân hàng. */
+export type CashflowFund = 'DRAWER' | 'OWNER' | 'BANK';
+
+export interface CashflowByCategory {
+  category: CashflowCategory;
+  fund: CashflowFund;
+  flowType: 'INCOME' | 'EXPENSE';
+  total: number;
+  count: number;
+}
+
+export interface CashflowByFund {
+  fund: CashflowFund;
+  income: number;
+  expense: number;
+  net: number;
+  count: number;
+}
+
 export interface Cashflow {
   income: number;
   expense: number;
   net: number;
   byType: CashflowByType[];
+  byCategory?: CashflowByCategory[];
+  byFund?: CashflowByFund[];
 }
 
 export interface CashflowTransaction {
@@ -157,6 +218,10 @@ export interface CashflowTransaction {
   supplierName: string | null;
   createdByName: string | null;
   orderId: string | null;
+  category?: CashflowCategory | null;
+  fund?: CashflowFund | null;
+  /** Dòng sổ SePay gốc của khoản tiền chưa gắn đơn. */
+  sepayLedgerId?: string | null;
   createdAt: string;
 }
 
@@ -328,6 +393,145 @@ export interface AdminOverview {
   recentInvoices: AdminRecentInvoice[];
 }
 
+/** Loại bút toán trong sổ doanh thu. */
+export type SalesJournalEntryType = 'SALE' | 'RETURN' | 'OTHER_INCOME';
+
+export interface SalesJournalLine {
+  id: string;
+  orderItemId: string | null;
+  productItemId: string | null;
+  productName: string | null;
+  sku: string | null;
+  lineType: string | null;
+  /** Có dấu: dòng trả hàng là số âm. */
+  quantity: number;
+  amount: number;
+  cogs: number;
+}
+
+export interface SalesJournalEntry {
+  id: string;
+  entryType: SalesJournalEntryType;
+  source: string;
+  orderId: string;
+  orderCode: string | null;
+  orderReturnId: string | null;
+  branchId: string;
+  branchName: string | null;
+  /** `YYYY-MM-DD`, ngày địa phương. */
+  businessDate: string;
+  postedAt: string;
+  goodsAmount: number;
+  shippingAmount: number;
+  otherIncomeAmount: number;
+  totalAmount: number;
+  cogsAmount: number;
+  shippingCost: number;
+  channelFee: number;
+  customerId: string | null;
+  assigneeId: string | null;
+  creatorId: string | null;
+  channel: string | null;
+  fulfillmentType: string | null;
+  actorId: string | null;
+  lines: SalesJournalLine[];
+}
+
+export interface SalesJournalTotals {
+  goodsAmount: number;
+  shippingAmount: number;
+  otherIncomeAmount: number;
+  totalAmount: number;
+  cogsAmount: number;
+  shippingCost: number;
+  channelFee: number;
+}
+
+export interface SalesJournalList {
+  data: SalesJournalEntry[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+  totals: SalesJournalTotals;
+}
+
+export interface SalesJournalParams {
+  fromDate?: string;
+  toDate?: string;
+  branchId?: string;
+  entryType?: SalesJournalEntryType;
+  orderId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface UnreconciledShipperItem {
+  collectorId: string | null;
+  collectorName: string | null;
+  orderCount: number;
+  amount: number;
+  oldestPaidAt: string | null;
+}
+
+export interface UnreconciledSepayItem {
+  id: string;
+  outcome: string;
+  rejectReason: string | null;
+  amount: number;
+  excessAmount: number;
+  paymentReference: string | null;
+  content: string | null;
+  orderId: string | null;
+  orderCode: string | null;
+  createdAt: string;
+}
+
+export interface UnreconciledOverpaidItem {
+  orderId: string;
+  code: string;
+  grandTotal: number;
+  overpaidBy: number;
+}
+
+export interface UnreconciledHeldItem {
+  orderId: string;
+  code: string;
+  status: 'RETURNED' | 'CANCELLED' | string;
+  held: number;
+  closedAt: string;
+}
+
+export interface UnreconciledLocationItem {
+  locationId: string;
+  locationName: string | null;
+}
+
+export interface Unreconciled {
+  asOf: string;
+  scope: 'TENANT' | 'BRANCH';
+  shipperCash: { orderCount: number; amount: number; items: UnreconciledShipperItem[] };
+  sepayExceptions: { count: number; amount: number; excessAmount: number; items: UnreconciledSepayItem[] };
+  overpaidOrders: { count: number; amount: number; items: UnreconciledOverpaidItem[] };
+  /** Đơn trả hàng / huỷ mà shop còn giữ tiền chưa quyết định (hoàn hay giữ). */
+  heldUndecided: { count: number; amount: number; items: UnreconciledHeldItem[] };
+  /** null khi scope = BRANCH. */
+  unallocatedBank: { receipts: number; refunds: number; net: number } | null;
+  ownerFund: {
+    income: number;
+    expense: number;
+    balance: number;
+    byCategory: { category: CashflowCategory; flowType: 'INCOME' | 'EXPENSE'; amount: number; count: number }[];
+  };
+  warehouseCounterCash: {
+    net: number;
+    items: (UnreconciledLocationItem & { income: number; expense: number; net: number })[];
+  };
+  cashRefundsAgainstDrawer: {
+    count: number;
+    amount: number;
+    items: (UnreconciledLocationItem & { count: number; amount: number })[];
+  };
+  journalCoverage: { firstJournalAt: string | null; ordersWithoutJournal: number };
+}
+
 async function getStats<T, P extends object = object>(path: string, params?: P): Promise<T> {
   const res = await client.get<{ success: boolean; data: T }>(path, { params });
   return res.data.data;
@@ -361,10 +565,17 @@ export const statsApi = {
   getRevenueByPaymentMethod: (params?: StatsDateRangeParams) =>
     getStats<RevenueByPaymentMethod>('/stats/revenue-by-payment-method', params),
 
-  getRevenueByStaff: (params?: StatsDateRangeParams) =>
+  getRevenueByStaff: (params?: StatsDateRangeParams & { groupBy?: RevenueByStaffGroupBy }) =>
     getStats<RevenueByStaff>('/stats/revenue-by-staff', params),
 
-  getCashflow: (params?: StatsDateRangeParams & { flow?: 'ORD' | 'SUP'; flowType?: 'INCOME' | 'EXPENSE' }) =>
+  getCashflow: (
+    params?: StatsDateRangeParams & {
+      flow?: 'ORD' | 'SUP';
+      flowType?: 'INCOME' | 'EXPENSE';
+      category?: CashflowCategory;
+      fund?: CashflowFund;
+    },
+  ) =>
     getStats<Cashflow>('/stats/cashflow', params),
 
   getCashflowList: (
@@ -372,10 +583,19 @@ export const statsApi = {
       flow?: 'ORD' | 'SUP';
       flowType?: 'INCOME' | 'EXPENSE';
       paymentMethod?: string;
+      category?: CashflowCategory;
+      fund?: CashflowFund;
       page?: number;
       limit?: number;
     },
   ) => getCashflowListPage(params),
+
+  getSalesJournal: async (params?: SalesJournalParams): Promise<SalesJournalList> => {
+    const res = await client.get<{ success: boolean } & SalesJournalList>('/stats/sales-journal', { params });
+    return { data: res.data.data, pagination: res.data.pagination, totals: res.data.totals };
+  },
+
+  getUnreconciled: (params?: { branchId?: string }) => getStats<Unreconciled>('/stats/unreconciled', params),
 
   getTopProducts: (params?: StatsDateRangeParams & { sortBy?: 'quantity' | 'revenue'; limit?: number }) =>
     getStats<TopProducts>('/stats/top-products', params),

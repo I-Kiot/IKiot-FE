@@ -70,6 +70,9 @@ import client from "@/lib/api/client";
 import type { Staff } from "@/types/staff";
 import { PageHeader } from "@/components/page-header";
 import { NotificationSettings } from "./components/notification-settings";
+import { BankingHistoryCard } from "./components/banking-history-card";
+import { allows } from "@/components/sidebar/constants/role-permissions";
+import { getSessionRole } from "@/lib/auth";
 
 type TabType =
   | "store-info"
@@ -1534,6 +1537,13 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+
+                {allows(getSessionRole(), "tenants", "update") && (
+                  <>
+                    <Separator />
+                    <BankingHistoryCard />
+                  </>
+                )}
 
                 <Separator />
 

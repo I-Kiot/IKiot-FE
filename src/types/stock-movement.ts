@@ -49,6 +49,15 @@ export interface StockMovement {
   requestedByPhone: string;
   note?: string;
   details: StockMovementDetail[];
+  /** Ai giao / nhận / duyệt / huỷ phiếu và lúc nào (rỗng nếu bước đó chưa xảy ra hoặc phiếu cũ). */
+  shippedByName?: string;
+  shippedAt?: string;
+  receivedByName?: string;
+  receivedAt?: string;
+  approvedByName?: string;
+  approvedAt?: string;
+  cancelledByName?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
 }

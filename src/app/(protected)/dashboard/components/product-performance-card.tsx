@@ -51,7 +51,7 @@ export function ProductPerformanceCard() {
       name: product.productName,
       primary: sortBy === "revenue" ? formatCompactVND(product.revenue) : `${formatNumber(product.quantity)} đã bán`,
       secondary: sortBy === "revenue" ? `${formatNumber(product.quantity)} đã bán` : formatVND(product.revenue),
-      share: leader > 0 ? product[sortBy] / leader : 0,
+      share: leader > 0 ? Math.max(product[sortBy], 0) / leader : 0, // số có dấu: hàng trả nhiều hơn bán cho số âm, thanh về 0
     }));
   }, [resolved, branchId, view]);
   const { data, isLoading, failed } = useAsyncData(load);

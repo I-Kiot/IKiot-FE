@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartStyle, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboard } from "./dashboard-provider"
-import { formatCompactVND, paymentMethodLabel } from "@/lib/stats-format"
+import { formatCompactVND, negativeClass, paymentMethodLabel } from "@/lib/stats-format"
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]
 
@@ -16,16 +16,19 @@ export function RevenueBreakdown() {
   const { revenueByPaymentMethod, isLoading } = useDashboard()
 
   const breakdown = revenueByPaymentMethod?.breakdown ?? []
-  const totalRevenue = breakdown.reduce((sum, item) => sum + item.revenue, 0)
+  // Tiền thực thu ròng có thể âm (hoàn nhiều hơn thu): biểu đồ tròn chỉ vẽ phần dương, danh sách vẫn nêu đủ.
+  const totalRevenue = breakdown.reduce((sum, item) => sum + Math.max(item.revenue, 0), 0)
 
   const chartData = breakdown.map((item, index) => ({
     method: item.paymentMethod || "UNKNOWN",
     label: paymentMethodLabel(item.paymentMethod),
     amount: item.revenue,
     orderCount: item.orderCount,
-    percent: totalRevenue ? Math.round((item.revenue / totalRevenue) * 100) : 0,
+    percent: totalRevenue > 0 && item.revenue > 0 ? Math.round((item.revenue / totalRevenue) * 100) : 0,
     fill: CHART_COLORS[index % CHART_COLORS.length],
   }))
+
+  const pieData = chartData.filter((item) => item.amount > 0)
 
   const [activeMethod, setActiveMethod] = React.useState<string | null>(null)
 
@@ -47,7 +50,7 @@ export function RevenueBreakdown() {
       <ChartStyle id={id} config={chartConfig} />
       <CardHeader className="pb-2">
         <CardTitle>Cơ cấu doanh thu</CardTitle>
-        <CardDescription>Doanh thu theo phương thức thanh toán</CardDescription>
+        <CardDescription>Tiền thực thu ròng theo phương thức (đã trừ hoàn tiền và tiền thối), tính theo ngày thu tiền</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 justify-center">
         {isLoading && !revenueByPaymentMethod ? (
@@ -70,7 +73,7 @@ export function RevenueBreakdown() {
                     content={<ChartTooltipContent hideLabel />}
                   />
                   <Pie
-                    data={chartData}
+                    data={pieData}
                     dataKey="amount"
                     nameKey="method"
                     innerRadius={60}
@@ -144,8 +147,8 @@ export function RevenueBreakdown() {
                       <span className="font-medium">{item.label}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold">{formatCompactVND(item.amount)}</div>
-                      <div className="text-sm text-muted-foreground">{item.percent}%</div>
+                      <div className={`font-bold ${negativeClass(item.amount)}`}>{formatCompactVND(item.amount)}</div>
+                      <div className="text-sm text-muted-foreground">{item.amount > 0 ? `${item.percent}%` : `${item.orderCount} đơn`}</div>
                     </div>
                   </div>
                 )

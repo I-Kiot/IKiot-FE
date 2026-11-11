@@ -56,6 +56,14 @@ type ApiMovement = {
   toLocation?: ApiLocationRef | null;
   createdBy?: ApiRef;
   requestedBy?: ApiRef;
+  shippedBy?: ApiRef | null;
+  shippedAt?: string | null;
+  receivedBy?: ApiRef | null;
+  receivedAt?: string | null;
+  approvedBy?: ApiRef | null;
+  approvedAt?: string | null;
+  cancelledBy?: ApiRef | null;
+  cancelledAt?: string | null;
   note?: string;
   details?: ApiMovementDetail[];
   createdAt?: string;
@@ -184,6 +192,14 @@ function mapMovement(raw: ApiMovement): StockMovement {
     requestedByPhone: resolveUserPhone(creator),
     note: normalizeNote(raw.note),
     details: (raw.details ?? []).map(mapDetail),
+    shippedByName: resolveUserName(raw.shippedBy ?? undefined) || undefined,
+    shippedAt: raw.shippedAt ?? undefined,
+    receivedByName: resolveUserName(raw.receivedBy ?? undefined) || undefined,
+    receivedAt: raw.receivedAt ?? undefined,
+    approvedByName: resolveUserName(raw.approvedBy ?? undefined) || undefined,
+    approvedAt: raw.approvedAt ?? undefined,
+    cancelledByName: resolveUserName(raw.cancelledBy ?? undefined) || undefined,
+    cancelledAt: raw.cancelledAt ?? undefined,
     createdAt: raw.createdAt ?? "",
     updatedAt: raw.updatedAt ?? "",
   };

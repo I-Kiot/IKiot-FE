@@ -21,16 +21,28 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet } from 'lucide-react'
+import Link from 'next/link'
+import { AlertTriangle, ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet } from 'lucide-react'
+import { allows } from '@/components/sidebar/constants/role-permissions'
+import { useAuth } from '@/store/hooks/use-auth'
 import { DataTableEmpty } from '@/components/data-table/data-table-empty'
 import { DataTableLoading } from '@/components/data-table/data-table-loading'
 import { DataTablePagination } from '@/components/data-table/data-table-pagination'
-import { formatVND, PAYMENT_METHOD_LABELS } from '@/lib/stats-format'
+import {
+  CASHFLOW_CATEGORY_LABELS,
+  CASHFLOW_FUND_LABELS,
+  categoryLabel,
+  fundLabel,
+  formatVND,
+  PAYMENT_METHOD_LABELS,
+} from '@/lib/stats-format'
 import {
   useCashflow,
   type CashflowRange,
   type FlowTypeFilter,
   type FlowPrefixFilter,
+  type CategoryFilter,
+  type FundFilter,
 } from './_hooks/use-cashflow'
 
 const RANGE_LABELS: Record<CashflowRange, string> = {
@@ -57,6 +69,8 @@ function formatDateTime(iso: string): string {
 }
 
 export default function CashflowPage() {
+  const { user } = useAuth()
+  const canSeeSepay = allows(user?.role, 'cash_flows', 'read')
   const {
     summary,
     list,
@@ -67,6 +81,10 @@ export default function CashflowPage() {
     setFlowType,
     flow,
     setFlow,
+    category,
+    setCategory,
+    fund,
+    setFund,
     page,
     setPage,
     pageSize,
@@ -84,10 +102,20 @@ export default function CashflowPage() {
         title="Sổ thu chi"
         description="Danh sách chi tiết các khoản tiền vào và tiền ra"
         actions={
-          <Button variant="outline" size="sm" onClick={refetch} disabled={isLoading}>
-            <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Làm mới
-          </Button>
+          <div className="flex gap-2">
+            {canSeeSepay && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/cashflow/sepay">
+                  <AlertTriangle className="size-4" />
+                  Giao dịch SePay cần xử lý
+                </Link>
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={refetch} disabled={isLoading}>
+              <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Làm mới
+            </Button>
+          </div>
         }
       />
 
@@ -168,7 +196,107 @@ export default function CashflowPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <Select value={category} onValueChange={(v) => setCategory(v as CategoryFilter)}>
+          <SelectTrigger className="w-52">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Tất cả hạng mục</SelectItem>
+            {Object.entries(CASHFLOW_CATEGORY_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={fund} onValueChange={(v) => setFund(v as FundFilter)}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Tất cả quỹ</SelectItem>
+            {Object.entries(CASHFLOW_FUND_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {((summary?.byFund?.length ?? 0) > 0 || (summary?.byCategory?.length ?? 0) > 0) && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Theo quỹ</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Quỹ</TableHead>
+                    <TableHead className="text-right">Tiền vào</TableHead>
+                    <TableHead className="text-right">Tiền ra</TableHead>
+                    <TableHead className="text-right">Ròng</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(summary?.byFund ?? []).map((row) => (
+                    <TableRow key={row.fund}>
+                      <TableCell>
+                        <Badge variant="secondary">{fundLabel(row.fund)}</Badge>
+                        <span className="ml-2 text-xs text-muted-foreground">{row.count} giao dịch</span>
+                      </TableCell>
+                      <TableCell className="text-right text-green-600">{formatVND(row.income)}</TableCell>
+                      <TableCell className="text-right text-red-600">{formatVND(row.expense)}</TableCell>
+                      <TableCell className={`text-right font-semibold ${row.net >= 0 ? '' : 'text-red-600'}`}>
+                        {formatVND(row.net)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Theo hạng mục</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Hạng mục</TableHead>
+                    <TableHead>Quỹ</TableHead>
+                    <TableHead className="text-right">Số tiền</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(summary?.byCategory ?? []).map((row) => (
+                    <TableRow key={`${row.category}-${row.fund}-${row.flowType}`}>
+                      <TableCell>
+                        {categoryLabel(row.category)}
+                        <span className="ml-2 text-xs text-muted-foreground">{row.count} giao dịch</span>
+                      </TableCell>
+                      <TableCell className="text-sm">{fundLabel(row.fund)}</TableCell>
+                      <TableCell
+                        className={`text-right font-semibold whitespace-nowrap ${
+                          row.flowType === 'INCOME' ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {row.flowType === 'INCOME' ? '+' : '−'}
+                        {formatVND(row.total)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardContent className="p-0">
@@ -177,6 +305,8 @@ export default function CashflowPage() {
               <TableRow>
                 <TableHead>Thời gian</TableHead>
                 <TableHead>Loại</TableHead>
+                <TableHead>Hạng mục</TableHead>
+                <TableHead>Quỹ</TableHead>
                 <TableHead>Nội dung</TableHead>
                 <TableHead>Mã tham chiếu</TableHead>
                 <TableHead>Địa điểm</TableHead>
@@ -185,8 +315,8 @@ export default function CashflowPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && rows.length === 0 && <DataTableLoading columnCount={7} />}
-              {!isLoading && rows.length === 0 && <DataTableEmpty columnCount={7} />}
+              {isLoading && rows.length === 0 && <DataTableLoading columnCount={9} />}
+              {!isLoading && rows.length === 0 && <DataTableEmpty columnCount={9} />}
               {rows.length > 0 && (
                 rows.map((tx) => {
                   const isIncome = tx.flowType === 'INCOME'
@@ -199,6 +329,10 @@ export default function CashflowPage() {
                         <Badge variant={isIncome ? 'success' : 'error'}>
                           {isIncome ? 'Tiền vào' : 'Tiền ra'}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">{categoryLabel(tx.category)}</TableCell>
+                      <TableCell>
+                        {tx.fund ? <Badge variant="secondary">{fundLabel(tx.fund)}</Badge> : '-'}
                       </TableCell>
                       <TableCell className="max-w-[280px] truncate">
                         {tx.description || tx.supplierName || '-'}

@@ -1,7 +1,7 @@
 // [Dialog – Thanh toán công nợ nhà cung cấp]
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,6 +25,16 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { branchApi } from "@/lib/api/branch";
+import { warehouseApi } from "@/lib/api/warehouse";
+import { getCachedUser, getSessionRole } from "@/lib/auth";
 import type { Supplier } from "@/types/supplier";
 import { useSuppliers } from "../../_context/suppliers-provider";
 import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
@@ -43,6 +53,36 @@ function formatVND(amount: number) {
   return amount.toLocaleString("vi-VN") + " ₫";
 }
 
+const OWNER_FUND = "OWNER";
+
+type DrawerOption = { id: string; label: string };
+
+/** Két có thể chọn: chủ shop chọn được mọi địa điểm, nhân viên chỉ nơi mình được phân công. */
+function useDrawerOptions(open: boolean): DrawerOption[] {
+  const [options, setOptions] = useState<DrawerOption[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const role = getSessionRole();
+    const isOwner = role === "TENANT_OWNER" || role === "ADMIN";
+    const ownLocationId = getCachedUser()?.locationId ?? null;
+    if (!isOwner && !ownLocationId) return;
+    Promise.all([
+      branchApi.getList({ limit: 100 }).then((r) => r.data.map((b) => ({ id: b.id, label: "Chi nhánh " + b.name }))).catch(() => []),
+      warehouseApi.getList({ limit: 100 }).then((r) => r.data.map((w) => ({ id: w.id, label: "Kho " + w.name }))).catch(() => []),
+    ]).then(([branches, warehouses]) => {
+      if (cancelled) return;
+      const all = [...branches, ...warehouses];
+      if (isOwner) setOptions(all);
+      else setOptions(all.filter((o) => o.id === ownLocationId).concat(all.some((o) => o.id === ownLocationId) ? [] : [{ id: ownLocationId as string, label: "Nơi làm việc của tôi" }]));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+  return options;
+}
+
 type SuppliersPayDebtDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -55,6 +95,8 @@ export function SuppliersPayDebtDialog({
   supplier,
 }: SuppliersPayDebtDialogProps) {
   const { handlePayDebt } = useSuppliers();
+  const drawerOptions = useDrawerOptions(open);
+  const [fund, setFund] = useState<string>(OWNER_FUND);
 
   const form = useForm<PayDebtFormValues>({
     resolver: zodResolver(payDebtSchema),
@@ -67,6 +109,7 @@ export function SuppliersPayDebtDialog({
   // Reset khi đóng/mở dialog
   useEffect(() => {
     if (!open) {
+      setFund(OWNER_FUND);
       form.reset({
         amount: undefined as unknown as number,
         note: "",
@@ -90,6 +133,7 @@ export function SuppliersPayDebtDialog({
       amount: data.amount,
       paymentMethod: "CASH",
       note: data.note || undefined,
+      locationId: fund === OWNER_FUND ? undefined : fund,
     });
 
     if (success) {
@@ -216,6 +260,29 @@ export function SuppliersPayDebtDialog({
                   <span className="font-medium">Tiền mặt</span>
                 </div>
               </div>
+
+              {/* Nguồn tiền: mặc định quỹ chủ, hoặc két của một địa điểm */}
+              {drawerOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <FormLabel>Trả từ két</FormLabel>
+                  <Select value={fund} onValueChange={setFund}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={OWNER_FUND}>Quỹ chủ shop (mặc định)</SelectItem>
+                      {drawerOptions.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>
+                          Két {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Chỉ áp dụng cho tiền mặt. Chọn két thì khoản chi vào đối soát két của địa điểm đó.
+                  </p>
+                </div>
+              )}
 
               {/* Ghi chú */}
               <FormField

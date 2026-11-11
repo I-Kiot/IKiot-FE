@@ -133,7 +133,7 @@ export type OrderPaymentStatus =
 
 export const ORDER_PAYMENT_STATUS_LABELS: Record<OrderPaymentStatus, string> = {
   UNPAID: "Chưa thanh toán",
-  PARTIALLY_PAID: "Đã cọc",
+  PARTIALLY_PAID: "Đã thu một phần",
   PAID: "Đã thanh toán đủ",
   PARTIALLY_REFUNDED: "Hoàn tiền một phần",
   REFUNDED: "Đã hoàn tiền",
@@ -389,6 +389,44 @@ export interface OrderDetail
     driver: UserRef | null;
   }[];
   returns: { id: string; code: string; status: OrderReturnStatus }[];
+  /** Lúc đơn hoàn thành (BE đặt một lần). */
+  completedAt?: string | null;
+  /** Tiền của đơn do server tính từ các khoản Payment: nguồn duy nhất cho số đã thu / đã hoàn / còn phải thu. */
+  paymentSummary: OrderPaymentSummary;
+}
+
+export interface OrderPaymentSummary {
+  /** Đã thu (cọc + các khoản thu). */
+  received: number;
+  /** Đã hoàn cho khách. */
+  refunded: number;
+  /** received − refunded: số shop đang giữ. */
+  net: number;
+  /** Còn phải thu; 0 khi đã có hoàn tiền. */
+  due: number;
+  /** Khách trả dư so với tổng đơn: cần hoàn lại. */
+  overpaidBy: number;
+  /** Tiền mặt shipper đã thu mà chủ chưa xác nhận nhận. */
+  pendingRemittance: number;
+  /** Đơn đã kết thúc (trả hàng / huỷ) mà shop còn giữ tiền chưa hoàn, chưa ghi thu nhập khác. Quyết định bằng `POST /orders/:id/settle-held`. */
+  heldUndecided: number;
+}
+
+/** Hoàn tiền kèm theo thao tác kiểm hàng hoàn / xác nhận hàng giao thất bại đã về shop. `amount` 0 = shop giữ lại tiền. */
+export interface RefundInput {
+  amount: number;
+  /** Bắt buộc khi `amount` > 0. */
+  method?: RefundMethod;
+  note?: string;
+}
+
+export interface RefundSuggestion {
+  suggested: number;
+  max: number;
+  goodsValue: number;
+  shippingFee: number;
+  received: number;
+  refunded: number;
 }
 
 export const ORDER_SORTS = ["createdAt", "requestedDeliveryDate", "priority"] as const;
@@ -442,6 +480,8 @@ export interface PickupQrPayment {
   amount: number;
   status: string;
   qrUrl: string;
+  /** Hạn mã QR do server tính. */
+  expiresAt: string;
 }
 
 export interface PickupCollectResult {
@@ -1040,8 +1080,12 @@ export interface DeliverShipmentPayload {
 export interface ShipmentQrPayment {
   reference: string;
   amount: number;
-  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "EXPIRED";
+  /** Null khi mã đã hết hạn hoặc khoản không còn chờ: không vẽ ảnh QR. */
   qrUrl: string | null;
+  /** Hạn mã QR do server tính. */
+  expiresAt: string;
+  expired: boolean;
 }
 
 
@@ -1074,6 +1118,8 @@ export interface OrderReturn {
   completedAt: string | null;
   createdAt: string;
   items: OrderReturnLine[];
+  /** Chỉ có khi đơn hoàn đang INSPECTING; null ở các trạng thái khác. */
+  refundSuggestion?: RefundSuggestion | null;
 }
 
 export interface OrderReturnQuery extends PageQuery {
@@ -1091,4 +1137,6 @@ export interface CreateOrderReturnPayload {
 
 export interface InspectOrderReturnPayload {
   items: { orderItemId: string; condition: ReturnCondition; locationId?: string }[];
+  /** Bắt buộc khi đơn đang giữ tiền (thiếu thì BE trả ORDER_RETURN_REFUND_REQUIRED). */
+  refund?: RefundInput;
 }

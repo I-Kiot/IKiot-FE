@@ -8,7 +8,7 @@ import { locationFilter } from '@/lib/location-key'
 import {
   statsApi,
   type RevenueByPaymentMethod,
-  type RevenueByStaff,
+  type StatsOverview,
   type Cashflow,
   type TopCustomers,
   type InventoryStats,
@@ -118,7 +118,6 @@ interface ReportData {
   key: string
   revenueDateRange: RevenueDateRange | null
   revenueByPaymentMethod: RevenueByPaymentMethod | null
-  revenueByStaff: RevenueByStaff | null
   revenueByBranch: RevenueByBranch | null
   ordersByStatus: OrdersByStatus | null
   salesHeatmap: SalesHeatmap | null
@@ -126,12 +125,12 @@ interface ReportData {
   cashflow: Cashflow | null
   inventory: InventoryStats | null
   comparison: RevenueComparison | null
+  overview: StatsOverview | null
 }
 
 const EMPTY_REPORT: Omit<ReportData, 'key'> = {
   revenueDateRange: null,
   revenueByPaymentMethod: null,
-  revenueByStaff: null,
   revenueByBranch: null,
   ordersByStatus: null,
   salesHeatmap: null,
@@ -139,6 +138,7 @@ const EMPTY_REPORT: Omit<ReportData, 'key'> = {
   cashflow: null,
   inventory: null,
   comparison: null,
+  overview: null,
 }
 
 /** Tải tất cả số liệu cho kỳ và địa điểm đang chọn. Kho không có doanh thu bán hàng, nên chỉ lấy dòng tiền và tồn kho. */
@@ -157,7 +157,6 @@ async function loadReport(
   const dateParams = { fromDate, toDate, branchId: place }
   const [
     revenueByPaymentMethod,
-    revenueByStaff,
     revenueByBranch,
     ordersByStatus,
     salesHeatmap,
@@ -165,9 +164,9 @@ async function loadReport(
     cashflow,
     inventory,
     comparison,
+    overview,
   ] = await Promise.all([
     statsApi.getRevenueByPaymentMethod(dateParams),
-    statsApi.getRevenueByStaff(dateParams),
     optional(statsApi.getRevenueByBranch(dateParams)),
     optional(statsApi.getOrdersByStatus(dateParams)),
     optional(statsApi.getSalesHeatmap(dateParams)),
@@ -179,13 +178,13 @@ async function loadReport(
       ? statsApi.getInventory({ warehouseId, lowStockThreshold })
       : statsApi.getInventory({ branchId, lowStockThreshold }),
     optional(statsApi.getRevenueComparison({ branchId: place })),
+    optional(statsApi.getOverview(dateParams)),
   ])
 
   return {
     key,
     revenueDateRange: resolved,
     revenueByPaymentMethod,
-    revenueByStaff,
     revenueByBranch,
     ordersByStatus,
     salesHeatmap,
@@ -193,6 +192,7 @@ async function loadReport(
     cashflow,
     inventory,
     comparison,
+    overview,
   }
 }
 
@@ -236,7 +236,6 @@ export function useDashboardStats(range: DashboardRange) {
   return {
     revenueDateRange: data?.revenueDateRange ?? null,
     revenueByPaymentMethod: data?.revenueByPaymentMethod ?? null,
-    revenueByStaff: data?.revenueByStaff ?? null,
     revenueByBranch: data?.revenueByBranch ?? null,
     ordersByStatus: data?.ordersByStatus ?? null,
     salesHeatmap: data?.salesHeatmap ?? null,
@@ -244,9 +243,12 @@ export function useDashboardStats(range: DashboardRange) {
     cashflow: data?.cashflow ?? null,
     inventory: data?.inventory ?? null,
     comparison: data?.comparison ?? null,
+    overview: data?.overview ?? null,
     // Đang tải khi số liệu đang hiện không phải của bộ lọc hiện tại.
     isLoading: data?.key !== key,
     isWarehouse,
+    /** Địa điểm đang xem (chi nhánh hoặc kho): dùng cho widget tự tải số liệu của mình. */
+    place: branchId ?? warehouseId,
     lowStockThreshold,
     setLowStockThreshold,
     refetch,

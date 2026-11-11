@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 import { stockMovementApi } from '@/lib/api/stock-movement'
-import { getStockMovementErrorMessage } from '@/app/(protected)/exchange/shared/stock-movement-error'
+import { getStockMovementErrorMessage, reportMovementError } from '@/app/(protected)/exchange/shared/stock-movement-error'
 import type { StockMovement, MovementStatus } from '@/types/stock-movement'
 
 export type AdjustmentsDialogType = 'create'
@@ -69,7 +69,7 @@ export function AdjustmentsProvider({ children }: { children: React.ReactNode })
       toast.success('Đã cập nhật chi tiết kiểm kê')
       await fetchAdjustments()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể cập nhật chi tiết'))
+      await reportMovementError(error, 'Không thể cập nhật chi tiết', fetchAdjustments)
       throw error
     }
   }
@@ -80,7 +80,7 @@ export function AdjustmentsProvider({ children }: { children: React.ReactNode })
       toast.success('Đã duyệt phiếu điều chỉnh')
       await fetchAdjustments()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể duyệt phiếu điều chỉnh'))
+      await reportMovementError(error, 'Không thể duyệt phiếu điều chỉnh', fetchAdjustments)
       throw error
     }
   }
@@ -91,7 +91,7 @@ export function AdjustmentsProvider({ children }: { children: React.ReactNode })
       toast.success('Đã huỷ phiếu điều chỉnh')
       await fetchAdjustments()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể huỷ phiếu'))
+      await reportMovementError(error, 'Không thể huỷ phiếu', fetchAdjustments)
       throw error
     }
   }

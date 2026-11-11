@@ -17,7 +17,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
-import { moneyHeld } from "@/lib/order-pickup";
 import type { OrderDetail, RefundMethod } from "@/types/order-flow";
 import { formatVND } from "../../shared/order-display";
 
@@ -33,7 +32,7 @@ type Props = {
  * (khách chủ động huỷ). Tiền hoàn ghi một dòng chi vào sổ thu chi; phần giữ lại đã có dòng thu từ lúc nhận tiền.
  */
 export function CancelOrderDialog({ order, open, onOpenChange, onCancelled }: Props) {
-  const held = moneyHeld(order);
+  const held = order.paymentSummary.net;
   const [refund, setRefund] = React.useState(0);
   const [method, setMethod] = React.useState<RefundMethod>("CASH");
   const [reason, setReason] = React.useState("");

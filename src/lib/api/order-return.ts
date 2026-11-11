@@ -2,6 +2,7 @@
 import client from '@/lib/api/client';
 import type {
   CreateOrderReturnPayload,
+  RefundInput,
   InspectOrderReturnPayload,
   OrderReturn,
   OrderReturnQuery,
@@ -27,10 +28,15 @@ export const orderReturnApi = {
   },
 
   /** Giao thất bại, hàng đã về shop: shipment và đơn thành RETURNED, tồn kho được hoàn lại. */
-  confirmFailedDelivery: async (shipmentId: string, note?: string): Promise<OrderReturn> => {
+  confirmFailedDelivery: async (
+    shipmentId: string,
+    note?: string,
+    refund?: RefundInput,
+  ): Promise<OrderReturn> => {
     const res = await client.post<Envelope<OrderReturn>>('/order-returns/confirm-failed-delivery', {
       shipmentId,
       note,
+      ...(refund ? { refund } : {}),
     });
     return res.data.data;
   },

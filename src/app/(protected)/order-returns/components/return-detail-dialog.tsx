@@ -14,6 +14,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  RefundFields,
+  emptyRefundDraft,
+  refundDraftError,
+  refundInputOf,
+  type RefundDraft,
+} from "@/components/order-refund-fields";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Table,
@@ -27,9 +34,11 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { orderReturnApi } from "@/lib/api/order-return";
 import { getApiErrorBody } from "@/lib/api/error-codes";
+import { formatVND } from "@/lib/stats-format";
 import {
   RETURN_CONDITION_LABELS,
   type OrderReturn,
+  type RefundSuggestion,
   type ReturnCondition,
 } from "@/types/order-flow";
 import {
@@ -63,8 +72,37 @@ export function ReturnDetailDialog({
 }: ReturnDetailDialogProps) {
   const [verdicts, setVerdicts] = React.useState<Record<string, ReturnCondition>>({});
   const [busy, setBusy] = React.useState(false);
+  // Gợi ý hoàn tiền chỉ có ở GET /order-returns/:id; dòng của danh sách (và kết quả của "đã nhận hàng") không kèm theo.
+  const [fetchedSuggestion, setFetchedSuggestion] = React.useState<RefundSuggestion | null | undefined>(undefined);
+  const [refundEdit, setRefundEdit] = React.useState<RefundDraft | null>(null);
+  const needsSuggestion =
+    orderReturn?.status === "INSPECTING" && orderReturn.refundSuggestion === undefined;
+  const returnId = orderReturn?.id;
+  React.useEffect(() => {
+    if (!needsSuggestion || !returnId) return;
+    let stale = false;
+    orderReturnApi.getById(returnId).then(
+      (fresh) => {
+        if (!stale) setFetchedSuggestion(fresh.refundSuggestion ?? null);
+      },
+      (error) => {
+        if (stale) return;
+        toast.error(getApiErrorBody(error)?.message ?? "Không tải được gợi ý hoàn tiền");
+      },
+    );
+    return () => {
+      stale = true;
+    };
+  }, [needsSuggestion, returnId]);
 
   if (!orderReturn) return null;
+  const suggestion =
+    orderReturn.refundSuggestion !== undefined ? orderReturn.refundSuggestion : fetchedSuggestion;
+  // Chưa biết đơn có đang giữ tiền không thì chưa cho xác nhận (thiếu số hoàn BE sẽ từ chối).
+  const suggestionPending = orderReturn.status === "INSPECTING" && suggestion === undefined;
+  const refundMax = suggestion?.max ?? 0;
+  const refundDraft = refundEdit ?? emptyRefundDraft(suggestion?.suggested ?? 0);
+  const refundInvalid = refundMax > 0 && refundDraftError(refundDraft, refundMax) !== null;
   const status = returnStatusDisplay(orderReturn.status);
   const allJudged = orderReturn.items.every((item) => verdicts[item.orderItemId]);
 
@@ -189,6 +227,27 @@ export function ReturnDetailDialog({
           </p>
         )}
 
+        {current.status === "INSPECTING" && canInspect && suggestion && refundMax > 0 && (
+          <div className="grid gap-2">
+            <p className="text-sm font-medium">Hoàn tiền cho khách</p>
+            <p className="text-xs text-muted-foreground">
+              Đã thu {formatVND(suggestion.received)}
+              {suggestion.refunded > 0 ? `, đã hoàn ${formatVND(suggestion.refunded)}` : ""}. Giá trị hàng hoàn{" "}
+              {formatVND(suggestion.goodsValue)}
+              {suggestion.shippingFee > 0 ? `, phí giao ${formatVND(suggestion.shippingFee)} (không nằm trong gợi ý)` : ""}.
+              Số cuối do bạn quyết định.
+            </p>
+            <RefundFields
+              idPrefix="inspect-refund"
+              draft={refundDraft}
+              onChange={setRefundEdit}
+              max={refundMax}
+              suggested={suggestion.suggested}
+              disabled={busy}
+            />
+          </div>
+        )}
+
         {current.replacementOrder && (
           <p className="text-sm">
             Đơn mua lại:{" "}
@@ -236,7 +295,7 @@ export function ReturnDetailDialog({
             <PermissionButton
               allowed={canInspect}
               permission="returns:inspect"
-              disabled={busy || !allJudged}
+              disabled={busy || !allJudged || suggestionPending || refundInvalid}
               onClick={() =>
                 run(
                   () =>
@@ -245,6 +304,7 @@ export function ReturnDetailDialog({
                         orderItemId: item.orderItemId,
                         condition: verdicts[item.orderItemId],
                       })),
+                      ...(refundMax > 0 ? { refund: refundInputOf(refundDraft) } : {}),
                     }),
                   "Đã kiểm hàng và cập nhật tồn kho",
                 )

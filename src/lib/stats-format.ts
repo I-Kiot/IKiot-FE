@@ -23,6 +23,7 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   MOMO: 'MoMo',
   VNPAY: 'VNPay',
   SEPAY: 'SePay',
+  UNKNOWN: 'Chưa xác định',
 }
 
 // Backend chỉ trả bucket có đơn (sparse). Điền đủ khoảng fromDate..toDate để biểu đồ vẫn có mốc
@@ -94,3 +95,50 @@ export function formatInstantShort(iso: string): string {
   const day = new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
   return `${day.slice(8, 10)}/${day.slice(5, 7)}`
 }
+
+/** Hạng mục dòng tiền (cột category của sổ thu chi). */
+export const CASHFLOW_CATEGORY_LABELS: Record<string, string> = {
+  ORDER_PAYMENT: 'Thu tiền đơn hàng',
+  ORDER_REFUND: 'Hoàn tiền đơn hàng',
+  SALE_CHANGE: 'Tiền thối cho khách',
+  SUPPLIER_PAYMENT: 'Trả nhà cung cấp',
+  UNALLOCATED_RECEIPT: 'Tiền về chưa gắn đơn',
+  UNALLOCATED_REFUND: 'Hoàn tiền chưa gắn đơn',
+}
+
+export const CASHFLOW_FUND_LABELS: Record<string, string> = {
+  DRAWER: 'Két',
+  OWNER: 'Quỹ chủ',
+  BANK: 'Ngân hàng',
+}
+
+export const categoryLabel = (category: string | null | undefined): string =>
+  (category && CASHFLOW_CATEGORY_LABELS[category]) || category || '-'
+
+export const fundLabel = (fund: string | null | undefined): string =>
+  (fund && CASHFLOW_FUND_LABELS[fund]) || fund || '-'
+
+/** Loại bút toán trong sổ doanh thu. */
+export const JOURNAL_ENTRY_TYPE_LABELS: Record<string, string> = {
+  SALE: 'Bán hàng',
+  RETURN: 'Trả hàng',
+  OTHER_INCOME: 'Thu nhập khác',
+}
+
+/** Nguồn ghi sổ; giá trị lạ hiện nguyên mã. */
+export const JOURNAL_SOURCE_LABELS: Record<string, string> = {
+  POS_SALE: 'Bán tại quầy',
+  POS_PAY_OFFLINE: 'Thanh toán tại quầy',
+  SEPAY_WEBHOOK: 'Chuyển khoản SePay',
+  DELIVERY: 'Giao hàng',
+  REMITTANCE: 'Shipper nộp tiền',
+  PICKUP_HAND_OVER: 'Khách nhận tại kho',
+  RETURN_INSPECTION: 'Kiểm hàng trả',
+  POS_RETURN: 'Trả hàng tại quầy',
+  ORDER_CANCEL: 'Huỷ đơn (giữ tiền)',
+  POS_CANCEL: 'Huỷ đơn quầy (giữ tiền)',
+  RETURN_KEPT: 'Trả hàng (giữ tiền)',
+}
+
+/** Cho cột giá trị có thể âm: số âm tô đỏ, số dương giữ màu mặc định. */
+export const negativeClass = (value: number): string => (value < 0 ? 'text-red-600 dark:text-red-400' : '')

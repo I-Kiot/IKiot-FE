@@ -49,7 +49,11 @@ export function ConfirmRemittanceDialog({ order, open, onOpenChange, onConfirmed
         amount: Math.round(value),
         note: note.trim() || undefined,
       });
-      toast.success("Đã xác nhận nhận đủ tiền, đơn hoàn thành");
+      toast.success(
+        order.status === "RETURNED"
+          ? "Đã xác nhận nhận đủ tiền, tiền đã vào quỹ chủ shop"
+          : "Đã xác nhận nhận đủ tiền, đơn hoàn thành",
+      );
       onConfirmed(updated);
     } catch (error) {
       const mismatch = remittanceGapOf(error);

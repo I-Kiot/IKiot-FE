@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { statsApi, type StatsOverview } from "@/lib/api/stats";
 import { formatNumber, formatVND } from "@/lib/stats-format";
+import { JournalGapNotice } from "@/components/journal-gap-notice";
 import { useAsyncData } from "../hooks/use-async-data";
 import { useOverview } from "./overview-provider";
 import { TONE_TEXT, TONE_TILE, type Tone } from "../shared/tones";
@@ -29,12 +30,14 @@ function metricsOf(overview: StatsOverview): Metric[] {
   const profitNote =
     overview.linesMissingCost > 0
       ? `Ước tính: ${formatNumber(overview.linesMissingCost)} dòng hàng chưa có giá vốn đang được tính giá vốn 0, nên lợi nhuận có thể cao hơn thực tế.`
-      : "Doanh thu − phí ship − phí sàn − giá vốn hàng đã bán.";
+      : "Doanh thu thuần − giá vốn thực (từ sổ kho) − phí vận chuyển thực − phí sàn.";
+  const revenueNote =
+    "Doanh thu thuần theo ngày hoàn thành, đã trừ trả hàng và cộng thu nhập khác (giữ tiền khi huỷ/trả). Có thể âm nếu kỳ đó trả nhiều hơn bán.";
   return [
-    { key: "revenue", title: "Doanh thu", value: formatVND(overview.revenue), change: overview.changePct.revenue, icon: Banknote, tone: "orange" },
+    { key: "revenue", title: "Doanh thu thuần", note: revenueNote, value: formatVND(overview.revenue), change: overview.changePct.revenue, icon: Banknote, tone: "orange" },
     { key: "orders", title: "Đơn hàng", value: formatNumber(overview.orderCount), change: overview.changePct.orderCount, icon: ReceiptText, tone: "blue" },
     { key: "aov", title: "Giá trị đơn TB", value: formatVND(overview.aov), change: overview.changePct.aov, icon: ShoppingCart, tone: "violet" },
-    { key: "profit", title: "Lợi nhuận gộp ước tính", value: formatVND(overview.grossProfit), change: overview.changePct.grossProfit, icon: TrendingUp, tone: "emerald", note: profitNote },
+    { key: "profit", title: "Lợi nhuận gộp", value: formatVND(overview.grossProfit), change: overview.changePct.grossProfit, icon: TrendingUp, tone: "emerald", note: profitNote },
   ];
 }
 
@@ -87,6 +90,8 @@ export function KpiCards() {
   }
 
   return (
+    <div className="space-y-3">
+    <JournalGapNotice ordersWithoutJournal={data.journalGap?.ordersWithoutJournal} firstJournalAt={data.journalGap?.firstJournalAt} />
     <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 transition-opacity ${isLoading ? "opacity-60" : ""}`}>
       {metricsOf(data).map((metric) => {
         const Icon = metric.icon;
@@ -102,7 +107,7 @@ export function KpiCards() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button type="button" className="cursor-help rounded-sm" aria-label={metric.note}>
-                        <Info className={`size-3.5 ${data.linesMissingCost > 0 ? TONE_TEXT.amber : ""}`} />
+                        <Info className={`size-3.5 ${metric.key === "profit" && data.linesMissingCost > 0 ? TONE_TEXT.amber : ""}`} />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">{metric.note}</TooltipContent>
@@ -117,6 +122,7 @@ export function KpiCards() {
           </Card>
         );
       })}
+    </div>
     </div>
   );
 }

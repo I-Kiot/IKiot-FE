@@ -1,5 +1,10 @@
 import { AxiosError } from "axios";
-import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
+import { toast } from "sonner";
+import {
+  getApiErrorBody,
+  isStockMovementConflict,
+  messageForCode,
+} from "@/lib/api/error-codes";
 
 /**
  * Map thông báo BE (EN) → VN, đặc biệt rule importPrice ≤ retailPrice.
@@ -52,4 +57,23 @@ export function getStockMovementErrorMessage(
     return localizeStockMovementMessage(error.message.trim());
   }
   return fallback;
+}
+
+/**
+ * Báo lỗi thao tác trên phiếu kho. Nếu hai người cùng thao tác (`STOCK_MOVEMENT_CONFLICT`)
+ * thì tải lại dữ liệu để màn hình hiện trạng thái mới nhất.
+ */
+export async function reportMovementError(
+  error: unknown,
+  fallback: string,
+  refetch: () => void | Promise<void>,
+): Promise<void> {
+  toast.error(getStockMovementErrorMessage(error, fallback));
+  if (isStockMovementConflict(error)) {
+    try {
+      await refetch();
+    } catch {
+      // tải lại lỗi thì giữ nguyên màn hình hiện tại
+    }
+  }
 }

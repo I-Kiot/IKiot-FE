@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { Mail, MapPin, Banknote, Pencil, Phone, Trash2 } from "lucide-react";
+import { BookOpen, Mail, MapPin, Banknote, Pencil, Phone, Trash2 } from "lucide-react";
 import { PermissionButton } from "@/components/permission-button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -180,6 +180,21 @@ export function SuppliersExpandedPanel({
                 Xóa
               </PermissionButton>
             <div className="flex items-center gap-2">
+              <PermissionButton
+                allowed={allows(role, "suppliers", "read")}
+                permission="suppliers:read"
+                size="sm"
+                variant="outline"
+                className="cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentRow(supplier);
+                  setOpen("ledger");
+                }}
+              >
+                <BookOpen className="mr-2 size-4" />
+                Sổ công nợ
+              </PermissionButton>
               {supplier.outstandingDebt > 0 && (
                 <PermissionButton
                   allowed={allows(role, "suppliers", "pay_debt")}

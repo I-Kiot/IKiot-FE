@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MovementDetailHeader } from "@/app/(protected)/exchange/shared/movement-detail-header";
+import { MovementActors } from "@/app/(protected)/exchange/shared/movement-actors";
 import { MovementOrderNote } from "@/app/(protected)/exchange/shared/movement-order-note";
 import { CancelConfirmDialog } from "@/app/(protected)/exchange/shared/cancel-confirm-dialog";
 import { buildReceivePayload } from "@/app/(protected)/exchange/shared/qty";
@@ -36,6 +37,7 @@ import {
   MovementDetailsTable,
 } from "@/app/(protected)/exchange/shared/movement-panel-sections";
 import { stockMovementApi } from "@/lib/api/stock-movement";
+import { isStockMovementConflict } from "@/lib/api/error-codes";
 import { getStockMovementErrorMessage } from "@/app/(protected)/exchange/shared/stock-movement-error";
 import { useAuthStore } from "@/store/auth-store";
 import type { StockMovement } from "@/types/stock-movement";
@@ -260,7 +262,13 @@ export function MovementExpandedPanel({
 
   const withRefresh = async (fn: () => Promise<void>) => {
     await runAction(async () => {
-      await fn();
+      try {
+        await fn();
+      } catch (error) {
+        // Người khác vừa đổi phiếu: tải lại chi tiết để thấy trạng thái mới rồi mới ném lỗi tiếp.
+        if (isStockMovementConflict(error)) await refreshDetail();
+        throw error;
+      }
       await refreshDetail();
     });
   };
@@ -571,6 +579,8 @@ export function MovementExpandedPanel({
           />
         </div>
       )}
+
+      <MovementActors detail={detail} />
 
       <MovementOrderNote note={detail.note} />
 
