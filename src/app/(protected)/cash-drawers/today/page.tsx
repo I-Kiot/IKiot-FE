@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { parseLocationKey } from "@/lib/location-key";
 import { cashDrawerApi } from "@/lib/api/cash-drawer";
+import { OverdueDrawerBanner } from "@/components/cash-drawer/overdue-drawer-banner";
 import { branchApi } from "@/lib/api/branch";
 import { canManageCashDrawer } from "@/components/sidebar/constants/role-permissions";
 import { PageHeader } from "@/components/page-header";
@@ -240,8 +241,15 @@ export default function CashDrawersTodayPage() {
       }
     } catch (error: any) {
       console.error(error);
-      const msg = error?.response?.data?.message || "Không thể mở két đầu ngày";
-      toast.error(msg);
+      const data = error?.response?.data;
+      // Két ngày trước của chi nhánh chưa chốt: nói rõ và dẫn tới két đó, thay vì hiện message tiếng Anh của BE.
+      if (data?.code === "CASH_DRAWER_OVERDUE" && data?.sessionId) {
+        toast.error("Két ngày trước của chi nhánh chưa chốt. Hãy chốt két đó trước khi mở két mới.", {
+          action: { label: "Vào chốt", onClick: () => router.push(`/cash-drawers/${data.sessionId}`) },
+        });
+      } else {
+        toast.error(data?.message || "Không thể mở két đầu ngày");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -310,6 +318,7 @@ export default function CashDrawersTodayPage() {
           title="Hôm nay"
           description="Quản lý két tiền và lịch sử bàn giao ca làm việc"
         />
+        <OverdueDrawerBanner />
 
         <div className="mx-auto max-w-4xl w-full flex flex-col items-center justify-center text-center">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 w-full">
@@ -513,6 +522,7 @@ export default function CashDrawersTodayPage() {
         title="Hôm nay"
         description={`Quản lý két tiền chi nhánh ${activeBranchName}`}
       />
+      {activeBranchId && <OverdueDrawerBanner branchId={activeBranchId} />}
 
       <div className="mx-auto max-w-md w-full flex flex-col items-center justify-center text-center py-12 px-4">
         <h1 className="text-3xl font-black text-foreground tracking-tight mb-2">

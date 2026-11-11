@@ -173,9 +173,14 @@ export function canDeletePromotion(role?: string | null): boolean {
   return canCreatePromotion(role);
 }
 
-/** Mở ca / chốt ca - `cash_drawers:open` trong danh mục quyền. */
+/** Mở két - `cash_drawers:open`. Chốt két là mã riêng (`canFinalizeCashDrawer`). */
 export function canManageCashDrawer(role?: string | null): boolean {
   return allows(role, 'cash_drawers', 'open');
+}
+
+/** Chốt két cuối ngày - `cash_drawers:finalize`. */
+export function canFinalizeCashDrawer(role?: string | null): boolean {
+  return allows(role, 'cash_drawers', 'finalize');
 }
 
 /** Ghi phiếu giao–nhận ca. */
