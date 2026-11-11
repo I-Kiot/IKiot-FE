@@ -1,3 +1,4 @@
+import type { HistoryPage, HistoryPerson } from './history'
 import type { LocationRef, LocationType } from "./location";
 
 export type { LocationRef, LocationType } from "./location";
@@ -265,4 +266,21 @@ export interface ProductUpdatePayload {
   images?: ProductImage[];
   /** Thay toàn bộ danh sách thuộc tính; dòng có `id` được giữ, dòng vắng mặt bị xoá cùng giá trị trên mọi SKU. */
   attributes?: ProductAttribute[];
+}
+
+export type PriceHistoryField = 'RETAIL_PRICE' | 'COST_PRICE'
+
+/** Một lần đổi giá của phiên bản. `fromValue` null = lúc tạo; `changedBy` null = hệ thống (tính lại giá vốn combo). */
+export interface ProductPriceChange {
+  id: string
+  productItemId: string
+  field: PriceHistoryField
+  fromValue: number | null
+  toValue: number
+  changedBy: HistoryPerson | null
+  createdAt: string
+}
+
+export interface ProductPriceHistoryResponse extends HistoryPage<ProductPriceChange> {
+  item: { id: string; productName: string; sku: string; retailPrice: number; costPrice: number }
 }

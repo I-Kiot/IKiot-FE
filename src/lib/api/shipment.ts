@@ -91,6 +91,12 @@ export const shipmentApi = {
     return res.data.data;
   },
 
+  /** Mã QR hết hạn: tạo mã mới (mã chưa hết hạn thì giữ nguyên). */
+  reissueQr: async (id: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(`/shipments/${id}/reissue-qr`);
+    return res.data.data;
+  },
+
   /** Giao không thành: shipment FAILED, đơn giữ Đang vận chuyển. */
   fail: async (id: string, note: string): Promise<Shipment> => {
     const res = await client.post<Envelope<Shipment>>(`/shipments/${id}/fail`, { note });

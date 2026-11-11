@@ -12,15 +12,21 @@ import { OrderStatusChart } from './order-status-chart'
 import { SalesHeatmap } from './sales-heatmap'
 import { CashflowInventory } from './customer-insights'
 import { RevenueBreakdown } from './revenue-breakdown'
+import { JournalGapNotice } from '@/components/journal-gap-notice'
 
 export function DashboardGrid() {
-  const { revenueByBranch } = useDashboard()
+  const { revenueByBranch, overview } = useDashboard()
 
   const showBranches = (revenueByBranch?.branches.length ?? 0) > 1
 
   return (
     <div className="@container/main space-y-6">
       <DashboardToolbar />
+
+      <JournalGapNotice
+        ordersWithoutJournal={overview?.journalGap?.ordersWithoutJournal}
+        firstJournalAt={overview?.journalGap?.firstJournalAt}
+      />
 
       {/* Các mốc thời gian cố định (hôm nay, tuần, tháng...) - KPI và xu hướng theo kỳ đã nằm ở dashboard. */}
       <RevenueComparison />

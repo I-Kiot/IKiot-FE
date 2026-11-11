@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -52,8 +53,10 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
 
   const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
   const [status, setStatus] = React.useState<string>(ALL);
-  const [search, setSearch] = React.useState("");
-  const [term, setTerm] = React.useState("");
+  // Link từ lịch sử đơn hàng mang theo `?search=<mã yêu cầu>` (trang đã bọc Suspense).
+  const initialSearch = useSearchParams().get("search") ?? "";
+  const [search, setSearch] = React.useState(initialSearch);
+  const [term, setTerm] = React.useState(initialSearch.trim());
   const [reloads, setReloads] = React.useState(0);
   const [selected, setSelected] = React.useState<ProductionRequest | null>(null);
   // Gắn kèm query đã trả lời: khi tag khác nghĩa là có yêu cầu mới đang chạy.

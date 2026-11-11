@@ -5,11 +5,19 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/store/auth-store'
 import { locationFilter } from '@/lib/location-key'
-import { statsApi, type Cashflow, type CashflowList } from '@/lib/api/stats'
+import {
+  statsApi,
+  type Cashflow,
+  type CashflowCategory,
+  type CashflowFund,
+  type CashflowList,
+} from '@/lib/api/stats'
 
 export type CashflowRange = '7d' | '30d' | '90d' | '12m'
 export type FlowTypeFilter = 'ALL' | 'INCOME' | 'EXPENSE'
 export type FlowPrefixFilter = 'ALL' | 'ORD' | 'SUP'
+export type CategoryFilter = 'ALL' | CashflowCategory
+export type FundFilter = 'ALL' | CashflowFund
 
 const RANGE_DAYS: Record<CashflowRange, number> = {
   '7d': 7,
@@ -31,6 +39,8 @@ export function useCashflow() {
   const [range, setRangeState] = useState<CashflowRange>('30d')
   const [flowType, setFlowTypeState] = useState<FlowTypeFilter>('ALL')
   const [flow, setFlowState] = useState<FlowPrefixFilter>('ALL')
+  const [category, setCategoryState] = useState<CategoryFilter>('ALL')
+  const [fund, setFundState] = useState<FundFilter>('ALL')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSizeState] = useState(DEFAULT_PAGE_SIZE)
 
@@ -51,6 +61,14 @@ export function useCashflow() {
     setFlowState(value)
     setPage(1)
   }, [])
+  const setCategory = useCallback((value: CategoryFilter) => {
+    setCategoryState(value)
+    setPage(1)
+  }, [])
+  const setFund = useCallback((value: FundFilter) => {
+    setFundState(value)
+    setPage(1)
+  }, [])
   const setPageSize = useCallback((value: number) => {
     setPageSizeState(value)
     setPage(1)
@@ -69,13 +87,23 @@ export function useCashflow() {
       }
       const flowTypeParam = flowType === 'ALL' ? undefined : flowType
       const flowParam = flow === 'ALL' ? undefined : flow
+      const categoryParam = category === 'ALL' ? undefined : category
+      const fundParam = fund === 'ALL' ? undefined : fund
 
       const [summaryRes, listRes] = await Promise.all([
-        statsApi.getCashflow({ ...dateParams, flowType: flowTypeParam, flow: flowParam }),
+        statsApi.getCashflow({
+          ...dateParams,
+          flowType: flowTypeParam,
+          flow: flowParam,
+          category: categoryParam,
+          fund: fundParam,
+        }),
         statsApi.getCashflowList({
           ...dateParams,
           flowType: flowTypeParam,
           flow: flowParam,
+          category: categoryParam,
+          fund: fundParam,
           page,
           limit: pageSize,
         }),
@@ -89,7 +117,7 @@ export function useCashflow() {
     } finally {
       setIsLoading(false)
     }
-  }, [range, flowType, flow, branchId, warehouseId, page, pageSize])
+  }, [range, flowType, flow, category, fund, branchId, warehouseId, page, pageSize])
 
   useEffect(() => {
     fetchAll()
@@ -105,6 +133,10 @@ export function useCashflow() {
     setFlowType,
     flow,
     setFlow,
+    category,
+    setCategory,
+    fund,
+    setFund,
     page,
     setPage,
     pageSize,

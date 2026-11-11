@@ -1,4 +1,5 @@
 import client from "./client";
+import type { HistoryPage, HistoryPerson } from "@/types/history";
 
 export interface TenantOwnerProfile {
   firstName?: string;
@@ -105,4 +106,30 @@ export async function syncSepayAccounts(): Promise<SepaySyncResult> {
     "/tenants/sepay-sync",
   );
   return response.data.data;
+}
+
+export type BankingChangeSource = "OWNER" | "ADMIN" | "SEPAY_SYNC";
+
+/** Một trường đổi. Webhook key chỉ báo `keyChanged`, không bao giờ có giá trị. */
+export interface BankingFieldChange {
+  from?: string | null;
+  to?: string | null;
+  keyChanged?: boolean;
+}
+
+export interface BankingChange {
+  id: string;
+  source: BankingChangeSource;
+  changes: Record<string, BankingFieldChange>;
+  changedBy: HistoryPerson | null;
+  createdAt: string;
+}
+
+/** Lịch sử đổi tài khoản nhận tiền / key / liên kết SePay (`GET /tenant/banking/history`, quyền tenants:update). */
+export async function getBankingHistory(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<HistoryPage<BankingChange>> {
+  const response = await client.get<HistoryPage<BankingChange>>("/tenant/banking/history", { params });
+  return response.data;
 }

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useDashboard } from "./dashboard-provider"
-import { COMPARISON_LABELS, formatCompactVND, formatInstantShort, formatNumber, formatVND } from "@/lib/stats-format"
+import { COMPARISON_LABELS, formatCompactVND, formatInstantShort, formatNumber, formatVND, negativeClass } from "@/lib/stats-format"
 
 function DeltaBadge({ pct }: { pct: number | null }) {
   if (pct === null) {
@@ -41,9 +41,9 @@ export function RevenueComparison() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>So sánh doanh thu theo mốc thời gian</CardTitle>
+        <CardTitle>So sánh doanh thu thuần theo mốc thời gian</CardTitle>
         <CardDescription>
-          Mỗi mốc được so với cùng khoảng thời gian đã trôi qua của kỳ trước (ví dụ: 1–15 tháng này so với 1–15 tháng trước)
+          Doanh thu thuần theo ngày hoàn thành, đã trừ trả hàng. Mỗi mốc được so với cùng khoảng thời gian đã trôi qua của kỳ trước (ví dụ: 1–15 tháng này so với 1–15 tháng trước)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -58,6 +58,7 @@ export function RevenueComparison() {
             {comparison.comparisons.map((item) => {
               const label = COMPARISON_LABELS[item.key]
               const max = Math.max(item.current.revenue, item.previous.revenue, 1)
+              const barWidth = (value: number) => `${(Math.max(value, 0) / max) * 100}%`
               return (
                 <div key={item.key} className="flex flex-col gap-3 rounded-lg border p-4">
                   <div className="flex items-center justify-between gap-2">
@@ -66,7 +67,7 @@ export function RevenueComparison() {
                   </div>
 
                   <div>
-                    <p className="text-xl font-semibold tabular-nums" title={formatVND(item.current.revenue)}>
+                    <p className={cn("text-xl font-semibold tabular-nums", negativeClass(item.current.revenue))} title={formatVND(item.current.revenue)}>
                       {formatCompactVND(item.current.revenue)}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -85,7 +86,7 @@ export function RevenueComparison() {
                       <div className="h-1.5 rounded-full bg-muted">
                         <div
                           className="h-full rounded-full bg-primary"
-                          style={{ width: `${(item.current.revenue / max) * 100}%` }}
+                          style={{ width: barWidth(item.current.revenue) }}
                         />
                       </div>
                     </div>
@@ -101,7 +102,7 @@ export function RevenueComparison() {
                       <div className="h-1.5 rounded-full bg-muted">
                         <div
                           className="h-full rounded-full bg-muted-foreground/40"
-                          style={{ width: `${(item.previous.revenue / max) * 100}%` }}
+                          style={{ width: barWidth(item.previous.revenue) }}
                         />
                       </div>
                     </div>

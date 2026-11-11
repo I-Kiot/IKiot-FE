@@ -5,7 +5,7 @@
 
 import { useCallback, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Area, Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
+import { Area, Bar, CartesianGrid, ComposedChart, Line, ReferenceLine, XAxis, YAxis } from "recharts";
 import { ChartLine, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +22,7 @@ import { bucketLabel, bucketsOf, formatDayVi, type ResolvedRange } from "../shar
 import { CHART_ACCENT, TONE_TILE } from "../shared/tones";
 
 const chartConfig = {
-  revenue: { label: "Doanh thu", theme: CHART_ACCENT },
+  revenue: { label: "Doanh thu thuần", theme: CHART_ACCENT },
   previous: { label: "Kỳ trước", color: "var(--muted-foreground)" },
   orders: { label: "Số đơn", theme: { light: "oklch(0.623 0.214 259.815)", dark: "oklch(0.707 0.165 254.624)" } },
 } satisfies ChartConfig;
@@ -83,6 +83,8 @@ export function RevenueChart({ showOrdersTab = false }: { showOrdersTab?: boolea
   const rows = data ? rowsOf(data.current, data.previous, data.range) : [];
   const totalRevenue = rows.reduce((sum, row) => sum + row.revenue, 0);
   const totalOrders = rows.reduce((sum, row) => sum + row.orders, 0);
+  // Kỳ có hàng trả nhiều hơn bán cho doanh thu âm: vẽ đường 0 để thấy điểm đổi dấu.
+  const hasNegative = rows.some((row) => row.revenue < 0 || (row.previous ?? 0) < 0);
   const unit = UNIT_LABELS[resolved.groupBy];
 
   // Vùng biểu đồ có ba trạng thái: lần đầu đang tải, lỗi, và có số liệu (mờ đi khi đang tải lại).
@@ -151,6 +153,7 @@ export function RevenueChart({ showOrdersTab = false }: { showOrdersTab?: boolea
                 />
               }
             />
+            {hasNegative && <ReferenceLine yAxisId="revenue" y={0} stroke="var(--muted-foreground)" strokeOpacity={0.6} />}
             <Bar yAxisId="orders" dataKey="orders" fill="var(--color-orders)" fillOpacity={0.35} radius={[3, 3, 0, 0]} maxBarSize={18} />
             {showPrevious && (
               <Line
@@ -229,7 +232,7 @@ export function RevenueChart({ showOrdersTab = false }: { showOrdersTab?: boolea
         {/* Tổng của kỳ trên một dòng, kèm kỳ đang xem - chỗ dành cho biểu đồ. */}
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
           <p className="text-xs text-muted-foreground">
-            Tổng doanh thu{" "}
+            Doanh thu thuần{" "}
             <span className="text-base font-semibold text-foreground tabular-nums">{formatVND(totalRevenue)}</span>
           </p>
           <p className="text-xs text-muted-foreground">
@@ -237,7 +240,7 @@ export function RevenueChart({ showOrdersTab = false }: { showOrdersTab?: boolea
           </p>
           <p className="text-xs text-muted-foreground">
             {formatDayVi(resolved.fromDate)}
-            {resolved.toDate !== resolved.fromDate ? ` – ${formatDayVi(resolved.toDate)}` : ""} · đơn đã hoàn tất
+            {resolved.toDate !== resolved.fromDate ? ` – ${formatDayVi(resolved.toDate)}` : ""} · theo ngày hoàn thành, đã trừ trả hàng
           </p>
         </div>
 
@@ -247,7 +250,7 @@ export function RevenueChart({ showOrdersTab = false }: { showOrdersTab?: boolea
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-4 rounded-sm bg-orange-500/70" aria-hidden />
-            Doanh thu
+            Doanh thu thuần
           </span>
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-blue-500/40" aria-hidden />

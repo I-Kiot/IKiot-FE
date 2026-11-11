@@ -15,6 +15,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { shipmentApi } from "@/lib/api/shipment";
+import { useCountdown } from "@/hooks/use-countdown";
+import { QrCountdown } from "@/components/qr-countdown";
 import {
   type Shipment,
   type ShipmentQrPayment,
@@ -67,18 +69,50 @@ function Field({
   );
 }
 
-/** Khung thu tiền QR: chờ tiền về thì hiện mã cho khách quét; đã về thì báo đã nhận. */
+/**
+ * Khung thu tiền QR: chờ tiền về thì hiện mã + đồng hồ cho khách quét; hết hạn thì ẩn mã, cho tạo lại hoặc thu tiền mặt;
+ * đã về thì báo đã nhận. Hạn do server trả (`expiresAt`); ảnh QR chỉ vẽ khi có `qrUrl` và chưa hết hạn.
+ */
 function QrPaymentPanel({
   payment,
+  due,
   checking,
+  reissuing,
   onCheck,
   onPayCash,
+  onReissue,
 }: {
   payment: ShipmentQrPayment;
+  /** Còn phải thu của đơn (server tính, trừ mọi khoản đã nhận). */
+  due: number;
   checking: boolean;
+  reissuing: boolean;
   onCheck: () => void;
   onPayCash: () => void;
+  onReissue: () => void;
 }) {
+  const countdown = useCountdown(payment.expiresAt);
+  if (payment.status === "PAID" && due > 0) {
+    // Khách chuyển thiếu: khoản QR đã nhận (số thực nhận), đơn vẫn còn phải thu.
+    return (
+      <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+          Khách chuyển thiếu: đã nhận {formatVND(payment.amount)}
+        </p>
+        <p className="text-sm">
+          Còn phải thu: <span className="font-semibold">{formatVND(due)}</span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onReissue} disabled={reissuing}>
+            {reissuing ? "Đang tạo..." : "Tạo QR số còn lại"}
+          </Button>
+          <Button variant="outline" onClick={onPayCash}>
+            Thu tiền mặt số còn lại
+          </Button>
+        </div>
+      </div>
+    );
+  }
   if (payment.status === "PAID") {
     return (
       <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
@@ -86,14 +120,37 @@ function QrPaymentPanel({
       </div>
     );
   }
-  if (payment.status !== "PENDING") {
+  if (payment.status !== "PENDING" && payment.status !== "EXPIRED") {
     return null;
+  }
+  const expired =
+    payment.status === "EXPIRED" || payment.expired || countdown.expired || !payment.qrUrl;
+  if (expired) {
+    return (
+      <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+        <p className="text-sm font-medium text-destructive">Mã QR đã hết hạn</p>
+        <p className="text-xs text-muted-foreground">
+          Tạo mã mới cho khách quét {formatVND(due > 0 ? due : payment.amount)}, hoặc thu tiền mặt.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onReissue} disabled={reissuing}>
+            {reissuing ? "Đang tạo..." : "Tạo lại mã QR"}
+          </Button>
+          <Button variant="outline" onClick={onPayCash}>
+            Thu tiền mặt
+          </Button>
+        </div>
+      </div>
+    );
   }
   return (
     <div className="space-y-3 rounded-md border p-3">
       <p className="text-sm font-medium">
         Khách quét mã để chuyển {formatVND(payment.amount)}
       </p>
+      {due > 0 && due !== payment.amount && (
+        <p className="text-xs text-muted-foreground">Còn phải thu của đơn: {formatVND(due)}</p>
+      )}
       {payment.qrUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- ảnh VietQR từ dịch vụ ngoài
         <img
@@ -105,6 +162,7 @@ function QrPaymentPanel({
       <p className="text-center text-xs text-muted-foreground">
         Nội dung chuyển khoản: {payment.reference}
       </p>
+      <QrCountdown label={countdown.label} remainingMs={countdown.remainingMs} />
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={onCheck} disabled={checking}>
           {checking ? "Đang kiểm tra..." : "Kiểm tra tiền về"}
@@ -127,6 +185,7 @@ export function DeliverySheet({
   // Tải lại sheet sau một thao tác ghi; thao tác ghi còn báo trang tải lại danh sách.
   const [reloadKey, setReloadKey] = useState(0);
   const [checking, setChecking] = useState(false);
+  const [reissuing, setReissuing] = useState(false);
 
   useEffect(() => {
     if (!shipmentId) return;
@@ -154,7 +213,7 @@ export function DeliverySheet({
       .getById(shipmentId)
       .then((fresh) => {
         setState({ status: "ready", shipment: fresh });
-        if (fresh.payment?.status === "PENDING") {
+        if (fresh.payment?.status === "PENDING" || fresh.payment?.status === "EXPIRED") {
           toast.info("Chưa thấy tiền về - đợi thêm hoặc thu tiền mặt");
         } else {
           onChanged();
@@ -162,6 +221,23 @@ export function DeliverySheet({
       })
       .catch(() => toast.error("Không tải được lần giao, vui lòng thử lại"))
       .finally(() => setChecking(false));
+  };
+
+  /** "Tạo lại mã QR" khi mã hết hạn: hiện ngay lần giao server trả về (mã mới, hoặc mã cũ nếu vẫn còn hạn). */
+  const reissueQr = () => {
+    if (!shipmentId || reissuing) return;
+    setReissuing(true);
+    shipmentApi
+      .reissueQr(shipmentId)
+      .then((fresh) => {
+        setState({ status: "ready", shipment: fresh });
+        toast.success("Đã tạo mã QR mới");
+        onChanged();
+      })
+      .catch((error: unknown) => {
+        if (reportShipmentError(error, "Không tạo lại được mã QR, vui lòng thử lại")) afterWrite();
+      })
+      .finally(() => setReissuing(false));
   };
 
   /** Thao tác ghi xong (hoặc dữ liệu đã cũ): đóng dialog, tải lại sheet và danh sách. */
@@ -264,9 +340,12 @@ export function DeliverySheet({
             {shipment.payment && (
               <QrPaymentPanel
                 payment={shipment.payment}
+                due={shipment.order.amountDue}
                 checking={checking}
+                reissuing={reissuing}
                 onCheck={checkPayment}
                 onPayCash={() => setAction("payCash")}
+                onReissue={reissueQr}
               />
             )}
 
@@ -348,9 +427,9 @@ export function DeliverySheet({
               key={`cash-${action === "payCash"}`}
               open={action === "payCash"}
               title="Thu tiền mặt thay chuyển khoản"
-              description={`Khách không chuyển khoản: huỷ mã QR và ghi bạn đã thu ${formatVND(
-                shipment.payment?.amount ?? 0,
-              )} tiền mặt. Bạn giữ tiền cho tới khi nộp lại cho chủ.`}
+              description={`Khách không chuyển khoản (hoặc chuyển thiếu): huỷ mã QR còn mở và ghi bạn đã thu ${formatVND(
+                shipment.order.amountDue > 0 ? shipment.order.amountDue : (shipment.payment?.amount ?? 0),
+              )} tiền mặt - đúng số còn phải thu. Bạn giữ tiền cho tới khi nộp lại cho chủ.`}
               confirmLabel="Đã thu tiền mặt"
               onClose={() => setAction(null)}
               onConfirm={(note) =>

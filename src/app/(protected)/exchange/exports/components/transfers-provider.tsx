@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { toast } from 'sonner'
 import { stockMovementApi } from '@/lib/api/stock-movement'
 import { getAuthScope } from '@/app/(protected)/exchange/shared/auth-scope'
-import { getStockMovementErrorMessage } from '@/app/(protected)/exchange/shared/stock-movement-error'
+import { getStockMovementErrorMessage, reportMovementError } from '@/app/(protected)/exchange/shared/stock-movement-error'
 import { getTransferUiLabels } from '@/app/(protected)/exchange/shared/transfer-ui-labels'
 import type { StockMovement, MovementStatus } from '@/types/stock-movement'
 
@@ -88,7 +88,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success('Đã mở phiếu')
       await fetchTransfers()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể mở phiếu'))
+      await reportMovementError(error, 'Không thể mở phiếu', fetchTransfers)
     }
   }
 
@@ -101,7 +101,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success('Đã cập nhật phiếu')
       await fetchTransfers()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể cập nhật danh sách hàng'))
+      await reportMovementError(error, 'Không thể cập nhật danh sách hàng', fetchTransfers)
       throw error
     }
   }
@@ -112,7 +112,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success('Đã chốt phiếu')
       await fetchTransfers()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể chốt phiếu'))
+      await reportMovementError(error, 'Không thể chốt phiếu', fetchTransfers)
     }
   }
 
@@ -125,7 +125,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success('Đã cập nhật phiếu')
       await fetchTransfers()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể cập nhật phiếu'))
+      await reportMovementError(error, 'Không thể cập nhật phiếu', fetchTransfers)
       throw error
     }
   }
@@ -140,7 +140,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success('Đã chốt phiếu')
       await fetchTransfers()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể chốt phiếu'))
+      await reportMovementError(error, 'Không thể chốt phiếu', fetchTransfers)
       throw error
     }
   }
@@ -151,7 +151,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success('Đã xuất hàng')
       await fetchTransfers()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể xuất hàng'))
+      await reportMovementError(error, 'Không thể xuất hàng', fetchTransfers)
     }
   }
 
@@ -164,7 +164,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success(labels.receiveSuccess)
       await fetchTransfers()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, labels.receiveError))
+      await reportMovementError(error, labels.receiveError, fetchTransfers)
     }
   }
 
@@ -174,7 +174,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success(labels.cancelSuccess)
       await fetchTransfers()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, labels.cancelError))
+      await reportMovementError(error, labels.cancelError, fetchTransfers)
     }
   }
 
@@ -184,9 +184,7 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       toast.success('Đã tạo phiếu trả hàng')
       await fetchTransfers()
     } catch (error) {
-      toast.error(
-        getStockMovementErrorMessage(error, 'Không thể tạo phiếu trả hàng'),
-      )
+      await reportMovementError(error, 'Không thể tạo phiếu trả hàng', fetchTransfers)
       throw error
     }
   }

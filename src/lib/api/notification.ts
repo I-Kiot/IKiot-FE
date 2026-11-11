@@ -71,6 +71,8 @@ export type NotificationType =
   | "STOCK_MOVEMENT_CREATED" | "STOCK_MOVEMENT_IN_TRANSIT"
   | "STOCK_MOVEMENT_RECEIVED" | "STOCK_MOVEMENT_CANCELLED"
   | "INVENTORY_LOW_STOCK" | "ORDER_PAID"
+  // Tiền về chưa khớp đơn (2026-11-11): chuyển thiếu, trả dư, hoặc không gắn được đơn nào. BE gửi sẵn title/description tiếng Việt, không có chỗ nào vẽ theo type.
+  | "ORDER_PARTIAL_TRANSFER" | "ORDER_OVERPAID" | "ORDER_UNMATCHED_TRANSFER"
   | "SUBSCRIPTION_ACTIVATED" | "SUBSCRIPTION_EXPIRING" | "SUBSCRIPTION_EXPIRED"
   | "SCHEDULE_ASSIGNED"
   | "STAFF_ACCOUNT_CREATED" | "TICKET_REPLIED" | "SEPAY_LINKED";

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
@@ -21,7 +22,9 @@ export default function OrderReturnsPage() {
         description="Tạo đơn hoàn và kiểm từng dòng hàng trả về"
       />
       {canView ? (
-        <ReturnsTable />
+        <Suspense fallback={null}>
+          <ReturnsTable />
+        </Suspense>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-16 text-center">
           <h2 className="text-lg font-semibold">Không có quyền truy cập</h2>

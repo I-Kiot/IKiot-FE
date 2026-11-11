@@ -22,6 +22,7 @@ import { HandOverDialog } from "../../../../shipments/components/hand-over-dialo
 import { ShipmentNoteDialog } from "../../../../shipments/components/shipment-detail-sheet";
 import { reportShipmentError } from "../../../../shipments/components/shipment-ui";
 import { DeliverySheet } from "../../../../shipper/components/delivery-sheet";
+import { ConfirmReturnedDialog } from "./confirm-returned-dialog";
 import { ConfirmRemittanceDialog } from "./confirm-remittance-dialog";
 import { PickupCollectDialog } from "./pickup-collect-dialog";
 import { PickupHandOverDialog } from "./pickup-hand-over-dialog";
@@ -120,8 +121,10 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
   const pathname = usePathname();
   const wantsRemittance = useSearchParams().get("confirmCash") === "1";
   const permissions = stepPermissions(order);
+  // Đơn RETURNED (giao xong rồi khách trả hàng) vẫn nhận tiền shipper nộp: tiền vào quỹ chủ, đơn giữ nguyên trạng thái Hoàn trả.
   const awaitingCash =
-    order.status === "RECEIVED" && order.collection?.cashRemittanceStatus === "PENDING";
+    (order.status === "RECEIVED" || order.status === "RETURNED") &&
+    (order.collection?.cashRemittanceStatus === "PENDING" || order.paymentSummary.pendingRemittance > 0);
   // Link trong thông báo chỉ tự mở dialog cho người xác nhận được.
   const opensRemittance = wantsRemittance && awaitingCash && permissions.canConfirmCash;
 
@@ -404,14 +407,11 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
         />
       )}
       {openStep === "confirmReturned" && failedShipment && (
-        <ShipmentNoteDialog
-          open
-          title="Xác nhận hàng đã hoàn về shop"
-          description="Hàng của lần giao thất bại đã về tới shop. Tồn kho được cộng lại, đơn chuyển sang Hoàn trả và không giao lại được nữa."
-          confirmLabel="Hàng đã về shop"
+        <ConfirmReturnedDialog
+          held={order.paymentSummary.net}
           onClose={closeStep}
-          onConfirm={(note) =>
-            orderReturnApi.confirmFailedDelivery(failedShipment.id, note).then(
+          onConfirm={(note, refund) =>
+            orderReturnApi.confirmFailedDelivery(failedShipment.id, note, refund).then(
               () => {
                 toast.success(`Đơn ${order.code} đã hoàn trả về shop`);
                 closeAndReload();

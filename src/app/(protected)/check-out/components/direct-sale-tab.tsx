@@ -209,10 +209,13 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
   const [cancelTarget, setCancelTarget] = useState<{ id: string; tabName: string } | null>(null);
   const [qrOrderData, setQrOrderData] = useState<{
     orderId: string;
-    qrUrl: string;
+    qrUrl: string | null;
+    expiresAt: string | null;
     paymentReference: string;
     grandTotal: number;
     receiptSnapshot: any;
+    /** Giỏ hàng trước khi tab được dọn: "Lên lại đơn" khi đơn QR bị hủy. */
+    cartSnapshot: InvoiceState;
   } | null>(null);
 
   const activeInvoice = useMemo(() => {
@@ -299,6 +302,27 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     setInvoices((prev) => [...prev, newTab]);
     setActiveTabId(nextId);
     toast.success(`Đã mở ${nextName}`);
+  };
+
+  // Đơn QR đã hủy (tay hoặc hết hạn): trả giỏ về tab cũ nếu tab đó còn trống, không thì mở tab mới.
+  const handleRestartFromQr = () => {
+    const snapshot = qrOrderData?.cartSnapshot;
+    setIsQrDialogOpen(false);
+    setQrOrderData(null);
+    if (!snapshot) return;
+    const original = invoices.find((inv) => inv.id === snapshot.id);
+    if (original && original.items.length === 0) {
+      setInvoices((prev) => prev.map((inv) => (inv.id === snapshot.id ? snapshot : inv)));
+      setActiveTabId(snapshot.id);
+      return;
+    }
+    if (invoices.length >= 10) {
+      toast.warning("Đã đủ 10 hóa đơn nháp, hãy đóng bớt một hóa đơn rồi lên lại đơn.");
+      return;
+    }
+    const nextId = (Math.max(...invoices.map((inv) => parseInt(inv.id))) + 1).toString();
+    setInvoices((prev) => [...prev, { ...snapshot, id: nextId, tabName: `Hóa đơn ${nextId}` }]);
+    setActiveTabId(nextId);
   };
 
   const handleTabClose = (id: string) => {
@@ -585,11 +609,14 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
           });
         }
 
-        if (activeInvoice.paymentMethod === "SEPAY" && response.data.qrUrl) {
+        if (activeInvoice.paymentMethod === "SEPAY") {
           // SEPAY: hiện QR dialog, chờ xác nhận payment
           setQrOrderData({
             orderId,
-            qrUrl: response.data.qrUrl,
+            // Null (server không cấp được mã) thì dialog hiện view hết hạn, không vẽ ảnh.
+            qrUrl: response.data.qrUrl ?? null,
+            expiresAt: response.data.qrExpiresAt ?? null,
+            cartSnapshot: activeInvoice,
             paymentReference: createdOrder.paymentReference || "",
             grandTotal,
             receiptSnapshot: receipt,
@@ -785,6 +812,8 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
           onOpenChange={setIsQrDialogOpen}
           orderId={qrOrderData.orderId}
           qrUrl={qrOrderData.qrUrl}
+          expiresAt={qrOrderData.expiresAt}
+          onRestart={handleRestartFromQr}
           paymentReference={qrOrderData.paymentReference}
           grandTotal={qrOrderData.grandTotal}
           onPaymentConfirmed={() => {

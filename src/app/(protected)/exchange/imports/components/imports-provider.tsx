@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { stockMovementApi } from '@/lib/api/stock-movement'
-import { getStockMovementErrorMessage } from '@/app/(protected)/exchange/shared/stock-movement-error'
+import { getStockMovementErrorMessage, reportMovementError } from '@/app/(protected)/exchange/shared/stock-movement-error'
 import type { StockMovement, MovementStatus } from '@/types/stock-movement'
 
 interface ImportsContextType {
@@ -72,7 +72,7 @@ export function ImportsProvider({ children, refreshSignal }: Props) {
       toast.success('Đã cập nhật danh sách hàng')
       reload()
     } catch (error) {
-      toast.error(getStockMovementErrorMessage(error, 'Không thể cập nhật danh sách hàng'))
+      await reportMovementError(error, 'Không thể cập nhật danh sách hàng', reload)
       throw error
     }
   }
@@ -84,7 +84,7 @@ export function ImportsProvider({ children, refreshSignal }: Props) {
       reload()
     } catch (error) {
       console.error(error)
-      toast.error(getStockMovementErrorMessage(error, 'Không thể giao hàng, vui lòng thử lại'))
+      await reportMovementError(error, 'Không thể giao hàng, vui lòng thử lại', reload)
     }
   }
 
@@ -98,7 +98,7 @@ export function ImportsProvider({ children, refreshSignal }: Props) {
       reload()
     } catch (error) {
       console.error(error)
-      toast.error(getStockMovementErrorMessage(error, 'Không thể nhận hàng, vui lòng thử lại'))
+      await reportMovementError(error, 'Không thể nhận hàng, vui lòng thử lại', reload)
     }
   }
 
@@ -109,7 +109,7 @@ export function ImportsProvider({ children, refreshSignal }: Props) {
       reload()
     } catch (error) {
       console.error(error)
-      toast.error(getStockMovementErrorMessage(error, 'Không thể huỷ đơn, vui lòng thử lại'))
+      await reportMovementError(error, 'Không thể huỷ đơn, vui lòng thử lại', reload)
     }
   }
 

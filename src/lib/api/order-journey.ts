@@ -23,8 +23,11 @@ import type {
   Shipment,
   ConfirmRemittancePayload,
   OrderPriority,
+  RefundMethod,
   UpdateOrderPayload,
 } from '@/types/order-flow';
+
+import type { OrderEvent } from '@/types/order-event';
 
 type Envelope<T> = { success: boolean; data: T };
 
@@ -50,6 +53,12 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
+  /** Nhật ký thao tác của đơn, cũ nhất trước (BE không phân trang). */
+  getEvents: async (id: string): Promise<OrderEvent[]> => {
+    const res = await client.get<Envelope<OrderEvent[]>>(`/orders/${id}/events`);
+    return res.data.data;
+  },
+
   /** Đơn tay được tạo ở trạng thái CONFIRMED (hợp đồng §2, A-2), không có bản nháp. */
   create: async (payload: CreateOrderJourneyPayload): Promise<OrderDetail> => {
     const res = await client.post<Envelope<OrderDetail>>('/orders', payload);
@@ -71,6 +80,26 @@ export const orderJourneyApi = {
   /** A-10: chủ shop đã nhận đủ tiền shipper thu - RECEIVED → COMPLETED. */
   confirmRemittance: async (id: string, payload: ConfirmRemittancePayload): Promise<OrderDetail> => {
     const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/confirm-remittance`, payload);
+    return res.data.data;
+  },
+
+  /** Hoàn phần khách trả dư của đơn đã chốt (quyền `returns:inspect`). */
+  refundExcess: async (
+    id: string,
+    payload: { amount: number; method: RefundMethod; note?: string },
+  ): Promise<OrderDetail> => {
+    const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/refund-excess`, payload);
+    return res.data.data;
+  },
+
+  /** Quyết định tiền giữ treo của đơn đã kết thúc: hoàn (một phần hoặc hết) hoặc giữ lại làm thu nhập khác (quyền `returns:inspect`). */
+  settleHeld: async (
+    id: string,
+    payload:
+      | { action: 'REFUND'; amount: number; method: RefundMethod; note?: string }
+      | { action: 'KEEP'; note?: string },
+  ): Promise<OrderDetail> => {
+    const res = await client.post<Envelope<OrderDetail>>(`/orders/${id}/settle-held`, payload);
     return res.data.data;
   },
 

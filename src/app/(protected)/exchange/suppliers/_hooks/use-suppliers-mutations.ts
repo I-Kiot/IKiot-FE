@@ -109,7 +109,12 @@ export function useSuppliersMutations() {
       toast.success(`Thanh toán ${payload.amount.toLocaleString('vi-VN')} ₫ thành công`)
       return true
     } catch (error) {
-      toast.error(extractErrorMessage(error, 'Thanh toán công nợ thất bại'))
+      const code = (error as { response?: { data?: { code?: string } } })?.response?.data?.code
+      toast.error(
+        code === 'LOCATION_NOT_FOUND'
+          ? 'Không tìm thấy địa điểm hoặc bạn không được chi từ két này. Chọn két khác hoặc quỹ chủ shop.'
+          : extractErrorMessage(error, 'Thanh toán công nợ thất bại'),
+      )
       return false
     } finally {
       setIsLoading(false)

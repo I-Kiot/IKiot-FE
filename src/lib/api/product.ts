@@ -16,6 +16,8 @@ import type {
   ProductItemListEntry,
   ProductItemListParams,
   ProductAttribute,
+  PriceHistoryField,
+  ProductPriceHistoryResponse,
 } from "@/types/product";
 
 type ApiDoc<T extends object> = Omit<T, "id"> & { id: string };
@@ -110,6 +112,23 @@ export const productApi = {
       params,
     });
     return mapProduct(res.data.data) as ProductDetailResponse;
+  },
+
+  /** Lịch sử đổi giá bán / giá vốn của một phiên bản, mới nhất trước (products:read). */
+  getPriceHistory: async (
+    itemId: string,
+    params?: { field?: PriceHistoryField; page?: number; limit?: number },
+  ): Promise<ProductPriceHistoryResponse> => {
+    const res = await client.get<ProductPriceHistoryResponse>(`/products/items/${itemId}/price-history`, { params });
+    const body = res.data;
+    return {
+      ...body,
+      data: body.data.map((c) => ({
+        ...c,
+        fromValue: c.fromValue == null ? null : Number(c.fromValue),
+        toValue: Number(c.toValue),
+      })),
+    };
   },
 
   /** Thêm một thuộc tính cho sản phẩm; trùng tên thì trả thuộc tính đã có. */

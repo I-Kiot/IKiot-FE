@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Pencil, Trash2 } from "lucide-react";
+import { History, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PermissionButton } from "@/components/permission-button";
 import {
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ImageGalleryDialog } from "../image-gallery-dialog";
+import { ProductsPriceHistoryDialog } from "./products-price-history-dialog";
 import { ComboComponentsTree } from "../combo-components-tree";
 import {
   formatVND,
@@ -36,6 +37,7 @@ import {
 import type { Product, ProductItem, StockDetail } from "@/types/product";
 import { getCachedUser } from "@/lib/auth";
 import {
+  allows,
   canUpdateProduct,
   canDeleteProduct,
   canRemoveInventoryLocation,
@@ -105,6 +107,7 @@ export function ProductsItemDetailSheet({
 }: Props) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [priceHistoryOpen, setPriceHistoryOpen] = useState(false);
   const [removingLocation, setRemovingLocation] = useState<StockDetail | null>(
     null,
   );
@@ -137,10 +140,10 @@ export function ProductsItemDetailSheet({
         side="right"
         className="w-[36vw] sm:max-w-[36vw] p-0 flex flex-col overflow-hidden"
         onInteractOutside={(e) => {
-          if (confirmDeleteOpen || isSubDialogOpen || galleryOpen) e.preventDefault();
+          if (confirmDeleteOpen || isSubDialogOpen || galleryOpen || priceHistoryOpen) e.preventDefault();
         }}
         onEscapeKeyDown={(e) => {
-          if (confirmDeleteOpen || isSubDialogOpen || galleryOpen) e.preventDefault();
+          if (confirmDeleteOpen || isSubDialogOpen || galleryOpen || priceHistoryOpen) e.preventDefault();
         }}
       >
         <SheetHeader className="px-6 pt-2 pb-4 border-b shrink-0">
@@ -268,6 +271,20 @@ export function ProductsItemDetailSheet({
               <div className="px-4">
                 <InfoRow label="VAT">{item.vat ?? 0}%</InfoRow>
               </div>
+              {allows(role, "products", "read") && (
+                <div className="px-4 py-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    onClick={() => setPriceHistoryOpen(true)}
+                  >
+                    <History className="size-4" />
+                    Lịch sử giá
+                  </Button>
+                </div>
+              )}
             </Section>
 
             {/* Combo không có tồn riêng - đơn tách thành từng món và trừ kho theo món. */}
@@ -477,6 +494,15 @@ export function ProductsItemDetailSheet({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {priceHistoryOpen && (
+          <ProductsPriceHistoryDialog
+            itemId={item.id}
+            sku={item.sku}
+            open
+            onOpenChange={setPriceHistoryOpen}
+          />
+        )}
 
         {galleryOpen && (
           <ImageGalleryDialog

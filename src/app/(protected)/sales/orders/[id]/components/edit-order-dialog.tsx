@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { branchApi } from "@/lib/api/branch";
-import { depositChangeOf, getApiErrorBody, messageForCode, type MoneyGap } from "@/lib/api/error-codes";
+import { depositChangeOf, getApiErrorBody, messageForCode, totalBelowPaidOf, type MoneyGap } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { useLineStockAt } from "../../shared/use-line-stock-at";
 import type { LocationType } from "@/types/location";
@@ -95,6 +95,8 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
     type: LocationType;
   } | null>(null);
   const [depositGap, setDepositGap] = React.useState<MoneyGap | null>(null);
+  /** Lỗi chặn sửa do đã thanh toán: hiện ngay trong hộp thoại để người dùng đọc, không chỉ toast. */
+  const [blocked, setBlocked] = React.useState<{ title: string; text: string } | null>(null);
   const [saving, setSaving] = React.useState(false);
 
   // Đơn chỉ đóng gói được khi xuất từ một nơi, nên dòng thêm mới theo nguồn hàng của các dòng đang có.
@@ -210,14 +212,29 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   async function save(keepDeposit?: number) {
     if (!valid) return;
     setSaving(true);
+    setBlocked(null);
     try {
       const saved = await orderJourneyApi.update(order.id, payload(keepDeposit));
       toast.success("Đã lưu đơn hàng");
       onSaved(saved);
     } catch (error) {
       const gap = depositChangeOf(error);
+      const code = getApiErrorBody(error)?.code;
+      const below = totalBelowPaidOf(error);
       if (gap) {
         setDepositGap(gap);
+      } else if (code === "ORDER_EDIT_LOCKED_BY_PAYMENT") {
+        setBlocked({
+          title: "Đơn đã thanh toán đủ",
+          text: messageForCode(code) ?? "Đơn đã thanh toán đủ nên không sửa hàng hay giá được nữa.",
+        });
+      } else if (code === "ORDER_TOTAL_BELOW_PAID") {
+        setBlocked({
+          title: "Tổng tiền thấp hơn số đã trả",
+          text: below
+            ? `Sau khi sửa, tổng đơn là ${formatVND(below.grandTotal)} nhưng khách đã trả ${formatVND(below.paid)}. Hãy giữ tổng đơn từ ${formatVND(below.paid)} trở lên, hoặc hoàn tiền / tạo đơn hoàn cho phần dư.`
+            : (messageForCode(code) ?? "Tổng tiền sau khi sửa thấp hơn số khách đã trả."),
+        });
       } else {
         // Mã lỗi trước (câu tiếng Việt), rồi mới tới message của BE.
         const body = getApiErrorBody(error);
@@ -339,6 +356,16 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
               <Textarea rows={1} value={note} onChange={(e) => setNote(e.target.value)} />
             </div>
           </div>
+
+          {blocked && (
+            <div
+              role="alert"
+              className="space-y-1 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm"
+            >
+              <p className="font-medium text-destructive">{blocked.title}</p>
+              <p>{blocked.text}</p>
+            </div>
+          )}
 
           {depositGap && (
             <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/40">
