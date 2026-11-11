@@ -6,6 +6,7 @@ import { CheckoutTabs } from "./checkout-tabs";
 import { ProductSearch } from "./product-search";
 import { SalesBranchSelect } from "./sales-branch-select";
 import { CancelCartDialog } from "./cancel-cart-dialog";
+import { OverdueDrawerBanner } from "@/components/cash-drawer/overdue-drawer-banner";
 import type { SalesBranch } from "../_hooks/use-sales-branch";
 import { CartItems } from "./cart-items";
 import { CheckoutSidebar } from "./checkout-sidebar";
@@ -683,6 +684,8 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
 
   return (
     <div className="h-full w-full flex flex-col gap-4 p-4 overflow-hidden bg-background">
+      {/* Két chi nhánh này còn mở từ ngày trước: cảnh báo, không chặn bán (chặn bán là quyết định của chủ shop, chưa có cài đặt). */}
+      <OverdueDrawerBanner branchId={salesBranchId} className="shrink-0" />
       <ResizablePanelGroup direction={direction} className="flex-1 min-h-0 gap-4">
         <ResizablePanel defaultSize={65} minSize={30}>
           <div className="h-full flex flex-col gap-4 min-h-0">

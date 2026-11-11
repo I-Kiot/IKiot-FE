@@ -90,7 +90,23 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
       },
       {
         title: 'Ca thu ngân',
-        items: [{ keys: ['cash_drawers:open', 'cash_drawers:report'], label: 'Mở ca và ghi phiếu giao / nhận ca' }],
+        // Hai cụm theo người làm: mở / chốt két là việc của người chịu trách nhiệm tiền cả ngày, nhận / bàn giao ca là
+        // việc của người đứng quầy. Chủ shop tự quyết ai giữ cụm nào - tách ra để người cầm tiền trong ca không nhất
+        // thiết là người xác nhận số tiền cuối ngày.
+        items: [
+          {
+            keys: ['cash_drawers:open', 'cash_drawers:finalize'],
+            label: 'Mở két và chốt két cuối ngày',
+            hint: 'Đếm tiền đầu ngày khi mở két, đếm lại và chốt két khi đóng ngày',
+            // Chốt két của ca người khác làm cần xem được mọi két của chi nhánh, không chỉ két mình đứng.
+            requires: ['cash_drawers:read'],
+          },
+          {
+            keys: ['cash_drawers:report'],
+            label: 'Nhận ca và bàn giao ca',
+            hint: 'Ghi phiếu nhận ca, báo cáo cuối ca và bàn giao két cho người ca sau',
+          },
+        ],
       },
     ],
   },
@@ -129,7 +145,6 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
         items: [
           { keys: ['reports:read', 'cash_flows:read'], label: 'Xem Tổng quan và Sổ thu chi' },
           { keys: ['cash_drawers:read'], label: 'Xem mọi ca thu ngân của chi nhánh' },
-          { keys: ['cash_drawers:finalize'], label: 'Chốt ca (đếm tiền cuối ngày)', requires: ['cash_drawers:read'] },
           {
             keys: ['suppliers:pay_debt'],
             label: 'Trả công nợ nhà cung cấp / xưởng',

@@ -51,8 +51,21 @@ export interface CashDrawerSession {
     manager?: CashDrawerUserRef | null;
     note?: string;
   } | null;
+  /** Lúc chốt; null khi còn mở. Cùng `createdAt` là khoảng mà đối soát cộng dòng tiền. */
+  closedAt?: string | null;
+  /** Còn mở nhưng thuộc ngày giao dịch đã qua (quên chốt). Chỉ còn ghi END không bàn giao rồi chốt. */
+  overdue?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Một két quá hạn, từ `GET /cash-drawer-sessions/overdue` - chỉ ngày, chi nhánh và người đang giữ, không có tiền. */
+export interface OverdueCashDrawer {
+  id: string;
+  branchId: string;
+  branch: CashDrawerBranchRef | null;
+  businessDate: string;
+  currentStaff: CashDrawerUserRef | null;
 }
 
 export interface OpenSessionPayload {

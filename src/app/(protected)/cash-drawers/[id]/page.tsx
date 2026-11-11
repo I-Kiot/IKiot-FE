@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { parseLocationKey } from "@/lib/location-key";
 import { cashDrawerApi } from "@/lib/api/cash-drawer";
-import { canManageCashDrawer } from "@/components/sidebar/constants/role-permissions";
+import { canFinalizeCashDrawer, canManageCashDrawer } from "@/components/sidebar/constants/role-permissions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +39,47 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { CashDrawerSession, CashDrawerUserRef, CashierOption } from "@/types/cash-drawer";
+import { shortBusinessDate } from "@/components/cash-drawer/overdue-drawer-banner";
+
+const formatCurrency = (val: number) => {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(val);
+};
+
+const formatTime = (dateStr: string) => {
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(new Date(dateStr));
+};
+
+const formatDate = (dateStr: string) => {
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(dateStr));
+};
+
+// Backend trả người trong session dạng `{ id, phoneNumber, profile }` kèm cột `*Id`; bản ghi cũ chỉ có id vẫn có nhãn.
+const getUserFullName = (userRef?: CashDrawerUserRef | null, fallback = "Nhân viên") => {
+  if (!userRef) return fallback;
+  const first = userRef.profile?.firstName || "";
+  const last = userRef.profile?.lastName || "";
+  return (
+    [last, first].filter(Boolean).join(" ").trim() ||
+    userRef.phoneNumber ||
+    userRef.email ||
+    fallback
+  );
+};
 
 export default function CashDrawerDetailPage() {
   const params = useParams();
@@ -143,7 +181,8 @@ export default function CashDrawerDetailPage() {
   // Người nhận bàn giao: route riêng của két (quyền `cash_drawers:report`, chỉ người đang giữ két), không phải
   // `GET /users` - thu ngân không có `users:read`. BE lọc bằng đúng điều kiện nó kiểm khi nhận log, và bỏ chính mình.
   useEffect(() => {
-    if (!isReportOpen || !session) return;
+    // Két quá hạn không bàn giao được (BE trả CASH_DRAWER_OVERDUE), nên không tải danh sách.
+    if (!isReportOpen || !session || session.overdue) return;
     let stale = false;
     cashDrawerApi
       .getHandoverCandidates(session.id)
@@ -170,42 +209,6 @@ export default function CashDrawerDetailPage() {
     setCloseAmount("");
     setCloseNote("");
     setIsCloseOpen(true);
-  };
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(val);
-  };
-
-  const formatTime = (dateStr: string) => {
-    return new Intl.DateTimeFormat("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Ho_Chi_Minh",
-    }).format(new Date(dateStr));
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Intl.DateTimeFormat("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(new Date(dateStr));
-  };
-
-  // Backend trả người trong session dạng `{ id, phoneNumber, profile }` kèm cột `*Id`; bản ghi cũ chỉ có id vẫn có nhãn.
-  const getUserFullName = (userRef?: CashDrawerUserRef | null, fallback = "Nhân viên") => {
-    if (!userRef) return fallback;
-    const first = userRef.profile?.firstName || "";
-    const last = userRef.profile?.lastName || "";
-    return (
-      [last, first].filter(Boolean).join(" ").trim() ||
-      userRef.phoneNumber ||
-      userRef.email ||
-      fallback
-    );
   };
 
   const handleSubmitReport = async (e: React.FormEvent) => {
@@ -270,7 +273,10 @@ export default function CashDrawerDetailPage() {
     }
   };
 
-  const isManager = canManageCashDrawer(user?.role);
+  // Mở két và chốt két là hai mã riêng (màn Vai trò tick chung, nhưng role cũ có thể chỉ có một): ai giữ một trong hai
+  // thấy khu quản lý, còn nút chốt chỉ hiện cho người có `finalize`.
+  const canFinalize = canFinalizeCashDrawer(user?.role);
+  const isManager = canManageCashDrawer(user?.role) || canFinalize;
   const branchName = session?.branch?.name ?? "Chi nhánh";
   const currentStaffName = session ? getUserFullName(session.currentStaff) : "";
   const openedByName = session ? getUserFullName(session.openedBy, "Quản lý") : "";
@@ -455,6 +461,8 @@ export default function CashDrawerDetailPage() {
               </Badge>
             </div>
 
+            {session.overdue && <OverdueNotice businessDate={session.businessDate} />}
+
             <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6 border-b">
                 <div className="space-y-1.5 bg-muted/45 rounded-xl p-4 border">
@@ -475,106 +483,28 @@ export default function CashDrawerDetailPage() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-extrabold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                  <History className="h-4 w-4 text-muted-foreground" /> Lịch sử bàn giao ca
-                </h3>
-                <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-muted">
-                  <div className="relative">
-                    <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-primary bg-background ring-4 ring-primary/10" />
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary">
-                          {formatTime(session.createdAt)}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-medium">
-                          {openedByName} mở két
-                        </span>
-                      </div>
-                      <div className="text-sm font-semibold text-foreground mt-0.5">
-                        {formatCurrency(session.openingAmount)} →{" "}
-                        {getUserFullName(
-                          session.shiftLogs[0]?.staff ?? session.currentStaff
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {session.shiftLogs.map((log, idx) => (
-                    <div key={log.id || idx} className="relative">
-                      <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-amber-500 bg-background ring-4 ring-amber-500/10" />
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-amber-500">
-                            {formatTime(log.loggedAt)}
-                          </span>
-                          <span className="text-xs text-muted-foreground font-medium">
-                            {getUserFullName(log.staff)}{" "}
-                            {log.type === "START" ? "nhận két" : "báo cáo cuối ca"}
-                          </span>
-                        </div>
-                        <div className="text-sm font-semibold text-foreground mt-0.5 flex flex-wrap items-center gap-1.5">
-                          <span>{formatCurrency(log.amount)}</span>
-                          {log.nextStaffId && (
-                            <>
-                              <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                              <span>{getUserFullName(log.nextStaff)}</span>
-                            </>
-                          )}
-                        </div>
-                        {log.note && (
-                          <div className="text-xs text-muted-foreground bg-amber-500/5 border border-amber-500/10 rounded px-2.5 py-1 mt-1">
-                            Ghi chú: {log.note}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {!isOpen && session.finalLog && (
-                    <div className="relative">
-                      <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-destructive bg-background ring-4 ring-destructive/10" />
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-destructive">
-                            {session.updatedAt ? formatTime(session.updatedAt) : ""}
-                          </span>
-                          <span className="text-xs text-muted-foreground font-medium">
-                            {getUserFullName(session.finalLog.manager, "Quản lý")} chốt két
-                          </span>
-                        </div>
-                        <div className="text-sm font-extrabold text-destructive mt-0.5">
-                          Tổng kết: {formatCurrency(session.finalLog.amount)}
-                        </div>
-                        {session.finalLog.note && (
-                          <div className="text-xs text-muted-foreground bg-destructive/5 border border-destructive/10 rounded px-2.5 py-1 mt-1">
-                            Ghi chú: {session.finalLog.note}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <HandoverTimeline session={session} isOpen={isOpen} openedByName={openedByName} />
 
               {isOpen && (
                 <div className="pt-6 border-t mt-6 flex flex-wrap items-center gap-3">
-                  <Button
-                    variant="destructive"
-                    className="font-semibold shadow-md shadow-destructive/20 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
-                    onClick={handleOpenClose}
-                    disabled={!awaitingFinalize}
-                    title={
-                      awaitingFinalize
-                        ? undefined
-                        : "Nhân viên đang giữ két phải báo cáo cuối ca (không bàn giao) trước khi chốt"
-                    }
-                  >
-                    <Lock className="h-4 w-4 me-2" /> CHỐT KÉT CUỐI NGÀY
-                  </Button>
+                  {/* Chỉ hiện khi chốt được: trong phiên (chờ nhận ca, chờ báo cáo cuối ca) nút này không có việc gì để làm. */}
+                  {awaitingFinalize && canFinalize && (
+                    <Button
+                      variant="destructive"
+                      className="font-semibold shadow-md shadow-destructive/20 hover:scale-[1.01] transition active:scale-[0.99] cursor-pointer"
+                      onClick={handleOpenClose}
+                    >
+                      <Lock className="h-4 w-4 me-2" /> CHỐT KÉT CUỐI NGÀY
+                    </Button>
+                  )}
                   {!awaitingFinalize && (
                     <span className="text-xs text-muted-foreground">
                       Chờ {currentStaffName} báo cáo cuối ca trước khi chốt két.
+                    </span>
+                  )}
+                  {awaitingFinalize && !canFinalize && (
+                    <span className="text-xs text-muted-foreground">
+                      Két đang chờ người có quyền chốt két đếm tiền và chốt.
                     </span>
                   )}
 
@@ -621,6 +551,8 @@ export default function CashDrawerDetailPage() {
               </Badge>
             </div>
 
+            {session.overdue && <OverdueNotice businessDate={session.businessDate} />}
+
             <div className="space-y-6">
               <div className="space-y-6">
                 <div className="border border-muted rounded-xl p-6 flex flex-col items-center justify-center text-center bg-muted/20">
@@ -651,6 +583,8 @@ export default function CashDrawerDetailPage() {
                   </div>
                 </div>
               </div>
+
+              <HandoverTimeline session={session} isOpen={isOpen} openedByName={openedByName} />
 
               {isOpen && isCurrentKeeper && awaitingFinalize ? (
                 <div className="text-center text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-4 font-medium">
@@ -723,6 +657,11 @@ export default function CashDrawerDetailPage() {
                 </div>
               </div>
 
+              {session?.overdue ? (
+                <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-muted-foreground">
+                  Két còn mở từ ngày trước nên không bàn giao được. Báo cáo này kết thúc ca để quản lý chốt két.
+                </p>
+              ) : (
               <div className="grid gap-2">
                 <Label htmlFor="nextStaff" className="font-semibold">
                   Nhân viên nhận bàn giao ca tiếp theo
@@ -746,6 +685,7 @@ export default function CashDrawerDetailPage() {
                   Bỏ trống/không chọn nếu đây là ca cuối cùng trong ngày và quản lý sẽ chốt két trực tiếp.
                 </p>
               </div>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="reportNote" className="font-semibold">
@@ -859,6 +799,121 @@ export default function CashDrawerDetailPage() {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** Mở két → các lần nhận ca / báo cáo cuối ca → chốt két. Ai mở được két (quản lý hay nhân viên đã làm ca) đều thấy cùng một lịch sử. */
+function HandoverTimeline({
+  session,
+  isOpen,
+  openedByName,
+}: {
+  session: CashDrawerSession;
+  isOpen: boolean;
+  openedByName: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-extrabold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+        <History className="h-4 w-4 text-muted-foreground" /> Lịch sử bàn giao ca
+      </h3>
+      <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-muted">
+        <div className="relative">
+          <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-primary bg-background ring-4 ring-primary/10" />
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-primary">
+                {formatTime(session.createdAt)}
+              </span>
+              <span className="text-xs text-muted-foreground font-medium">
+                {openedByName} mở két
+              </span>
+            </div>
+            <div className="text-sm font-semibold text-foreground mt-0.5">
+              {formatCurrency(session.openingAmount)} →{" "}
+              {getUserFullName(
+                session.shiftLogs[0]?.staff ?? session.currentStaff
+              )}
+            </div>
+          </div>
+        </div>
+
+        {session.shiftLogs.map((log, idx) => (
+          <div key={log.id || idx} className="relative">
+            <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-amber-500 bg-background ring-4 ring-amber-500/10" />
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-amber-500">
+                  {formatTime(log.loggedAt)}
+                </span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  {getUserFullName(log.staff)}{" "}
+                  {log.type === "START" ? "nhận két" : "báo cáo cuối ca"}
+                </span>
+              </div>
+              <div className="text-sm font-semibold text-foreground mt-0.5 flex flex-wrap items-center gap-1.5">
+                <span>{formatCurrency(log.amount)}</span>
+                {log.nextStaffId && (
+                  <>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    <span>{getUserFullName(log.nextStaff)}</span>
+                  </>
+                )}
+              </div>
+              {log.note && (
+                <div className="text-xs text-muted-foreground bg-amber-500/5 border border-amber-500/10 rounded px-2.5 py-1 mt-1">
+                  Ghi chú: {log.note}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {!isOpen && session.finalLog && (
+          <div className="relative">
+            <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-destructive bg-background ring-4 ring-destructive/10" />
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-destructive">
+                  {session.updatedAt ? formatTime(session.updatedAt) : ""}
+                </span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  {getUserFullName(session.finalLog.manager, "Quản lý")} chốt két
+                </span>
+              </div>
+              <div className="text-sm font-extrabold text-destructive mt-0.5">
+                Tổng kết: {formatCurrency(session.finalLog.amount)}
+              </div>
+              {session.finalLog.note && (
+                <div className="text-xs text-muted-foreground bg-destructive/5 border border-destructive/10 rounded px-2.5 py-1 mt-1">
+                  Ghi chú: {session.finalLog.note}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OverdueNotice({ businessDate }: { businessDate: string }) {
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+    >
+      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
+      <div>
+        <p className="font-semibold text-foreground">
+          Két ngày {shortBusinessDate(businessDate)} chưa chốt
+        </p>
+        <p className="text-muted-foreground">
+          Két này còn mở từ ngày trước nên không bàn giao được nữa. Người đang giữ két báo cáo cuối ca
+          (không bàn giao), sau đó quản lý đếm tiền và chốt két. Chưa chốt thì chi nhánh không mở được két mới.
+        </p>
+      </div>
     </div>
   );
 }

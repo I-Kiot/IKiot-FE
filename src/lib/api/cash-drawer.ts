@@ -3,6 +3,7 @@ import type {
   CashDrawerSession,
   CashDrawerUserRef,
   CashierOption,
+  OverdueCashDrawer,
   OpenSessionPayload,
   ShiftLogPayload,
   FinalizeSessionPayload,
@@ -15,6 +16,15 @@ const toCashierOption = (row: CashDrawerUserRef): CashierOption => ({
 });
 
 export const cashDrawerApi = {
+  /** Két còn mở từ ngày giao dịch trước (quên chốt). Không truyền chi nhánh: nhân viên được gán thấy chi nhánh của mình, chủ shop thấy mọi chi nhánh. */
+  getOverdue: async (branchId?: string): Promise<OverdueCashDrawer[]> => {
+    const res = await client.get<{ success: boolean; data: OverdueCashDrawer[] }>(
+      "/cash-drawer-sessions/overdue",
+      { params: branchId ? { branchId } : undefined },
+    );
+    return res.data.data || [];
+  },
+
   /** Ai nhận được két khi mở két đầu ngày (quyền `cash_drawers:open`). Thay cho `GET /users`, vốn cần `users:read`. */
   getEligibleStaff: async (branchId?: string): Promise<CashierOption[]> => {
     const res = await client.get<{ success: boolean; data: CashDrawerUserRef[] }>(
