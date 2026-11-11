@@ -1,8 +1,14 @@
 /** Hôm nay dạng `YYYY-MM-DD` theo lịch trình duyệt, đúng giá trị mà `<input type="date">` giữ và so sánh. */
 export function todayIso(): string {
-  const now = new Date();
+  return addDaysIso(0);
+}
+
+/** `YYYY-MM-DD` của hôm nay cộng `days` ngày (âm là lùi lại), theo lịch trình duyệt. */
+export function addDaysIso(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /**

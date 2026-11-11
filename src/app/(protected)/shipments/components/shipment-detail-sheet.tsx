@@ -227,8 +227,8 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
                     )}
                   </>
                 )}
-                {/* Đang trên đường thì shipper đã cầm hàng: BE từ chối đổi, nên ẩn nút. */}
-                {shipment.carrierType === "INTERNAL" && !isOnTheRoad(shipment.status) && (
+                {/* Shipper đã xác nhận lấy hàng thì hàng đã ở trong tay họ: BE từ chối đổi (`DRIVER_CHANGEABLE_STATUSES`), nên ẩn nút. */}
+                {shipment.carrierType === "INTERNAL" && shipment.status === "CREATED" && (
                   <PermissionButton
                     allowed={allowed.canChangeDriver}
                     permission="shipments:update"

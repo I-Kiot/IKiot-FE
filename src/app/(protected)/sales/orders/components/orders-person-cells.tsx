@@ -25,8 +25,8 @@ import { useOrders } from "./orders-provider";
 
 /** Đổi người phụ trách được tới trước Đang vận chuyển (BE `UNSHIPPED_ORDER_STATUSES`). */
 const REASSIGNABLE_STATUSES: readonly OrderStatus[] = ["CONFIRMED", "PACKED", "PICKED_UP"];
-/** Đổi shipper khi hàng còn ở shop (BE `DRIVER_CHANGEABLE_STATUSES`). */
-const DRIVER_CHANGEABLE: readonly ShipmentStatus[] = ["CREATED", "PICKED_UP"];
+/** Đổi shipper khi shipper chưa xác nhận lấy hàng (BE `DRIVER_CHANGEABLE_STATUSES`). Đã lấy hàng thì khoá. */
+const DRIVER_CHANGEABLE: readonly ShipmentStatus[] = ["CREATED"];
 
 const WHO_REASSIGN = "Chủ shop, người đang phụ trách đơn, hoặc nhân viên có quyền này mới đổi được.";
 const WHO_DRIVER = "Chủ shop, người phụ trách đơn, hoặc nhân viên có quyền này tại kho xuất mới đổi được.";

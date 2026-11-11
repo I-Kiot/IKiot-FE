@@ -5,12 +5,13 @@
 // Bấm một dòng để mở lại chi tiết (ảnh bằng chứng, khoản thu, nhật trình).
 
 import { useEffect, useMemo, useState } from "react";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { shipmentApi } from "@/lib/api/shipment";
-import { todayIso } from "@/lib/date-input";
+import { addDaysIso, todayIso } from "@/lib/date-input";
 import type {
   ShipmentHistoryItem,
   ShipmentHistoryPage,
@@ -20,8 +21,6 @@ import { formatVND, ShipmentStatusBadge } from "../../shipments/components/shipm
 import { DeliverySheet } from "./delivery-sheet";
 
 type StatusFilter = NonNullable<ShipmentHistoryQuery["status"]> | "ALL";
-
-const PAGE_SIZE = 10;
 
 const METHOD_LABELS: Record<string, string> = {
   CASH: "tiền mặt",
@@ -44,12 +43,7 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
 ];
 
 /** `YYYY-MM-DD` của `days` ngày trước, theo lịch của trình duyệt. */
-function daysAgoIso(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
+const daysAgoIso = (days: number) => addDaysIso(-days);
 
 const QUICK_RANGES = [
   { label: "Hôm nay", days: 0 },
@@ -139,6 +133,7 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [reloadKey, setReloadKey] = useState(0);
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
 
@@ -153,8 +148,8 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
 
   const dateInvalid = !!from && !!to && from > to;
   const requestKey = useMemo(
-    () => JSON.stringify({ status, from, to, search, page, reloadKey }),
-    [status, from, to, search, page, reloadKey],
+    () => JSON.stringify({ status, from, to, search, page, pageSize, reloadKey }),
+    [status, from, to, search, page, pageSize, reloadKey],
   );
 
   // Kết quả gắn với khoá của yêu cầu đã sinh ra nó: khoá lệch nghĩa là đang tải (không cần setState "loading").
@@ -168,7 +163,7 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
     shipmentApi
       .getMyHistory({
         page,
-        limit: PAGE_SIZE,
+        limit: pageSize,
         ...(status !== "ALL" ? { status } : {}),
         ...(from ? { from } : {}),
         ...(to ? { to } : {}),
@@ -185,7 +180,7 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
     return () => {
       cancelled = true;
     };
-  }, [requestKey, dateInvalid, page, status, from, to, search]);
+  }, [requestKey, dateInvalid, page, pageSize, status, from, to, search]);
 
   const loading = !dateInvalid && result?.key !== requestKey;
   // Giữ số liệu lần trước trong lúc tải lại để các thẻ không nhấp nháy.
@@ -316,23 +311,20 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
         <HistoryTable items={latest.data} dimmed={loading} onOpen={setOpenId} />
       )}
 
-      {latest && latest.pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            Trước
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Trang {latest.pagination.page}/{latest.pagination.totalPages} · {latest.pagination.total} đơn
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= latest.pagination.totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            Sau
-          </Button>
-        </div>
+      {!dateInvalid && (
+        <DataTablePagination
+          page={page}
+          pageCount={latest?.pagination.totalPages ?? 1}
+          pageSize={pageSize}
+          total={latest?.pagination.total ?? 0}
+          unit="đơn"
+          disabled={loading}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
       )}
 
       <DeliverySheet
