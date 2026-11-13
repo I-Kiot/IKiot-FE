@@ -7,9 +7,10 @@
 // định không giới hạn ngày - đơn cần giao không được bị ẩn chỉ vì hẹn ngoài khoảng mặc định.
 
 import { useMemo, useState } from "react";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { addDaysIso } from "@/lib/date-input";
 import { cn } from "@/lib/utils";
 import { SHIPMENT_STATUS_LABELS, type ShipmentStatus, type ShipmentSummary } from "@/types/order-flow";
@@ -48,31 +49,67 @@ function matchesSearch(shipment: ShipmentSummary, needle: string): boolean {
   ].some((value) => !!value && fold(value).includes(needle));
 }
 
-/** Một đơn trong danh sách: mã, người nhận, địa chỉ, giờ hẹn, số còn phải thu. */
-function DeliveryCard({ shipment, onOpen }: { shipment: ShipmentSummary; onOpen: () => void }) {
+/** Ngày hẹn + khung giờ hẹn của một lần giao, hoặc "Chưa hẹn giờ". */
+function scheduleText(shipment: ShipmentSummary): string {
+  const parts = [shipment.scheduledDate?.slice(0, 10), shipment.scheduledSlot].filter(Boolean);
+  if (parts.length === 0) return "Chưa hẹn giờ";
+  return parts.join(" · ");
+}
+
+/** Số còn phải thu của một lần giao: số tiền nếu còn nợ, không thì câu mô tả của `amountDueText`. */
+function amountDueCell(shipment: ShipmentSummary): string {
+  if (shipment.order.amountDue > 0) return formatVND(shipment.order.amountDue);
+  return amountDueText(shipment);
+}
+
+/**
+ * Bảng các đơn đang giao: mỗi dòng một lần giao, bấm dòng để mở chi tiết.
+ * Cùng kiểu với bảng của tab "Lịch sử giao"; màn hẹp thì bảng cuộn ngang trong khung.
+ */
+function CurrentTable({ shipments, onOpen }: { shipments: ShipmentSummary[]; onOpen: (id: string) => void }) {
   return (
-    <Card className="cursor-pointer py-4 transition-colors hover:bg-muted/40" onClick={onOpen}>
-      <CardContent className="space-y-2 px-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium">{shipment.order.code}</span>
-          <ShipmentStatusBadge status={shipment.status} />
-        </div>
-        <p className="text-sm">
-          {shipment.recipientName ?? shipment.order.customerName}
-          {shipment.recipientPhone && <span className="text-muted-foreground"> · {shipment.recipientPhone}</span>}
-        </p>
-        {shipment.deliveryAddress && <p className="text-sm text-muted-foreground">{shipment.deliveryAddress}</p>}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            {[shipment.scheduledDate?.slice(0, 10), shipment.scheduledSlot].filter(Boolean).join(" · ") ||
-              "Chưa hẹn giờ"}
-          </span>
-          <span className="font-semibold">
-            {shipment.order.amountDue > 0 ? `Thu ${formatVND(shipment.order.amountDue)}` : amountDueText(shipment)}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="overflow-x-auto rounded-md border bg-card">
+      <Table>
+        <TableHeader className="bg-muted/50">
+          <TableRow>
+            <TableHead>Mã đơn</TableHead>
+            <TableHead>Trạng thái</TableHead>
+            <TableHead>Người nhận</TableHead>
+            <TableHead>Địa chỉ</TableHead>
+            <TableHead>Hẹn giao</TableHead>
+            <TableHead className="text-right">Còn phải thu</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {shipments.map((shipment) => (
+            <TableRow key={shipment.id} className="cursor-pointer" onClick={() => onOpen(shipment.id)}>
+              <TableCell className="font-medium whitespace-nowrap">{shipment.order.code}</TableCell>
+              <TableCell>
+                <ShipmentStatusBadge status={shipment.status} />
+              </TableCell>
+              <TableCell>
+                <div className="text-sm">{shipment.recipientName ?? shipment.order.customerName}</div>
+                {shipment.recipientPhone && (
+                  <div className="text-xs text-muted-foreground">{shipment.recipientPhone}</div>
+                )}
+              </TableCell>
+              <TableCell
+                className="max-w-64 truncate text-sm text-muted-foreground"
+                title={shipment.deliveryAddress ?? ""}
+              >
+                {shipment.deliveryAddress ?? "–"}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                {scheduleText(shipment)}
+              </TableCell>
+              <TableCell className="text-right font-semibold whitespace-nowrap tabular-nums">
+                {amountDueCell(shipment)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -81,12 +118,14 @@ export type MineState =
   | { status: "error" }
   | { status: "ready"; shipments: ShipmentSummary[] };
 
-/** Tab đang giao: thẻ số liệu, bộ lọc, danh sách thẻ đơn. */
+/** Tab đang giao: thẻ số liệu, bộ lọc, bảng đơn. */
 export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen: (id: string) => void }) {
   const [status, setStatus] = useState<StatusFilter>("ALL");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const dateInvalid = !!from && !!to && from > to;
   const shipments = useMemo(() => (state.status === "ready" ? state.shipments : []), [state]);
@@ -119,17 +158,48 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
     return { byStatus, due };
   }, [inRange]);
 
+  // Phân trang ngay trên trình duyệt: danh sách đã tải hết. `currentPage` kẹp lại khi danh sách ngắn đi
+  // (giao xong một đơn ở trang cuối rồi tải lại) - tính lúc render, không sửa `page` trong effect.
+  const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageRows = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const ready = state.status === "ready";
   const filtered = status !== "ALL" || !!from || !!to || !!search.trim();
+
+  // Mọi thay đổi bộ lọc đều quay về trang 1, như tab lịch sử.
+  const changeStatus = (next: StatusFilter) => {
+    setStatus(next);
+    setPage(1);
+  };
+  const changeFrom = (next: string) => {
+    setFrom(next);
+    setPage(1);
+  };
+  const changeTo = (next: string) => {
+    setTo(next);
+    setPage(1);
+  };
+  const changeSearch = (next: string) => {
+    setSearch(next);
+    setPage(1);
+  };
   const pickRange = (fromDays: number, toDays: number) => {
     setFrom(addDaysIso(fromDays));
     setTo(addDaysIso(toDays));
+    setPage(1);
+  };
+  const clearDates = () => {
+    setFrom("");
+    setTo("");
+    setPage(1);
   };
   const clearFilters = () => {
     setStatus("ALL");
     setFrom("");
     setTo("");
     setSearch("");
+    setPage(1);
   };
 
   return (
@@ -141,7 +211,7 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
             <button
               key={value}
               type="button"
-              onClick={() => setStatus(selected ? "ALL" : value)}
+              onClick={() => changeStatus(selected ? "ALL" : value)}
               aria-pressed={selected}
               className={cn(
                 "cursor-pointer rounded-xl border bg-card p-3 text-left shadow-xs transition-colors hover:bg-muted/40",
@@ -168,7 +238,7 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
             type="date"
             max={to || undefined}
             value={from}
-            onChange={(e) => setFrom(e.target.value)}
+            onChange={(e) => changeFrom(e.target.value)}
             className="h-9 w-40"
           />
         </div>
@@ -178,7 +248,7 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
             type="date"
             min={from || undefined}
             value={to}
-            onChange={(e) => setTo(e.target.value)}
+            onChange={(e) => changeTo(e.target.value)}
             className="h-9 w-40"
           />
         </div>
@@ -198,10 +268,7 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => {
-              setFrom("");
-              setTo("");
-            }}
+            onClick={clearDates}
           >
             Mọi ngày
           </Button>
@@ -209,7 +276,7 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
         <select
           aria-label="Trạng thái"
           value={status}
-          onChange={(e) => setStatus(e.target.value as StatusFilter)}
+          onChange={(e) => changeStatus(e.target.value as StatusFilter)}
           className="h-9 rounded-md border bg-background px-2 text-sm"
         >
           <option value="ALL">Tất cả</option>
@@ -223,7 +290,7 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
           placeholder="Tìm mã đơn, tên, SĐT, địa chỉ..."
           aria-label="Tìm kiếm"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => changeSearch(e.target.value)}
           className="h-9 w-64"
         />
       </div>
@@ -256,12 +323,23 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
               {visible.length}/{shipments.length} đơn
             </p>
           )}
-          <div className="grid gap-3 md:grid-cols-2">
-            {visible.map((shipment) => (
-              <DeliveryCard key={shipment.id} shipment={shipment} onOpen={() => onOpen(shipment.id)} />
-            ))}
-          </div>
+          <CurrentTable shipments={pageRows} onOpen={onOpen} />
         </>
+      )}
+
+      {ready && !dateInvalid && (
+        <DataTablePagination
+          page={currentPage}
+          pageCount={pageCount}
+          pageSize={pageSize}
+          total={visible.length}
+          unit="đơn"
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
       )}
     </div>
   );
