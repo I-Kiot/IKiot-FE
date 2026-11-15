@@ -4,10 +4,11 @@ import type { SupplierType } from './order-flow'
 export interface Supplier {
   id: string
   supplierName: string
-  contactName: string
-  phoneNumber: string
-  email: string
-  address: string
+  /** Bốn trường dưới là cột nullable: NCC tạo mà bỏ trống ô thì BE trả `null`, không phải `''` (bug 44). */
+  contactName: string | null
+  phoneNumber: string | null
+  email: string | null
+  address: string | null
   creditLimit: number
   outstandingDebt: number
   /** GOODS = bán hàng có sẵn (nhập từ NCC); WORKSHOP = xưởng làm theo đơn (YCSX, B-1). */
