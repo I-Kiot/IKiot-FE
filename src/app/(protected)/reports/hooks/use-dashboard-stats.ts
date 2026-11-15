@@ -16,6 +16,8 @@ import {
   type OrdersByStatus,
   type RevenueByBranch,
   type SalesHeatmap,
+  type RevenueSeries,
+  type TopProducts,
 } from '@/lib/api/stats'
 
 export type DashboardRange = '7d' | '30d' | '90d' | 'this_month' | 'last_month' | 'this_year' | '12m'
@@ -105,6 +107,9 @@ export function resolveDashboardRange(range: DashboardRange): RevenueDateRange {
   }
 }
 
+/** Số dòng tối đa của bảng xếp hạng (hàng hóa, khách hàng): giới hạn của API khách hàng. */
+const TOP_ROWS = 50
+
 /** Widget báo cáo tự xử lý lỗi: một endpoint lỗi chỉ làm trống đúng widget đó, không cả trang. */
 function optional<T>(request: Promise<T>): Promise<T | null> {
   return request.catch((err) => {
@@ -126,6 +131,10 @@ interface ReportData {
   inventory: InventoryStats | null
   comparison: RevenueComparison | null
   overview: StatsOverview | null
+  /** Cùng chỉ tiêu của khoảng cùng độ dài ngay trước kỳ đang xem. */
+  previousOverview: StatsOverview | null
+  revenueSeries: RevenueSeries | null
+  topProducts: TopProducts | null
 }
 
 const EMPTY_REPORT: Omit<ReportData, 'key'> = {
@@ -139,6 +148,9 @@ const EMPTY_REPORT: Omit<ReportData, 'key'> = {
   inventory: null,
   comparison: null,
   overview: null,
+  previousOverview: null,
+  revenueSeries: null,
+  topProducts: null,
 }
 
 /** Tải tất cả số liệu cho kỳ và địa điểm đang chọn. Kho không có doanh thu bán hàng, nên chỉ lấy dòng tiền và tồn kho. */
@@ -165,12 +177,15 @@ async function loadReport(
     inventory,
     comparison,
     overview,
+    previousOverview,
+    revenueSeries,
+    topProducts,
   ] = await Promise.all([
     statsApi.getRevenueByPaymentMethod(dateParams),
     optional(statsApi.getRevenueByBranch(dateParams)),
     optional(statsApi.getOrdersByStatus(dateParams)),
     optional(statsApi.getSalesHeatmap(dateParams)),
-    optional(statsApi.getTopCustomers({ ...dateParams, limit: 5 })),
+    optional(statsApi.getTopCustomers({ ...dateParams, limit: TOP_ROWS })),
     warehouseId
       ? statsApi.getCashflow({ fromDate, toDate, warehouseId })
       : statsApi.getCashflow({ ...dateParams, flow: 'ORD' }),
@@ -179,6 +194,15 @@ async function loadReport(
       : statsApi.getInventory({ branchId, lowStockThreshold }),
     optional(statsApi.getRevenueComparison({ branchId: place })),
     optional(statsApi.getOverview(dateParams)),
+    optional(
+      statsApi.getOverview({
+        fromDate: resolved.previousFromDate,
+        toDate: resolved.previousToDate,
+        branchId: place,
+      }),
+    ),
+    optional(statsApi.getRevenue({ ...dateParams, groupBy: resolved.groupBy })),
+    optional(statsApi.getTopProducts({ ...dateParams, sortBy: 'revenue', limit: TOP_ROWS })),
   ])
 
   return {
@@ -193,6 +217,9 @@ async function loadReport(
     inventory,
     comparison,
     overview,
+    previousOverview,
+    revenueSeries,
+    topProducts,
   }
 }
 
@@ -244,6 +271,9 @@ export function useDashboardStats(range: DashboardRange) {
     inventory: data?.inventory ?? null,
     comparison: data?.comparison ?? null,
     overview: data?.overview ?? null,
+    previousOverview: data?.previousOverview ?? null,
+    revenueSeries: data?.revenueSeries ?? null,
+    topProducts: data?.topProducts ?? null,
     // Đang tải khi số liệu đang hiện không phải của bộ lọc hiện tại.
     isLoading: data?.key !== key,
     isWarehouse,

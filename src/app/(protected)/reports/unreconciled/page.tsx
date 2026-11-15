@@ -4,6 +4,7 @@
 import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { RefreshCw } from 'lucide-react'
+import { ExportExcelButton } from '@/components/export-excel-button'
 import { PageHeader } from '@/components/page-header'
 import { JournalGapNotice } from '@/components/journal-gap-notice'
 import { Badge } from '@/components/ui/badge'
@@ -85,10 +86,16 @@ export default function UnreconciledPage() {
             : 'Tiền còn nằm ngoài sổ két và ngân hàng, cần người xử lý'
         }
         actions={
-          <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)} disabled={isLoading}>
-            <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Làm mới
-          </Button>
+          <div className="flex gap-2">
+            <ExportExcelButton
+              load={() => statsApi.exportUnreconciled({ branchId: place })}
+              filename={`doi-soat-tien_${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })}.xlsx`}
+            />
+            <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)} disabled={isLoading}>
+              <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Làm mới
+            </Button>
+          </div>
         }
       />
 
