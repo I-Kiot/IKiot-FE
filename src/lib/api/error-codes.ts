@@ -145,6 +145,7 @@ export const ERROR_MESSAGES = {
   RESET_TOKEN_WRONG_TYPE: "Token không hợp lệ cho thao tác đặt lại mật khẩu",
   ROLE_BEYOND_GRANT: "Không thể gán vai trò có quyền vượt quá quyền của bạn",
   ROLE_IN_USE: "Không thể xoá vai trò đang được gán cho nhân viên. Hãy chuyển họ sang vai trò khác trước.",
+  ROLE_NAME_TAKEN: "Tên vai trò đã tồn tại",
   ROLE_NOT_FOUND: "Không tìm thấy vai trò",
   ROLE_NOT_IN_TENANT: "Vai trò không thuộc cửa hàng của bạn",
   SCHEDULE_COMPLETED_CANNOT_DELETE: "Không thể xóa lịch làm việc đã hoàn thành",
