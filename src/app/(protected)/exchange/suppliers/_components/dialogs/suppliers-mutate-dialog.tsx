@@ -69,12 +69,13 @@ export function SuppliersMutateDialog({
   useEffect(() => {
     if (!open) return
     if (isEdit && currentRow) {
+      // Ô tuỳ chọn bỏ trống lúc tạo về từ BE là `null`; schema zod chỉ nhận chuỗi nên đổi về '' (bug 44).
       form.reset({
         supplierName: currentRow.supplierName,
-        contactName: currentRow.contactName,
-        phoneNumber: currentRow.phoneNumber,
-        email: currentRow.email,
-        address: currentRow.address,
+        contactName: currentRow.contactName ?? '',
+        phoneNumber: currentRow.phoneNumber ?? '',
+        email: currentRow.email ?? '',
+        address: currentRow.address ?? '',
         creditLimit: currentRow.creditLimit,
         type: currentRow.type ?? 'GOODS',
       })

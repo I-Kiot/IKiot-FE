@@ -41,9 +41,21 @@ import { ReturnDetailDialog } from "./return-detail-dialog";
 const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
+/**
+ * Quyền còn thiếu để dùng hộp thoại "Tạo đơn hoàn", hoặc `null` khi đủ.
+ * Hộp thoại cần cả hai: `returns:create` để tạo phiếu, `orders:read` để tìm và mở đơn (`GET /orders`, `GET /orders/:id`).
+ * Chỉ có `returns:create` thì mở được hộp thoại nhưng không tìm ra đơn nào (bug 43).
+ */
+function missingCreateReturnPermission(role: string | null | undefined): string | null {
+  if (!allows(role, "returns", "create")) return "returns:create";
+  if (!allows(role, "orders", "read")) return "orders:read";
+  return null;
+}
+
 /** Danh sách đơn trả (`GET /order-returns`): tạo, nhận hàng, kiểm, huỷ (contract §5). */
 export function ReturnsTable() {
   const role = getSessionRole();
+  const missingCreatePermission = missingCreateReturnPermission(role);
   // Người phụ trách đơn cũng được mở đơn trả nên nút không ẩn theo quyền; BE trả ORDER_RETURN_DENIED cho người khác.
   const canInspect = allows(role, "returns", "inspect");
   const canCancel = allows(role, "returns", "cancel");
@@ -135,8 +147,8 @@ export function ReturnsTable() {
           </SelectContent>
         </Select>
         <PermissionButton
-          allowed={allows(role, "returns", "create")}
-          permission="returns:create"
+          allowed={missingCreatePermission === null}
+          permission={missingCreatePermission ?? undefined}
           className="ml-auto"
           onClick={() => setCreating(true)}
         >

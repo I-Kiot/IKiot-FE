@@ -68,8 +68,15 @@ export function CreateReturnDialog({ open, onOpenChange, onCreated }: CreateRetu
   // Tìm đơn có debounce (BE khớp mã, tên, SĐT khách). Kết quả gắn với từ khoá đã trả lời nên không hiện danh sách cũ.
   const term = search.trim();
   const wanted = open && !order && term.length >= 2;
-  const [found, setFound] = React.useState<{ term: string; items: OrderListItem[] } | null>(null);
-  const results = wanted && found?.term === term ? found.items : [];
+  // `error`: lý do BE từ chối lần tìm (vd. thiếu quyền xem đơn). Phải hiện ra, không được coi như "không có đơn nào".
+  const [found, setFound] = React.useState<{
+    term: string;
+    items: OrderListItem[];
+    error: string | null;
+  } | null>(null);
+  const answered = wanted && found?.term === term;
+  const results = answered ? (found?.items ?? []) : [];
+  const searchError = answered ? (found?.error ?? null) : null;
   const searching = wanted && found?.term !== term;
 
   React.useEffect(() => {
@@ -79,10 +86,12 @@ export function CreateReturnDialog({ open, onOpenChange, onCreated }: CreateRetu
       orderJourneyApi
         .getList({ search: term, limit: 8 })
         .then((page) => {
-          if (!stale) setFound({ term, items: page.data });
+          if (!stale) setFound({ term, items: page.data, error: null });
         })
-        .catch(() => {
-          if (!stale) setFound({ term, items: [] });
+        .catch((error) => {
+          if (stale) return;
+          const message = getApiErrorBody(error)?.message ?? "Không tìm được đơn hàng";
+          setFound({ term, items: [], error: message });
         });
     }, 300);
     return () => {
@@ -170,7 +179,10 @@ export function CreateReturnDialog({ open, onOpenChange, onCreated }: CreateRetu
                   </li>
                 );
               })}
-              {results.length === 0 && search.trim().length >= 2 && !searching && (
+              {searchError && (
+                <li className="px-3 py-2 text-sm text-destructive">{searchError}</li>
+              )}
+              {results.length === 0 && search.trim().length >= 2 && !searching && !searchError && (
                 <li className="px-3 py-2 text-sm text-muted-foreground">Không tìm thấy đơn nào</li>
               )}
             </ul>
