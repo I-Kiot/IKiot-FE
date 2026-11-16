@@ -145,6 +145,11 @@ export function canAssignWarehouseManager(role?: string | null): boolean {
   return allows(role, 'warehouses', 'assign_manager');
 }
 
+/** Màn Gói dịch vụ (`/settings/billing`): xem gói đang dùng hoặc được nâng cấp / gia hạn. */
+export function canViewBilling(role?: string | null): boolean {
+  return allows(role, 'subscriptions', 'read') || allows(role, 'subscriptions', 'manage');
+}
+
 export function canManageBilling(role?: string | null): boolean {
   return allows(role, 'subscriptions', 'manage');
 }

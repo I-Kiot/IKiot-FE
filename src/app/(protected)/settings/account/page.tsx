@@ -346,9 +346,8 @@ export default function AccountSettings() {
                       </p>
                     </div>
                   </div>
-                  <PermissionButton
-                    allowed={isTenantOwner}
-                    who={WHO_OWNER}
+                  {/* Ai cũng tự đổi được mật khẩu của mình (`/auth/change-password` không gắn quyền). */}
+                  <Button
                     type="button"
                     variant="outline"
                     size="sm"
@@ -356,7 +355,7 @@ export default function AccountSettings() {
                     onClick={() => setIsPasswordDialogOpen(true)}
                   >
                     Đổi mật khẩu
-                  </PermissionButton>
+                  </Button>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 last:pb-0">
@@ -466,7 +465,6 @@ export default function AccountSettings() {
       <ChangePasswordDialog
         open={isPasswordDialogOpen}
         onOpenChange={setIsPasswordDialogOpen}
-        userId={user?.id || ""}
       />
     </div>
   )
