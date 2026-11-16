@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { MovementProductSearch } from "@/app/(protected)/exchange/shared/movement-product-search";
 import { productionRequestApi } from "@/lib/api/production-request";
-import { getApiErrorBody } from "@/lib/api/error-codes";
+import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import type {
   OrderItemSpec,
   ProductionRequest,
@@ -248,8 +248,12 @@ export function ProductionRequestForm({
       );
       onSaved(saved);
     } catch (error) {
+      // Message của BE là tiếng Anh cho log; người dùng đọc câu tiếng Việt theo mã lỗi.
+      const body = getApiErrorBody(error);
       toast.error(
-        getApiErrorBody(error)?.message ?? "Không lưu được yêu cầu sản xuất",
+        messageForCode(body?.code) ??
+          body?.message ??
+          "Không lưu được yêu cầu sản xuất",
       );
     } finally {
       setSaving(false);
