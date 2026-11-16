@@ -199,3 +199,15 @@ export async function updateMe(payload: {
   );
   return response.data.data;
 }
+
+/**
+ * Tự đổi mật khẩu của chính mình (`POST /auth/change-password`) - mọi loại tài khoản đều dùng được, cần mật khẩu hiện tại.
+ * Khác `staffApi.updatePassword`, là quản lý đặt lại cho một nhân viên khác và cần quyền `users:update`.
+ */
+export async function changePassword(payload: {
+  currentPassword: string;
+  newPassword: string;
+  reEnterPassword: string;
+}) {
+  await client.post("/auth/change-password", payload);
+}

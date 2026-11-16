@@ -6,18 +6,12 @@ import {
   Store,
   GitBranch,
   Warehouse,
-  Lock,
   Palette,
   Layout,
   RotateCcw,
   Save,
   Plus,
   Upload,
-  Computer,
-  Smartphone,
-  ShieldAlert,
-  Eye,
-  EyeOff,
   MapPin,
   Phone,
   Settings,
@@ -34,7 +28,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -78,7 +71,6 @@ type TabType =
   | "store-info"
   | "branches"
   | "warehouses"
-  | "security"
   | "notifications"
   | "theme"
   | "layout";
@@ -99,23 +91,19 @@ interface WarehouseItem {
   status: string;
 }
 
-interface ActiveSession {
-  id: string;
-  device: string;
-  ip: string;
-  location: string;
-  current: boolean;
-  lastActive: string;
-}
-
 function BranchExpandableRow({
   branch,
   onDelete,
   onUpdate,
+  canUpdate,
+  canDelete,
 }: {
   branch: Branch;
   onDelete: (id: string) => Promise<void>;
   onUpdate: (updated: Branch) => void;
+  /** Theo quyền `update` / `delete` của role; thiếu quyền thì ẩn nút thay vì để BE trả 403. */
+  canUpdate: boolean;
+  canDelete: boolean;
 }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [staff, setStaff] = React.useState<Staff[]>([]);
@@ -393,33 +381,39 @@ function BranchExpandableRow({
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 pt-3 border-t mt-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1.5 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsEditing(true);
-                            }}
-                          >
-                            <Pencil className="h-3 w-3" />
-                            Chỉnh sửa
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1.5 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete();
-                            }}
-                            disabled={isDeleting || branch.isDefault}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            {isDeleting ? "Đang xóa..." : "Xóa chi nhánh"}
-                          </Button>
-                        </div>
+                        {(canUpdate || canDelete) && (
+                          <div className="flex items-center gap-2 pt-3 border-t mt-3">
+                            {canUpdate && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1.5 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsEditing(true);
+                                }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                Chỉnh sửa
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1.5 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete();
+                                }}
+                                disabled={isDeleting || branch.isDefault}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                {isDeleting ? "Đang xóa..." : "Xóa chi nhánh"}
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </>
                     )}
                   </TabsContent>
@@ -494,10 +488,15 @@ function WarehouseExpandableRow({
   warehouse,
   onDelete,
   onUpdate,
+  canUpdate,
+  canDelete,
 }: {
   warehouse: WarehouseItem;
   onDelete: (id: string) => Promise<void>;
   onUpdate: (updated: WarehouseItem) => void;
+  /** Theo quyền `update` / `delete` của role; thiếu quyền thì ẩn nút thay vì để BE trả 403. */
+  canUpdate: boolean;
+  canDelete: boolean;
 }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [staff, setStaff] = React.useState<Staff[]>([]);
@@ -726,33 +725,39 @@ function WarehouseExpandableRow({
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 pt-3 border-t mt-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1.5 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsEditing(true);
-                            }}
-                          >
-                            <Pencil className="h-3 w-3" />
-                            Chỉnh sửa
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1.5 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete();
-                            }}
-                            disabled={isDeleting}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            {isDeleting ? "Đang xóa..." : "Xóa kho tổng"}
-                          </Button>
-                        </div>
+                        {(canUpdate || canDelete) && (
+                          <div className="flex items-center gap-2 pt-3 border-t mt-3">
+                            {canUpdate && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1.5 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsEditing(true);
+                                }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                Chỉnh sửa
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1.5 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete();
+                                }}
+                                disabled={isDeleting}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                {isDeleting ? "Đang xóa..." : "Xóa kho tổng"}
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </>
                     )}
                   </TabsContent>
@@ -848,6 +853,20 @@ export default function SettingsPage() {
     accountName: "",
   });
   const [isSavingStore, setIsSavingStore] = React.useState(false);
+  // `PUT /tenant/me` cần `tenants:update`. Màn Vai trò không cho giao quyền này, nên thực tế chỉ chủ shop/admin sửa được; người khác chỉ xem.
+  const canEditStore = allows(getSessionRole(), "tenants", "update");
+  // Khác `tenants:update`, quyền chi nhánh/kho giao được trên màn Vai trò ("Quản lý chi nhánh và kho"), nên khoá theo đúng từng quyền BE kiểm tra.
+  const sessionRole = getSessionRole();
+  const canBranch = {
+    create: allows(sessionRole, "branches", "create"),
+    update: allows(sessionRole, "branches", "update"),
+    delete: allows(sessionRole, "branches", "delete"),
+  };
+  const canWarehouse = {
+    create: allows(sessionRole, "warehouses", "create"),
+    update: allows(sessionRole, "warehouses", "update"),
+    delete: allows(sessionRole, "warehouses", "delete"),
+  };
   // ADMIN đã liên kết tài khoản ngân hàng của tenant này với SePay chưa.
   const [sepayLinked, setSepayLinked] = React.useState(false);
 
@@ -867,35 +886,6 @@ export default function SettingsPage() {
     address: "",
     phoneNumber: "",
   });
-
-  const [passwords, setPasswords] = React.useState({
-    current: "",
-    new: "",
-    confirm: "",
-  });
-  const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
-  const [showNewPassword, setShowNewPassword] = React.useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
-  const [isUpdatingPassword, setIsUpdatingPassword] = React.useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = React.useState(false);
-  const [activeSessions, setActiveSessions] = React.useState<ActiveSession[]>([
-    {
-      id: "session-1",
-      device: "Windows Chrome",
-      ip: "113.190.232.84",
-      location: "Hà Nội, Việt Nam",
-      current: true,
-      lastActive: "Đang hoạt động",
-    },
-    {
-      id: "session-2",
-      device: "iPhone 13 - Safari",
-      ip: "14.161.42.112",
-      location: "TP. Hồ Chí Minh, Việt Nam",
-      current: false,
-      lastActive: "2 giờ trước",
-    },
-  ]);
 
   // Đọc biến theme từ localStorage khi mount (tránh setState đồng bộ trong effect vì lint báo lỗi).
   React.useEffect(() => {
@@ -1015,6 +1005,7 @@ export default function SettingsPage() {
 
   const handleSaveStore = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEditStore) return;
     if (!storeInfo.name || !storeInfo.phone || !storeInfo.address) {
       toast.error("Vui lòng điền đầy đủ các thông tin bắt buộc!");
       return;
@@ -1178,43 +1169,6 @@ export default function SettingsPage() {
     window.dispatchEvent(new Event("branches-updated"));
   };
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!passwords.current || !passwords.new || !passwords.confirm) {
-      toast.error("Vui lòng nhập đầy đủ thông tin mật khẩu!");
-      return;
-    }
-    if (passwords.new !== passwords.confirm) {
-      toast.error("Mật khẩu mới và mật khẩu xác nhận không khớp!");
-      return;
-    }
-    if (passwords.new.length < 6) {
-      toast.error("Mật khẩu mới phải từ 6 ký tự trở lên!");
-      return;
-    }
-
-    setIsUpdatingPassword(true);
-    setTimeout(() => {
-      setIsUpdatingPassword(false);
-      setPasswords({ current: "", new: "", confirm: "" });
-      toast.success("Thay đổi mật khẩu thành công!");
-    }, 800);
-  };
-
-  const handleLogoutSession = (id: string) => {
-    setActiveSessions(activeSessions.filter((s) => s.id !== id));
-    toast.success("Đã đăng xuất thiết bị thành công!");
-  };
-
-  const handleToggle2FA = (checked: boolean) => {
-    setTwoFactorEnabled(checked);
-    if (checked) {
-      toast.success("Đã kích hoạt xác thực bảo mật 2 lớp (2FA)!");
-    } else {
-      toast.info("Đã tắt bảo mật 2 lớp (2FA)!");
-    }
-  };
-
   const sidebarItems = [
     {
       group: "CỬA HÀNG",
@@ -1222,7 +1176,6 @@ export default function SettingsPage() {
         { id: "store-info", label: "Thông tin cửa hàng", icon: Store },
         { id: "branches", label: "Quản lý chi nhánh", icon: GitBranch },
         { id: "warehouses", label: "Quản lý kho tổng", icon: Warehouse },
-        { id: "security", label: "Bảo mật", icon: Lock },
         { id: "notifications", label: "Thông báo", icon: Bell },
       ],
     },
@@ -1305,7 +1258,6 @@ export default function SettingsPage() {
                 {activeTab === "store-info" && "Thông tin cửa hàng"}
                 {activeTab === "branches" && "Quản lý chi nhánh"}
                 {activeTab === "warehouses" && "Quản lý kho tổng"}
-                {activeTab === "security" && "Cấu hình bảo mật"}
                 {activeTab === "notifications" && "Thông báo"}
                 {activeTab === "theme" && "Tùy biến chủ đề"}
                 {activeTab === "layout" && "Cấu hình bố cục"}
@@ -1317,8 +1269,6 @@ export default function SettingsPage() {
                   "Thêm mới, sửa đổi hoặc tùy chỉnh các chi nhánh cửa hàng của bạn."}
                 {activeTab === "warehouses" &&
                   "Quản lý danh sách các kho tổng chứa hàng hóa."}
-                {activeTab === "security" &&
-                  "Đổi mật khẩu, kích hoạt bảo mật 2 lớp (2FA) và quản lý phiên đăng nhập."}
                 {activeTab === "notifications" &&
                   "Bật âm báo và nhận thông báo đẩy trên thiết bị này."}
                 {activeTab === "theme" &&
@@ -1344,219 +1294,229 @@ export default function SettingsPage() {
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === "store-info" && (
               <form onSubmit={handleSaveStore} className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-6 items-start">
-                  <div className="flex flex-col items-center gap-3 w-full md:w-44 shrink-0">
-                    <Label className="text-sm font-medium self-start md:self-center">
-                      Logo Cửa hàng
-                    </Label>
-                    <div className="relative group w-32 h-32 rounded-xl border border-dashed border-muted-foreground/30 bg-muted/10 overflow-hidden flex items-center justify-center">
-                      <div className="text-center p-4">
-                        <Store className="h-10 w-10 text-muted-foreground/60 mx-auto" />
-                        <span className="text-2xs text-muted-foreground mt-1 block">
-                          iKiot Logo
-                        </span>
+                {/* `disabled` trên fieldset khoá mọi input/nút bên trong cùng lúc; `contents` để không đổi bố cục. */}
+                <fieldset disabled={!canEditStore} className="contents">
+                  <div className="flex flex-col md:flex-row gap-6 items-start">
+                    <div className="flex flex-col items-center gap-3 w-full md:w-44 shrink-0">
+                      <Label className="text-sm font-medium self-start md:self-center">
+                        Logo Cửa hàng
+                      </Label>
+                      <div className="relative group w-32 h-32 rounded-xl border border-dashed border-muted-foreground/30 bg-muted/10 overflow-hidden flex items-center justify-center">
+                        <div className="text-center p-4">
+                          <Store className="h-10 w-10 text-muted-foreground/60 mx-auto" />
+                          <span className="text-2xs text-muted-foreground mt-1 block">
+                            iKiot Logo
+                          </span>
+                        </div>
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity duration-200">
+                          <Upload className="h-5 w-5 mb-1" />
+                          <span className="text-3xs font-medium">
+                            Tải ảnh lên
+                          </span>
+                        </div>
                       </div>
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity duration-200">
-                        <Upload className="h-5 w-5 mb-1" />
-                        <span className="text-3xs font-medium">
-                          Tải ảnh lên
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground text-center">
-                      Khuyên dùng ảnh PNG hình vuông dưới 2MB.
-                    </p>
-                  </div>
-
-                  <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="store-name">
-                        Tên cửa hàng <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="store-name"
-                        value={storeInfo.name}
-                        onChange={(e) =>
-                          setStoreInfo({ ...storeInfo, name: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="store-code">Mã định danh (ID)</Label>
-                      <Input
-                        id="store-code"
-                        value={storeInfo.code}
-                        disabled
-                        className="bg-muted text-muted-foreground"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="store-phone">
-                        Số điện thoại liên hệ{" "}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="store-phone"
-                        value={storeInfo.phone}
-                        onChange={(e) =>
-                          setStoreInfo({ ...storeInfo, phone: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="store-email">
-                        Email <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="store-email"
-                        type="email"
-                        value={storeInfo.email}
-                        onChange={(e) =>
-                          setStoreInfo({ ...storeInfo, email: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="store-tax">Mã số thuế</Label>
-                      <Input
-                        id="store-tax"
-                        value={storeInfo.taxNumber}
-                        onChange={(e) =>
-                          setStoreInfo({
-                            ...storeInfo,
-                            taxNumber: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="store-address">
-                        Địa chỉ chính{" "}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="store-address"
-                        value={storeInfo.address}
-                        onChange={(e) =>
-                          setStoreInfo({
-                            ...storeInfo,
-                            address: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Separator className="my-2" />
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="text-sm font-semibold text-foreground/80">
-                          Cấu hình thanh toán ngân hàng (Để nhận thanh toán đơn
-                          hàng)
-                        </h4>
-                        {sepayLinked ? (
-                          <Badge
-                            variant="outline"
-                            className="gap-1 bg-green-500/10 text-green-500 border-green-500/20"
-                          >
-                            <CheckCircle2 className="h-3 w-3" />
-                            Đã liên kết SePay
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20"
-                          >
-                            <Clock className="h-3 w-3" />
-                            Chờ quản trị viên liên kết
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {sepayLinked
-                          ? "Tài khoản đã được liên kết với cổng SePay - bạn có thể nhận thanh toán đơn hàng qua mã QR."
-                          : "Sau khi lưu thông tin ngân hàng, quản trị viên sẽ thêm tài khoản vào SePay (chủ tài khoản xác nhận với ngân hàng). Hệ thống tự nhận ra và gửi thông báo cho bạn khi liên kết xong."}
+                      <p className="text-[10px] text-muted-foreground text-center">
+                        Khuyên dùng ảnh PNG hình vuông dưới 2MB.
                       </p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="store-bank-name">Tên ngân hàng</Label>
-                      <Input
-                        id="store-bank-name"
-                        placeholder="Ví dụ: MBBank, Vietcombank..."
-                        value={storeInfo.bankName}
-                        onChange={(e) =>
-                          setStoreInfo({
-                            ...storeInfo,
-                            bankName: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
+                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="store-name">
+                          Tên cửa hàng{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="store-name"
+                          value={storeInfo.name}
+                          onChange={(e) =>
+                            setStoreInfo({ ...storeInfo, name: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="store-bank-acc">
-                        Số tài khoản ngân hàng
-                      </Label>
-                      <Input
-                        id="store-bank-acc"
-                        placeholder="Nhập số tài khoản"
-                        value={storeInfo.accountNumber}
-                        onChange={(e) =>
-                          setStoreInfo({
-                            ...storeInfo,
-                            accountNumber: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="store-code">Mã định danh (ID)</Label>
+                        <Input
+                          id="store-code"
+                          value={storeInfo.code}
+                          disabled
+                          className="bg-muted text-muted-foreground"
+                        />
+                      </div>
 
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="store-bank-holder">
-                        Tên chủ tài khoản (Viết hoa không dấu)
-                      </Label>
-                      <Input
-                        id="store-bank-holder"
-                        placeholder="Ví dụ: NGUYEN VAN A"
-                        value={storeInfo.accountName}
-                        onChange={(e) =>
-                          setStoreInfo({
-                            ...storeInfo,
-                            accountName: e.target.value.toUpperCase(),
-                          })
-                        }
-                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="store-phone">
+                          Số điện thoại liên hệ{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="store-phone"
+                          value={storeInfo.phone}
+                          onChange={(e) =>
+                            setStoreInfo({
+                              ...storeInfo,
+                              phone: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="store-email">
+                          Email <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="store-email"
+                          type="email"
+                          value={storeInfo.email}
+                          onChange={(e) =>
+                            setStoreInfo({
+                              ...storeInfo,
+                              email: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="store-tax">Mã số thuế</Label>
+                        <Input
+                          id="store-tax"
+                          value={storeInfo.taxNumber}
+                          onChange={(e) =>
+                            setStoreInfo({
+                              ...storeInfo,
+                              taxNumber: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="store-address">
+                          Địa chỉ chính{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="store-address"
+                          value={storeInfo.address}
+                          onChange={(e) =>
+                            setStoreInfo({
+                              ...storeInfo,
+                              address: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Separator className="my-2" />
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h4 className="text-sm font-semibold text-foreground/80">
+                            Cấu hình thanh toán ngân hàng (Để nhận thanh toán
+                            đơn hàng)
+                          </h4>
+                          {sepayLinked ? (
+                            <Badge
+                              variant="outline"
+                              className="gap-1 bg-green-500/10 text-green-500 border-green-500/20"
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              Đã liên kết SePay
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20"
+                            >
+                              <Clock className="h-3 w-3" />
+                              Chờ quản trị viên liên kết
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {sepayLinked
+                            ? "Tài khoản đã được liên kết với cổng SePay - bạn có thể nhận thanh toán đơn hàng qua mã QR."
+                            : "Sau khi lưu thông tin ngân hàng, quản trị viên sẽ thêm tài khoản vào SePay (chủ tài khoản xác nhận với ngân hàng). Hệ thống tự nhận ra và gửi thông báo cho bạn khi liên kết xong."}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="store-bank-name">Tên ngân hàng</Label>
+                        <Input
+                          id="store-bank-name"
+                          placeholder="Ví dụ: MBBank, Vietcombank..."
+                          value={storeInfo.bankName}
+                          onChange={(e) =>
+                            setStoreInfo({
+                              ...storeInfo,
+                              bankName: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="store-bank-acc">
+                          Số tài khoản ngân hàng
+                        </Label>
+                        <Input
+                          id="store-bank-acc"
+                          placeholder="Nhập số tài khoản"
+                          value={storeInfo.accountNumber}
+                          onChange={(e) =>
+                            setStoreInfo({
+                              ...storeInfo,
+                              accountNumber: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="store-bank-holder">
+                          Tên chủ tài khoản (Viết hoa không dấu)
+                        </Label>
+                        <Input
+                          id="store-bank-holder"
+                          placeholder="Ví dụ: NGUYEN VAN A"
+                          value={storeInfo.accountName}
+                          onChange={(e) =>
+                            setStoreInfo({
+                              ...storeInfo,
+                              accountName: e.target.value.toUpperCase(),
+                            })
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                </fieldset>
 
-                {allows(getSessionRole(), "tenants", "update") && (
+                {canEditStore && (
                   <>
                     <Separator />
                     <BankingHistoryCard />
+
+                    <Separator />
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="submit"
+                        disabled={isSavingStore}
+                        className="cursor-pointer"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {isSavingStore ? "Đang lưu..." : "Lưu thay đổi"}
+                      </Button>
+                    </div>
                   </>
                 )}
-
-                <Separator />
-
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="submit"
-                    disabled={isSavingStore}
-                    className="cursor-pointer"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSavingStore ? "Đang lưu..." : "Lưu thay đổi"}
-                  </Button>
-                </div>
               </form>
             )}
 
@@ -1566,7 +1526,7 @@ export default function SettingsPage() {
                   <h3 className="text-sm font-semibold text-muted-foreground">
                     Danh sách chi nhánh ({branches.length})
                   </h3>
-                  {!showAddBranch && (
+                  {canBranch.create && !showAddBranch && (
                     <Button
                       onClick={() => setShowAddBranch(true)}
                       size="sm"
@@ -1577,7 +1537,7 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {showAddBranch && (
+                {canBranch.create && showAddBranch && (
                   <Card className="border border-primary/20 bg-primary/5 animate-in slide-in-from-top-4 duration-200">
                     <CardHeader className="p-4 pb-2">
                       <CardTitle className="text-sm font-bold">
@@ -1700,6 +1660,8 @@ export default function SettingsPage() {
                             branch={branch}
                             onDelete={handleDeleteBranch}
                             onUpdate={handleUpdateBranch}
+                            canUpdate={canBranch.update}
+                            canDelete={canBranch.delete}
                           />
                         ))
                       )}
@@ -1715,7 +1677,7 @@ export default function SettingsPage() {
                   <h3 className="text-sm font-semibold text-muted-foreground">
                     Danh sách kho tổng ({warehouses.length})
                   </h3>
-                  {!showAddWarehouse && (
+                  {canWarehouse.create && !showAddWarehouse && (
                     <Button
                       onClick={() => setShowAddWarehouse(true)}
                       size="sm"
@@ -1726,7 +1688,7 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {showAddWarehouse && (
+                {canWarehouse.create && showAddWarehouse && (
                   <Card className="border border-primary/20 bg-primary/5 animate-in slide-in-from-top-4 duration-200">
                     <CardHeader className="p-4 pb-2">
                       <CardTitle className="text-sm font-bold">
@@ -1853,232 +1815,14 @@ export default function SettingsPage() {
                             warehouse={warehouse}
                             onDelete={handleDeleteWarehouse}
                             onUpdate={handleUpdateWarehouse}
+                            canUpdate={canWarehouse.update}
+                            canDelete={canWarehouse.delete}
                           />
                         ))
                       )}
                     </TableBody>
                   </Table>
                 </div>
-              </div>
-            )}
-
-            {activeTab === "security" && (
-              <div className="space-y-6">
-                <Card className="border border-border">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                      <Lock className="h-4 w-4 text-primary" /> Thay đổi mật
-                      khẩu
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      Đảm bảo mật khẩu dài hơn 6 ký tự và có ký tự đặc biệt.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <form onSubmit={handleUpdatePassword} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="space-y-1.5 relative">
-                          <Label htmlFor="curr-pass" className="text-xs">
-                            Mật khẩu hiện tại
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              id="curr-pass"
-                              type={showCurrentPassword ? "text" : "password"}
-                              value={passwords.current}
-                              onChange={(e) =>
-                                setPasswords({
-                                  ...passwords,
-                                  current: e.target.value,
-                                })
-                              }
-                              className="h-9 pr-9"
-                              placeholder="••••••••"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setShowCurrentPassword(!showCurrentPassword)
-                              }
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                            >
-                              {showCurrentPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 relative">
-                          <Label htmlFor="new-pass" className="text-xs">
-                            Mật khẩu mới
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              id="new-pass"
-                              type={showNewPassword ? "text" : "password"}
-                              value={passwords.new}
-                              onChange={(e) =>
-                                setPasswords({
-                                  ...passwords,
-                                  new: e.target.value,
-                                })
-                              }
-                              className="h-9 pr-9"
-                              placeholder="Tối thiểu 6 ký tự"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setShowNewPassword(!showNewPassword)
-                              }
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                            >
-                              {showNewPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 relative">
-                          <Label htmlFor="conf-pass" className="text-xs">
-                            Xác nhận mật khẩu mới
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              id="conf-pass"
-                              type={showConfirmPassword ? "text" : "password"}
-                              value={passwords.confirm}
-                              onChange={(e) =>
-                                setPasswords({
-                                  ...passwords,
-                                  confirm: e.target.value,
-                                })
-                              }
-                              className="h-9 pr-9"
-                              placeholder="Nhập lại mật khẩu mới"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setShowConfirmPassword(!showConfirmPassword)
-                              }
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                            >
-                              {showConfirmPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end pt-1">
-                        <Button
-                          type="submit"
-                          size="sm"
-                          disabled={isUpdatingPassword}
-                          className="cursor-pointer text-xs h-8.5"
-                        >
-                          {isUpdatingPassword
-                            ? "Đang cập nhật..."
-                            : "Cập nhật mật khẩu"}
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-
-                <Card className="border border-border">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-bold flex items-center gap-2">
-                        <ShieldAlert className="h-4 w-4 text-amber-500" /> Xác
-                        thực bảo mật 2 lớp (2FA)
-                      </CardTitle>
-                      <Switch
-                        checked={twoFactorEnabled}
-                        onCheckedChange={handleToggle2FA}
-                      />
-                    </div>
-                    <CardDescription className="text-xs mt-1">
-                      Kích hoạt bảo vệ 2 lớp giúp bảo vệ tài khoản của bạn bằng
-                      cách yêu cầu mã xác thực OTP gửi về điện thoại mỗi khi
-                      đăng nhập.
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-
-                <Card className="border border-border">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold">
-                      Lịch sử đăng nhập & Thiết bị hoạt động
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      Theo dõi và quản lý các thiết bị hiện đang đăng nhập vào
-                      cửa hàng này.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-3">
-                    {activeSessions.map((session) => (
-                      <div
-                        key={session.id}
-                        className="flex items-center justify-between py-2.5 border-b last:border-0 last:pb-0 text-sm"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-muted rounded-lg text-muted-foreground">
-                            {session.device.includes("iPhone") ? (
-                              <Smartphone className="h-4.5 w-4.5" />
-                            ) : (
-                              <Computer className="h-4.5 w-4.5" />
-                            )}
-                          </div>
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-xs">
-                                {session.device}
-                              </span>
-                              {session.current && (
-                                <Badge
-                                  className="text-[9px] px-1 py-0 bg-green-500/10 text-green-500 border-green-500/20"
-                                  variant="outline"
-                                >
-                                  Thiết bị này
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-2xs text-muted-foreground">
-                              {session.ip} · {session.location}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-2xs text-muted-foreground">
-                            {session.lastActive}
-                          </span>
-                          {!session.current && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleLogoutSession(session.id)}
-                              className="text-2xs text-destructive hover:text-destructive/80 hover:bg-destructive/5 cursor-pointer h-7 px-2"
-                            >
-                              Đăng xuất
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
               </div>
             )}
 

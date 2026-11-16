@@ -14,6 +14,7 @@ import {
   canOpenCheckout,
   getAllowedSidebarUrls,
 } from "@/components/sidebar/utils/get-sidebar";
+import { canViewBilling } from "@/components/sidebar/constants/role-permissions";
 import { UnauthorizedPage } from "@/components/unauthorized";
 import { PageFooterProvider, PageFooterSlot } from "@/components/layouts/page-footer";
 
@@ -40,6 +41,13 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
   const isCheckout = pathname === "/check-out" || pathname.startsWith("/check-out/");
   if (isCheckout) {
     return canOpenCheckout(user.role) ? <>{children}</> : <UnauthorizedPage />;
+  }
+
+  // `/settings/*` mở cho mọi người, trừ màn Gói dịch vụ: role tắt cả xem lẫn nâng cấp gói thì vào bằng URL cũng không được.
+  const isBilling =
+    pathname === "/settings/billing" || pathname.startsWith("/settings/billing/");
+  if (isBilling && !canViewBilling(user.role)) {
+    return <UnauthorizedPage />;
   }
 
   if (isPublicProtected) {

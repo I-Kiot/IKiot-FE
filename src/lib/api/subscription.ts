@@ -23,16 +23,26 @@ export interface Plan {
   isActive: boolean;
 }
 
+/**
+ * Cột tiền của BE là `Decimal`, lên JSON thành chuỗi (`"100000.00"`). Ép về số ngay ở đây để `toLocaleString` định dạng
+ * được (`100.000đ`) và so sánh kiểu `price === 0` đúng; kiểu `number` khai báo bên dưới mới là thật.
+ */
+const toPlan = (raw: Plan): Plan => ({ ...raw, price: Number(raw.price) });
+const toInvoice = <T extends { amount: number }>(raw: T): T => ({
+  ...raw,
+  amount: Number(raw.amount),
+});
+
 /** Liệt kê mọi gói đang hoạt động (endpoint công khai). */
 export async function listPlans(): Promise<Plan[]> {
   const response = await client.get("/plans");
-  return response.data.data;
+  return (response.data.data as Plan[]).map(toPlan);
 }
 
 /** Liệt kê mọi gói kể cả gói đã tắt (bảng quản trị ADMIN). */
 export async function listAllPlans(): Promise<Plan[]> {
   const response = await client.get("/admin/plans");
-  return response.data.data;
+  return (response.data.data as Plan[]).map(toPlan);
 }
 
 /** Các trường ADMIN được sửa trên gói. */
@@ -59,7 +69,7 @@ export async function updatePlan(
   payload: UpdatePlanPayload,
 ): Promise<Plan> {
   const response = await client.put(`/admin/plans/${id}`, payload);
-  return response.data.data;
+  return toPlan(response.data.data);
 }
 
 /** Bật/tắt gói (ADMIN). Gói tắt sẽ không còn ở danh sách công khai. */
@@ -68,7 +78,7 @@ export async function setPlanActive(
   isActive: boolean,
 ): Promise<Plan> {
   const response = await client.patch(`/admin/plans/${id}/active`, { isActive });
-  return response.data.data;
+  return toPlan(response.data.data);
 }
 
 /**
@@ -165,7 +175,7 @@ export interface Invoice {
 
 export async function listInvoices(): Promise<Invoice[]> {
   const response = await client.get("/subscription/invoices");
-  return response.data.data;
+  return (response.data.data as Invoice[]).map(toInvoice);
 }
 
 export interface AdminInvoice extends Omit<Invoice, "planId"> {
@@ -175,5 +185,5 @@ export interface AdminInvoice extends Omit<Invoice, "planId"> {
 
 export async function listAllInvoices(): Promise<AdminInvoice[]> {
   const response = await client.get("/subscription/admin/invoices");
-  return response.data.data;
+  return (response.data.data as AdminInvoice[]).map(toInvoice);
 }
