@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { productionRequestApi } from "@/lib/api/production-request";
-import { getApiErrorBody } from "@/lib/api/error-codes";
+import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import {
   personName,
   type ProductionReceipt,
@@ -41,6 +41,7 @@ import {
   formatDateTime,
   requestProgress,
   requestStatusDisplay,
+  workshopAcceptanceDisplay,
 } from "../shared/production-display";
 import { ImportReceiptDialog } from "./import-receipt-dialog";
 import { ProductionRequestFormDialog } from "./production-request-form-dialog";
@@ -108,6 +109,8 @@ export function ProductionRequestDetailDialog({
   const pendingDeliveries = (request.deliveries ?? []).filter((d) => d.status === "PENDING");
   const isDraft = request.status === "DRAFT";
   const isOpen = request.status === "SENT" || request.status === "PARTIALLY_RECEIVED";
+  const acceptedByWorkshop = request.acceptedAt !== null;
+  const acceptance = workshopAcceptanceDisplay(request);
 
   async function run(action: Exclude<Pending, null>) {
     if (!request) return;
@@ -129,7 +132,18 @@ export function ProductionRequestDetailDialog({
       setPending(null);
       setReason("");
     } catch (error) {
-      toast.error(getApiErrorBody(error)?.message ?? "Không thực hiện được");
+      const body = getApiErrorBody(error);
+      toast.error(messageForCode(body?.code) ?? body?.message ?? "Không thực hiện được");
+      // Xưởng vừa xác nhận đang làm trong lúc dialog còn mở: tải lại để nút Huỷ khoá và hiện "Xưởng đang làm".
+      if (body?.code === "PRODUCTION_REQUEST_IN_PRODUCTION") {
+        setPending(null);
+        setReason("");
+        try {
+          onChanged(await productionRequestApi.getById(request.id));
+        } catch {
+          // Không tải lại được thì giữ dữ liệu cũ; câu lỗi đã nói rõ lý do.
+        }
+      }
     } finally {
       setBusy(false);
     }
@@ -146,6 +160,7 @@ export function ProductionRequestDetailDialog({
             <DialogTitle className="flex items-center gap-2">
               {request.code}
               <Badge variant={status.variant}>{status.label}</Badge>
+              {acceptance && <Badge variant={acceptance.variant}>{acceptance.label}</Badge>}
             </DialogTitle>
             <DialogDescription>
               {request.supplier.supplierName}
@@ -159,6 +174,13 @@ export function ProductionRequestDetailDialog({
               <span className="text-muted-foreground">Hẹn xong: </span>
               {formatDate(request.expectedReadyDate)}
             </div>
+            {request.acceptedAt && (
+              <div>
+                <span className="text-muted-foreground">Xưởng nhận làm: </span>
+                {formatDateTime(request.acceptedAt)}
+                {request.acceptedBy ? ` · ${personName(request.acceptedBy)}` : ""}
+              </div>
+            )}
             <div>
               <span className="text-muted-foreground">Đã nhận: </span>
               {progress.received}/{progress.ordered}
@@ -305,9 +327,15 @@ export function ProductionRequestDetailDialog({
                 </PermissionButton>
               )}
               {(isDraft || (request.status === "SENT" && !hasReceipts)) && (
+                // Xưởng đã nhận làm thì nút vẫn hiện nhưng khoá, bấm vào nói chỉ xưởng huỷ được (BE cũng chặn).
                 <PermissionButton
-                  allowed={canUpdate}
-                  permission="production_requests:update"
+                  allowed={canUpdate && !acceptedByWorkshop}
+                  permission={acceptedByWorkshop ? undefined : "production_requests:update"}
+                  who={
+                    acceptedByWorkshop
+                      ? "Xưởng đã xác nhận đang làm, chỉ xưởng mới huỷ được. Liên hệ xưởng nếu cần dừng."
+                      : undefined
+                  }
                   variant="ghost"
                   onClick={() => setPending("cancel")}
                 >

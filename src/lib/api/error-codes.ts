@@ -312,6 +312,8 @@ export const ERROR_MESSAGES = {
   PRODUCT_ITEM_TYPE_MISMATCH: "Phiên bản phải cùng loại với sản phẩm (hàng hoá / combo / dịch vụ)",
   PRODUCTION_REQUEST_ITEM_NOT_MANUFACTURABLE: "Mặt hàng này không sản xuất được, hãy tạo đơn nhập hàng từ nhà cung cấp",
   PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Đóng yêu cầu khi chưa nhận đủ phải ghi lý do",
+  PRODUCTION_REQUEST_IN_PRODUCTION: "Xưởng đã xác nhận đang làm yêu cầu này, chỉ xưởng mới huỷ được",
+  PRODUCTION_REQUEST_NOT_ACCEPTABLE: "Yêu cầu này không còn chờ xác nhận (đã có người nhận làm hoặc shop đã huỷ)",
   // Nhân viên xưởng & phiếu giao xưởng (2026-10-09)
   WORKSHOP_STAFF_NOT_LINKED: "Tài khoản chưa được gắn với xưởng nào",
   USER_WORKSHOP_INVALID: "Xưởng đã chọn không phải xưởng của cửa hàng",

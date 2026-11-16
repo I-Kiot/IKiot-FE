@@ -638,6 +638,9 @@ export interface ProductionRequest {
   createdBy: PersonRef | null;
   statusUpdatedBy: PersonRef | null;
   statusUpdatedAt: string | null;
+  /** Xưởng xác nhận đang làm (hoặc lập phiếu giao đầu tiên); có giá trị thì shop không huỷ được. */
+  acceptedAt: string | null;
+  acceptedBy: PersonRef | null;
   createdAt: string;
   updatedAt: string;
   items: ProductionRequestLine[];

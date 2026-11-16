@@ -12,10 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { getApiErrorBody } from "@/lib/api/error-codes";
+import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import { workshopApi } from "@/lib/api/production-delivery";
 import { personName, type ProductionRequest } from "@/types/order-flow";
 import { CancelDeliveryDialog } from "../../exchange/production-requests/components/cancel-delivery-dialog";
+import { AcceptRequestDialog } from "./accept-request-dialog";
 import {
   deliverableQuantity,
   deliveryStatusDisplay,
@@ -35,12 +36,21 @@ interface Props {
 
 const toInt = (value: string) => (value.trim() === "" ? 0 : Math.floor(Number(value)));
 
+/** Mã lỗi nghĩa là YCSX đã đổi ở phía bên kia: tải lại thay vì để người dùng bấm lại vô ích. */
+const STALE_CODES: ReadonlySet<string> = new Set([
+  "PRODUCTION_REQUEST_NOT_ACCEPTABLE",
+  "PRODUCTION_REQUEST_STATUS_INVALID",
+  "PRODUCTION_DELIVERY_STATUS_INVALID",
+]);
+
 export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [inputs, setInputs] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
+  const [acceptOpen, setAcceptOpen] = useState(false);
+  const [cancelRequestOpen, setCancelRequestOpen] = useState(false);
 
   useEffect(() => {
     if (!requestId) return;
@@ -80,6 +90,50 @@ export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
     onChanged();
   }
 
+  // Nhận làm / huỷ yêu cầu không đụng tới số đang gõ cho phiếu giao, nên chỉ thay YCSX, giữ nguyên ô nhập.
+  function showRequest(updated: ProductionRequest) {
+    setState({ status: "ready", request: updated });
+    onChanged();
+  }
+
+  /** Bên kia đã đổi YCSX trước (shop huỷ, người khác nhận làm): báo lỗi rồi tải lại để thấy trạng thái thật. */
+  async function reportAndReload(error: unknown, fallback: string) {
+    const code = getApiErrorBody(error)?.code;
+    toast.error(messageForCode(code) ?? fallback);
+    if (!request || !code || !STALE_CODES.has(code)) return;
+    try {
+      showRequest(await workshopApi.getRequest(request.id));
+    } catch {
+      // Không tải lại được thì giữ màn cũ; người dùng bấm Tải lại ở trang.
+    }
+  }
+
+  async function accept() {
+    if (!request) return;
+    try {
+      const updated = await workshopApi.accept(request.id);
+      toast.success(`Đã xác nhận đang làm ${updated.code}`);
+      setAcceptOpen(false);
+      showRequest(updated);
+    } catch (error) {
+      setAcceptOpen(false);
+      await reportAndReload(error, "Không xác nhận được");
+    }
+  }
+
+  async function cancelRequest(reason: string) {
+    if (!request) return;
+    try {
+      const updated = await workshopApi.cancelRequest(request.id, reason);
+      toast.success(`Đã huỷ ${updated.code} - shop đã được báo`);
+      setCancelRequestOpen(false);
+      showRequest(updated);
+    } catch (error) {
+      setCancelRequestOpen(false);
+      await reportAndReload(error, "Không huỷ được yêu cầu");
+    }
+  }
+
   async function submit() {
     if (!request || !valid) return;
     setSaving(true);
@@ -94,7 +148,8 @@ export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
       toast.success("Đã tạo phiếu giao - chờ nơi nhận kiểm hàng");
       applyUpdated(updated);
     } catch (error) {
-      toast.error(getApiErrorBody(error)?.message ?? "Không tạo được phiếu giao");
+      const body = getApiErrorBody(error);
+      toast.error(messageForCode(body?.code) ?? body?.message ?? "Không tạo được phiếu giao");
     } finally {
       setSaving(false);
     }
@@ -108,7 +163,8 @@ export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
       setCancelId(null);
       applyUpdated(await workshopApi.getRequest(request.id));
     } catch (error) {
-      toast.error(getApiErrorBody(error)?.message ?? "Không rút lại được phiếu giao");
+      const body = getApiErrorBody(error);
+      toast.error(messageForCode(body?.code) ?? body?.message ?? "Không rút lại được phiếu giao");
       throw error;
     }
   }
@@ -134,6 +190,30 @@ export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
               })()}
               {request.note && <span className="text-sm text-muted-foreground">{request.note}</span>}
             </div>
+
+            {/* Xưởng nhận làm (2026-11-16): chưa nhận thì shop còn huỷ được; đã nhận thì chỉ xưởng huỷ được. */}
+            {request.status === "SENT" && !request.acceptedAt && (
+              <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
+                <p>Shop đang chờ xưởng xác nhận. Bấm khi đã bắt tay vào làm - từ lúc đó chỉ xưởng huỷ được yêu cầu này.</p>
+                <Button className="w-full" onClick={() => setAcceptOpen(true)}>
+                  Xác nhận đang làm
+                </Button>
+              </div>
+            )}
+            {request.acceptedAt && (request.status === "SENT" || request.status === "PARTIALLY_RECEIVED") && (
+              <div className="space-y-2 rounded-md border p-3 text-sm">
+                <p>
+                  Xưởng đang làm từ {formatDateTime(request.acceptedAt)}
+                  {request.acceptedBy ? ` · ${personName(request.acceptedBy)}` : ""}
+                </p>
+              </div>
+            )}
+            {/* Xưởng huỷ được khi yêu cầu còn ở "Đã gửi xưởng"; đã nhận hàng thì không huỷ nữa (BE cũng chặn). */}
+            {request.status === "SENT" && (
+              <Button variant="outline" size="sm" onClick={() => setCancelRequestOpen(true)}>
+                Huỷ yêu cầu
+              </Button>
+            )}
 
             <div className="space-y-3">
               {request.items.map((line) => {
@@ -257,6 +337,23 @@ export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
           description="Phiếu chưa được nơi nhận xác nhận nên chưa đụng tồn kho. Số lượng của phiếu được trả lại để giao bằng phiếu khác."
           confirmLabel="Rút lại"
           onConfirm={cancelDelivery}
+        />
+
+        {request && (
+          <AcceptRequestDialog
+            open={acceptOpen}
+            onOpenChange={setAcceptOpen}
+            requestCode={request.code}
+            onConfirm={accept}
+          />
+        )}
+        <CancelDeliveryDialog
+          open={cancelRequestOpen}
+          onOpenChange={setCancelRequestOpen}
+          title={request ? `Huỷ ${request.code}` : "Huỷ yêu cầu"}
+          description="Yêu cầu chuyển sang Đã huỷ và shop được báo kèm lý do. Còn phiếu giao chờ nhận thì phải rút phiếu trước."
+          confirmLabel="Huỷ yêu cầu"
+          onConfirm={cancelRequest}
         />
       </SheetContent>
     </Sheet>

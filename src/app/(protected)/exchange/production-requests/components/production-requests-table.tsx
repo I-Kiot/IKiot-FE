@@ -36,6 +36,7 @@ import {
   formatDateTime,
   requestProgress,
   requestStatusDisplay,
+  workshopAcceptanceDisplay,
 } from "../shared/production-display";
 import { ProductionRequestDetailDialog } from "./production-request-detail-dialog";
 
@@ -160,6 +161,7 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
           <TableBody>
             {rows.map((row) => {
               const display = requestStatusDisplay(row.status, row.closedShort);
+              const acceptance = workshopAcceptanceDisplay(row);
               const progress = requestProgress(row);
               return (
                 <TableRow key={row.id} className="cursor-pointer" onClick={() => setSelected(row)}>
@@ -167,7 +169,10 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
                   <TableCell>{row.supplier.supplierName}</TableCell>
                   <TableCell>{row.location.name}</TableCell>
                   <TableCell>
-                    <Badge variant={display.variant}>{display.label}</Badge>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant={display.variant}>{display.label}</Badge>
+                      {acceptance && <Badge variant={acceptance.variant}>{acceptance.label}</Badge>}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {progress.received}/{progress.ordered}

@@ -40,6 +40,23 @@ export const workshopApi = {
     return res.data.data;
   },
 
+  /** Xác nhận đang làm YCSX (chỉ YCSX đã gửi, chưa ai nhận): từ đây shop không huỷ được. */
+  accept: async (requestId: string): Promise<ProductionRequest> => {
+    const res = await client.post<Envelope<ProductionRequest>>(
+      `/workshop/production-requests/${requestId}/accept`,
+    );
+    return res.data.data;
+  },
+
+  /** Xưởng huỷ YCSX (bắt buộc lý do). Đã xác nhận đang làm thì chỉ xưởng huỷ được; còn phiếu giao chờ nhận thì không huỷ được. */
+  cancelRequest: async (requestId: string, reason: string): Promise<ProductionRequest> => {
+    const res = await client.post<Envelope<ProductionRequest>>(
+      `/workshop/production-requests/${requestId}/cancel`,
+      { reason },
+    );
+    return res.data.data;
+  },
+
   cancelDelivery: async (id: string, reason: string): Promise<ProductionDelivery> => {
     const res = await client.post<Envelope<ProductionDelivery>>(`/workshop/deliveries/${id}/cancel`, {
       reason,
