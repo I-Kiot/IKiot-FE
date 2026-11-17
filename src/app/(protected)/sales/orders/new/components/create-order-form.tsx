@@ -31,12 +31,16 @@ import { orderJourneyApi } from "@/lib/api/order-journey";
 import { staffApi } from "@/lib/api/staff";
 import { getCachedUser } from "@/lib/auth";
 import {
-  ORDER_PRIORITIES,
   ORDER_PRIORITY_LABELS,
   type CreateOrderJourneyPayload,
-  type OrderPriority,
   type SourceLocation,
 } from "@/types/order-flow";
+import { priorityForDaysUntil } from "@/lib/order-priority";
+import { Badge } from "@/components/ui/badge";
+import {
+  daysUntilPlainDate,
+  priorityDisplay,
+} from "../../shared/order-display";
 import {
   computeTotals,
   formatVND,
@@ -94,8 +98,11 @@ function OrderDraftForm({
   const [pickedAssigneeId, setAssigneeId] = React.useState("");
   const [fulfillment, setFulfillment] =
     React.useState<FulfillmentChoice>("HOME_DELIVERY");
-  const [priority, setPriority] = React.useState<OrderPriority>("NORMAL");
   const [requestedDate, setRequestedDate] = React.useState("");
+  // Suy ra từ ngày hẹn, không có ô chọn tay (xem lib/order-priority.ts).
+  const priority = priorityForDaysUntil(
+    requestedDate ? daysUntilPlainDate(requestedDate) : null,
+  );
   const [recipientName, setRecipientName] = React.useState("");
   const [recipientPhone, setRecipientPhone] = React.useState("");
   const [deliveryAddress, setDeliveryAddress] = React.useState("");
@@ -517,7 +524,7 @@ function OrderDraftForm({
                   Cả đơn xuất từ một nơi, đổi được tới trước khi đóng gói.
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3">
                 <div className="space-y-1.5">
                   <Label className={sectionLabel}>
                     Người phụ trách <span className="text-destructive">*</span>
@@ -546,24 +553,6 @@ function OrderDraftForm({
                       {errors.assignee}
                     </p>
                   )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label className={sectionLabel}>Mức ưu tiên</Label>
-                  <Select
-                    value={priority}
-                    onValueChange={(v) => setPriority(v as OrderPriority)}
-                  >
-                    <SelectTrigger className="w-full" aria-label="Mức ưu tiên">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ORDER_PRIORITIES.map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {ORDER_PRIORITY_LABELS[value]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </div>
@@ -607,6 +596,13 @@ function OrderDraftForm({
                 {show(errors.requestedDate) && (
                   <p className="text-sm text-destructive">{errors.requestedDate}</p>
                 )}
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  Mức ưu tiên:
+                  <Badge variant={priorityDisplay(priority).variant}>
+                    {ORDER_PRIORITY_LABELS[priority]}
+                  </Badge>
+                  tự động theo ngày hẹn
+                </p>
               </div>
               {/* Khách tới lấy cũng ghi người sẽ đến nhận để quầy đối chiếu; chỉ địa chỉ là của giao tận nơi. */}
               <div className="space-y-1.5">
