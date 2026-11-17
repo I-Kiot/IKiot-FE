@@ -15,7 +15,6 @@ import {
   priorityDisplay,
   stockDisplay,
 } from "../shared/order-display";
-import { OrderRowActions } from "./order-row-actions";
 import { AssigneeCell, DriverCell } from "./orders-person-cells";
 
 /** Trạng thái mà ngày hẹn giao không còn ý nghĩa đếm ngược. */
@@ -219,14 +218,6 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
         {formatDateTime(row.original.createdAt)}
       </span>
     ),
-  },
-  {
-    id: "actions",
-    header: "Thao tác",
-    // Thao tác tắt ngay trên dòng (2026-11-16), để khỏi chuyển qua màn khác.
-    cell: () => <OrderRowActions />,
-    size: 56,
-    enableHiding: false,
   },
   {
     id: "expand",

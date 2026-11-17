@@ -289,6 +289,8 @@ export interface OrderLine {
 export interface OrderDetailLine extends OrderLine {
   sourceLocation: (LocationRef & { type: SourceLocation["type"] }) | null;
   customization: OrderItemCustomization | null;
+  /** Sản phẩm đặt xưởng được không (`Product.isManufacturable`); BE từ chối cả YCSX nếu có dòng không làm được. */
+  isManufacturable: boolean;
 }
 
 export interface StockCheck {

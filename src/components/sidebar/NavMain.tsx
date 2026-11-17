@@ -123,7 +123,7 @@ export function NavMain({
                       {orderAlertCount > 0 &&
                         item.items.some((subItem) => subItem.url === ORDERS_URL) && (
                           <TriangleAlert
-                            className="ml-auto size-4 shrink-0 text-amber-500"
+                            className="ml-auto size-4 shrink-0 text-red-600 dark:text-red-500"
                             aria-label="Có đơn cần chú ý"
                           />
                         )}
@@ -148,10 +148,14 @@ export function NavMain({
                             >
                               <span>{subItem.title}</span>
                               {subItem.url === ORDERS_URL && orderAlertCount > 0 && (
-                                <TriangleAlert
-                                className="ml-auto size-4 shrink-0 text-amber-500"
-                                aria-label="Có đơn cần chú ý"
-                              />
+                                // Bọc trong span để icon không còn là con trực tiếp của SidebarMenuSubButton,
+                                // vốn ép màu mọi svg con về text-sidebar-accent-foreground và đè mất màu đỏ.
+                                <span className="ml-auto inline-flex shrink-0">
+                                  <TriangleAlert
+                                    className="size-4 text-red-600 dark:text-red-500"
+                                    aria-label="Có đơn cần chú ý"
+                                  />
+                                </span>
                               )}
                             </Link>
                           </SidebarMenuSubButton>

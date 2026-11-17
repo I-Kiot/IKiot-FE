@@ -5,10 +5,13 @@ import { ImageAttachments } from "@/components/image-attachments";
 import { CustomizationChips } from "../../shared/customization-chips";
 import {
   ORDER_ITEM_STATUS_LABELS,
+  type OrderDetail,
   type OrderDetailLine,
   type OrderItemCustomization,
 } from "@/types/order-flow";
 import { formatVND, orderedLines, stockDisplay } from "../../shared/order-display";
+import { canCreateProductionFor } from "../../shared/production-prefill";
+import { CreateProductionRequestButton } from "../../shared/create-production-request-button";
 
 /** Thứ khách đặt riêng: mỗi thay đổi một chip (giá trị gốc gạch ngang), ghi chú và ảnh - cùng cách màn tạo đơn và YCSX hiện. */
 function CustomizationDetails({ customization }: { customization: OrderItemCustomization }) {
@@ -23,15 +26,19 @@ function CustomizationDetails({ customization }: { customization: OrderItemCusto
   );
 }
 
-/** Mọi dòng của đơn, kèm kho xuất và việc tồn trên kệ hiện tại có đủ hay không. */
-export function OrderLinesCard({ items }: { items: OrderDetailLine[] }) {
+/** Mọi dòng của đơn, kèm kho xuất và việc tồn trên kệ hiện tại có đủ hay không; có nút "Tạo YCSX" điền sẵn hàng thiếu. */
+export function OrderLinesCard({ order }: { order: OrderDetail }) {
+  const items: OrderDetailLine[] = order.items;
   const lines = orderedLines(items);
   const topLevel = items.filter((line) => !line.parentItemId).length;
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>Sản phẩm ({topLevel})</CardTitle>
+        {canCreateProductionFor(order) && (
+          <CreateProductionRequestButton orderId={order.id} order={order} />
+        )}
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto rounded-md border">
