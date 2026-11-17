@@ -28,6 +28,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useRouter } from "next/navigation";
+import { canViewBilling } from "@/components/sidebar/constants/role-permissions";
 
 export function NavUser({
   user,
@@ -113,16 +114,18 @@ export function NavUser({
                       Tài khoản
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/settings/billing">
-                      <CreditCard />
-                      Thanh toán
-                    </Link>
-                  </DropdownMenuItem>
+                  {canViewBilling(role) && (
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/settings/billing">
+                        <CreditCard />
+                        Thanh toán
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild className="cursor-pointer">
                     <Link href="/settings">
                       <Settings className="h-4 w-4" />
-                      Cài đặt hệ thống
+                      Cấu hình
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>

@@ -86,6 +86,11 @@ const EMPTY_MESSAGES: Record<string, EmptyMessage> = {
     title: "Chưa có yêu cầu sản xuất nào",
     description: "Chưa có yêu cầu nào phù hợp với bộ lọc hiện tại",
   },
+  "/workshop": {
+    icon: Factory,
+    title: "Không có yêu cầu sản xuất nào",
+    description: "Chưa có yêu cầu nào gửi cho xưởng phù hợp với bộ lọc hiện tại",
+  },
   "/exchange/production-deliveries": {
     icon: Truck,
     title: "Không có phiếu giao nào",

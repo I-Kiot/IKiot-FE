@@ -14,21 +14,39 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
-import { staffApi } from "@/lib/api/staff"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { changePassword } from "@/lib/api/auth"
+import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes"
 import { useAuthStore } from "@/store/auth-store"
 import { useRouter } from "next/navigation"
+
+/** Ô mật khẩu có nút ẩn/hiện, cùng kiểu với form đăng nhập. Mỗi ô tự giữ trạng thái hiện của mình. */
+function PasswordInput(props: Omit<React.ComponentProps<typeof Input>, "type">) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div className="relative">
+      <Input {...props} type={visible ? "text" : "password"} className="pr-10" />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
+      >
+        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      </button>
+    </div>
+  )
+}
 
 interface ChangePasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  userId: string;
 }
 
 export function ChangePasswordDialog({
   open,
   onOpenChange,
-  userId,
 }: ChangePasswordDialogProps) {
   const router = useRouter()
   const { logout } = useAuthStore()
@@ -47,8 +65,8 @@ export function ChangePasswordDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!form.newPassword || !form.confirmPassword) {
-      toast.error("Vui lòng điền đầy đủ thông tin mật khẩu mới")
+    if (!form.currentPassword || !form.newPassword || !form.confirmPassword) {
+      toast.error("Vui lòng điền đầy đủ mật khẩu hiện tại và mật khẩu mới")
       return
     }
 
@@ -64,7 +82,8 @@ export function ChangePasswordDialog({
 
     setIsSaving(true)
     try {
-      await staffApi.updatePassword(userId, {
+      await changePassword({
+        currentPassword: form.currentPassword,
         newPassword: form.newPassword,
         reEnterPassword: form.confirmPassword,
       })
@@ -77,9 +96,10 @@ export function ChangePasswordDialog({
         await logout()
         router.replace("/sign-in")
       }, 1500)
-    } catch (error: any) {
+    } catch (error) {
       console.error("Change password error:", error)
-      toast.error(error?.response?.data?.message || error?.message || "Đổi mật khẩu thất bại")
+      const body = getApiErrorBody(error)
+      toast.error(messageForCode(body?.code) || body?.message || "Đổi mật khẩu thất bại")
     } finally {
       setIsSaving(false)
     }
@@ -98,22 +118,21 @@ export function ChangePasswordDialog({
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="currentPassword">Mật khẩu hiện tại</Label>
-            <Input
+            <PasswordInput
               id="currentPassword"
               name="currentPassword"
-              type="password"
               placeholder="Nhập mật khẩu hiện tại"
               value={form.currentPassword}
               onChange={handleChange}
+              required
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="newPassword">Mật khẩu mới</Label>
-            <Input
+            <PasswordInput
               id="newPassword"
               name="newPassword"
-              type="password"
               placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
               value={form.newPassword}
               onChange={handleChange}
@@ -123,10 +142,9 @@ export function ChangePasswordDialog({
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Xác nhận mật khẩu mới</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
               name="confirmPassword"
-              type="password"
               placeholder="Xác nhận lại mật khẩu mới"
               value={form.confirmPassword}
               onChange={handleChange}

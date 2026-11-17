@@ -34,6 +34,23 @@ export function requestStatusDisplay(
   };
 }
 
+/**
+ * Xưởng đang ở bước nào (2026-11-16), chỉ có ý nghĩa khi YCSX đã gửi mà chưa về đủ.
+ * Có phiếu giao chờ nhận thì là "đã giao hàng" (kho cần kiểm và nhận); nhận / từ chối / rút phiếu xong mà còn phần chưa giao thì về lại "đang làm".
+ * null = không hiện gì (nháp, đã xong, đã huỷ). Màn xưởng và màn shop dùng chung để hai bên đọc cùng một chữ.
+ */
+export function workshopAcceptanceDisplay(
+  request: Pick<ProductionRequest, "status" | "acceptedAt" | "deliveries">,
+): { label: string; variant: BadgeVariant } | null {
+  const inProgress = request.status === "SENT" || request.status === "PARTIALLY_RECEIVED";
+  if (!inProgress) return null;
+  const hasPendingDelivery = (request.deliveries ?? []).some((delivery) => delivery.status === "PENDING");
+  if (hasPendingDelivery) return { label: "Xưởng đã giao hàng", variant: "warning" };
+  if (request.acceptedAt) return { label: "Xưởng đang làm", variant: "success" };
+  if (request.status === "SENT") return { label: "Chờ xưởng xác nhận", variant: "warning" };
+  return null;
+}
+
 /** Phiếu giao xưởng: chờ nhận = warning, đã nhận = success, đã huỷ = error. */
 const DELIVERY_VARIANT: Record<ProductionDeliveryStatus, BadgeVariant> = {
   PENDING: "warning",

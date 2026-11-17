@@ -33,6 +33,7 @@ export const ORDER_EVENT_TYPES = [
   "RETURN_CANCELLED",
   "REPLACEMENT_LINKED",
   "PRODUCTION_REQUESTED",
+  "PRODUCTION_STARTED",
   "PRODUCTION_RECEIVED",
 ] as const;
 export type OrderEventType = (typeof ORDER_EVENT_TYPES)[number];
@@ -68,6 +69,7 @@ export const ORDER_EVENT_TYPE_LABELS: Record<OrderEventType, string> = {
   RETURN_CANCELLED: "Huỷ phiếu hoàn",
   REPLACEMENT_LINKED: "Gắn đơn mua lại",
   PRODUCTION_REQUESTED: "Gửi yêu cầu sản xuất",
+  PRODUCTION_STARTED: "Xưởng nhận làm",
   PRODUCTION_RECEIVED: "Nhận hàng từ xưởng",
 };
 
