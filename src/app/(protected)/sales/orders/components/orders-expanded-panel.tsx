@@ -12,6 +12,8 @@ import {
   type OrderListItem,
 } from "@/types/order-flow";
 import { formatVND, orderedLines, stockDisplay } from "../shared/order-display";
+import { canCreateProductionFor } from "../shared/production-prefill";
+import { CreateProductionRequestButton } from "../shared/create-production-request-button";
 
 function StockCell({ line }: { line: OrderLine }) {
   if (!line.stockCheck) return <span className="text-muted-foreground">-</span>;
@@ -50,12 +52,15 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
       <div className="lg:col-span-2">
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="text-sm font-semibold">Sản phẩm ({order.itemCount})</p>
-          <Button asChild variant="outline" size="sm" className="cursor-pointer">
-            <Link href={`/sales/orders/${order.id}`}>
-              Xem chi tiết
-              <ArrowRight />
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {canCreateProductionFor(order) && <CreateProductionRequestButton orderId={order.id} />}
+            <Button asChild variant="outline" size="sm" className="cursor-pointer">
+              <Link href={`/sales/orders/${order.id}`}>
+                Xem chi tiết
+                <ArrowRight />
+              </Link>
+            </Button>
+          </div>
         </div>
         <div className="overflow-x-auto rounded-md border">
           <table className="w-full text-sm">

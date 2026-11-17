@@ -13,6 +13,7 @@ import type { InboundSource } from "@/app/(protected)/exchange/shared/inbound-so
 import {
   PRODUCTION_REQUEST_FORM_DESCRIPTION,
   ProductionRequestForm,
+  type DraftLine,
 } from "@/app/(protected)/exchange/production-requests/components/production-request-form-dialog";
 import type { ProductionRequest } from "@/types/order-flow";
 import { ImportCreateForm } from "./import-create-form";
@@ -35,6 +36,8 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onImportCreated: () => void;
   onRequestCreated: (request: ProductionRequest) => void;
+  /** Điền sẵn dòng cho form xưởng (nút "Tạo YCSX" trên đơn hàng). */
+  initialRequestLines?: DraftLine[];
 };
 
 /**
@@ -48,6 +51,7 @@ export function CreateInboundDialog({
   onOpenChange,
   onImportCreated,
   onRequestCreated,
+  initialRequestLines,
 }: Props) {
   const [source, setSource] = useState(defaultSource);
   const [opened, setOpened] = useState<InboundSource[]>([defaultSource]);
@@ -93,6 +97,7 @@ export function CreateInboundDialog({
         {opened.includes("WORKSHOP") && (
           <div className={paneClass("WORKSHOP")}>
             <ProductionRequestForm
+              initialLines={initialRequestLines}
               onSaved={onRequestCreated}
               onCancel={() => requestClose(false)}
               onSubmittingChange={setSubmitting}

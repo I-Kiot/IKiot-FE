@@ -147,7 +147,7 @@ export default function OrderDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <OrderLinesCard items={order.items} />
+          <OrderLinesCard order={order} />
           <OrderPaymentCard order={order} onChanged={replaceOrder} />
              {/* Luôn mount dù không có nút nào: giữ sheet giao hàng mở qua lần tải lại sau khi giao. */}
           <OrderJourneyActions
