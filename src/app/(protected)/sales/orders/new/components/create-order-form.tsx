@@ -483,14 +483,12 @@ function OrderDraftForm({
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="gap-3 py-4">
-          <CardHeader className="px-4 pb-0">
-            <CardTitle className="text-base">
-              Khách hàng &amp; phụ trách
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 px-4">
+      <Card className="gap-3 py-4">
+        <CardHeader className="px-4 pb-0">
+          <CardTitle className="text-base">Thông tin đơn hàng</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 px-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <div className="space-y-1.5">
               <Label className={sectionLabel}>Khách hàng</Label>
               <CustomerPicker
@@ -556,13 +554,8 @@ function OrderDraftForm({
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="gap-3 py-4">
-          <CardHeader className="px-4 pb-0">
-            <CardTitle className="text-base">Giao hàng</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4">
+          </div>
+          <div className="flex flex-col gap-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className={sectionLabel}>Hình thức giao</Label>
@@ -596,7 +589,7 @@ function OrderDraftForm({
                 {show(errors.requestedDate) && (
                   <p className="text-sm text-destructive">{errors.requestedDate}</p>
                 )}
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
                   Mức ưu tiên:
                   <Badge variant={priorityDisplay(priority).variant}>
                     {ORDER_PRIORITY_LABELS[priority]}
@@ -658,9 +651,9 @@ function OrderDraftForm({
                 </>
               )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="gap-3 py-4">
         <CardHeader className="px-4 pb-0">
