@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Banknote, Check, FileText, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CheckoutTabs } from "@/app/(protected)/check-out/components/checkout-tabs";
@@ -104,6 +105,7 @@ function OrderDraftForm({
   );
   const [recipientName, setRecipientName] = React.useState("");
   const [recipientPhone, setRecipientPhone] = React.useState("");
+  const [recipientIsCustomer, setRecipientIsCustomer] = React.useState(true);
   const [deliveryAddress, setDeliveryAddress] = React.useState("");
   const [lines, setLines] = React.useState<OrderLineDraft[]>([]);
   const [shippingFee, setShippingFee] = React.useState(0);
@@ -231,6 +233,9 @@ function OrderDraftForm({
     deliveryAddress:
       isHomeDelivery && !deliveryAddress.trim() ? "Nhập địa chỉ giao hàng." : undefined,
   };
+  const showRecipientFields =
+    !recipientIsCustomer ||
+    (attempted && (!!errors.recipientName || !!errors.recipientPhone));
   const valid =
     !errors.customer &&
     !errors.branch &&
@@ -242,7 +247,7 @@ function OrderDraftForm({
     !errors.recipientPhone &&
     !errors.deliveryAddress;
 
-  // Chọn khách sẽ điền một lần các thông tin giao hàng đã có, không ghi đè nội dung đã gõ.
+  // Chọn hoặc đổi khách sẽ điền lại người nhận và địa chỉ giao từ hồ sơ khách, trừ khi người nhận là người khác.
   // D-11: khi đã có danh sách chọn, sao chép khách, chi nhánh, người phụ trách, giao hàng và các dòng hỏng của đơn trả.
   // Giá do server đọc lại từ catalogue, trừ khi người dùng giữ giá đã thoả thuận hiển thị ở đây.
   React.useEffect(() => {
@@ -282,6 +287,11 @@ function OrderDraftForm({
         }
         setRecipientName(order.recipientName ?? "");
         setRecipientPhone(order.recipientPhone ?? "");
+        setRecipientIsCustomer(
+          !!original &&
+            (order.recipientName ?? "") === original.name &&
+            (order.recipientPhone ?? "") === (original.phone ?? ""),
+        );
         setDeliveryAddress(order.deliveryAddress ?? "");
         setNote(`Mua lại hàng hỏng của đơn hoàn ${orderReturn.code}`);
         setLines(
@@ -317,11 +327,17 @@ function OrderDraftForm({
 
   const handleCustomer = (next: PickedCustomer | null) => {
     setCustomer(next);
-    if (next) {
-      setRecipientName((current) => current || next.name);
-      setRecipientPhone((current) => current || next.phone || "");
-      setDeliveryAddress((current) => current || next.address || "");
+    if (next && recipientIsCustomer) {
+      setRecipientName(next.name);
+      setRecipientPhone(next.phone || "");
+      setDeliveryAddress(next.address || "");
     }
+  };
+
+  const handleRecipientIsCustomer = (checked: boolean) => {
+    setRecipientIsCustomer(checked);
+    setRecipientName(checked && customer ? customer.name : "");
+    setRecipientPhone(checked && customer ? customer.phone || "" : "");
   };
 
   async function submit() {
@@ -496,65 +512,132 @@ function OrderDraftForm({
                 error={show(errors.customer)}
               />
             </div>
-            <div className="space-y-4">
-              <SalesBranchSelect sales={sales} error={show(errors.branch)} />
-              <div className="space-y-1.5">
-                <Label className={sectionLabel}>Nguồn hàng</Label>
-                <Select
-                  value={stockLocation?.id ?? ""}
-                  onValueChange={(id) => setPickedSource({ branchId, id })}
-                  disabled={!branch || sourceOptions.length === 0}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="recipient-is-customer"
+                  checked={recipientIsCustomer}
+                  onCheckedChange={(checked) =>
+                    handleRecipientIsCustomer(checked === true)
+                  }
+                />
+                <Label
+                  htmlFor="recipient-is-customer"
+                  className="text-sm font-normal"
                 >
-                  <SelectTrigger className="w-full" aria-label="Nguồn hàng">
-                    <SelectValue placeholder="Chọn nơi bán trước" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sourceOptions.map((location) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.name}
-                        {location.id === defaultSource?.id ? " (mặc định)" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Cả đơn xuất từ một nơi, đổi được tới trước khi đóng gói.
-                </p>
+                  {fulfillment === "STORE_PICKUP"
+                    ? "Người đến lấy là khách"
+                    : "Người nhận là khách"}
+                </Label>
               </div>
-              <div className="grid gap-3">
+              {showRecipientFields ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipient-name" className={sectionLabel}>
+                      {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận *"}
+                    </Label>
+                    <Input
+                      id="recipient-name"
+                      value={recipientName}
+                      onChange={(event) => setRecipientName(event.target.value)}
+                    />
+                    {show(errors.recipientName) && (
+                      <p className="text-sm text-destructive">{errors.recipientName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipient-phone" className={sectionLabel}>
+                      {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận *"}
+                    </Label>
+                    <Input
+                      id="recipient-phone"
+                      inputMode="tel"
+                      value={recipientPhone}
+                      onChange={(event) => setRecipientPhone(event.target.value)}
+                    />
+                    {show(errors.recipientPhone) && (
+                      <p className="text-sm text-destructive">{errors.recipientPhone}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {customer
+                    ? [recipientName, recipientPhone].filter(Boolean).join(" · ")
+                    : "Chọn khách hàng để điền sẵn người nhận."}
+                </p>
+              )}
+              {fulfillment === "HOME_DELIVERY" ? (
                 <div className="space-y-1.5">
-                  <Label className={sectionLabel}>
-                    Người phụ trách <span className="text-destructive">*</span>
+                  <Label htmlFor="delivery-address" className={sectionLabel}>
+                    Địa chỉ giao hàng *
                   </Label>
-                  <Select
-                    value={assigneeId}
-                    onValueChange={setAssigneeId}
-                    disabled={!optionsReady || !branch}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      aria-label="Người phụ trách"
-                    >
-                      <SelectValue placeholder={branch ? "Chọn người" : "Chọn nơi bán trước"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assigneeOptions.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {show(errors.assignee) && (
-                    <p className="text-sm text-destructive">
-                      {errors.assignee}
-                    </p>
+                  <Input
+                    id="delivery-address"
+                    value={deliveryAddress}
+                    onChange={(event) => setDeliveryAddress(event.target.value)}
+                  />
+                  {show(errors.deliveryAddress) && (
+                    <p className="text-sm text-destructive">{errors.deliveryAddress}</p>
                   )}
                 </div>
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Khách tới cửa hàng nhận hàng: không có phí giao hàng, không cần địa chỉ. Đơn đóng gói xong sẽ nằm ở
+                  &quot;Chờ khách lấy&quot; cho tới khi thu đủ tiền và giao tại quầy.
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
+            <SalesBranchSelect sales={sales} error={show(errors.branch)} />
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>Nguồn hàng</Label>
+              <Select
+                value={stockLocation?.id ?? ""}
+                onValueChange={(id) => setPickedSource({ branchId, id })}
+                disabled={!branch || sourceOptions.length === 0}
+              >
+                <SelectTrigger className="w-full" aria-label="Nguồn hàng">
+                  <SelectValue placeholder="Chọn nơi bán trước" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sourceOptions.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                      {location.id === defaultSource?.id ? " (mặc định)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Cả đơn xuất từ một nơi, đổi được tới trước khi đóng gói.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>
+                Người phụ trách <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={assigneeId}
+                onValueChange={setAssigneeId}
+                disabled={!optionsReady || !branch}
+              >
+                <SelectTrigger className="w-full" aria-label="Người phụ trách">
+                  <SelectValue placeholder={branch ? "Chọn người" : "Chọn nơi bán trước"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {assigneeOptions.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {show(errors.assignee) && (
+                <p className="text-sm text-destructive">{errors.assignee}</p>
+              )}
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className={sectionLabel}>Hình thức giao</Label>
@@ -562,10 +645,7 @@ function OrderDraftForm({
                   value={fulfillment}
                   onValueChange={(v) => setFulfillment(v as FulfillmentChoice)}
                 >
-                  <SelectTrigger
-                    className="w-full"
-                    aria-label="Hình thức giao hàng"
-                  >
+                  <SelectTrigger className="w-full" aria-label="Hình thức giao hàng">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -588,68 +668,15 @@ function OrderDraftForm({
                 {show(errors.requestedDate) && (
                   <p className="text-sm text-destructive">{errors.requestedDate}</p>
                 )}
-                <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
-                  Mức ưu tiên:
-                  <Badge variant={priorityDisplay(priority).variant}>
-                    {ORDER_PRIORITY_LABELS[priority]}
-                  </Badge>
-                  tự động theo ngày hẹn
-                </p>
               </div>
-              {/* Khách tới lấy cũng ghi người sẽ đến nhận để quầy đối chiếu; chỉ địa chỉ là của giao tận nơi. */}
-              <div className="space-y-1.5">
-                <Label htmlFor="recipient-name" className={sectionLabel}>
-                  {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận *"}
-                </Label>
-                <Input
-                  id="recipient-name"
-                  value={recipientName}
-                  onChange={(event) => setRecipientName(event.target.value)}
-                />
-                {show(errors.recipientName) && (
-                  <p className="text-sm text-destructive">{errors.recipientName}</p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="recipient-phone" className={sectionLabel}>
-                  {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận *"}
-                </Label>
-                <Input
-                  id="recipient-phone"
-                  inputMode="tel"
-                  value={recipientPhone}
-                  onChange={(event) => setRecipientPhone(event.target.value)}
-                />
-                {show(errors.recipientPhone) && (
-                  <p className="text-sm text-destructive">{errors.recipientPhone}</p>
-                )}
-              </div>
-              {fulfillment === "STORE_PICKUP" && (
-                <p className="text-sm text-muted-foreground sm:col-span-2">
-                  Khách tới cửa hàng nhận hàng: không có phí giao hàng, không cần địa chỉ. Đơn đóng gói xong sẽ nằm ở
-                  &quot;Chờ khách lấy&quot; cho tới khi thu đủ tiền và giao tại quầy.
-                </p>
-              )}
-              {fulfillment === "HOME_DELIVERY" && (
-                <>
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="delivery-address" className={sectionLabel}>
-                      Địa chỉ giao hàng *
-                    </Label>
-                    <Input
-                      id="delivery-address"
-                      value={deliveryAddress}
-                      onChange={(event) =>
-                        setDeliveryAddress(event.target.value)
-                      }
-                    />
-                    {show(errors.deliveryAddress) && (
-                      <p className="text-sm text-destructive">{errors.deliveryAddress}</p>
-                    )}
-                  </div>
-                </>
-              )}
             </div>
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+              Mức ưu tiên:
+              <Badge variant={priorityDisplay(priority).variant}>
+                {ORDER_PRIORITY_LABELS[priority]}
+              </Badge>
+              tự động theo ngày hẹn
+            </p>
           </div>
         </CardContent>
       </Card>
