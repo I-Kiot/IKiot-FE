@@ -213,6 +213,7 @@ export const ERROR_MESSAGES = {
   SUPPLIER_NOT_FOUND: "Không tìm thấy nhà cung cấp",
   SUPPLIER_PAYMENT_EXCEEDS_DEBT: "Số tiền thanh toán vượt quá công nợ hiện tại",
   TENANT_BANKING_ACCOUNT_TAKEN: "Số tài khoản này đã được một cửa hàng khác dùng để nhận tiền",
+  TENANT_BANKING_INCOMPLETE: "Cần điền đủ số tài khoản, ngân hàng và chủ tài khoản, hoặc để trống cả ba",
   TENANT_BANKING_HAS_PENDING_SEPAY: "Còn đơn đang chờ khách chuyển khoản vào tài khoản hiện tại. Hãy hoàn tất hoặc huỷ các đơn đó trước khi đổi tài khoản.",
   TENANT_BANKING_NOT_CONFIGURED: "Cửa hàng chưa cấu hình thông tin ngân hàng để nhận thanh toán SePay",
   TENANT_SEPAY_NOT_LINKED: "Tài khoản ngân hàng của cửa hàng chưa liên kết SePay nên chưa thể thu tiền bằng mã QR",

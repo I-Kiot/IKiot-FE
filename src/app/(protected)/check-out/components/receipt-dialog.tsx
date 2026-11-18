@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useShopProfileStore } from "@/store/shop-profile-store";
 
 interface ReceiptDialogProps {
   open: boolean;
@@ -58,6 +59,7 @@ export function ReceiptDialog({
   order,
 }: ReceiptDialogProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const shop = useShopProfileStore((s) => s.profile);
 
   if (!order) return null;
 
@@ -133,6 +135,23 @@ export function ReceiptDialog({
             ref={receiptRef}
             className="text-sm space-y-4 font-sans text-foreground"
           >
+            {/* Bản in chép `innerHTML` sang cửa sổ không có Tailwind, nên phần đầu này dùng style inline. */}
+            {shop && (
+              <div style={{ textAlign: "center", lineHeight: 1.5 }}>
+                {shop.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary tuỳ ý, và bản in cần thẻ img thường.
+                  <img
+                    src={shop.logoUrl}
+                    alt="Logo cửa hàng"
+                    style={{ maxHeight: 56, maxWidth: 160, margin: "0 auto 4px", display: "block" }}
+                  />
+                )}
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{shop.name}</div>
+                {shop.address && <div style={{ fontSize: 11 }}>{shop.address}</div>}
+                {shop.phoneNumber && <div style={{ fontSize: 11 }}>ĐT: {shop.phoneNumber}</div>}
+              </div>
+            )}
+
             <div className="text-center space-y-1">
               <h2 className="text-lg font-bold tracking-tight text-foreground uppercase">
                 HÓA ĐƠN BÁN HÀNG

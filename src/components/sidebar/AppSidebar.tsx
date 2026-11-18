@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 
 import { useAuthStore } from "@/store/auth-store";
+import { useShopProfileStore } from "@/store/shop-profile-store";
 import { getFilteredSidebar } from "./utils/get-sidebar";
 
 const defaultUserData = {
@@ -43,6 +44,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       avatar: user.profile?.avatarUrl || "",
     };
   }, [user]);
+
+  // Tên và logo shop cho khung chọn chi nhánh và bản in hoá đơn. ADMIN không thuộc shop nào.
+  const loadShopProfile = useShopProfileStore((s) => s.load);
+  React.useEffect(() => {
+    void loadShopProfile(user?.role === "ADMIN" ? null : user?.tenantId);
+  }, [loadShopProfile, user?.role, user?.tenantId]);
 
   const navGroups = React.useMemo(
     () => getFilteredSidebar(user?.role),
