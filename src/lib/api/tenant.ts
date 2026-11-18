@@ -59,6 +59,8 @@ export interface Tenant {
   phoneNumber?: string;
   mainAddress?: string;
   taxNumber?: string;
+  /** URL ảnh logo (từ `POST /uploads`), `null` khi chưa đặt. */
+  logoUrl?: string | null;
   banking?: {
     accountNumber?: string;
     bankName?: string;
@@ -84,6 +86,11 @@ export async function listTenants(): Promise<Tenant[]> {
 export async function getMyTenant(): Promise<Tenant> {
   const response = await client.get<{ data: Tenant }>("/tenant/me");
   return response.data.data;
+}
+
+/** Đặt hoặc gỡ (`null`) logo của shop mình. Chỉ gửi `logoUrl`, nên các trường khác của `PUT /tenant/me` giữ nguyên. */
+export async function updateMyTenantLogo(logoUrl: string | null): Promise<void> {
+  await client.put("/tenant/me", { logoUrl });
 }
 
 /** ADMIN: lưu SePay webhook key riêng cho từng shop. */

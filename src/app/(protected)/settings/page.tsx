@@ -11,7 +11,6 @@ import {
   RotateCcw,
   Save,
   Plus,
-  Upload,
   MapPin,
   Phone,
   Settings,
@@ -56,6 +55,7 @@ import { useThemeManager } from "@/hooks/use-theme-manager";
 import { useSidebarConfig } from "@/hooks/use-sidebar-config";
 import { getMe } from "@/lib/api/auth";
 import { getMyTenant } from "@/lib/api/tenant";
+import { messageForCode } from "@/lib/api/error-codes";
 import { branchApi } from "@/lib/api/branch";
 import { warehouseApi } from "@/lib/api/warehouse";
 import { staffApi } from "@/lib/api/staff";
@@ -64,6 +64,7 @@ import type { Staff } from "@/types/staff";
 import { PageHeader } from "@/components/page-header";
 import { NotificationSettings } from "./components/notification-settings";
 import { BankingHistoryCard } from "./components/banking-history-card";
+import { StoreLogoField } from "./components/store-logo-field";
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 
@@ -851,8 +852,11 @@ export default function SettingsPage() {
     bankName: "",
     accountNumber: "",
     accountName: "",
+    logoUrl: null as string | null,
   });
   const [isSavingStore, setIsSavingStore] = React.useState(false);
+  // Tăng sau mỗi lần lưu có gửi ngân hàng, để thẻ lịch sử tải lại thay vì giữ kết quả lúc mở trang.
+  const [bankingHistoryVersion, setBankingHistoryVersion] = React.useState(0);
   // `PUT /tenant/me` cần `tenants:update`. Màn Vai trò không cho giao quyền này, nên thực tế chỉ chủ shop/admin sửa được; người khác chỉ xem.
   const canEditStore = allows(getSessionRole(), "tenants", "update");
   // Khác `tenants:update`, quyền chi nhánh/kho giao được trên màn Vai trò ("Quản lý chi nhánh và kho"), nên khoá theo đúng từng quyền BE kiểm tra.
@@ -923,6 +927,7 @@ export default function SettingsPage() {
           bankName: tenant?.banking?.bankName || "",
           accountNumber: tenant?.banking?.accountNumber || "",
           accountName: tenant?.banking?.accountName || "",
+          logoUrl: tenant?.logoUrl ?? null,
         });
         setSepayLinked(Boolean(tenant?.hasSepayKey));
       }
@@ -1010,6 +1015,26 @@ export default function SettingsPage() {
       toast.error("Vui lòng điền đầy đủ các thông tin bắt buộc!");
       return;
     }
+    // Tài khoản nhận tiền: để trống cả ba, hoặc điền đủ cả ba (admin cần đủ để duyệt liên kết SePay). BE kiểm tra lại cùng quy tắc.
+    const bankingFields = [
+      { label: "Ngân hàng", value: storeInfo.bankName.trim() },
+      { label: "Số tài khoản", value: storeInfo.accountNumber.trim() },
+      { label: "Chủ tài khoản", value: storeInfo.accountName.trim() },
+    ];
+    const missingBanking = bankingFields.filter((f) => !f.value);
+    if (
+      missingBanking.length > 0 &&
+      missingBanking.length < bankingFields.length
+    ) {
+      toast.error(
+        `Vui lòng điền đủ thông tin ngân hàng: thiếu ${missingBanking
+          .map((f) => f.label.toLowerCase())
+          .join(", ")}`,
+      );
+      return;
+    }
+    const hasBanking = missingBanking.length === 0;
+
     setIsSavingStore(true);
     try {
       await client.put("/tenant/me", {
@@ -1017,11 +1042,13 @@ export default function SettingsPage() {
         phoneNumber: storeInfo.phone,
         mainAddress: storeInfo.address,
         taxNumber: storeInfo.taxNumber,
-        banking: {
-          accountNumber: storeInfo.accountNumber,
-          bankName: storeInfo.bankName,
-          accountName: storeInfo.accountName,
-        },
+        ...(hasBanking && {
+          banking: {
+            accountNumber: storeInfo.accountNumber.trim(),
+            bankName: storeInfo.bankName.trim(),
+            accountName: storeInfo.accountName.trim(),
+          },
+        }),
       });
 
       const me = await getMe();
@@ -1031,11 +1058,14 @@ export default function SettingsPage() {
         });
       }
 
+      if (hasBanking) setBankingHistoryVersion((v) => v + 1);
       toast.success("Cập nhật thông tin cửa hàng thành công!");
     } catch (err: any) {
       console.error(err);
       toast.error(
-        err.response?.data?.message || "Lỗi khi cập nhật thông tin cửa hàng!",
+        messageForCode(err.response?.data?.code) ||
+          err.response?.data?.message ||
+          "Lỗi khi cập nhật thông tin cửa hàng!",
       );
     } finally {
       setIsSavingStore(false);
@@ -1202,7 +1232,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 px-4 lg:px-6">
+    <div className="flex flex-col gap-6 px-4 lg:px-6 md:h-[calc(100svh-var(--header-height)-3rem)]">
       <PageHeader
         breadcrumbs={[
           { label: "Trang chủ", href: "/dashboard" },
@@ -1213,7 +1243,7 @@ export default function SettingsPage() {
         description="Quản lý các thiết lập và tùy chỉnh hệ thống."
       />
 
-      <div className="flex flex-col md:flex-row gap-8 items-start">
+      <div className="flex flex-col md:flex-row gap-8 items-start md:items-stretch md:flex-1 md:min-h-0">
         <aside className="w-full md:w-64 shrink-0 md:sticky md:top-20 space-y-6">
           <nav className="space-y-6">
             {sidebarItems.map((group) => (
@@ -1251,7 +1281,7 @@ export default function SettingsPage() {
           </nav>
         </aside>
 
-        <main className="flex-1 w-full min-w-0 bg-card border rounded-xl shadow-xs overflow-hidden flex flex-col md:h-[calc(100vh-12rem)] md:max-h-[750px]">
+        <main className="flex-1 w-full min-w-0 bg-card border rounded-xl shadow-xs overflow-hidden flex flex-col">
           <div className="flex items-center justify-between p-6 border-b bg-muted/10">
             <div>
               <h2 className="text-lg font-bold">
@@ -1297,28 +1327,13 @@ export default function SettingsPage() {
                 {/* `disabled` trên fieldset khoá mọi input/nút bên trong cùng lúc; `contents` để không đổi bố cục. */}
                 <fieldset disabled={!canEditStore} className="contents">
                   <div className="flex flex-col md:flex-row gap-6 items-start">
-                    <div className="flex flex-col items-center gap-3 w-full md:w-44 shrink-0">
-                      <Label className="text-sm font-medium self-start md:self-center">
-                        Logo Cửa hàng
-                      </Label>
-                      <div className="relative group w-32 h-32 rounded-xl border border-dashed border-muted-foreground/30 bg-muted/10 overflow-hidden flex items-center justify-center">
-                        <div className="text-center p-4">
-                          <Store className="h-10 w-10 text-muted-foreground/60 mx-auto" />
-                          <span className="text-2xs text-muted-foreground mt-1 block">
-                            iKiot Logo
-                          </span>
-                        </div>
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity duration-200">
-                          <Upload className="h-5 w-5 mb-1" />
-                          <span className="text-3xs font-medium">
-                            Tải ảnh lên
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground text-center">
-                        Khuyên dùng ảnh PNG hình vuông dưới 2MB.
-                      </p>
-                    </div>
+                    <StoreLogoField
+                      logoUrl={storeInfo.logoUrl}
+                      canEdit={canEditStore}
+                      onChange={(logoUrl) =>
+                        setStoreInfo((prev) => ({ ...prev, logoUrl }))
+                      }
+                    />
 
                     <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -1501,7 +1516,7 @@ export default function SettingsPage() {
                 {canEditStore && (
                   <>
                     <Separator />
-                    <BankingHistoryCard />
+                    <BankingHistoryCard refreshKey={bankingHistoryVersion} />
 
                     <Separator />
 

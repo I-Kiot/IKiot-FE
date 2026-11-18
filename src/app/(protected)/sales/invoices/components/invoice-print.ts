@@ -1,4 +1,5 @@
 import { PAYMENT_METHOD_MAP, INVOICE_TYPE_LABELS, type Invoice } from "./invoices-columns";
+import { getShopProfile } from "@/store/shop-profile-store";
 
 const formatVND = (value: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
@@ -30,6 +31,17 @@ export function printInvoice(invoice: Invoice) {
     })
     .join("");
 
+  // Hồ sơ shop do sidebar tải sẵn khi vào app; chưa có thì in không kèm phần đầu shop.
+  const shop = getShopProfile();
+  const shopHeader = shop
+    ? `<div class="shop">
+      ${shop.logoUrl ? `<img src="${escapeHtml(shop.logoUrl)}" alt="Logo" />` : ""}
+      <div class="shop-name">${escapeHtml(shop.name)}</div>
+      ${shop.address ? `<div>${escapeHtml(shop.address)}</div>` : ""}
+      ${shop.phoneNumber ? `<div>ĐT: ${escapeHtml(shop.phoneNumber)}</div>` : ""}
+    </div>`
+    : "";
+
   const discount = invoice.discountValue && invoice.discountValue > 0 ? invoice.discountValue : 0;
   const promotions =
     invoice.discountType === "PROMOTION" && invoice.appliedPromotions?.length
@@ -59,11 +71,15 @@ export function printInvoice(invoice: Invoice) {
       .row { display: flex; justify-content: space-between; padding: 3px 0; }
       .row.sub { color: #555; font-size: 12px; padding-left: 10px; }
       .row.bold { font-weight: bold; border-top: 1px solid #000; margin-top: 6px; padding-top: 8px; }
+      .shop { text-align: center; margin-bottom: 14px; line-height: 1.5; font-size: 12px; }
+      .shop img { display: block; margin: 0 auto 6px; max-height: 64px; max-width: 180px; }
+      .shop-name { font-weight: bold; font-size: 15px; }
       .footer { margin-top: 28px; text-align: center; font-style: italic; font-size: 11px; }
       @media print { body { padding: 0; } }
     </style>
   </head>
   <body>
+    ${shopHeader}
     <h1>${title}</h1>
     <div class="meta">
       Số: <b>${escapeHtml(number)}</b>${invoice.type === "ADJUSTMENT" ? ` (${escapeHtml(INVOICE_TYPE_LABELS.ADJUSTMENT)} cho đơn ${escapeHtml(invoice.orderCode)})` : ` · Đơn ${escapeHtml(invoice.orderCode)}`}<br />

@@ -60,16 +60,16 @@ function ChangeRow({ change }: { change: BankingChange }) {
   );
 }
 
-/** "Lịch sử thay đổi" của thông tin nhận tiền (chỉ render khi người xem có `tenants:update`). */
-export function BankingHistoryCard() {
+/** "Lịch sử thay đổi" của thông tin nhận tiền (chỉ render khi người xem có `tenants:update`). Đổi `refreshKey` để tải lại từ trang 1 sau khi lưu. */
+export function BankingHistoryCard({ refreshKey = 0 }: { refreshKey?: number }) {
   const fetchPage = useCallback((page: number) => getBankingHistory({ page, limit: PAGE_SIZE }), []);
-  const { rows, pagination, loading, error, setPage } = useHistoryPage<BankingChange>(fetchPage, true, "banking");
+  const { rows, pagination, loading, error, setPage } = useHistoryPage<BankingChange>(fetchPage, true, `banking:${refreshKey}`);
 
   return (
     <section className="space-y-3">
       <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground/80">
         <History className="size-4" />
-        Lịch sử thay đổi
+        Lịch sử thay đổi tài khoản nhận tiền
       </h4>
       {loading && rows.length === 0 ? (
         <Loader2 className="size-4 animate-spin text-muted-foreground" />

@@ -27,7 +27,7 @@ import { Switch } from "@/components/ui/switch"
 import { Upload, Loader2, Key, Shield, Info } from "lucide-react"
 
 import { useAccountSettings } from "./hooks/use-account-settings"
-import { AvatarCropDialog } from "./components/avatar-crop-dialog"
+import { ImageCropDialog } from "@/components/image-crop/image-crop-dialog"
 import { ChangePasswordDialog } from "./components/change-password-dialog"
 
 const WHO_OWNER = "Chỉ chủ shop mới làm được. Nhân viên nhờ chủ shop đổi giúp ở màn Nhân viên."
@@ -37,13 +37,7 @@ export default function AccountSettings() {
     user,
     form,
     profileImage,
-    selectedImageSrc,
-    isCropDialogOpen,
-    setIsCropDialogOpen,
-    imageState,
-    setImageState,
-    isDragging,
-    dimensions,
+    crop,
     isUploading,
     isSaving,
     isPasswordDialogOpen,
@@ -55,11 +49,6 @@ export default function AccountSettings() {
     handleFileUploadClick,
     handleFileChange,
     handleResetAvatar,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-    handleTouchStart,
-    handleTouchMove,
     handleApplyCrop,
     onSubmit,
   } = useAccountSettings()
@@ -445,21 +434,13 @@ export default function AccountSettings() {
         </form>
       </Form>
 
-      <AvatarCropDialog
-        open={isCropDialogOpen}
-        onOpenChange={setIsCropDialogOpen}
-        selectedImageSrc={selectedImageSrc}
-        imageState={imageState}
-        setImageState={setImageState}
-        isDragging={isDragging}
-        dimensions={dimensions}
-        handleMouseDown={handleMouseDown}
-        handleMouseMove={handleMouseMove}
-        handleMouseUp={handleMouseUp}
-        handleTouchStart={handleTouchStart}
-        handleTouchMove={handleTouchMove}
-        handleApplyCrop={handleApplyCrop}
-        isUploading={isUploading}
+      <ImageCropDialog
+        crop={crop}
+        title="Chỉnh sửa ảnh đại diện"
+        shape="circle"
+        busy={isUploading}
+        busyLabel="Đang xử lý..."
+        onConfirm={handleApplyCrop}
       />
 
       <ChangePasswordDialog

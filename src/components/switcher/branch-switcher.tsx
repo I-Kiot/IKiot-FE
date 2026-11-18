@@ -40,6 +40,25 @@ import {
   ALL_LOCATIONS_ITEM,
   useBranchSwitcher,
 } from "./hooks/use-branch-switcher";
+import { useShopProfileStore } from "@/store/shop-profile-store";
+
+/** Ô vuông đầu khung chọn: logo shop nếu đã đặt, không thì icon của địa điểm đang xem. */
+function LocationMark({ children }: { children: React.ReactNode }) {
+  const logoUrl = useShopProfileStore((s) => s.profile?.logoUrl);
+  if (logoUrl) {
+    return (
+      <div className="flex aspect-square size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-background">
+        {/* eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary tuỳ ý, không khai báo trong `images.remotePatterns`. */}
+        <img src={logoUrl} alt="Logo cửa hàng" className="size-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+      {children}
+    </div>
+  );
+}
 
 export function BranchSwitcher() {
   const {
@@ -111,13 +130,13 @@ export function BranchSwitcher() {
             size="lg"
             className="cursor-default hover:bg-transparent active:bg-transparent group"
           >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <LocationMark>
               {activeItem.type === "branch" ? (
                 <Store className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
               ) : (
                 <Warehouse className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
               )}
-            </div>
+            </LocationMark>
             <div className="grid flex-1 text-start text-sm leading-tight">
               {activeItem.status === "INACTIVE" ? (
                 <>
@@ -150,7 +169,7 @@ export function BranchSwitcher() {
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group"
               >
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <LocationMark>
                   {activeItem.id === ALL_LOCATIONS_ITEM.id ? (
                     <Building2 className="size-4" />
                   ) : activeItem.type === "branch" ? (
@@ -158,7 +177,7 @@ export function BranchSwitcher() {
                   ) : (
                     <Warehouse className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
                   )}
-                </div>
+                </LocationMark>
                 <div className="grid flex-1 text-start text-sm leading-tight">
                   {activeItem.status === "INACTIVE" ? (
                     <>
