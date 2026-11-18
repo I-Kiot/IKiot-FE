@@ -165,7 +165,7 @@ export function ReturnsTable() {
               <TableHead>Đơn hàng</TableHead>
               <TableHead>Lý do</TableHead>
               <TableHead>Trạng thái</TableHead>
-              <TableHead className="text-right">Số dòng</TableHead>
+              <TableHead className="text-right">Số hàng</TableHead>
               <TableHead>Ngày tạo</TableHead>
             </TableRow>
           </TableHeader>

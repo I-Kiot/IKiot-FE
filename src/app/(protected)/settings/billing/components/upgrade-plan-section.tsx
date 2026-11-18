@@ -141,7 +141,7 @@ export function UpgradePlanSection({
               onValueChange={(value) =>
                 value && setIsYearly(value === "yearly")
               }
-              className="bg-secondary text-secondary-foreground rounded-full p-1 shadow-none"
+              className=" bg-muted text-muted-foreground rounded-full p-1 shadow-none"
             >
               <ToggleGroupItem
                 value="monthly"

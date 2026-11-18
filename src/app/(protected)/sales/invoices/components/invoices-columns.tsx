@@ -295,21 +295,6 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
     },
   },
   {
-    id: "expand",
-    header: "",
-    cell: ({ row }) => (
-      <ChevronRight
-        className={cn(
-          "size-5 text-muted-foreground transition-transform duration-200 cursor-pointer p-0.5 rounded-full hover:bg-muted",
-          row.getIsExpanded() && "rotate-90 text-primary bg-primary/10",
-        )}
-      />
-    ),
-    size: 40,
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     id: "actions",
     header: "Thao tác",
     // Chỉ hoá đơn ISSUED mới in được: PENDING chưa có số, CANCELLED đã bị thu hồi.
@@ -332,6 +317,21 @@ export const invoicesColumns: ColumnDef<Invoice>[] = [
           In hóa đơn
         </Button>
       ) : null,
+    enableSorting: false,
+    enableHiding: false,
+  },
+    {
+    id: "expand",
+    header: "",
+    cell: ({ row }) => (
+      <ChevronRight
+        className={cn(
+          "size-5 text-muted-foreground transition-transform duration-200 cursor-pointer p-0.5 rounded-full hover:bg-muted",
+          row.getIsExpanded() && "rotate-90 text-primary bg-primary/10",
+        )}
+      />
+    ),
+    size: 40,
     enableSorting: false,
     enableHiding: false,
   },
