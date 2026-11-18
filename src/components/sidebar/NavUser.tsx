@@ -125,7 +125,7 @@ export function NavUser({
                   <DropdownMenuItem asChild className="cursor-pointer">
                     <Link href="/settings">
                       <Settings className="h-4 w-4" />
-                      Cài đặt hệ thống
+                      Cấu hình
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>

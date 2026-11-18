@@ -30,6 +30,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SUPPORTED_BANKS } from "./_constants/banks";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -1011,7 +1019,7 @@ export default function SettingsPage() {
   const handleSaveStore = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditStore) return;
-    if (!storeInfo.name || !storeInfo.phone || !storeInfo.address) {
+    if (!storeInfo.name || !storeInfo.phone) {
       toast.error("Vui lòng điền đầy đủ các thông tin bắt buộc!");
       return;
     }
@@ -1236,10 +1244,9 @@ export default function SettingsPage() {
       <PageHeader
         breadcrumbs={[
           { label: "Trang chủ", href: "/dashboard" },
-          { label: "Cài đặt" },
-          { label: "Cấu hình" },
+          { label: "Cấu hình cửa hàng và hệ thống" },
         ]}
-        title="Cấu hình hệ thống"
+        title="Cấu hình cửa hàng và hệ thống"
         description="Quản lý các thiết lập và tùy chỉnh hệ thống."
       />
 
@@ -1335,7 +1342,7 @@ export default function SettingsPage() {
                       }
                     />
 
-                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="store-name">
                           Tên cửa hàng{" "}
@@ -1348,16 +1355,6 @@ export default function SettingsPage() {
                             setStoreInfo({ ...storeInfo, name: e.target.value })
                           }
                           required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="store-code">Mã định danh (ID)</Label>
-                        <Input
-                          id="store-code"
-                          value={storeInfo.code}
-                          disabled
-                          className="bg-muted text-muted-foreground"
                         />
                       </div>
 
@@ -1397,7 +1394,7 @@ export default function SettingsPage() {
                         />
                       </div>
 
-                      <div className="space-y-2 md:col-span-2">
+                      <div className="space-y-2">
                         <Label htmlFor="store-tax">Mã số thuế</Label>
                         <Input
                           id="store-tax"
@@ -1412,10 +1409,7 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="store-address">
-                          Địa chỉ chính{" "}
-                          <span className="text-destructive">*</span>
-                        </Label>
+                        <Label htmlFor="store-address">Địa chỉ chính</Label>
                         <Input
                           id="store-address"
                           value={storeInfo.address}
@@ -1425,55 +1419,77 @@ export default function SettingsPage() {
                               address: e.target.value,
                             })
                           }
-                          required
                         />
                       </div>
 
-                      <div className="space-y-2 md:col-span-2">
-                        <Separator className="my-2" />
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h4 className="text-sm font-semibold text-foreground/80">
-                            Cấu hình thanh toán ngân hàng (Để nhận thanh toán
-                            đơn hàng)
-                          </h4>
-                          {sepayLinked ? (
-                            <Badge
-                              variant="outline"
-                              className="gap-1 bg-green-500/10 text-green-500 border-green-500/20"
-                            >
-                              <CheckCircle2 className="h-3 w-3" />
-                              Đã liên kết SePay
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20"
-                            >
-                              <Clock className="h-3 w-3" />
-                              Chờ quản trị viên liên kết
-                            </Badge>
-                          )}
+                      <div className="space-y-6 md:col-span-2">
+                        <Separator />
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h4 className="text-sm font-semibold text-foreground/80">
+                              Cấu hình thanh toán ngân hàng (Để nhận thanh toán
+                              đơn hàng)
+                            </h4>
+                            {sepayLinked ? (
+                              <Badge
+                                variant="outline"
+                                className="gap-1 bg-green-500/10 text-green-500 border-green-500/20"
+                              >
+                                <CheckCircle2 className="h-3 w-3" />
+                                Đã liên kết SePay
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20"
+                              >
+                                <Clock className="h-3 w-3" />
+                                Chờ quản trị viên liên kết
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {sepayLinked
+                              ? "Tài khoản đã được liên kết với cổng SePay - bạn có thể nhận thanh toán đơn hàng qua mã QR."
+                              : "Sau khi lưu thông tin ngân hàng, quản trị viên sẽ thêm tài khoản vào SePay (chủ tài khoản xác nhận với ngân hàng). Hệ thống tự nhận ra và gửi thông báo cho bạn khi liên kết xong."}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {sepayLinked
-                            ? "Tài khoản đã được liên kết với cổng SePay - bạn có thể nhận thanh toán đơn hàng qua mã QR."
-                            : "Sau khi lưu thông tin ngân hàng, quản trị viên sẽ thêm tài khoản vào SePay (chủ tài khoản xác nhận với ngân hàng). Hệ thống tự nhận ra và gửi thông báo cho bạn khi liên kết xong."}
-                        </p>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="store-bank-name">Tên ngân hàng</Label>
-                        <Input
-                          id="store-bank-name"
-                          placeholder="Ví dụ: MBBank, Vietcombank..."
-                          value={storeInfo.bankName}
-                          onChange={(e) =>
-                            setStoreInfo({
-                              ...storeInfo,
-                              bankName: e.target.value,
-                            })
-                          }
-                        />
+                        {/* Radix Select chèn một <select> ẩn cạnh nút; bọc lại để nó không nhận margin của space-y-2. */}
+                        <div>
+                          <Select
+                            value={storeInfo.bankName || undefined}
+                            onValueChange={(value) =>
+                              setStoreInfo({ ...storeInfo, bankName: value })
+                            }
+                          >
+                            <SelectTrigger
+                              id="store-bank-name"
+                              className="w-full"
+                            >
+                              <SelectValue placeholder="Chọn ngân hàng" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SUPPORTED_BANKS.map((bank) => (
+                                <SelectItem key={bank.value} value={bank.value}>
+                                  {bank.label}
+                                </SelectItem>
+                              ))}
+                              {/* Tên gõ tay từ trước không có trong danh sách: vẫn hiện để không mất giá trị đang lưu. */}
+                              {storeInfo.bankName &&
+                                !SUPPORTED_BANKS.some(
+                                  (b) => b.value === storeInfo.bankName,
+                                ) && (
+                                  <SelectItem value={storeInfo.bankName}>
+                                    {storeInfo.bankName}
+                                  </SelectItem>
+                                )}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -1515,7 +1531,8 @@ export default function SettingsPage() {
 
                 {canEditStore && (
                   <>
-                    <Separator />
+                    {/* fieldset là `contents` nên không nhận khoảng cách space-y của form: tự thêm mt. */}
+                    <Separator className="mt-6" />
                     <BankingHistoryCard refreshKey={bankingHistoryVersion} />
 
                     <Separator />
