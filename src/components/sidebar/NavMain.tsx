@@ -45,7 +45,6 @@ export function NavMain({
   }[];
 }) {
   const pathname = usePathname();
-  const unreadCount = useNotificationStore((state) => state.unreadCount);
   const openTicketsCount = useNotificationStore((state) => state.openTicketsCount);
 
   const ORDERS_URL = "/sales/orders";
@@ -169,9 +168,6 @@ export function NavMain({
                   <Link href={item.url}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
-                    {item.url === "/admin/system-notifications" && unreadCount > 0 && (
-                      <span className="ml-auto h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
-                    )}
                     {item.url === "/admin/tickets" && openTicketsCount > 0 && (
                       <span className="ml-auto h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
                     )}

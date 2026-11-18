@@ -10,7 +10,6 @@ import {
   ShieldAlert,
   Megaphone,
   LifeBuoy,
-  Bell,
   MessageSquarePlus,
   Wallet,
   Landmark,
@@ -168,11 +167,6 @@ export const sidebarItems = {
     title: "Gửi thông báo",
     url: "/admin/notifications",
     icon: Megaphone,
-  },
-  adminSystemNotifications: {
-    title: "Thông báo",
-    url: "/admin/system-notifications",
-    icon: Bell,
   },
   adminTickets: {
     title: "Hỗ trợ kỹ thuật",

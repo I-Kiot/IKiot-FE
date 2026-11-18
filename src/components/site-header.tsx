@@ -9,6 +9,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { ShoppingCart } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { NotificationBell } from "@/components/notification-bell";
+import { AdminNotificationBell } from "@/components/admin-notification-bell";
 import { canOpenCheckout } from "@/components/sidebar/utils/get-sidebar";
 
 export function SiteHeader() {
@@ -61,7 +62,7 @@ export function SiteHeader() {
                 </a>
               </PermissionButton>
             )}
-            {user?.role !== "ADMIN" && <NotificationBell />}
+            {user?.role === "ADMIN" ? <AdminNotificationBell /> : <NotificationBell />}
             <ModeToggle />
           </div>
         </div>
