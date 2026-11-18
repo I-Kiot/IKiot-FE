@@ -4,6 +4,7 @@
 import { Fragment, useCallback, useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
+import { ExportExcelButton } from '@/components/export-excel-button'
 import { PageHeader } from '@/components/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -76,6 +77,16 @@ export default function SalesJournalPage() {
   }, [range, entryType, place, page, pageSize])
   const { data: list, isLoading, failed } = useAsyncData(load, reloadKey)
 
+  // Xuất cả kỳ theo đúng bộ lọc đang xem (không chỉ trang hiện tại).
+  const exportRange = resolveDashboardRange(range)
+  const exportJournal = () =>
+    statsApi.exportSalesJournal({
+      fromDate: exportRange.fromDate,
+      toDate: exportRange.toDate,
+      branchId: place,
+      entryType: entryType === 'ALL' ? undefined : entryType,
+    })
+
   const toggle = (id: string) =>
     setExpanded((prev) => {
       const next = new Set(prev)
@@ -109,10 +120,16 @@ export default function SalesJournalPage() {
         title="Sổ doanh thu"
         description="Doanh thu ghi theo ngày đơn hoàn thành; hàng trả ghi âm vào ngày trả. Đơn cũ trước khi có sổ không nằm ở đây"
         actions={
-          <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)} disabled={isLoading}>
-            <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Làm mới
-          </Button>
+          <div className="flex gap-2">
+            <ExportExcelButton
+              load={exportJournal}
+              filename={`so-doanh-thu_${exportRange.fromDate}_${exportRange.toDate}.xlsx`}
+            />
+            <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)} disabled={isLoading}>
+              <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Làm mới
+            </Button>
+          </div>
         }
       />
 

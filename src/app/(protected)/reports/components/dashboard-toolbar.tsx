@@ -2,6 +2,7 @@
 
 import { Calendar, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ReportExportMenu } from "./report-export-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useDashboard } from "./dashboard-provider"
 import { RANGE_OPTIONS, type DashboardRange } from "../hooks/use-dashboard-stats"
@@ -25,6 +26,7 @@ export function DashboardToolbar() {
         ) : null}
       </div>
       <div className="flex items-center gap-2">
+        <ReportExportMenu />
         <Select value={range} onValueChange={(value) => setRange(value as DashboardRange)}>
           <SelectTrigger className="w-44 cursor-pointer">
             <SelectValue />

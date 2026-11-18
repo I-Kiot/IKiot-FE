@@ -537,6 +537,12 @@ async function getStats<T, P extends object = object>(path: string, params?: P):
   return res.data.data;
 }
 
+/** File .xlsx do server dựng (`/stats/export/*`). */
+async function getExport<P extends object>(path: string, params?: P): Promise<Blob> {
+  const res = await client.get<Blob>(path, { params, responseType: 'blob' });
+  return res.data;
+}
+
 async function getCashflowListPage(params?: object): Promise<CashflowList> {
   const res = await client.get<{
     success: boolean;
@@ -596,6 +602,23 @@ export const statsApi = {
   },
 
   getUnreconciled: (params?: { branchId?: string }) => getStats<Unreconciled>('/stats/unreconciled', params),
+
+  /** Sổ doanh thu cả kỳ theo mẫu S03a4-DN và S35-DN (Thông tư 99/2025/TT-BTC). */
+  exportSalesJournal: (params?: Omit<SalesJournalParams, 'page' | 'limit'>) =>
+    getExport('/stats/export/sales-journal', params),
+
+  exportUnreconciled: (params?: { branchId?: string }) => getExport('/stats/export/unreconciled', params),
+
+  /** File của trang Báo cáo chi tiết: mỗi nhóm số liệu một sheet. */
+  exportReport: (
+    params?: StatsDateRangeParams & {
+      groupBy?: 'day' | 'month';
+      /** Chỉ xuất một báo cáo (một tab); bỏ trống là xuất tất cả. */
+      section?: string;
+      staffGroupBy?: RevenueByStaffGroupBy;
+      lowStockThreshold?: number;
+    },
+  ) => getExport('/stats/export/report', params),
 
   getTopProducts: (params?: StatsDateRangeParams & { sortBy?: 'quantity' | 'revenue'; limit?: number }) =>
     getStats<TopProducts>('/stats/top-products', params),
