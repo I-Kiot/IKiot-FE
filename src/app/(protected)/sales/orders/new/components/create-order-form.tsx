@@ -99,7 +99,6 @@ function OrderDraftForm({
   const [fulfillment, setFulfillment] =
     React.useState<FulfillmentChoice>("HOME_DELIVERY");
   const [requestedDate, setRequestedDate] = React.useState("");
-  // Suy ra từ ngày hẹn, không có ô chọn tay (xem lib/order-priority.ts).
   const priority = priorityForDaysUntil(
     requestedDate ? daysUntilPlainDate(requestedDate) : null,
   );
