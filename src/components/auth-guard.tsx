@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
 import Loading from "@/app/loading";
 import { useAuthStore } from "@/store/auth-store";
+import type { SystemNotification } from "@/lib/api/notification";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -44,12 +45,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           
           // Lấy số thông báo chưa đọc và số ticket đang mở ban đầu
           const { useNotificationStore } = require("@/store/notification-store");
-          useNotificationStore.getState().fetchUnreadCount();
+          useNotificationStore.getState().fetchSystemNotifications();
           useNotificationStore.getState().fetchOpenTicketsCount();
 
-          // Lắng nghe thông báo hệ thống mới để tăng số đếm
-          const handleNewNotification = () => {
-            useNotificationStore.getState().incrementUnreadCount();
+          // Thông báo hệ thống mới: thêm vào đầu danh sách của chuông (số chưa đọc tính lại theo danh sách).
+          const handleNewNotification = (notification: SystemNotification) => {
+            useNotificationStore.getState().prepend(notification);
           };
           socket.on("system-notification", handleNewNotification);
 

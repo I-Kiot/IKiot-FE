@@ -63,7 +63,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <div className="flex items-center gap-2.5 px-3 py-2">
             <Logo size={28} className="shrink-0" />
             <span className="font-semibold text-sm tracking-tight text-neutral-900 dark:text-neutral-100">
-              iKiot Dashboard
+              iKiot Admin
             </span>
           </div>
         ) : (

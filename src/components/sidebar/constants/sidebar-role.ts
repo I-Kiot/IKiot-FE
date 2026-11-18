@@ -26,7 +26,6 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       label: "Quản lý",
       items: [
         sidebarItems.adminDashboard,
-        sidebarItems.adminSystemNotifications,
         sidebarItems.adminUsers,
         sidebarItems.subscriptions,
         sidebarItems.adminSepay,
