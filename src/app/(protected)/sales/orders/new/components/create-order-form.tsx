@@ -8,6 +8,16 @@ import { Banknote, Check, FileText, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { Customer, CustomerGender } from "@/types/customer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CheckoutTabs } from "@/app/(protected)/check-out/components/checkout-tabs";
@@ -106,6 +116,14 @@ function OrderDraftForm({
   const [recipientName, setRecipientName] = React.useState("");
   const [recipientPhone, setRecipientPhone] = React.useState("");
   const [recipientIsCustomer, setRecipientIsCustomer] = React.useState(true);
+  const [customerMode, setCustomerMode] = React.useState<"existing" | "new">("existing");
+  const [newName, setNewName] = React.useState("");
+  const [newPhone, setNewPhone] = React.useState("");
+  const [newGender, setNewGender] = React.useState<CustomerGender>("MALE");
+  const [addedCustomer, setAddedCustomer] = React.useState<{
+    orderId: string;
+    customer: Customer;
+  } | null>(null);
   const [deliveryAddress, setDeliveryAddress] = React.useState("");
   const [lines, setLines] = React.useState<OrderLineDraft[]>([]);
   const [shippingFee, setShippingFee] = React.useState(0);
@@ -216,10 +234,20 @@ function OrderDraftForm({
     depositValue,
   });
 
-  const customerError = customer ? undefined : "Chọn một khách hàng hoặc thêm khách mới.";
+  const isNewCustomer = customerMode === "new";
+  const customerError =
+    isNewCustomer || customer ? undefined : "Chọn một khách hàng hoặc nhập khách mới.";
+  const newNameError =
+    isNewCustomer && newName.trim().length < 2 ? "Tên khách hàng phải có ít nhất 2 ký tự." : undefined;
+  const newPhoneError =
+    isNewCustomer && !/^[0-9+]{9,15}$/.test(newPhone.replace(/\s/g, ""))
+      ? "Số điện thoại hợp lệ phải từ 9 đến 15 chữ số."
+      : undefined;
   const isHomeDelivery = fulfillment === "HOME_DELIVERY";
   const errors = {
     customer: customerError,
+    newName: newNameError,
+    newPhone: newPhoneError,
     branch: branchId ? undefined : "Chọn nơi bán.",
     assignee: assigneeId ? undefined : "Chọn người phụ trách đơn.",
     lines: lines.length > 0 ? undefined : "Đơn hàng cần ít nhất một mặt hàng.",
@@ -235,9 +263,13 @@ function OrderDraftForm({
   };
   const showRecipientFields =
     !recipientIsCustomer ||
-    (attempted && (!!errors.recipientName || !!errors.recipientPhone));
+    (attempted &&
+      !isNewCustomer &&
+      (!!errors.recipientName || !!errors.recipientPhone));
   const valid =
     !errors.customer &&
+    !errors.newName &&
+    !errors.newPhone &&
     !errors.branch &&
     !errors.assignee &&
     !errors.lines &&
@@ -336,13 +368,57 @@ function OrderDraftForm({
 
   const handleRecipientIsCustomer = (checked: boolean) => {
     setRecipientIsCustomer(checked);
-    setRecipientName(checked && customer ? customer.name : "");
-    setRecipientPhone(checked && customer ? customer.phone || "" : "");
+    const source = isNewCustomer ? { name: newName, phone: newPhone } : customer;
+    setRecipientName(checked && source ? source.name : "");
+    setRecipientPhone(checked && source ? source.phone || "" : "");
+  };
+
+  const handleCustomerMode = (mode: "existing" | "new") => {
+    if (mode === customerMode) return;
+    setCustomerMode(mode);
+    setCustomer(null);
+    if (recipientIsCustomer) {
+      setRecipientName(mode === "new" ? newName : "");
+      setRecipientPhone(mode === "new" ? newPhone : "");
+    }
+  };
+
+  const handleNewName = (value: string) => {
+    setNewName(value);
+    if (recipientIsCustomer) setRecipientName(value);
+  };
+
+  const handleNewPhone = (value: string) => {
+    setNewPhone(value);
+    if (recipientIsCustomer) setRecipientPhone(value);
   };
 
   async function submit() {
     setAttempted(true);
-    if (!valid || !customer) return;
+    if (!valid || (!isNewCustomer && !customer)) return;
+    let customerId = customer?.id ?? "";
+    let newlyAdded: Customer | null = null;
+    if (isNewCustomer) {
+      setSubmitting(true);
+      try {
+        newlyAdded = await customerApi.create({
+          name: newName.trim(),
+          phone: newPhone.replace(/\s/g, ""),
+          gender: newGender,
+          ...(fulfillment === "HOME_DELIVERY" && deliveryAddress.trim()
+            ? { address: deliveryAddress.trim() }
+            : {}),
+        });
+        customerId = newlyAdded.id;
+        setCustomer(newlyAdded);
+        setCustomerMode("existing");
+      } catch (error) {
+        const body = getApiErrorBody(error);
+        toast.error(messageForCode(body?.code) ?? body?.message ?? "Không thêm được khách hàng");
+        setSubmitting(false);
+        return;
+      }
+    }
     const payload: CreateOrderJourneyPayload = {
       branchId,
       assigneeId,
@@ -358,7 +434,7 @@ function OrderDraftForm({
           : {}),
         ...(line.customization ? { customization: line.customization } : {}),
       })),
-      customerId: customer.id,
+      customerId,
       ...(effectiveShippingFee > 0 ? { shippingFee: effectiveShippingFee } : {}),
       ...(orderDiscount > 0
         ? { discountType: "ORDER" as const, discountValue: orderDiscount }
@@ -398,6 +474,10 @@ function OrderDraftForm({
               `Đơn đã tạo nhưng chưa gắn được vào đơn hoàn ${replacementOf.code}`,
             ),
           );
+      }
+      if (newlyAdded) {
+        setAddedCustomer({ orderId: created.id, customer: newlyAdded });
+        return;
       }
       router.push(`/sales/orders/${created.id}`);
     } catch (error) {
@@ -505,12 +585,96 @@ function OrderDraftForm({
         <CardContent className="grid gap-6 px-4 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
             <div className="space-y-1.5">
-              <Label className={sectionLabel}>Khách hàng</Label>
-              <CustomerPicker
-                value={customer}
-                onChange={handleCustomer}
-                error={show(errors.customer)}
-              />
+              <div className="flex items-center justify-between gap-2">
+                <Label className={sectionLabel}>Khách hàng</Label>
+                <div className="inline-flex rounded-md border p-0.5 text-xs">
+                  {(["existing", "new"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => handleCustomerMode(mode)}
+                      className={cn(
+                        "cursor-pointer rounded px-2.5 py-1 font-medium transition-colors",
+                        customerMode === mode
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {mode === "existing" ? "Khách có sẵn" : "Khách mới / vãng lai"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {isNewCustomer ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-customer-name" className={sectionLabel}>
+                      Họ và tên *
+                    </Label>
+                    <Input
+                      id="new-customer-name"
+                      value={newName}
+                      onChange={(event) => handleNewName(event.target.value)}
+                    />
+                    {show(errors.newName) && (
+                      <p className="text-sm text-destructive">{errors.newName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-customer-phone" className={sectionLabel}>
+                      Số điện thoại *
+                    </Label>
+                    <Input
+                      id="new-customer-phone"
+                      inputMode="tel"
+                      value={newPhone}
+                      onChange={(event) => handleNewPhone(event.target.value)}
+                    />
+                    {show(errors.newPhone) && (
+                      <p className="text-sm text-destructive">{errors.newPhone}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className={sectionLabel}>Giới tính</Label>
+                    <RadioGroup
+                      value={newGender}
+                      onValueChange={(value) => setNewGender(value as CustomerGender)}
+                      className="flex gap-6"
+                    >
+                      {(
+                        [
+                          ["MALE", "Nam"],
+                          ["FEMALE", "Nữ"],
+                          ["OTHER", "Khác"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <div key={value} className="flex items-center gap-2">
+                          <RadioGroupItem
+                            id={`new-customer-gender-${value}`}
+                            value={value}
+                            className="border-muted-foreground/60"
+                          />
+                          <Label
+                            htmlFor={`new-customer-gender-${value}`}
+                            className="cursor-pointer text-sm font-normal"
+                          >
+                            {label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  <p className="text-xs text-muted-foreground sm:col-span-2">
+                    Khách mới sẽ được thêm vào hệ thống khi tạo đơn.
+                  </p>
+                </div>
+              ) : (
+                <CustomerPicker
+                  value={customer}
+                  onChange={handleCustomer}
+                  error={show(errors.customer)}
+                />
+              )}
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -562,9 +726,9 @@ function OrderDraftForm({
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {customer
+                  {recipientName || recipientPhone
                     ? [recipientName, recipientPhone].filter(Boolean).join(" · ")
-                    : "Chọn khách hàng để điền sẵn người nhận."}
+                    : "Chọn hoặc nhập khách hàng để điền sẵn người nhận."}
                 </p>
               )}
               {fulfillment === "HOME_DELIVERY" ? (
@@ -914,6 +1078,42 @@ function OrderDraftForm({
           Tạo đơn
         </Button>
       </div>
+      <Dialog
+        open={addedCustomer !== null}
+        onOpenChange={(open) => {
+          if (!open && addedCustomer) router.push(`/sales/orders/${addedCustomer.orderId}`);
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Đã thêm khách hàng mới</DialogTitle>
+            <DialogDescription>
+              Khách hàng được lưu vào hệ thống cùng với đơn vừa tạo.
+            </DialogDescription>
+          </DialogHeader>
+          {addedCustomer && (
+            <div className="rounded-lg border bg-primary/5 p-3">
+              <div className="text-base font-bold">{addedCustomer.customer.name}</div>
+              <div className="mt-0.5 font-mono text-sm text-muted-foreground">
+                {[
+                  addedCustomer.customer.phone && `SĐT: ${addedCustomer.customer.phone}`,
+                  addedCustomer.customer.customerCode,
+                ]
+                  .filter(Boolean)
+                  .join(" • ")}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              onClick={() => addedCustomer && router.push(`/sales/orders/${addedCustomer.orderId}`)}
+            >
+              Xem đơn hàng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
