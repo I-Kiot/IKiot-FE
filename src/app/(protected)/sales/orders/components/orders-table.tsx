@@ -73,7 +73,7 @@ const STATUS_FILTER_OPTIONS: OrderStatus[] = [
 ];
 
 const SORT_LABELS: Record<OrderSort, string> = {
-  createdAt: "Mới tạo nhất",
+  createdAt: "Tạo mới nhất",
   requestedDeliveryDate: "Hẹn giao sớm nhất",
   priority: "Ưu tiên cao nhất",
 };

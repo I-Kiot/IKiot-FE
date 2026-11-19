@@ -17,12 +17,14 @@ export const INBOUND_READ_PERMISSIONS: Record<InboundSource, readonly [string, s
   WORKSHOP: ["production_requests", "read"],
 };
 
-const INBOUND_CREATE_PERMISSIONS: Record<InboundSource, readonly [string, string]> = {
+/** Quyền tạo mới của từng nguồn - đúng quyền backend kiểm trên `POST` tương ứng. */
+export const INBOUND_CREATE_PERMISSIONS: Record<InboundSource, readonly [string, string]> = {
   SUPPLIER: ["stock_movement", "create"],
   WORKSHOP: ["production_requests", "create"],
 };
 
-const ALL_SOURCES: InboundSource[] = ["SUPPLIER", "WORKSHOP"];
+// Thứ tự này là thứ tự tab trên toggle, và nguồn đầu tiên được phép là tab mặc định khi URL không chỉ định: Xưởng trước.
+const ALL_SOURCES: InboundSource[] = ["WORKSHOP", "SUPPLIER"];
 
 /** Những nguồn tài khoản được xem bảng. */
 export function viewableInboundSources(role: string | null | undefined): InboundSource[] {

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useProductionListAlertsStore } from "@/store/production-list-alerts-store";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -85,6 +86,8 @@ export function AddToRequestDialog({ row, open, onOpenChange, onAdded }: Props) 
           ? await productionRequestApi.create({ supplierId, locationId, items: [line] })
           : await productionRequestApi.addItem(target, line);
       toast.success(`Đã thêm vào ${saved.code}`);
+      // Dòng vừa đặt thôi thiếu: làm mới badge ngay, không chờ lần poll sau.
+      void useProductionListAlertsStore.getState().fetchNeed();
       onAdded(saved);
     } catch (error) {
       toast.error(getApiErrorBody(error)?.message ?? "Không thêm được vào yêu cầu");

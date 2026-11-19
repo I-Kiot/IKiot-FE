@@ -80,11 +80,11 @@ export const sidebarItems = {
     icon: Shuffle,
     items: [
       { title: "Nhà cung cấp", url: "/exchange/suppliers" },
-      { title: "Nhập hàng", url: "/exchange/imports" },
+      // Trang tạo mới chung cho đơn nhập NCC và yêu cầu sản xuất; trang tự chọn nguồn tài khoản được tạo.
+      { title: "Tạo đơn nhập/YCSX", url: "/exchange/imports/new" },
+      { title: "Danh sách đơn nhập", url: "/exchange/imports" },
       { title: "Chuyển kho", url: "/exchange/exports" },
       { title: "Điều chỉnh tồn kho", url: "/exchange/adjustments" },
-      { title: "Danh sách cần sản xuất", url: "/exchange/production-list" },
-      { title: "Phiếu xưởng giao", url: "/exchange/production-deliveries" },
     ],
   },
   // `giaoDichBranch` (biến thể BRANCH_MANAGER, đã bỏ 2026-09-09) không còn. Thu gọn menu theo quyền do bộ lọc quyền xử lý, không do cấu hình này.

@@ -47,6 +47,8 @@ type ProductsContextType = {
   ensureSuppliersLoaded: () => void
   // Chuỗi sku + productCode (viết thường) theo productId cho ô tìm kiếm; GET /products không kèm trường cấp item (xem products-table.tsx).
   skuSearchIndex: Map<string, string>
+  /** Số lần hàng hoá này được sửa thành công; panel mở rộng nạp lại chi tiết khi số này đổi. */
+  detailVersionOf: (productId: string) => number
 }
 
 const ProductsContext = React.createContext<ProductsContextType | null>(null)
@@ -70,6 +72,8 @@ export function ProductsProvider({
   const [categories, setCategories] = useState<Category[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [skuSearchIndex, setSkuSearchIndex] = useState<Map<string, string>>(new Map())
+  // Theo từng productId, để sửa một hàng hoá chỉ nạp lại panel của đúng hàng đó.
+  const [detailVersions, setDetailVersions] = useState<Record<string, number>>({})
   const locationOptionsLoadedRef = useRef(false)
   const suppliersLoadedRef = useRef(false)
 
@@ -123,6 +127,24 @@ export function ProductsProvider({
       .catch(() => setSuppliers([]))
   }
 
+  // Sửa hàng hoá có thể đổi tên / thêm / xoá thuộc tính, mà PATCH /products/:id không trả items:
+  // tăng phiên bản để panel mở rộng gọi lại GET /products/:id thay vì giữ chi tiết cũ.
+  async function handleEditWrapper(
+    id: string,
+    data: ProductFormValues,
+    onDuplicateCode?: (message: string) => void,
+  ): Promise<boolean> {
+    const success = await handleEdit(id, data, onDuplicateCode)
+    if (success) {
+      setDetailVersions((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
+    }
+    return success
+  }
+
+  function detailVersionOf(productId: string): number {
+    return detailVersions[productId] ?? 0
+  }
+
   async function handleDeleteManyWrapper(ids: string[]): Promise<boolean> {
     const success = await handleDeleteMany(ids)
     if (success) {
@@ -144,7 +166,7 @@ export function ProductsProvider({
         currentRow,
         setCurrentRow,
         handleAdd,
-        handleEdit,
+        handleEdit: handleEditWrapper,
         handleDelete,
         selectedIds,
         setSelectedIds,
@@ -158,6 +180,7 @@ export function ProductsProvider({
         suppliers,
         ensureSuppliersLoaded,
         skuSearchIndex,
+        detailVersionOf,
       }}
     >
       {children}

@@ -277,15 +277,9 @@ export function ProductionRequestDetailDialog({
           </div>
 
           {pendingDeliveries.length > 0 && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              Xưởng đã báo giao {pendingDeliveries.map((d) => d.code).join(", ")} - kiểm hàng và xác nhận ở{" "}
-              <Link
-                href={`/exchange/production-deliveries?status=PENDING`}
-                className="font-medium underline"
-              >
-                Phiếu xưởng giao
-              </Link>
-              . Còn phiếu chờ nhận thì chưa huỷ / đóng yêu cầu được.
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+              Xưởng đã báo giao {pendingDeliveries.map((d) => d.code).join(", ")} - nhận hoặc từ chối ở cột
+              &ldquo;Phiếu xưởng giao&rdquo; của bảng. Còn phiếu chờ nhận thì chưa huỷ / đóng yêu cầu được.
             </div>
           )}
 
