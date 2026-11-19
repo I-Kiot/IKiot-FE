@@ -146,6 +146,8 @@ export function TransfersTable() {
   const table = useReactTable({
     data: filteredTransfers,
     columns,
+    // Khoá hàng theo id (không phải chỉ số) để dòng đang mở rộng vẫn mở khi danh sách tải lại nền và thứ tự đổi.
+    getRowId: (row) => row.id,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),

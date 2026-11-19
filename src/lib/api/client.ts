@@ -11,7 +11,9 @@ import {
   clearTokens,
   clearCachedUser,
 } from "@/lib/auth";
-import { resetSocket } from "@/lib/socket";
+import { notifyLocalMutation } from "@/lib/live-refresh";
+import { currentSocketId, resetSocket } from "@/lib/socket";
+import { SOCKET_ID_HEADER } from "@/types/change-feed";
 import { TOKEN_EXPIRED_CODES, messageForCode } from "@/lib/api/error-codes";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3800";
@@ -56,14 +58,32 @@ client.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const socketId = currentSocketId();
+    if (socketId) {
+      config.headers[SOCKET_ID_HEADER] = socketId;
+    }
 
     return config;
   },
   (error) => Promise.reject(error),
 );
 
+const WRITE_METHODS = new Set(["post", "put", "patch", "delete"]);
+/** Không phải thay đổi dữ liệu nghiệp vụ: đăng nhập/token, upload, thiết bị thông báo, đánh dấu đã đọc. */
+const NON_MUTATION_URL = /\/(auth|uploads|notifications)(\/|\?|$)/;
+
+function signalLocalMutation(response: AxiosResponse): void {
+  const method = response.config?.method?.toLowerCase();
+  if (!method || !WRITE_METHODS.has(method)) return;
+  if (NON_MUTATION_URL.test(response.config?.url ?? "")) return;
+  notifyLocalMutation();
+}
+
 client.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    signalLocalMutation(response);
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;

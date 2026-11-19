@@ -21,6 +21,8 @@ import { getApiErrorBody } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import type { OrderDetail } from "@/types/order-flow";
 import { formatVND } from "../../shared/order-display";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type Props = {
   order: OrderDetail;
@@ -31,6 +33,7 @@ type Props = {
 
 /** Hoàn phần khách trả dư của đơn đã chốt (`POST /orders/:id/refund-excess`). Tối đa bằng `paymentSummary.overpaidBy`. */
 export function RefundExcessDialog({ order, open, onOpenChange, onRefunded }: Props) {
+  const { pending: livePending } = useLiveHold(open, [order.id]);
   const excess = order.paymentSummary.overpaidBy;
   const [draft, setDraft] = React.useState<RefundDraft>(() => emptyRefundDraft(excess));
   const [saving, setSaving] = React.useState(false);
@@ -57,6 +60,7 @@ export function RefundExcessDialog({ order, open, onOpenChange, onRefunded }: Pr
   return (
     <Dialog open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={() => onOpenChange(false)} />
         <DialogHeader>
           <DialogTitle>Hoàn tiền trả dư - đơn {order.code}</DialogTitle>
           <DialogDescription>

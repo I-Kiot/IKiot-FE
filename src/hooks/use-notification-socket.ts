@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { getSocket } from "@/lib/socket";
+import { rememberNotified } from "@/lib/live-refresh";
 import { onForegroundMessage } from "@/lib/fcm";
 import { playNotificationSound } from "@/lib/notification-sound";
 import { useNotificationInboxStore } from "@/store/notification-inbox-store";
@@ -22,6 +23,8 @@ export function useNotificationSocket() {
 
     const handle = (notification: AppNotification) => {
       receive(notification);
+      // Cùng chứng từ vừa đổi thì không cần thêm toast "thay đổi" (xem live-refresh).
+      rememberNotified(notification.referenceId);
       playNotificationSound();
       toast.success(notification.title, {
         description: notification.description,

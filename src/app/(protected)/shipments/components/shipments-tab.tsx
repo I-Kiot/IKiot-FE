@@ -17,7 +17,8 @@ import {
   type ShipmentStatus,
   type ShipmentSummary,
 } from "@/types/order-flow";
-import { PagedTable, usePagedList, type PageParams } from "./paged-table";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
+import { PagedTable, usePagedList, type PageParams, type PagedLive } from "./paged-table";
 import { amountDueText, carrierLabel, ShipmentStatusBadge } from "./shipment-ui";
 
 /** Bộ lọc của tab (không gồm trang). */
@@ -30,6 +31,11 @@ interface ShipmentFilters {
 }
 
 type ShipmentListQuery = PageParams & ShipmentFilters;
+
+const LIVE: PagedLive<ShipmentSummary> = {
+  resources: [CHANGE_RESOURCES.SHIPMENTS, CHANGE_RESOURCES.ORDERS],
+  idsOf: (row) => [row.id, row.order.id],
+};
 
 /** Khai báo ngoài component để `usePagedList` nhận một hàm ổn định. */
 const loadShipments = (query: ShipmentListQuery) => shipmentApi.getList(query);
@@ -182,7 +188,7 @@ export function ShipmentsTab({ reloadKey, onOpen, initialStatus }: ShipmentsTabP
     limit: SHIPMENT_PAGE_SIZE,
     status: initialStatus,
   });
-  const state = usePagedList(loadShipments, query, setQuery, reloadKey);
+  const state = usePagedList(loadShipments, query, setQuery, reloadKey, LIVE);
 
   return (
     <div className="space-y-4">

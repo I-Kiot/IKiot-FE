@@ -34,6 +34,8 @@ import { getApiErrorBody } from "@/lib/api/error-codes";
 import { productionDeliveryApi } from "@/lib/api/production-delivery";
 import type { ProductionDelivery } from "@/types/order-flow";
 import { useProductionOptions } from "../shared/use-production-options";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 const DEFAULT_DEFECT_LOCATION = "default";
 
@@ -54,6 +56,7 @@ const toInt = (value: string) => (value.trim() === "" ? 0 : Math.floor(Number(va
  * Số nhận không được vượt số xưởng ghi (điền sẵn bằng số đó).
  */
 export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived }: Props) {
+  const { pending: livePending } = useLiveHold(open, [delivery.id, delivery.productionRequest.id]);
   const { locations } = useProductionOptions();
   const [inputs, setInputs] = React.useState<Record<string, LineInput>>(() =>
     Object.fromEntries(
@@ -119,6 +122,7 @@ export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
+        <LiveChangeBanner event={livePending} onReload={() => onOpenChange(false)} />
         <DialogHeader>
           <DialogTitle>
             Nhận phiếu giao {delivery.code} - {delivery.productionRequest.code}

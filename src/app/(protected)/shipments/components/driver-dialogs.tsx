@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { shipmentApi } from "@/lib/api/shipment";
 import { personName, type DriverOption, type Shipment } from "@/types/order-flow";
 import { reportShipmentError } from "./shipment-ui";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 
 type DriversState = { status: "loading" } | { status: "error" } | { status: "ready"; drivers: DriverOption[] };
@@ -95,6 +97,7 @@ interface ChangeDriverDialogProps {
 
 /** Chọn shipper mới; danh sách tải mới mỗi lần mở. */
 export function ChangeDriverDialog({ shipment, open, onClose, onNeedsReload }: ChangeDriverDialogProps) {
+  const { pending: livePending } = useLiveHold(open, [shipment.id, shipment.order.id]);
   const [driverId, setDriverId] = useState(shipment.driver?.id ?? "");
   const [submitting, setSubmitting] = useState(false);
   const unchanged = !driverId || driverId === shipment.driver?.id;
@@ -118,6 +121,7 @@ export function ChangeDriverDialog({ shipment, open, onClose, onNeedsReload }: C
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !submitting && onClose()}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <DialogHeader>
           <DialogTitle>Đổi shipper đơn {shipment.order.code}</DialogTitle>
           <DialogDescription>

@@ -23,25 +23,25 @@ async function fetchMovement(id: string, fallback: StockMovement) {
   }
 }
 
-/** Load chi tiết phiếu khi expand row (GET-by-id để có đủ tên SP). */
+/**
+ * Load chi tiết phiếu khi expand row (GET-by-id để có đủ tên SP).
+ * `loading` (skeleton) chỉ bật ở lần tải đầu của mỗi phiếu: khi `request` đổi vì danh sách tải lại nền (thời gian thực) chi tiết được tải lại im lặng, panel không nháy.
+ */
 export function useStockMovementDetail(
   request: StockMovement,
   isExpanded: boolean,
 ) {
-  const [detail, setDetail] = useState(request);
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<{ id: string; detail: StockMovement } | null>(null);
+  const loading = isExpanded && state?.id !== request.id;
+  const detail = state?.id === request.id ? state.detail : request;
 
   useEffect(() => {
     if (!isExpanded) return;
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
       const next = await fetchMovement(request.id, request);
-      if (!cancelled) {
-        setDetail(next);
-        setLoading(false);
-      }
+      if (!cancelled) setState({ id: request.id, detail: next });
     }
 
     void load();
@@ -50,10 +50,9 @@ export function useStockMovementDetail(
     };
   }, [isExpanded, request]);
 
+  // Tải lại im lặng (giữ chi tiết đang hiện cho tới khi có bản mới).
   const refreshDetail = useCallback(async () => {
-    setLoading(true);
-    setDetail(await fetchMovement(request.id, request));
-    setLoading(false);
+    setState({ id: request.id, detail: await fetchMovement(request.id, request) });
   }, [request]);
 
   return { detail, loading, refreshDetail };
@@ -93,6 +92,14 @@ export function useOpeningEditor({
   const [receivedQtys, setReceivedQtys] = useState<Record<string, number>>({});
   const [showReceiveForm, setShowReceiveForm] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  /** Bỏ phần đang sửa để effect gieo lại từ chi tiết mới nhất ("Tải lại phiếu" sau khi người khác đổi phiếu). */
+  const reset = useCallback(() => {
+    setOpeningDetails([]);
+    setReceivedQtys({});
+    setOpeningRowErrors([]);
+    setShowReceiveForm(false);
+  }, []);
 
   useEffect(() => {
     if (!isExpanded) {
@@ -350,5 +357,6 @@ export function useOpeningEditor({
     removeOpeningRow,
     validateOpening,
     runAction,
+    reset,
   };
 }

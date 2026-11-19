@@ -4,6 +4,8 @@ import * as React from "react";
 import { Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,6 +43,8 @@ import {
 import { PendingDeliveryActions } from "./pending-delivery-actions";
 import { ProductionRequestDetailDialog } from "./production-request-detail-dialog";
 
+const LIVE_RESOURCES = [CHANGE_RESOURCES.PRODUCTION_REQUESTS, CHANGE_RESOURCES.PRODUCTION_DELIVERIES] as const;
+
 const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
@@ -73,6 +77,9 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
   const loading = loaded?.query !== query;
   const rows = loaded?.rows ?? [];
   const total = loaded?.total ?? 0;
+  // Người khác đổi dữ liệu: tải lại nền. Tick chỉ vào deps của effect tải, KHÔNG vào `query`, nên bảng không nháy "đang tải".
+  const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds: rows.map((row) => row.id) });
+  const shownQueryRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -83,6 +90,8 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
   }, [search]);
 
   React.useEffect(() => {
+    // Cùng query với lần đã hiển thị = tải nền: lỗi thì giữ dữ liệu đang hiện, không toast.
+    const silent = shownQueryRef.current === query;
     let stale = false;
     productionRequestApi
       .getList({
@@ -94,24 +103,26 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
         ...(term ? { search: term } : {}),
       })
       .then((result) => {
-        if (!stale)
-          setLoaded({
-            query,
-            rows: result.data,
-            total: result.pagination.total,
-          });
+        if (stale) return;
+        shownQueryRef.current = query;
+        setLoaded({
+          query,
+          rows: result.data,
+          total: result.pagination.total,
+        });
       })
       .catch((error) => {
-        if (stale) return;
+        if (stale || silent) return;
         toast.error(
           getApiErrorBody(error)?.message ?? "Không tải được yêu cầu sản xuất",
         );
+        shownQueryRef.current = query;
         setLoaded({ query, rows: [], total: 0 });
       });
     return () => {
       stale = true;
     };
-  }, [page, pageSize, status, term, query]);
+  }, [page, pageSize, status, term, query, liveTick]);
 
   const pages = Math.ceil(total / pageSize);
   const reload = () => setReloads((n) => n + 1);

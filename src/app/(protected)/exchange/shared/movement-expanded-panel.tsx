@@ -30,6 +30,8 @@ import {
   useOpeningEditor,
   useStockMovementDetail,
 } from "@/app/(protected)/exchange/shared/use-stock-movement-detail";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 import { getEffectiveLocationScope } from "@/app/(protected)/exchange/shared/auth-scope";
 import type { TransferUiLabels } from "@/app/(protected)/exchange/shared/transfer-ui-labels";
 import {
@@ -134,12 +136,21 @@ export function MovementExpandedPanel({
     removeOpeningRow,
     validateOpening,
     runAction,
+    reset,
   } = useOpeningEditor({
     isExpanded,
     detail,
     enabled: openingEnabled,
     requireImportPrice,
   });
+
+  // Đang sửa dòng / nhập số nhận: người khác đổi phiếu thì hoãn tải lại và báo, không ghi đè.
+  const editing =
+    isExpanded &&
+    (showReceiveForm ||
+      detail.status === "OPENING" ||
+      (detail.movementType === "IMPORT" && detail.status === "PENDING"));
+  const { pending: livePending, clear: clearLive } = useLiveHold(editing, [request.id]);
 
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
@@ -490,6 +501,16 @@ export function MovementExpandedPanel({
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm animate-in fade-in-0 duration-200">
+      <LiveChangeBanner
+        className="mb-4"
+        event={livePending}
+        reloadLabel="Tải lại phiếu"
+        onReload={() => {
+          reset();
+          void refreshDetail();
+          clearLive();
+        }}
+      />
       <MovementDetailHeader
         movementId={detail.id}
         title={headerTitle}

@@ -2,7 +2,7 @@
 
 // Trang chỉ tải dữ liệu, giữ state và mở dialog; bảng và phân trang ở components/fulfillments-*.tsx.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,12 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getCachedUser } from "@/lib/auth";
 import { orderJourneyApi, PACK_PAGE_SIZE } from "@/lib/api/order-journey";
 import type { PackableOrder } from "@/types/order-flow";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { FulfillmentsTable, type PackListQuery, type PackListState } from "./components/fulfillments-table";
 import { PackOrderDialog } from "./components/pack-order-dialog";
+
+const LIVE_RESOURCES = [CHANGE_RESOURCES.ORDERS] as const;
 
 /** Màn Đóng hàng (C-6): đơn CONFIRMED chờ đóng gói; bấm "Đóng hàng" để khoá hàng và chuyển đơn sang PACKED. */
 export default function FulfillmentsPage() {
@@ -22,8 +26,16 @@ export default function FulfillmentsPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [selected, setSelected] = useState<PackableOrder | null>(null);
   const canPack = allows(getCachedUser()?.role, "orders", "pack");
+  // Người khác vừa đóng / đổi đơn: tải lại nền (KHÔNG gọi `reload`, nó `setSelected(null)` và sẽ đóng hộp thoại đang mở).
+  const visibleIds = listState.status === "ready" ? listState.result.data.map((order) => order.id) : [];
+  const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds });
+  const lastLoadRef = useRef<{ query: PackListQuery; reloadKey: number } | null>(null);
 
   useEffect(() => {
+    // Cùng query và reloadKey với lần trước = lần tải nền do sự kiện: giữ danh sách đang hiện, lỗi thì im lặng.
+    const last = lastLoadRef.current;
+    const silent = last?.query === query && last.reloadKey === reloadKey;
+    lastLoadRef.current = { query, reloadKey };
     // Chuyển trang / đổi số đơn liên tiếp: response cũ về sau thì bỏ, không đè lên trang đang xem.
     let cancelled = false;
     orderJourneyApi.listPackable(query.page, query.limit).then(
@@ -38,7 +50,7 @@ export default function FulfillmentsPage() {
         }
       },
       () => {
-        if (cancelled) return;
+        if (cancelled || silent) return;
         toast.error("Không tải được danh sách đơn chờ đóng gói");
         setListState({ status: "error" });
       },
@@ -46,7 +58,7 @@ export default function FulfillmentsPage() {
     return () => {
       cancelled = true;
     };
-  }, [query, reloadKey]);
+  }, [query, reloadKey, liveTick]);
 
   // Danh sách trên màn hình chỉ là ảnh chụp lúc tải - sau mỗi lần đóng (thành công hay bị người khác
   // đóng trước) đều tải lại. Đúng/sai do BE quyết định (nhận đơn theo status, khoá hàng có điều kiện).

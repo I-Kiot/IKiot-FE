@@ -24,6 +24,8 @@ import { shipmentApi } from "@/lib/api/shipment";
 import type { CarrierType, HandOverReadyOrder } from "@/types/order-flow";
 import { DriverSelect } from "./driver-dialogs";
 import { reportShipmentError } from "./shipment-ui";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 interface HandOverDialogProps {
   /** Đơn đang giao; `null` = dialog đóng. */
@@ -35,6 +37,7 @@ interface HandOverDialogProps {
 
 /** Trang cha đặt `key={order.id}` nên mỗi đơn mở ra là một form mới. */
 export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialogProps) {
+  const { pending: livePending } = useLiveHold(order !== null, [order?.id]);
   const [carrierType, setCarrierType] = useState<CarrierType>("INTERNAL");
   const [driverId, setDriverId] = useState("");
   const [carrierName, setCarrierName] = useState("");
@@ -94,6 +97,7 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
   return (
     <Dialog open={order !== null} onOpenChange={(open) => !open && !submitting && onClose()}>
       <DialogContent className="sm:max-w-lg">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <DialogHeader>
           <DialogTitle>Giao đơn {order?.code} cho vận chuyển</DialogTitle>
           <DialogDescription>

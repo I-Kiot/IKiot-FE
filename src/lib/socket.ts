@@ -21,6 +21,11 @@ export function getSocket(): Socket {
   return socket;
 }
 
+/** Id của socket đang kết nối, gửi kèm mỗi request (`X-Socket-Id`) để BE không phát lại sự kiện thay đổi cho chính tab này. Không tạo socket mới. */
+export function currentSocketId(): string | undefined {
+  return socket?.connected ? socket.id : undefined;
+}
+
 /**
  * Ngắt kết nối để `getSocket()` kế tiếp xác thực lại. Room được join phía server theo token đã verify,
  * nên socket sống lâu hơn session mở nó; không ngắt thì đăng nhập user khác vẫn nhận thông báo của user trước.

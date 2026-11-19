@@ -4,6 +4,7 @@ import * as React from "react";
 import { Factory, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { warnNoPermission } from "@/components/permission-button";
 import { CreateInboundDialog } from "@/app/(protected)/exchange/imports/components/create-inbound-dialog";
 import { creatableInboundSources } from "@/app/(protected)/exchange/shared/inbound-source";
@@ -12,7 +13,7 @@ import { orderJourneyApi } from "@/lib/api/order-journey";
 import { getSessionRole } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import type { OrderDetail } from "@/types/order-flow";
-import { productionPrefillOf } from "./production-prefill";
+import { coveredMessage, productionCoverageOf, productionPrefillOf } from "./production-prefill";
 
 type Props = {
   orderId: string;
@@ -44,7 +45,15 @@ export function CreateProductionRequestButton({ orderId, order }: Props) {
   const creatable = creatableInboundSources(getSessionRole());
   const canCreateRequest = creatable.includes("WORKSHOP");
 
+  // Mọi dòng thiếu đã có YCSX mở che đủ: nút khoá, đặt thêm sẽ bị BE từ chối (PRODUCTION_EXCEEDS_ORDER_SHORTAGE).
+  const coverage = order ? productionCoverageOf(order) : null;
+
   function openWith(detail: OrderDetail) {
+    const detailCoverage = productionCoverageOf(detail);
+    if (detailCoverage.fullyCovered) {
+      toast.info(coveredMessage(detailCoverage.codes));
+      return;
+    }
     const prefill = productionPrefillOf(detail);
     if (prefill.notManufacturableCount > 0) {
       toast.info(`${prefill.notManufacturableCount} mặt hàng thiếu phải nhập từ NCC`);
@@ -70,6 +79,23 @@ export function CreateProductionRequestButton({ orderId, order }: Props) {
     } finally {
       if (alive.current) setLoading(false);
     }
+  }
+
+  if (coverage?.fullyCovered) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {/* Nút disabled không nhận hover, nên tooltip gắn vào span bao ngoài. */}
+          <span tabIndex={0} className="inline-flex">
+            <Button variant="outline" size="sm" disabled className="pointer-events-none">
+              <Factory />
+              Tạo YCSX
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{coveredMessage(coverage.codes)}</TooltipContent>
+      </Tooltip>
+    );
   }
 
   return (

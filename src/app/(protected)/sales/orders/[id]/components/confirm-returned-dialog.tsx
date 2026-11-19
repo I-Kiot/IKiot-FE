@@ -22,10 +22,14 @@ import {
 } from "@/components/order-refund-fields";
 import type { RefundInput } from "@/types/order-flow";
 import { formatVND } from "../../shared/order-display";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type Props = {
   /** Số shop đang giữ của đơn (`paymentSummary.net`): trần của khoản hoàn. */
   held: number;
+  /** Id đơn: để báo khi người khác vừa đổi đơn lúc đang xác nhận. */
+  orderId: string;
   onClose: () => void;
   /** Gọi BE; dialog khoá nút cho tới khi promise xong. Nơi gọi tự báo lỗi / tải lại. */
   onConfirm: (note: string | undefined, refund: RefundInput | undefined) => Promise<void>;
@@ -35,7 +39,8 @@ type Props = {
  * Xác nhận hàng của lần giao thất bại đã về shop (`POST /order-returns/confirm-failed-delivery`). Đơn đang giữ tiền thì
  * có thể hoàn luôn (không bắt buộc): chọn "Chưa hoàn" thì tiền vẫn do shop giữ và hoàn sau ở bước khác.
  */
-export function ConfirmReturnedDialog({ held, onClose, onConfirm }: Props) {
+export function ConfirmReturnedDialog({ held, orderId, onClose, onConfirm }: Props) {
+  const { pending: livePending } = useLiveHold(true, [orderId]);
   const [note, setNote] = React.useState("");
   const [refundNow, setRefundNow] = React.useState(false);
   const [draft, setDraft] = React.useState<RefundDraft>(() => emptyRefundDraft(held));
@@ -53,6 +58,7 @@ export function ConfirmReturnedDialog({ held, onClose, onConfirm }: Props) {
   return (
     <Dialog open onOpenChange={(next) => !next && !submitting && onClose()}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <DialogHeader>
           <DialogTitle>Xác nhận hàng đã hoàn về shop</DialogTitle>
           <DialogDescription>

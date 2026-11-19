@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { shipmentApi } from "@/lib/api/shipment";
 import { addDaysIso, todayIso } from "@/lib/date-input";
 import type {
@@ -124,6 +126,8 @@ function HistoryTable({
   );
 }
 
+const LIVE_RESOURCES = [CHANGE_RESOURCES.SHIPMENTS, CHANGE_RESOURCES.ORDERS] as const;
+
 /** Tab lịch sử giao của tôi. */
 export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: string | null }) {
   const [status, setStatus] = useState<StatusFilter>("ALL");
@@ -146,6 +150,8 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Tick nền chỉ vào deps của effect tải, không vào `requestKey`: lần tải lại không bật trạng thái "đang tải".
+  const liveTick = useLiveTick({ resources: LIVE_RESOURCES });
   const dateInvalid = !!from && !!to && from > to;
   const requestKey = useMemo(
     () => JSON.stringify({ status, from, to, search, page, pageSize, reloadKey }),
@@ -174,13 +180,17 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
           if (!cancelled) setResult({ key: requestKey, error: false, page: data });
         },
         () => {
-          if (!cancelled) setResult({ key: requestKey, error: true });
+          if (cancelled) return;
+          // Tải nền (cùng khoá) lỗi thì giữ trang đang hiện.
+          setResult((previous) =>
+            previous && !previous.error && previous.key === requestKey ? previous : { key: requestKey, error: true },
+          );
         },
       );
     return () => {
       cancelled = true;
     };
-  }, [requestKey, dateInvalid, page, pageSize, status, from, to, search]);
+  }, [requestKey, dateInvalid, page, pageSize, status, from, to, search, liveTick]);
 
   const loading = !dateInvalid && result?.key !== requestKey;
   // Giữ số liệu lần trước trong lúc tải lại để các thẻ không nhấp nháy.

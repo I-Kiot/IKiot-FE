@@ -374,6 +374,7 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
       )}
       {openStep === "pickUp" && awaitingPickUp && (
         <ShipmentNoteDialog
+          holdIds={[order.id]}
           open
           title="Xác nhận đã lấy hàng"
           description={`Xác nhận ${awaitingPickUp.driver?.name ?? "shipper"} đã nhận đủ hàng của đơn tại kho. Đơn chuyển sang ĐVVC đã lấy hàng; tồn kho chưa bị trừ.`}
@@ -384,6 +385,7 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
       )}
       {openStep === "ship" && (
         <ShipmentNoteDialog
+          holdIds={[order.id]}
           open
           title="Chuyển sang Đang vận chuyển"
           description="Thao tác này trừ tồn kho đúng số hàng đã khoá lúc Đóng đơn và không quay lại được."
@@ -409,6 +411,7 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
       {openStep === "confirmReturned" && failedShipment && (
         <ConfirmReturnedDialog
           held={order.paymentSummary.net}
+          orderId={order.id}
           onClose={closeStep}
           onConfirm={(note, refund) =>
             orderReturnApi.confirmFailedDelivery(failedShipment.id, note, refund).then(

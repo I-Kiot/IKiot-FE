@@ -3,6 +3,8 @@
 import * as React from "react";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,6 +41,8 @@ import {
 } from "../../exchange/production-requests/shared/production-display";
 import { WorkshopRequestSheet } from "./workshop-request-sheet";
 
+const LIVE_RESOURCES = [CHANGE_RESOURCES.PRODUCTION_REQUESTS, CHANGE_RESOURCES.PRODUCTION_DELIVERIES] as const;
+
 const DEFAULT_PAGE_SIZE = 10;
 const COLUMN_COUNT = 6;
 const ALL = "ALL";
@@ -73,6 +77,9 @@ export function WorkshopRequestsTable({ refreshSignal }: Props) {
   const loading = loaded?.query !== query;
   const rows = loaded?.rows ?? [];
   const total = loaded?.total ?? 0;
+  // Người khác đổi dữ liệu: tải lại nền. Tick chỉ vào deps của effect tải, KHÔNG vào `query`, nên bảng không nháy "đang tải".
+  const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds: rows.map((row) => row.id) });
+  const shownQueryRef = React.useRef<string | null>(null);
 
   // Gõ tìm kiếm chờ 300ms mới thành request, như bảng YCSX phía shop.
   React.useEffect(() => {
@@ -84,6 +91,8 @@ export function WorkshopRequestsTable({ refreshSignal }: Props) {
   }, [search]);
 
   React.useEffect(() => {
+    // Cùng query với lần đã hiển thị = tải nền: lỗi thì giữ dữ liệu đang hiện, không toast.
+    const silent = shownQueryRef.current === query;
     let stale = false;
     workshopApi
       .getRequests({
@@ -93,17 +102,20 @@ export function WorkshopRequestsTable({ refreshSignal }: Props) {
         ...(term ? { search: term } : {}),
       })
       .then((result) => {
-        if (!stale) setLoaded({ query, rows: result.data, total: result.pagination.total });
+        if (stale) return;
+        shownQueryRef.current = query;
+        setLoaded({ query, rows: result.data, total: result.pagination.total });
       })
       .catch((error) => {
-        if (stale) return;
+        if (stale || silent) return;
         toast.error(messageForCode(getApiErrorBody(error)?.code) ?? "Không tải được yêu cầu sản xuất");
+        shownQueryRef.current = query;
         setLoaded({ query, rows: [], total: 0 });
       });
     return () => {
       stale = true;
     };
-  }, [page, pageSize, status, term, query]);
+  }, [page, pageSize, status, term, query, liveTick]);
 
   const pages = Math.ceil(total / pageSize);
 

@@ -7,6 +7,10 @@ import { getAuthScope } from '@/app/(protected)/exchange/shared/auth-scope'
 import { getStockMovementErrorMessage, reportMovementError } from '@/app/(protected)/exchange/shared/stock-movement-error'
 import { getTransferUiLabels } from '@/app/(protected)/exchange/shared/transfer-ui-labels'
 import type { StockMovement, MovementStatus } from '@/types/stock-movement'
+import { useLiveRefresh } from '@/hooks/use-live-refresh'
+import { CHANGE_RESOURCES } from '@/types/change-feed'
+
+const LIVE_RESOURCES = [CHANGE_RESOURCES.STOCK_MOVEMENTS] as const
 
 export type TransfersDialogType = 'create'
 
@@ -18,7 +22,8 @@ interface TransfersContextType {
   setOpen: (v: TransfersDialogType | null) => void
   statusFilter: MovementStatus | 'ALL'
   setStatusFilter: (v: MovementStatus | 'ALL') => void
-  fetchTransfers: () => Promise<void>
+  /** `silent`: tải nền do sự kiện thời gian thực - không bật `isLoading` (bảng không nháy), lỗi thì giữ dòng đang hiện. */
+  fetchTransfers: (opts?: { silent?: boolean }) => Promise<void>
   handleOpen: (id: string) => Promise<void>
   handleUpdateDetails: (
     id: string,
@@ -54,8 +59,9 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState<TransfersDialogType | null>(null)
   const [statusFilter, setStatusFilter] = useState<MovementStatus | 'ALL'>('ALL')
 
-  const fetchTransfers = useCallback(async () => {
-    setIsLoading(true)
+  const fetchTransfers = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent === true
+    if (!silent) setIsLoading(true)
     try {
       const base = {
         limit: 50,
@@ -71,16 +77,27 @@ export function TransfersProvider({ children }: { children: React.ReactNode }) {
       setTransfers(data)
       setTotal(data.length)
     } catch (error) {
+      if (silent) {
+        console.warn('Không tải lại được danh sách phiếu chuyển kho', error)
+        return
+      }
       console.error(error)
       setTransfers([])
       setTotal(0)
       toast.error(getStockMovementErrorMessage(error, labels.listLoadError))
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }, [statusFilter, labels.listLoadError])
 
   useEffect(() => { fetchTransfers() }, [fetchTransfers])
+
+  // Người khác tạo / chốt / xuất / nhận phiếu: tải lại nền. Dòng đang mở rộng được giữ nhờ `getRowId`.
+  useLiveRefresh({
+    resources: LIVE_RESOURCES,
+    visibleIds: transfers.map((transfer) => transfer.id),
+    onChange: () => void fetchTransfers({ silent: true }),
+  })
 
   const handleOpen = async (id: string) => {
     try {

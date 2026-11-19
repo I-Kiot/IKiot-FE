@@ -48,6 +48,8 @@ import {
   returnReasonLabel,
   returnStatusDisplay,
 } from "../shared/return-display";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 interface ReturnDetailDialogProps {
   orderReturn: OrderReturn | null;
@@ -70,6 +72,7 @@ export function ReturnDetailDialog({
   canInspect,
   canCancel,
 }: ReturnDetailDialogProps) {
+  const { pending: livePending } = useLiveHold(orderReturn !== null, [orderReturn?.id]);
   const [verdicts, setVerdicts] = React.useState<Record<string, ReturnCondition>>({});
   const [busy, setBusy] = React.useState(false);
   // Gợi ý hoàn tiền chỉ có ở GET /order-returns/:id; dòng của danh sách (và kết quả của "đã nhận hàng") không kèm theo.
@@ -131,6 +134,7 @@ export function ReturnDetailDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
+        <LiveChangeBanner event={livePending} onReload={() => onOpenChange(false)} />
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {current.code}

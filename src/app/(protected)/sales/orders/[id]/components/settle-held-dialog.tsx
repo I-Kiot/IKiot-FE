@@ -23,6 +23,8 @@ import { getApiErrorBody } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import type { OrderDetail } from "@/types/order-flow";
 import { formatVND } from "../../shared/order-display";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type Props = {
   order: OrderDetail;
@@ -38,6 +40,7 @@ type Mode = "choose" | "refund" | "keep";
  * hoàn cho khách (tối đa bằng số treo, phần còn lại vẫn treo) hoặc giữ lại toàn bộ làm thu nhập khác (không hoàn tác được nên có bước xác nhận).
  */
 export function SettleHeldDialog({ order, open, onOpenChange, onSettled }: Props) {
+  const { pending: livePending } = useLiveHold(open, [order.id]);
   const held = order.paymentSummary.heldUndecided;
   const [mode, setMode] = React.useState<Mode>("choose");
   const [draft, setDraft] = React.useState<RefundDraft>(() => emptyRefundDraft(held));
@@ -79,6 +82,7 @@ export function SettleHeldDialog({ order, open, onOpenChange, onSettled }: Props
   return (
     <Dialog open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={() => onOpenChange(false)} />
         <DialogHeader>
           <DialogTitle>Tiền giữ treo - đơn {order.code}</DialogTitle>
           <DialogDescription>

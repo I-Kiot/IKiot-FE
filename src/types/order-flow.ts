@@ -283,6 +283,20 @@ export interface OrderLine {
   isCustom: boolean;
   /** Đối chiếu với tồn trên kệ; null với dòng COMBO / SERVICE và khi dòng đã xuất. */
   stockCheck: StockCheck | null;
+  /** Hàng xưởng đang làm cho dòng này (YCSX nháp / đã gửi / nhận một phần). */
+  production: LineProduction;
+}
+
+/** YCSX còn mở của một dòng đơn; `openQuantity` = Σ (đặt − đã nhận). BE từ chối đặt vượt phần còn thiếu trừ số này. */
+export interface LineProduction {
+  openQuantity: number;
+  requests: {
+    id: string;
+    code: string;
+    status: string;
+    quantity: number;
+    receivedQuantity: number;
+  }[];
 }
 
 /** Dòng như `GET /orders/:id` trả về: thêm nơi xuất hàng và thông số đặt riêng. */

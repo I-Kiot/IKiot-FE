@@ -4,6 +4,8 @@ import * as React from "react";
 import { Plus, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { Badge } from "@/components/ui/badge";
 import { PermissionButton } from "@/components/permission-button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +39,8 @@ import {
 import { formatDateTime, returnReasonLabel, returnStatusDisplay } from "../shared/return-display";
 import { CreateReturnDialog } from "./create-return-dialog";
 import { ReturnDetailDialog } from "./return-detail-dialog";
+
+const LIVE_RESOURCES = [CHANGE_RESOURCES.ORDER_RETURNS] as const;
 
 const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
@@ -82,6 +86,12 @@ export function ReturnsTable() {
   const loading = loaded?.query !== query;
   const rows = loaded?.rows ?? [];
   const total = loaded?.total ?? 0;
+  // Người khác tạo / kiểm / huỷ đơn hoàn: tải lại nền. Tick chỉ vào deps của effect tải, KHÔNG vào `query`, nên bảng không nháy "đang tải".
+  const liveTick = useLiveTick({
+    resources: LIVE_RESOURCES,
+    visibleIds: rows.flatMap((row) => [row.id, row.order.id]),
+  });
+  const shownQueryRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -92,6 +102,8 @@ export function ReturnsTable() {
   }, [search]);
 
   React.useEffect(() => {
+    // Cùng query với lần đã hiển thị = tải nền: lỗi thì giữ dữ liệu đang hiện, không toast.
+    const silent = shownQueryRef.current === query;
     let stale = false;
     orderReturnApi
       .getList({
@@ -101,17 +113,20 @@ export function ReturnsTable() {
         ...(term ? { search: term } : {}),
       })
       .then((result) => {
-        if (!stale) setLoaded({ query, rows: result.data, total: result.pagination.total });
+        if (stale) return;
+        shownQueryRef.current = query;
+        setLoaded({ query, rows: result.data, total: result.pagination.total });
       })
       .catch((error) => {
-        if (stale) return;
+        if (stale || silent) return;
         toast.error(getApiErrorBody(error)?.message ?? "Không tải được danh sách đơn hoàn");
+        shownQueryRef.current = query;
         setLoaded({ query, rows: [], total: 0 });
       });
     return () => {
       stale = true;
     };
-  }, [page, pageSize, status, term, query]);
+  }, [page, pageSize, status, term, query, liveTick]);
 
   const pages = Math.ceil(total / pageSize);
 

@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ImageAttachments } from "@/components/image-attachments";
 import { CustomizationChips } from "../../shared/customization-chips";
@@ -72,6 +73,23 @@ export function OrderLinesCard({ order }: { order: OrderDetail }) {
                         {[line.sku, line.variantLabel].filter(Boolean).join(" · ")}
                         {line.returnedQuantity > 0 && ` · đã hoàn ${line.returnedQuantity}`}
                       </div>
+                      {line.production.requests.length > 0 && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Đang sản xuất:{" "}
+                          {line.production.requests.map((request, index) => (
+                            <span key={request.id}>
+                              {index > 0 && ", "}
+                              <Link
+                                href={`/exchange/imports?source=WORKSHOP&search=${encodeURIComponent(request.code)}`}
+                                className="font-medium text-foreground hover:underline"
+                              >
+                                {request.code}
+                              </Link>{" "}
+                              ({request.receivedQuantity}/{request.quantity})
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {line.customization && (
                         <CustomizationDetails customization={line.customization} />
                       )}

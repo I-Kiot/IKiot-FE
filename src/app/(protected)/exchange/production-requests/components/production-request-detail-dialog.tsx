@@ -46,6 +46,8 @@ import {
 import { ImportReceiptDialog } from "./import-receipt-dialog";
 import { ProductionRequestFormDialog } from "./production-request-form-dialog";
 import { ReceiveProductionDialog } from "./receive-production-dialog";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 /** Hành động cần xác nhận trước. `close` (đóng yêu cầu đã giao một phần) cần lý do. */
 type Pending = "send" | "cancel" | "close" | "delete" | null;
@@ -87,6 +89,7 @@ export function ProductionRequestDetailDialog({
   onChanged,
   onDeleted,
 }: Props) {
+  const { pending: livePending } = useLiveHold(request !== null, [request?.id]);
   const role = getSessionRole();
   const canUpdate = allows(role, "production_requests", "update");
   const canDelete = allows(role, "production_requests", "delete");
@@ -156,6 +159,7 @@ export function ProductionRequestDetailDialog({
         onOpenChange={onOpenChange}
       >
         <DialogContent className="sm:max-w-3xl">
+          <LiveChangeBanner event={livePending} onReload={() => onOpenChange(false)} />
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {request.code}

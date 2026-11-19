@@ -23,6 +23,8 @@ import { getMyTenant } from "@/lib/api/tenant";
 import { uploadImage } from "@/lib/api/upload";
 import type { DeliveryCollectionMethod, Shipment } from "@/types/order-flow";
 import { formatVND, reportShipmentError } from "../../shipments/components/shipment-ui";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 interface DeliverDialogProps {
   shipment: Shipment;
@@ -39,6 +41,7 @@ interface DeliverDialogProps {
  * Nơi gọi đặt `key` theo lần mở.
  */
 export function DeliverDialog({ shipment, open, onClose, onDelivered, onNeedsReload }: DeliverDialogProps) {
+  const { pending: livePending } = useLiveHold(open, [shipment.id, shipment.order.id]);
   const amountDue = shipment.order.amountDue;
   const nothingDue = amountDue === 0;
 
@@ -102,6 +105,7 @@ export function DeliverDialog({ shipment, open, onClose, onDelivered, onNeedsRel
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !busy && onClose()}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <DialogHeader>
           <DialogTitle>Đã giao đơn {shipment.order.code}</DialogTitle>
           <DialogDescription>
