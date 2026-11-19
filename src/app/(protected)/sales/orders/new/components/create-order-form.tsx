@@ -116,7 +116,7 @@ function OrderDraftForm({
   const [recipientName, setRecipientName] = React.useState("");
   const [recipientPhone, setRecipientPhone] = React.useState("");
   const [recipientIsCustomer, setRecipientIsCustomer] = React.useState(true);
-  const [customerMode, setCustomerMode] = React.useState<"existing" | "new">("existing");
+  const [customerMode, setCustomerMode] = React.useState<"existing" | "new">("new");
   const [newName, setNewName] = React.useState("");
   const [newPhone, setNewPhone] = React.useState("");
   const [newGender, setNewGender] = React.useState<CustomerGender>("MALE");
@@ -298,7 +298,10 @@ function OrderDraftForm({
           (item) => item.condition === "DAMAGED",
         );
         setReplacementOf({ id: orderReturn.id, code: orderReturn.code });
-        if (original) setCustomer(original);
+        if (original) {
+          setCustomer(original);
+          setCustomerMode("existing");
+        }
         setBranchId(order.branch.id);
         if (order.assignee) {
           const person = {
@@ -588,7 +591,7 @@ function OrderDraftForm({
               <div className="flex items-center justify-between gap-2">
                 <Label className={sectionLabel}>Khách hàng</Label>
                 <div className="inline-flex rounded-md border p-0.5 text-xs">
-                  {(["existing", "new"] as const).map((mode) => (
+                  {(["new", "existing"] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
