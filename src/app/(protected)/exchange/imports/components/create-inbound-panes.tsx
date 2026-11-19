@@ -48,6 +48,8 @@ type Props = {
   onSubmittingChange: (submitting: boolean) => void;
   /** Điền sẵn dòng cho form xưởng (nút "Tạo YCSX" trên đơn hàng). */
   initialRequestLines?: DraftLine[];
+  /** Điền sẵn nơi nhận hàng cho form xưởng (kho xuất của đơn). */
+  initialRequestLocationId?: string;
 };
 
 /** Hai form tạo mới (nhà cung cấp / xưởng) xếp chồng, chỉ hiện form của nguồn đang chọn. */
@@ -59,6 +61,7 @@ export function CreateInboundPanes({
   onCancel,
   onSubmittingChange,
   initialRequestLines,
+  initialRequestLocationId,
 }: Props) {
   const paneClass = (pane: InboundSource) =>
     cn("flex min-h-0 flex-1 flex-col", source !== pane && "hidden");
@@ -78,6 +81,7 @@ export function CreateInboundPanes({
         <div className={paneClass("WORKSHOP")}>
           <ProductionRequestForm
             initialLines={initialRequestLines}
+            initialLocationId={initialRequestLocationId}
             onSaved={onRequestCreated}
             onCancel={onCancel}
             onSubmittingChange={onSubmittingChange}

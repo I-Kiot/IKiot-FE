@@ -48,6 +48,8 @@ export interface ProductionPrefill {
   lines: DraftLine[];
   /** Số dòng thiếu nhưng sản phẩm không sản xuất được - phải nhập từ nhà cung cấp. */
   notManufacturableCount: number;
+  /** Nơi nhận hàng điền sẵn: kho xuất chung của mọi dòng điền sẵn; khác kho nhau hoặc có dòng chưa chọn kho thì bỏ trống. */
+  locationId: string | undefined;
 }
 
 let prefillSeq = 0;
@@ -55,10 +57,11 @@ let prefillSeq = 0;
 /**
  * Điền sẵn form YCSX từ một đơn: chỉ các dòng đang thiếu hàng trên kệ.
  * Số lượng là số thiếu đã trừ phần YCSX mở đang chờ (`production.openQuantity`); dòng đã được che đủ thì bỏ qua. Người dùng vẫn sửa được.
- * Nơi nhận hàng không điền sẵn, để người dùng chọn.
+ * Nơi nhận hàng điền sẵn là kho xuất của các dòng đó (hàng xưởng phải về đúng nơi đóng gói đơn), chỉ khi mọi dòng cùng một kho.
  */
 export function productionPrefillOf(order: OrderDetail): ProductionPrefill {
   const lines: DraftLine[] = [];
+  const sourceLocationIds = new Set<string | undefined>();
   let notManufacturableCount = 0;
   for (const line of order.items.filter(isShort)) {
     if (!line.isManufacturable) {
@@ -67,6 +70,7 @@ export function productionPrefillOf(order: OrderDetail): ProductionPrefill {
     }
     const uncovered = uncoveredQuantity(line);
     if (uncovered === 0) continue;
+    sourceLocationIds.add(line.sourceLocation?.id);
     lines.push({
       key: `order-prefill-${++prefillSeq}`,
       productItemId: line.productItemId,
@@ -86,5 +90,11 @@ export function productionPrefillOf(order: OrderDetail): ProductionPrefill {
     });
   }
 
-  return { lines, notManufacturableCount };
+  // Một kho duy nhất thì điền; nhiều kho hoặc có dòng chưa chọn kho (undefined) thì để người dùng chọn.
+  let locationId: string | undefined;
+  if (sourceLocationIds.size === 1) {
+    locationId = [...sourceLocationIds][0];
+  }
+
+  return { lines, notManufacturableCount, locationId };
 }

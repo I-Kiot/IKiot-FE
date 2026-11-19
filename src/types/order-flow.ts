@@ -285,6 +285,8 @@ export interface OrderLine {
   stockCheck: StockCheck | null;
   /** Hàng xưởng đang làm cho dòng này (YCSX nháp / đã gửi / nhận một phần). */
   production: LineProduction;
+  /** Sản phẩm đặt xưởng được không (`Product.isManufacturable`); BE từ chối cả YCSX nếu có dòng không làm được. */
+  isManufacturable: boolean;
 }
 
 /** YCSX còn mở của một dòng đơn; `openQuantity` = Σ (đặt − đã nhận). BE từ chối đặt vượt phần còn thiếu trừ số này. */
@@ -303,8 +305,6 @@ export interface LineProduction {
 export interface OrderDetailLine extends OrderLine {
   sourceLocation: (LocationRef & { type: SourceLocation["type"] }) | null;
   customization: OrderItemCustomization | null;
-  /** Sản phẩm đặt xưởng được không (`Product.isManufacturable`); BE từ chối cả YCSX nếu có dòng không làm được. */
-  isManufacturable: boolean;
 }
 
 export interface StockCheck {

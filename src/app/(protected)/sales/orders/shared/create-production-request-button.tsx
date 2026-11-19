@@ -22,6 +22,7 @@ type Props = {
    * dòng của danh sách không có customization / isManufacturable, và số thiếu lúc tải danh sách có thể đã cũ.
    */
   order?: OrderDetail;
+  locationId?: string;
 };
 
 /**
@@ -29,7 +30,8 @@ type Props = {
  * điền sẵn các dòng đang thiếu hàng của đơn (người dùng vẫn sửa được). Vẫn đổi qua Nhà cung cấp được.
  */
 export function CreateProductionRequestButton({ orderId, order }: Props) {
-  const [initialLines, setInitialLines] = React.useState<DraftLine[] | null>(null);
+  // Dòng và nơi nhận điền sẵn cho popup; null = popup đóng.
+  const [prefill, setPrefill] = React.useState<{ lines: DraftLine[]; locationId: string | undefined } | null>(null);
   const [loading, setLoading] = React.useState(false);
 
   // Kết quả tải chi tiết về sau khi nút đã unmount (panel đóng) thì bỏ qua.
@@ -58,7 +60,7 @@ export function CreateProductionRequestButton({ orderId, order }: Props) {
     if (prefill.notManufacturableCount > 0) {
       toast.info(`${prefill.notManufacturableCount} mặt hàng thiếu phải nhập từ NCC`);
     }
-    setInitialLines(prefill.lines);
+    setPrefill({ lines: prefill.lines, locationId: prefill.locationId });
   }
 
   async function handleClick() {
@@ -111,16 +113,17 @@ export function CreateProductionRequestButton({ orderId, order }: Props) {
         Tạo YCSX
       </Button>
 
-      {initialLines && (
+      {prefill && (
         <CreateInboundDialog
           defaultSource="WORKSHOP"
           options={creatable}
-          initialRequestLines={initialLines}
+          initialRequestLines={prefill.lines}
+          initialRequestLocationId={prefill.locationId}
           onOpenChange={(open) => {
-            if (!open) setInitialLines(null);
+            if (!open) setPrefill(null);
           }}
-          onImportCreated={() => setInitialLines(null)}
-          onRequestCreated={() => setInitialLines(null)}
+          onImportCreated={() => setPrefill(null)}
+          onRequestCreated={() => setPrefill(null)}
         />
       )}
     </>

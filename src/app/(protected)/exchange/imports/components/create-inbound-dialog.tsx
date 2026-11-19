@@ -22,6 +22,8 @@ type Props = {
   onRequestCreated: (request: ProductionRequest) => void;
   /** Điền sẵn dòng cho form xưởng (nút "Tạo YCSX" trên đơn hàng). */
   initialRequestLines?: DraftLine[];
+  /** Điền sẵn nơi nhận hàng cho form xưởng (kho xuất của đơn). */
+  initialRequestLocationId?: string;
 };
 
 /**
@@ -35,6 +37,7 @@ export function CreateInboundDialog({
   onImportCreated,
   onRequestCreated,
   initialRequestLines,
+  initialRequestLocationId,
 }: Props) {
   const { source, opened, select } = useInboundSourceSwitch(defaultSource);
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +70,7 @@ export function CreateInboundDialog({
           onCancel={() => requestClose(false)}
           onSubmittingChange={setSubmitting}
           initialRequestLines={initialRequestLines}
+          initialRequestLocationId={initialRequestLocationId}
         />
       </DialogContent>
     </Dialog>
