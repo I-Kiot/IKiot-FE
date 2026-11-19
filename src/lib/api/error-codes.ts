@@ -291,7 +291,7 @@ export const ERROR_MESSAGES = {
   SUPPLIER_TYPE_LOCKED: "Không đổi được loại nhà cung cấp đã có phiếu nhập hoặc yêu cầu sản xuất",
   IMPORT_WORKSHOP_VIA_PRODUCTION_REQUEST: "Hàng của xưởng nhập qua yêu cầu sản xuất, không nhập bằng phiếu nhập thường",
   PRODUCTION_REQUEST_DUPLICATE_ITEM: "Mặt hàng này đã có trong yêu cầu sản xuất",
-  PRODUCTION_EXCEEDS_ORDER_SHORTAGE: "Số lượng đặt xưởng vượt quá phần đơn còn thiếu (đã tính các YCSX đang chờ hàng của dòng này)",
+  PRODUCTION_EXCEEDS_ORDER_SHORTAGE: "Số lượng đặt xưởng vượt quá phần còn thiếu (đã tính YCSX gắn dòng đơn và YCSX đặt chung cùng mặt hàng tại nơi xuất)",
   PRODUCTION_REQUEST_ORDER_ITEM_INVALID: "Dòng đơn không hợp lệ: khác mặt hàng, không thuộc cửa hàng hoặc đã giao đi",
   PRODUCTION_REQUEST_LOCATION_DENIED: "Bạn chỉ thao tác được yêu cầu sản xuất giao về nơi mình làm việc",
   PRODUCTION_REQUEST_HAS_RECEIPTS: "Yêu cầu đã nhận hàng, không huỷ được",

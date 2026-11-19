@@ -334,7 +334,25 @@ export function ProductionListTable() {
                                     >
                                       {order.orderCode}
                                     </Link>
-                                    <span>× {order.quantity}</span>
+                                    <span>× {order.remainingQuantity}</span>
+                                    {order.coveredQuantity > 0 && (
+                                      <span className="text-muted-foreground">
+                                        (đơn cần {order.quantity}, đã đặt {order.coveredQuantity}:{" "}
+                                        {order.coveredBy.map((cover, index) => (
+                                          <span key={cover.id}>
+                                            {index > 0 && ", "}
+                                            <Link
+                                              href={`/exchange/imports?source=WORKSHOP&search=${encodeURIComponent(cover.code)}`}
+                                              className="underline"
+                                              onClick={(event) => event.stopPropagation()}
+                                            >
+                                              {cover.code}
+                                            </Link>
+                                          </span>
+                                        ))}
+                                        )
+                                      </span>
+                                    )}
                                     <span className="text-muted-foreground">
                                       {ORDER_PRIORITY_LABELS[order.priority] ?? order.priority} ·{" "}
                                       {ORDER_STATUS_LABELS[order.status] ?? order.status} · hẹn{" "}
@@ -348,7 +366,7 @@ export function ProductionListTable() {
                           </div>
                           <div>
                             <div className="mb-1 text-sm font-medium">
-                              Yêu cầu sản xuất đang mở ({row.requests.length})
+                              Yêu cầu sản xuất đang mở (dùng chung) ({row.requests.length})
                             </div>
                             {row.requests.length === 0 ? (
                               <p className="text-sm text-muted-foreground">Chưa đặt xưởng</p>

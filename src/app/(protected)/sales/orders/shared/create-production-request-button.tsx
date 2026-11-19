@@ -47,18 +47,21 @@ export function CreateProductionRequestButton({ orderId, order }: Props) {
   const creatable = creatableInboundSources(getSessionRole());
   const canCreateRequest = creatable.includes("WORKSHOP");
 
-  // Mọi dòng thiếu đã có YCSX mở che đủ: nút khoá, đặt thêm sẽ bị BE từ chối (PRODUCTION_EXCEEDS_ORDER_SHORTAGE).
+  // Mọi dòng thiếu đã có YCSX che đủ (gắn dòng hoặc đặt chung cùng địa điểm + SKU): nút khoá, đặt thêm sẽ bị BE từ chối (PRODUCTION_EXCEEDS_ORDER_SHORTAGE).
   const coverage = order ? productionCoverageOf(order) : null;
 
   function openWith(detail: OrderDetail) {
     const detailCoverage = productionCoverageOf(detail);
     if (detailCoverage.fullyCovered) {
-      toast.info(coveredMessage(detailCoverage.codes));
+      toast.info(coveredMessage(detailCoverage.messages));
       return;
     }
     const prefill = productionPrefillOf(detail);
     if (prefill.notManufacturableCount > 0) {
       toast.info(`${prefill.notManufacturableCount} mặt hàng thiếu phải nhập từ NCC`);
+    }
+    if (prefill.skipped.length > 0) {
+      toast.info(`Bỏ qua: ${prefill.skipped.join("; ")}`);
     }
     setPrefill({ lines: prefill.lines, locationId: prefill.locationId });
   }
@@ -95,7 +98,7 @@ export function CreateProductionRequestButton({ orderId, order }: Props) {
             </Button>
           </span>
         </TooltipTrigger>
-        <TooltipContent>{coveredMessage(coverage.codes)}</TooltipContent>
+        <TooltipContent>{coveredMessage(coverage.messages)}</TooltipContent>
       </Tooltip>
     );
   }

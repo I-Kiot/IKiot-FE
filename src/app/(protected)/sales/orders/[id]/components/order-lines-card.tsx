@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ImageAttachments } from "@/components/image-attachments";
 import { CustomizationChips } from "../../shared/customization-chips";
@@ -17,6 +16,7 @@ import {
   stockDisplay,
 } from "../../shared/order-display";
 import { canCreateProductionFor } from "../../shared/production-prefill";
+import { ProductionProgressList } from "../../shared/production-progress-list";
 import { CreateProductionRequestButton } from "../../shared/create-production-request-button";
 
 /** Thứ khách đặt riêng: mỗi thay đổi một chip (giá trị gốc gạch ngang), ghi chú và ảnh - cùng cách màn tạo đơn và YCSX hiện. */
@@ -113,21 +113,15 @@ export function OrderLinesCard({ order }: { order: OrderDetail }) {
                         {line.returnedQuantity > 0 &&
                           ` · đã hoàn ${line.returnedQuantity}`}
                       </div>
-                      {line.production.requests.length > 0 && (
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          Đang sản xuất:{" "}
-                          {line.production.requests.map((request, index) => (
-                            <span key={request.id}>
-                              {index > 0 && ", "}
-                              <Link
-                                href={`/exchange/imports?source=WORKSHOP&search=${encodeURIComponent(request.code)}`}
-                                className="font-medium text-foreground hover:underline"
-                              >
-                                {request.code}
-                              </Link>{" "}
-                              ({request.receivedQuantity}/{request.quantity})
-                            </span>
-                          ))}
+                      {line.production.progress.length > 0 && (
+                        <div className="mt-1">
+                          <div className="text-xs text-muted-foreground">
+                            Sản xuất cho dòng này
+                          </div>
+                          <ProductionProgressList
+                            progress={line.production.progress}
+                            sourceLocationId={line.sourceLocation?.id}
+                          />
                         </div>
                       )}
                       {line.customization && (
@@ -160,6 +154,10 @@ export function OrderLinesCard({ order }: { order: OrderDetail }) {
                             Trên kệ {line.stockCheck.stock}
                             {line.stockCheck.shortQuantity > 0 &&
                               ` · thiếu ${line.stockCheck.shortQuantity}`}
+                            {line.stockCheck.shortQuantity > 0 &&
+                              line.production.orderableQuantity === 0 &&
+                              line.production.coveringRequests.length > 0 &&
+                              ` · đã có ${line.production.coveringRequests.map((request) => request.code).join(", ")} đặt chung`}
                           </span>
                         </div>
                       ) : (

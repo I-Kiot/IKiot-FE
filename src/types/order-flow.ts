@@ -289,7 +289,31 @@ export interface OrderLine {
   isManufacturable: boolean;
 }
 
-/** YCSX còn mở của một dòng đơn; `openQuantity` = Σ (đặt − đã nhận). BE từ chối đặt vượt phần còn thiếu trừ số này. */
+/** Tiến độ một YCSX gắn dòng đơn (mọi trạng thái trừ CANCELLED). Ngày là chuỗi ISO. */
+export interface LineProductionProgress {
+  id: string;
+  code: string;
+  status: ProductionRequestStatus;
+  supplierName: string;
+  location: { id: string; name: string };
+  sentAt: string | null;
+  /** Lúc xưởng xác nhận nhận làm; null = chưa. */
+  acceptedAt: string | null;
+  /** YYYY-MM-DD */
+  expectedReadyDate: string | null;
+  quantity: number;
+  receivedQuantity: number;
+  /** Xưởng đã ghi giao nhưng nơi nhận chưa xác nhận. */
+  deliveringQuantity: number;
+  /** Đóng khi nhận thiếu. */
+  closedShort: boolean;
+}
+
+/**
+ * Hàng xưởng của một dòng đơn. `openQuantity` / `requests` = YCSX gắn dòng còn mở (Σ đặt − đã nhận).
+ * `orderableQuantity` = còn đặt xưởng được bao nhiêu (BE tính, cùng phép tính với guard; null = không biết),
+ * `coveringRequests` = YCSX đặt chung đang che số thiếu của (địa điểm, SKU) này, `progress` = tiến độ từng YCSX gắn dòng.
+ */
 export interface LineProduction {
   openQuantity: number;
   requests: {
@@ -299,6 +323,14 @@ export interface LineProduction {
     quantity: number;
     receivedQuantity: number;
   }[];
+  orderableQuantity: number | null;
+  coveringRequests: {
+    id: string;
+    code: string;
+    status: ProductionRequestStatus;
+    openQuantity: number;
+  }[];
+  progress: LineProductionProgress[];
 }
 
 /** Dòng như `GET /orders/:id` trả về: thêm nơi xuất hàng và thông số đặt riêng. */
@@ -819,6 +851,10 @@ export interface ProductionListRow {
     orderCode: string;
     orderItemId: string;
     quantity: number;
+    /** Phần còn cần sau khi trừ phần YCSX gắn riêng đã nhận; `quantity` vẫn là cả dòng. */
+    remainingQuantity: number;
+    coveredQuantity: number;
+    coveredBy: { id: string; code: string; status: ProductionRequestStatus; quantity: number }[];
     priority: OrderPriority;
     requestedDeliveryDate: string | null;
     assignee: PersonRef | null;

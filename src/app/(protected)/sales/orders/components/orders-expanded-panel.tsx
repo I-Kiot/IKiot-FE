@@ -13,6 +13,7 @@ import {
 } from "@/types/order-flow";
 import { formatVND, orderedLines, stockDisplay } from "../shared/order-display";
 import { canCreateProductionFor } from "../shared/production-prefill";
+import { ProductionProgressList } from "../shared/production-progress-list";
 import { CreateProductionRequestButton } from "../shared/create-production-request-button";
 
 function StockCell({ line }: { line: OrderLine }) {
@@ -111,6 +112,7 @@ export function OrdersExpandedPanel({
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
+                      <ProductionProgressList progress={line.production?.progress ?? []} compact />
                     </div>
                   </td>
                   <td className="px-3 py-2 text-right">{line.quantity}</td>
