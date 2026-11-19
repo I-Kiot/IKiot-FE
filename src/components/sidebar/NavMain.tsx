@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ChevronRight, TriangleAlert, type LucideIcon } from "lucide-react";
+import { ChevronRight, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useNotificationStore } from "@/store/notification-store";
 import { useOrderAlertsStore } from "@/store/order-alerts-store";
+import { useProductionListAlertsStore } from "@/store/production-list-alerts-store";
+import { CountBadge } from "@/components/count-badge";
 import { useAuthStore } from "@/store/auth-store";
 import { parseLocationKey } from "@/lib/location-key";
 import { getSessionRole } from "@/lib/auth";
@@ -26,6 +28,9 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+
+const ORDERS_URL = "/sales/orders";
+const IMPORTS_URL = "/exchange/imports";
 
 export function NavMain({
   label,
@@ -48,14 +53,45 @@ export function NavMain({
   const unreadCount = useNotificationStore((state) => state.unreadCount);
   const openTicketsCount = useNotificationStore((state) => state.openTicketsCount);
 
-  const ORDERS_URL = "/sales/orders";
-  const hasOrdersEntry = items.some((item) =>
-    item.items?.some((subItem) => subItem.url === ORDERS_URL),
-  );
+  const hasSubItem = (url: string) =>
+    items.some((item) => item.items?.some((subItem) => subItem.url === url));
+  const hasOrdersEntry = hasSubItem(ORDERS_URL);
+  // Số mặt hàng cần đặt xưởng hiện ở mục danh sách nhập hàng (popup "Danh sách cần sản xuất" nằm trong màn đó).
+  const hasProductionNeedEntry = hasSubItem(IMPORTS_URL);
+
   const orderAlerts = useOrderAlertsStore((state) => state.alerts);
   const fetchOrderAlerts = useOrderAlertsStore((state) => state.fetchAlerts);
+  const productionNeedCount = useProductionListAlertsStore((state) => state.needCount) ?? 0;
+  const fetchProductionNeed = useProductionListAlertsStore((state) => state.fetchNeed);
   const locationKey = useAuthStore((state) => state.locationKey);
+  // Số đơn cần chú ý (thiếu hàng + sắp đến hạn + quá hạn lấy hàng).
   const orderAlertCount = orderAlerts ? orderAlerts.short + orderAlerts.dueSoon + orderAlerts.pickupOverdue : 0;
+
+  // Số cảnh báo theo mục con: badge đỏ hiện ở mục con đó và ở menu cha chứa nó.
+  // `key` là loại cảnh báo: nếu một loại hiện ở nhiều mục con thì menu cha chỉ cộng một lần.
+  const orderAlert = { key: "orders", count: orderAlertCount, label: `${orderAlertCount} đơn cần chú ý` };
+  const productionNeedAlert = {
+    key: "production-need",
+    count: productionNeedCount,
+    label: `${productionNeedCount} mặt hàng cần đặt xưởng`,
+  };
+  const alertByUrl: Record<string, { key: string; count: number; label: string }> = {
+    [ORDERS_URL]: orderAlert,
+    [IMPORTS_URL]: productionNeedAlert,
+  };
+
+  // Tổng cảnh báo của các mục con trong một menu cha, mỗi loại cảnh báo tính một lần.
+  function parentAlertCount(subItems: { url: string }[]): number {
+    const counted = new Set<string>();
+    let total = 0;
+    for (const subItem of subItems) {
+      const alert = alertByUrl[subItem.url];
+      if (!alert || counted.has(alert.key)) continue;
+      counted.add(alert.key);
+      total += alert.count;
+    }
+    return total;
+  }
 
   // Làm mới khi poll mỗi phút và khi đổi trang, để badge theo kịp đơn bán và phiếu nhập kho mà không cần socket riêng.
   useEffect(() => {
@@ -66,6 +102,14 @@ export function NavMain({
     const timer = setInterval(() => void fetchOrderAlerts(branchId), 60_000);
     return () => clearInterval(timer);
   }, [hasOrdersEntry, locationKey, pathname, fetchOrderAlerts]);
+
+  // Cùng nhịp cho số mặt hàng cần đặt xưởng. `GET /production-list` cần `production_requests:read`.
+  useEffect(() => {
+    if (!hasProductionNeedEntry || !allows(getSessionRole(), "production_requests", "read")) return;
+    void fetchProductionNeed();
+    const timer = setInterval(() => void fetchProductionNeed(), 60_000);
+    return () => clearInterval(timer);
+  }, [hasProductionNeedEntry, locationKey, pathname, fetchProductionNeed]);
 
   const [openStates, setOpenStates] = useState<Record<string, boolean>>({});
   const [isMounted, setIsMounted] = useState(false);
@@ -120,18 +164,14 @@ export function NavMain({
                     <SidebarMenuButton tooltip={item.title} className="cursor-pointer">
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
-                      {orderAlertCount > 0 &&
-                        item.items.some((subItem) => subItem.url === ORDERS_URL) && (
-                          <TriangleAlert
-                            className="ml-auto size-4 shrink-0 text-red-600 dark:text-red-500"
-                            aria-label="Có đơn cần chú ý"
-                          />
-                        )}
+                      <CountBadge
+                        className="ml-auto"
+                        count={parentAlertCount(item.items)}
+                        label={`${parentAlertCount(item.items)} mục cần chú ý`}
+                      />
                       <ChevronRight
                         className={`${
-                          orderAlertCount > 0 && item.items.some((subItem) => subItem.url === ORDERS_URL)
-                            ? "ml-2"
-                            : "ml-auto"
+                          parentAlertCount(item.items) > 0 ? "ml-2" : "ml-auto"
                         } shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90`}
                       />
                     </SidebarMenuButton>
@@ -147,15 +187,12 @@ export function NavMain({
                               rel={(item.title === "Auth Pages" || item.title === "Errors") ? "noopener noreferrer" : undefined}
                             >
                               <span>{subItem.title}</span>
-                              {subItem.url === ORDERS_URL && orderAlertCount > 0 && (
-                                // Bọc trong span để icon không còn là con trực tiếp của SidebarMenuSubButton,
-                                // vốn ép màu mọi svg con về text-sidebar-accent-foreground và đè mất màu đỏ.
-                                <span className="ml-auto inline-flex shrink-0">
-                                  <TriangleAlert
-                                    className="size-4 text-red-600 dark:text-red-500"
-                                    aria-label="Có đơn cần chú ý"
-                                  />
-                                </span>
+                              {alertByUrl[subItem.url] && (
+                                <CountBadge
+                                  className="ml-auto"
+                                  count={alertByUrl[subItem.url].count}
+                                  label={alertByUrl[subItem.url].label}
+                                />
                               )}
                             </Link>
                           </SidebarMenuSubButton>

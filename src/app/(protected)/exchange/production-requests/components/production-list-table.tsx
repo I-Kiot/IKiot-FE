@@ -63,7 +63,8 @@ function specsSummary(row: ProductionListRow): string | null {
 
 /**
  * B-6: hàng cần sản xuất (`GET /production-list`, contract §3), một dòng cho mỗi (nơi, SKU), tính khi đọc:
- * nhu cầu của đơn chưa giao, trừ tồn kho, hàng xưởng đang làm và đang nháp. Thông báo link về đây với `locationId` / `productItemId`.
+ * nhu cầu của đơn chưa giao, trừ tồn kho, hàng xưởng đang làm và đang nháp. Hiện dạng popup ở màn Nhập hàng (nguồn Xưởng);
+ * thông báo thiếu hàng mở popup đó kèm `locationId` / `productItemId` trên URL.
  */
 export function ProductionListTable() {
   const params = useSearchParams();
@@ -360,7 +361,10 @@ export function ProductionListTable() {
                 </React.Fragment>
               );
             })}
-            {!loading && rows.length === 0 && <DataTableEmpty columnCount={9} />}
+            {/* messageRoute: bảng là popup trong màn Nhập hàng, câu trống vẫn phải là của danh sách cần sản xuất. */}
+            {!loading && rows.length === 0 && (
+              <DataTableEmpty columnCount={9} messageRoute="/exchange/production-list" />
+            )}
             {loading && rows.length === 0 && <DataTableLoading columnCount={9} />}
           </TableBody>
         </Table>

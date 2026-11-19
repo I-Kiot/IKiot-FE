@@ -52,7 +52,7 @@ export function QuickActionsCard() {
                 warnNoPermission(permission?.join(":"));
               }}
               className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border border-transparent p-1.5 text-center transition-colors hover:border-border hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring",
+                "flex min-h-14 flex-col items-center justify-start gap-1 rounded-lg border border-transparent p-1.5 text-center transition-colors hover:border-border hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring",
                 !allowed && "cursor-not-allowed opacity-50",
               )}
             >

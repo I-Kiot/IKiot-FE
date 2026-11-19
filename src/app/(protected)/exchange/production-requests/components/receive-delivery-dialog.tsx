@@ -33,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import { productionDeliveryApi } from "@/lib/api/production-delivery";
 import type { ProductionDelivery } from "@/types/order-flow";
-import { useProductionOptions } from "../../production-requests/shared/use-production-options";
+import { useProductionOptions } from "../shared/use-production-options";
 
 const DEFAULT_DEFECT_LOCATION = "default";
 

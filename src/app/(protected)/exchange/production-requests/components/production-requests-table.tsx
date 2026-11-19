@@ -38,6 +38,7 @@ import {
   requestStatusDisplay,
   workshopAcceptanceDisplay,
 } from "../shared/production-display";
+import { PendingDeliveryActions } from "./pending-delivery-actions";
 import { ProductionRequestDetailDialog } from "./production-request-detail-dialog";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -59,7 +60,9 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
   const [search, setSearch] = React.useState(initialSearch);
   const [term, setTerm] = React.useState(initialSearch.trim());
   const [reloads, setReloads] = React.useState(0);
-  const [selected, setSelected] = React.useState<ProductionRequest | null>(null);
+  const [selected, setSelected] = React.useState<ProductionRequest | null>(
+    null,
+  );
   // Gắn kèm query đã trả lời: khi tag khác nghĩa là có yêu cầu mới đang chạy.
   const query = `${page}|${pageSize}|${status}|${term}|${reloads}|${refreshSignal}`;
   const [loaded, setLoaded] = React.useState<{
@@ -85,15 +88,24 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
       .getList({
         page,
         limit: pageSize,
-        ...(status !== ALL ? { status: status as ProductionRequestStatus } : {}),
+        ...(status !== ALL
+          ? { status: status as ProductionRequestStatus }
+          : {}),
         ...(term ? { search: term } : {}),
       })
       .then((result) => {
-        if (!stale) setLoaded({ query, rows: result.data, total: result.pagination.total });
+        if (!stale)
+          setLoaded({
+            query,
+            rows: result.data,
+            total: result.pagination.total,
+          });
       })
       .catch((error) => {
         if (stale) return;
-        toast.error(getApiErrorBody(error)?.message ?? "Không tải được yêu cầu sản xuất");
+        toast.error(
+          getApiErrorBody(error)?.message ?? "Không tải được yêu cầu sản xuất",
+        );
         setLoaded({ query, rows: [], total: 0 });
       });
     return () => {
@@ -102,11 +114,17 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
   }, [page, pageSize, status, term, query]);
 
   const pages = Math.ceil(total / pageSize);
+  const reload = () => setReloads((n) => n + 1);
 
   const replaceRow = (updated: ProductionRequest) =>
     setLoaded((prev) =>
       prev
-        ? { ...prev, rows: prev.rows.map((row) => (row.id === updated.id ? updated : row)) }
+        ? {
+            ...prev,
+            rows: prev.rows.map((row) =>
+              row.id === updated.id ? updated : row,
+            ),
+          }
         : prev,
     );
 
@@ -134,13 +152,15 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-            {(Object.keys(PRODUCTION_REQUEST_STATUS_LABELS) as ProductionRequestStatus[]).map(
-              (value) => (
-                <SelectItem key={value} value={value}>
-                  {PRODUCTION_REQUEST_STATUS_LABELS[value]}
-                </SelectItem>
-              ),
-            )}
+            {(
+              Object.keys(
+                PRODUCTION_REQUEST_STATUS_LABELS,
+              ) as ProductionRequestStatus[]
+            ).map((value) => (
+              <SelectItem key={value} value={value}>
+                {PRODUCTION_REQUEST_STATUS_LABELS[value]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -156,6 +176,7 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
               <TableHead className="text-right">Đã nhận / đặt</TableHead>
               <TableHead>Hẹn xong</TableHead>
               <TableHead>Ngày tạo</TableHead>
+              <TableHead>Phiếu xưởng giao</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -163,15 +184,28 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
               const display = requestStatusDisplay(row.status, row.closedShort);
               const acceptance = workshopAcceptanceDisplay(row);
               const progress = requestProgress(row);
+              // Chỉ YCSX còn nhận hàng được mới có nút: đã hoàn tất / đã huỷ thì phiếu còn treo cũng không nhận được nữa (BE từ chối).
+              const canStillReceive = row.status === "SENT" || row.status === "PARTIALLY_RECEIVED";
+              const pendingDeliveries = canStillReceive
+                ? (row.deliveries ?? []).filter((d) => d.status === "PENDING")
+                : [];
               return (
-                <TableRow key={row.id} className="cursor-pointer" onClick={() => setSelected(row)}>
+                <TableRow
+                  key={row.id}
+                  className="cursor-pointer"
+                  onClick={() => setSelected(row)}
+                >
                   <TableCell className="font-medium">{row.code}</TableCell>
                   <TableCell>{row.supplier.supplierName}</TableCell>
                   <TableCell>{row.location.name}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       <Badge variant={display.variant}>{display.label}</Badge>
-                      {acceptance && <Badge variant={acceptance.variant}>{acceptance.label}</Badge>}
+                      {acceptance && (
+                        <Badge variant={acceptance.variant}>
+                          {acceptance.label}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
@@ -179,13 +213,43 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
                   </TableCell>
                   <TableCell>{formatDate(row.expectedReadyDate)}</TableCell>
                   <TableCell>{formatDateTime(row.createdAt)}</TableCell>
+                  {/* Bấm nút trong ô này không mở chi tiết YCSX; dialog của nút cũng render trong ô nên chặn cả click bubble từ đó. */}
+                  <TableCell
+                    onClick={(event) => event.stopPropagation()}
+                    className="cursor-default"
+                  >
+                    {pendingDeliveries.length === 0 ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {pendingDeliveries.map((delivery) => {
+                          return (
+                            <div
+                              key={delivery.id}
+                              className="flex flex-wrap items-center gap-2"
+                            >
+                              <PendingDeliveryActions
+                                delivery={delivery}
+                                onChanged={reload}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
             {!loading && rows.length === 0 && (
-              <DataTableEmpty columnCount={7} messageRoute="/exchange/production-requests" />
+              <DataTableEmpty
+                columnCount={8}
+                messageRoute="/exchange/production-requests"
+              />
             )}
-            {loading && rows.length === 0 && <DataTableLoading columnCount={7} />}
+            {loading && rows.length === 0 && (
+              <DataTableLoading columnCount={8} />
+            )}
           </TableBody>
         </Table>
       </div>
@@ -205,7 +269,11 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
       />
 
       <ProductionRequestDetailDialog
-        key={selected ? `${selected.id}:${selected.status}:${selected.updatedAt}` : "none"}
+        key={
+          selected
+            ? `${selected.id}:${selected.status}:${selected.updatedAt}`
+            : "none"
+        }
         request={selected}
         onOpenChange={(open) => {
           if (!open) setSelected(null);

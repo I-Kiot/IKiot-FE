@@ -47,7 +47,9 @@ export function ProductsExpandedPanel({
   isExpanded,
   isLastRow,
 }: ProductsExpandedPanelProps) {
-  const { setOpen, setCurrentRow, screen } = useProducts();
+  const { setOpen, setCurrentRow, screen, detailVersionOf } = useProducts();
+  // Tăng sau mỗi lần sửa hàng hoá thành công (xem handleEditWrapper trong provider).
+  const detailVersion = detailVersionOf(product.id);
   const locationKey = useAuthStore((s) => s.locationKey);
   const role = getCachedUser()?.role;
   const canEdit = canUpdateProduct(role);
@@ -62,17 +64,25 @@ export function ProductsExpandedPanel({
   const [viewOpen, setViewOpen] = useState(false);
   // Phiên bản đang xem ảnh trong lightbox; null = đóng.
   const [galleryItem, setGalleryItem] = useState<ProductItem | null>(null);
-  const fetchedKeyRef = useRef<string | null>(null);
+  // Lần nạp chi tiết gần nhất ứng với hàng hoá / địa điểm / phiên bản nào; trùng cả ba thì không nạp lại.
+  const fetchedRef = useRef<{
+    productId: string;
+    locationKey: string | null;
+    version: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!isExpanded) return;
 
-    const key = `${product.id}:${locationKey}`;
-    if (fetchedKeyRef.current === key) return;
-    const isLocationChange =
-      fetchedKeyRef.current !== null &&
-      fetchedKeyRef.current.split(":")[1] !== locationKey;
-    fetchedKeyRef.current = key;
+    const previous = fetchedRef.current;
+    const isSameProduct = previous !== null && previous.productId === product.id;
+    const isSameLocation = isSameProduct && previous.locationKey === locationKey;
+    if (isSameLocation && previous.version === detailVersion) return;
+
+    const isLocationChange = previous !== null && previous.locationKey !== locationKey;
+    // Chỉ đổi phiên bản (vừa sửa hàng hoá): nạp lại ngầm, giữ nguyên nội dung đang hiện, không hiện skeleton.
+    const isRefreshOnly = isSameLocation;
+    fetchedRef.current = { productId: product.id, locationKey, version: detailVersion };
 
     let cancelled = false;
     const fetchDetail = async () => {
@@ -82,12 +92,14 @@ export function ProductsExpandedPanel({
         setEditOpen(false);
         setEditingItem(null);
       }
-      setLoading(true);
+      if (!isRefreshOnly) setLoading(true);
       try {
         const res = await productApi.getById(product.id);
         if (!cancelled) setDetail({ ...res, items: res.items ?? [] });
+      } catch {
+        if (!cancelled) toast.error("Không tải được chi tiết hàng hoá");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !isRefreshOnly) setLoading(false);
       }
     };
 
@@ -95,7 +107,7 @@ export function ProductsExpandedPanel({
     return () => {
       cancelled = true;
     };
-  }, [isExpanded, product.id, locationKey]);
+  }, [isExpanded, product.id, locationKey, detailVersion]);
 
   function handleItemAdded(newItem: ProductItem) {
     setDetail((prev) => {

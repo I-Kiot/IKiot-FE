@@ -35,8 +35,12 @@ function mapId<T extends object>(doc: ApiDoc<T>): T & { id: string } {
   return { ...(rest as unknown as T), id: id };
 }
 
+// Một phiên bản như BE trả về: giá trị thuộc tính nằm ở `details`.
+type ApiItemDoc = ApiDoc<ProductItem> & { details?: ProductItem["productDetails"] };
+
 // BE gọi giá trị thuộc tính của SKU là `details`; FE dùng `productDetails` (tên của API cũ).
-function mapItem(doc: ApiDoc<ProductItem> & { details?: ProductItem["productDetails"] }): ProductItem {
+// Mọi response có phiên bản đều phải qua hàm này.
+function mapItem(doc: ApiItemDoc): ProductItem {
   const item = mapId(doc) as ProductItem & { details?: ProductItem["productDetails"] };
   const { details, ...rest } = item;
   return { ...rest, productDetails: item.productDetails ?? details };
@@ -167,22 +171,24 @@ export const productApi = {
     productId: string,
     payload: ProductItemCreatePayload,
   ): Promise<ProductItem> => {
-    const res = await client.post<{ data: ApiDoc<ProductItem> }>(
+    const res = await client.post<{ data: ApiItemDoc }>(
       `/products/${productId}/items`,
       payload,
     );
-    return mapId(res.data.data);
+    // Phải qua mapItem: BE trả thuộc tính dưới tên `details`, bỏ qua thì productDetails rỗng và UI ẩn mục Thuộc tính.
+    return mapItem(res.data.data);
   },
 
   updateItem: async (
     itemId: string,
     payload: ProductItemUpdatePayload,
   ): Promise<ProductItem> => {
-    const res = await client.patch<{ data: ApiDoc<ProductItem> }>(
+    const res = await client.patch<{ data: ApiItemDoc }>(
       `/products/items/${itemId}`,
       payload,
     );
-    return mapId(res.data.data);
+    // Như createItem: đổi `details` của BE thành `productDetails`.
+    return mapItem(res.data.data);
   },
 
   removeItem: async (itemId: string): Promise<void> => {

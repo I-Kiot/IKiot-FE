@@ -8,27 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 import type { InboundSource } from "@/app/(protected)/exchange/shared/inbound-source";
-import {
-  PRODUCTION_REQUEST_FORM_DESCRIPTION,
-  ProductionRequestForm,
-  type DraftLine,
-} from "@/app/(protected)/exchange/production-requests/components/production-request-form-dialog";
+import type { DraftLine } from "@/app/(protected)/exchange/production-requests/components/production-request-form-dialog";
 import type { ProductionRequest } from "@/types/order-flow";
-import { ImportCreateForm } from "./import-create-form";
+import { CREATE_INBOUND_COPY, CreateInboundPanes, useInboundSourceSwitch } from "./create-inbound-panes";
 import { InboundSourceToggle } from "./inbound-source-toggle";
-
-const COPY: Record<InboundSource, { title: string; description: string }> = {
-  SUPPLIER: {
-    title: "Tạo đơn nhập hàng",
-    description: "Mua hàng từ nhà cung cấp. Tồn kho chỉ tăng khi nhận hàng.",
-  },
-  WORKSHOP: {
-    title: "Tạo yêu cầu sản xuất",
-    description: PRODUCTION_REQUEST_FORM_DESCRIPTION,
-  },
-};
 
 type Props = {
   defaultSource: InboundSource;
@@ -41,9 +25,8 @@ type Props = {
 };
 
 /**
- * Dialog "Tạo mới": toggle chọn nguồn, form đổi theo. Chỉ mount khi mở.
- * Form đã mở một lần được giữ mount và chỉ ẩn đi, để đổi qua lại không mất phần đang nhập;
- * form chưa từng chọn thì chưa mount, nên chưa tải cả catalog khi chưa cần.
+ * Popup "Tạo mới" của nút "Tạo YCSX" trên đơn hàng (màn Nhập hàng dùng trang `/exchange/imports/new`).
+ * Toggle chọn nguồn, form đổi theo; chỉ mount khi mở.
  */
 export function CreateInboundDialog({
   defaultSource,
@@ -53,14 +36,8 @@ export function CreateInboundDialog({
   onRequestCreated,
   initialRequestLines,
 }: Props) {
-  const [source, setSource] = useState(defaultSource);
-  const [opened, setOpened] = useState<InboundSource[]>([defaultSource]);
+  const { source, opened, select } = useInboundSourceSwitch(defaultSource);
   const [submitting, setSubmitting] = useState(false);
-
-  function select(next: InboundSource) {
-    setSource(next);
-    setOpened((prev) => (prev.includes(next) ? prev : [...prev, next]));
-  }
 
   // Đang gửi thì không cho đóng: kết quả về sau khi đóng sẽ làm mất bản nháp của form còn lại mà người dùng không hay biết.
   function requestClose(open: boolean) {
@@ -68,15 +45,12 @@ export function CreateInboundDialog({
     onOpenChange(open);
   }
 
-  const paneClass = (pane: InboundSource) =>
-    cn("flex min-h-0 flex-1 flex-col", source !== pane && "hidden");
-
   return (
     <Dialog open onOpenChange={requestClose}>
       <DialogContent className="flex h-[94vh] flex-col gap-0 p-0 sm:max-w-[min(1200px,96vw)]">
         <DialogHeader className="gap-3 border-b px-6 pt-6 pb-4">
-          <DialogTitle>{COPY[source].title}</DialogTitle>
-          <DialogDescription>{COPY[source].description}</DialogDescription>
+          <DialogTitle>{CREATE_INBOUND_COPY[source].title}</DialogTitle>
+          <DialogDescription>{CREATE_INBOUND_COPY[source].description}</DialogDescription>
           <InboundSourceToggle
             value={source}
             options={options}
@@ -85,25 +59,15 @@ export function CreateInboundDialog({
           />
         </DialogHeader>
 
-        {opened.includes("SUPPLIER") && (
-          <div className={paneClass("SUPPLIER")}>
-            <ImportCreateForm
-              onCreated={onImportCreated}
-              onCancel={() => requestClose(false)}
-              onSubmittingChange={setSubmitting}
-            />
-          </div>
-        )}
-        {opened.includes("WORKSHOP") && (
-          <div className={paneClass("WORKSHOP")}>
-            <ProductionRequestForm
-              initialLines={initialRequestLines}
-              onSaved={onRequestCreated}
-              onCancel={() => requestClose(false)}
-              onSubmittingChange={setSubmitting}
-            />
-          </div>
-        )}
+        <CreateInboundPanes
+          source={source}
+          opened={opened}
+          onImportCreated={onImportCreated}
+          onRequestCreated={onRequestCreated}
+          onCancel={() => requestClose(false)}
+          onSubmittingChange={setSubmitting}
+          initialRequestLines={initialRequestLines}
+        />
       </DialogContent>
     </Dialog>
   );
