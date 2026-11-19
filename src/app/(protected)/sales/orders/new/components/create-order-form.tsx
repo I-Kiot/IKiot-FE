@@ -7,6 +7,17 @@ import { toast } from "sonner";
 import { Banknote, Check, FileText, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { Customer, CustomerGender } from "@/types/customer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CheckoutTabs } from "@/app/(protected)/check-out/components/checkout-tabs";
@@ -104,6 +115,15 @@ function OrderDraftForm({
   );
   const [recipientName, setRecipientName] = React.useState("");
   const [recipientPhone, setRecipientPhone] = React.useState("");
+  const [recipientIsCustomer, setRecipientIsCustomer] = React.useState(true);
+  const [customerMode, setCustomerMode] = React.useState<"existing" | "new">("new");
+  const [newName, setNewName] = React.useState("");
+  const [newPhone, setNewPhone] = React.useState("");
+  const [newGender, setNewGender] = React.useState<CustomerGender>("MALE");
+  const [addedCustomer, setAddedCustomer] = React.useState<{
+    orderId: string;
+    customer: Customer;
+  } | null>(null);
   const [deliveryAddress, setDeliveryAddress] = React.useState("");
   const [lines, setLines] = React.useState<OrderLineDraft[]>([]);
   const [shippingFee, setShippingFee] = React.useState(0);
@@ -214,10 +234,20 @@ function OrderDraftForm({
     depositValue,
   });
 
-  const customerError = customer ? undefined : "Chọn một khách hàng hoặc thêm khách mới.";
+  const isNewCustomer = customerMode === "new";
+  const customerError =
+    isNewCustomer || customer ? undefined : "Chọn một khách hàng hoặc nhập khách mới.";
+  const newNameError =
+    isNewCustomer && newName.trim().length < 2 ? "Tên khách hàng phải có ít nhất 2 ký tự." : undefined;
+  const newPhoneError =
+    isNewCustomer && !/^[0-9+]{9,15}$/.test(newPhone.replace(/\s/g, ""))
+      ? "Số điện thoại hợp lệ phải từ 9 đến 15 chữ số."
+      : undefined;
   const isHomeDelivery = fulfillment === "HOME_DELIVERY";
   const errors = {
     customer: customerError,
+    newName: newNameError,
+    newPhone: newPhoneError,
     branch: branchId ? undefined : "Chọn nơi bán.",
     assignee: assigneeId ? undefined : "Chọn người phụ trách đơn.",
     lines: lines.length > 0 ? undefined : "Đơn hàng cần ít nhất một mặt hàng.",
@@ -231,8 +261,15 @@ function OrderDraftForm({
     deliveryAddress:
       isHomeDelivery && !deliveryAddress.trim() ? "Nhập địa chỉ giao hàng." : undefined,
   };
+  const showRecipientFields =
+    !recipientIsCustomer ||
+    (attempted &&
+      !isNewCustomer &&
+      (!!errors.recipientName || !!errors.recipientPhone));
   const valid =
     !errors.customer &&
+    !errors.newName &&
+    !errors.newPhone &&
     !errors.branch &&
     !errors.assignee &&
     !errors.lines &&
@@ -242,7 +279,7 @@ function OrderDraftForm({
     !errors.recipientPhone &&
     !errors.deliveryAddress;
 
-  // Chọn khách sẽ điền một lần các thông tin giao hàng đã có, không ghi đè nội dung đã gõ.
+  // Chọn hoặc đổi khách sẽ điền lại người nhận và địa chỉ giao từ hồ sơ khách, trừ khi người nhận là người khác.
   // D-11: khi đã có danh sách chọn, sao chép khách, chi nhánh, người phụ trách, giao hàng và các dòng hỏng của đơn trả.
   // Giá do server đọc lại từ catalogue, trừ khi người dùng giữ giá đã thoả thuận hiển thị ở đây.
   React.useEffect(() => {
@@ -261,7 +298,10 @@ function OrderDraftForm({
           (item) => item.condition === "DAMAGED",
         );
         setReplacementOf({ id: orderReturn.id, code: orderReturn.code });
-        if (original) setCustomer(original);
+        if (original) {
+          setCustomer(original);
+          setCustomerMode("existing");
+        }
         setBranchId(order.branch.id);
         if (order.assignee) {
           const person = {
@@ -282,6 +322,11 @@ function OrderDraftForm({
         }
         setRecipientName(order.recipientName ?? "");
         setRecipientPhone(order.recipientPhone ?? "");
+        setRecipientIsCustomer(
+          !!original &&
+            (order.recipientName ?? "") === original.name &&
+            (order.recipientPhone ?? "") === (original.phone ?? ""),
+        );
         setDeliveryAddress(order.deliveryAddress ?? "");
         setNote(`Mua lại hàng hỏng của đơn hoàn ${orderReturn.code}`);
         setLines(
@@ -317,16 +362,66 @@ function OrderDraftForm({
 
   const handleCustomer = (next: PickedCustomer | null) => {
     setCustomer(next);
-    if (next) {
-      setRecipientName((current) => current || next.name);
-      setRecipientPhone((current) => current || next.phone || "");
-      setDeliveryAddress((current) => current || next.address || "");
+    if (next && recipientIsCustomer) {
+      setRecipientName(next.name);
+      setRecipientPhone(next.phone || "");
+      setDeliveryAddress(next.address || "");
     }
+  };
+
+  const handleRecipientIsCustomer = (checked: boolean) => {
+    setRecipientIsCustomer(checked);
+    const source = isNewCustomer ? { name: newName, phone: newPhone } : customer;
+    setRecipientName(checked && source ? source.name : "");
+    setRecipientPhone(checked && source ? source.phone || "" : "");
+  };
+
+  const handleCustomerMode = (mode: "existing" | "new") => {
+    if (mode === customerMode) return;
+    setCustomerMode(mode);
+    setCustomer(null);
+    if (recipientIsCustomer) {
+      setRecipientName(mode === "new" ? newName : "");
+      setRecipientPhone(mode === "new" ? newPhone : "");
+    }
+  };
+
+  const handleNewName = (value: string) => {
+    setNewName(value);
+    if (recipientIsCustomer) setRecipientName(value);
+  };
+
+  const handleNewPhone = (value: string) => {
+    setNewPhone(value);
+    if (recipientIsCustomer) setRecipientPhone(value);
   };
 
   async function submit() {
     setAttempted(true);
-    if (!valid || !customer) return;
+    if (!valid || (!isNewCustomer && !customer)) return;
+    let customerId = customer?.id ?? "";
+    let newlyAdded: Customer | null = null;
+    if (isNewCustomer) {
+      setSubmitting(true);
+      try {
+        newlyAdded = await customerApi.create({
+          name: newName.trim(),
+          phone: newPhone.replace(/\s/g, ""),
+          gender: newGender,
+          ...(fulfillment === "HOME_DELIVERY" && deliveryAddress.trim()
+            ? { address: deliveryAddress.trim() }
+            : {}),
+        });
+        customerId = newlyAdded.id;
+        setCustomer(newlyAdded);
+        setCustomerMode("existing");
+      } catch (error) {
+        const body = getApiErrorBody(error);
+        toast.error(messageForCode(body?.code) ?? body?.message ?? "Không thêm được khách hàng");
+        setSubmitting(false);
+        return;
+      }
+    }
     const payload: CreateOrderJourneyPayload = {
       branchId,
       assigneeId,
@@ -342,7 +437,7 @@ function OrderDraftForm({
           : {}),
         ...(line.customization ? { customization: line.customization } : {}),
       })),
-      customerId: customer.id,
+      customerId,
       ...(effectiveShippingFee > 0 ? { shippingFee: effectiveShippingFee } : {}),
       ...(orderDiscount > 0
         ? { discountType: "ORDER" as const, discountValue: orderDiscount }
@@ -382,6 +477,10 @@ function OrderDraftForm({
               `Đơn đã tạo nhưng chưa gắn được vào đơn hoàn ${replacementOf.code}`,
             ),
           );
+      }
+      if (newlyAdded) {
+        setAddedCustomer({ orderId: created.id, customer: newlyAdded });
+        return;
       }
       router.push(`/sales/orders/${created.id}`);
     } catch (error) {
@@ -489,72 +588,223 @@ function OrderDraftForm({
         <CardContent className="grid gap-6 px-4 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
             <div className="space-y-1.5">
-              <Label className={sectionLabel}>Khách hàng</Label>
-              <CustomerPicker
-                value={customer}
-                onChange={handleCustomer}
-                error={show(errors.customer)}
-              />
-            </div>
-            <div className="space-y-4">
-              <SalesBranchSelect sales={sales} error={show(errors.branch)} />
-              <div className="space-y-1.5">
-                <Label className={sectionLabel}>Nguồn hàng</Label>
-                <Select
-                  value={stockLocation?.id ?? ""}
-                  onValueChange={(id) => setPickedSource({ branchId, id })}
-                  disabled={!branch || sourceOptions.length === 0}
-                >
-                  <SelectTrigger className="w-full" aria-label="Nguồn hàng">
-                    <SelectValue placeholder="Chọn nơi bán trước" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sourceOptions.map((location) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.name}
-                        {location.id === defaultSource?.id ? " (mặc định)" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Cả đơn xuất từ một nơi, đổi được tới trước khi đóng gói.
-                </p>
-              </div>
-              <div className="grid gap-3">
-                <div className="space-y-1.5">
-                  <Label className={sectionLabel}>
-                    Người phụ trách <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={assigneeId}
-                    onValueChange={setAssigneeId}
-                    disabled={!optionsReady || !branch}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      aria-label="Người phụ trách"
+              <div className="flex items-center justify-between gap-2">
+                <Label className={sectionLabel}>Khách hàng</Label>
+                <div className="inline-flex rounded-md border p-0.5 text-xs">
+                  {(["new", "existing"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => handleCustomerMode(mode)}
+                      className={cn(
+                        "cursor-pointer rounded px-2.5 py-1 font-medium transition-colors",
+                        customerMode === mode
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
                     >
-                      <SelectValue placeholder={branch ? "Chọn người" : "Chọn nơi bán trước"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assigneeOptions.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {show(errors.assignee) && (
-                    <p className="text-sm text-destructive">
-                      {errors.assignee}
-                    </p>
-                  )}
+                      {mode === "existing" ? "Khách có sẵn" : "Khách mới / vãng lai"}
+                    </button>
+                  ))}
                 </div>
               </div>
+              {isNewCustomer ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-customer-name" className={sectionLabel}>
+                      Họ và tên *
+                    </Label>
+                    <Input
+                      id="new-customer-name"
+                      value={newName}
+                      onChange={(event) => handleNewName(event.target.value)}
+                    />
+                    {show(errors.newName) && (
+                      <p className="text-sm text-destructive">{errors.newName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-customer-phone" className={sectionLabel}>
+                      Số điện thoại *
+                    </Label>
+                    <Input
+                      id="new-customer-phone"
+                      inputMode="tel"
+                      value={newPhone}
+                      onChange={(event) => handleNewPhone(event.target.value)}
+                    />
+                    {show(errors.newPhone) && (
+                      <p className="text-sm text-destructive">{errors.newPhone}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className={sectionLabel}>Giới tính</Label>
+                    <RadioGroup
+                      value={newGender}
+                      onValueChange={(value) => setNewGender(value as CustomerGender)}
+                      className="flex gap-6"
+                    >
+                      {(
+                        [
+                          ["MALE", "Nam"],
+                          ["FEMALE", "Nữ"],
+                          ["OTHER", "Khác"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <div key={value} className="flex items-center gap-2">
+                          <RadioGroupItem
+                            id={`new-customer-gender-${value}`}
+                            value={value}
+                            className="border-muted-foreground/60"
+                          />
+                          <Label
+                            htmlFor={`new-customer-gender-${value}`}
+                            className="cursor-pointer text-sm font-normal"
+                          >
+                            {label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  <p className="text-xs text-muted-foreground sm:col-span-2">
+                    Khách mới sẽ được thêm vào hệ thống khi tạo đơn.
+                  </p>
+                </div>
+              ) : (
+                <CustomerPicker
+                  value={customer}
+                  onChange={handleCustomer}
+                  error={show(errors.customer)}
+                />
+              )}
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="recipient-is-customer"
+                  checked={recipientIsCustomer}
+                  onCheckedChange={(checked) =>
+                    handleRecipientIsCustomer(checked === true)
+                  }
+                />
+                <Label
+                  htmlFor="recipient-is-customer"
+                  className="text-sm font-normal"
+                >
+                  {fulfillment === "STORE_PICKUP"
+                    ? "Người đến lấy là khách"
+                    : "Người nhận là khách"}
+                </Label>
+              </div>
+              {showRecipientFields ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipient-name" className={sectionLabel}>
+                      {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận *"}
+                    </Label>
+                    <Input
+                      id="recipient-name"
+                      value={recipientName}
+                      onChange={(event) => setRecipientName(event.target.value)}
+                    />
+                    {show(errors.recipientName) && (
+                      <p className="text-sm text-destructive">{errors.recipientName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipient-phone" className={sectionLabel}>
+                      {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận *"}
+                    </Label>
+                    <Input
+                      id="recipient-phone"
+                      inputMode="tel"
+                      value={recipientPhone}
+                      onChange={(event) => setRecipientPhone(event.target.value)}
+                    />
+                    {show(errors.recipientPhone) && (
+                      <p className="text-sm text-destructive">{errors.recipientPhone}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {recipientName || recipientPhone
+                    ? [recipientName, recipientPhone].filter(Boolean).join(" · ")
+                    : "Chọn hoặc nhập khách hàng để điền sẵn người nhận."}
+                </p>
+              )}
+              {fulfillment === "HOME_DELIVERY" ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="delivery-address" className={sectionLabel}>
+                    Địa chỉ giao hàng *
+                  </Label>
+                  <Input
+                    id="delivery-address"
+                    value={deliveryAddress}
+                    onChange={(event) => setDeliveryAddress(event.target.value)}
+                  />
+                  {show(errors.deliveryAddress) && (
+                    <p className="text-sm text-destructive">{errors.deliveryAddress}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Khách tới cửa hàng nhận hàng: không có phí giao hàng, không cần địa chỉ. Đơn đóng gói xong sẽ nằm ở
+                  &quot;Chờ khách lấy&quot; cho tới khi thu đủ tiền và giao tại quầy.
+                </p>
+              )}
             </div>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
+            <SalesBranchSelect sales={sales} error={show(errors.branch)} />
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>Nguồn hàng</Label>
+              <Select
+                value={stockLocation?.id ?? ""}
+                onValueChange={(id) => setPickedSource({ branchId, id })}
+                disabled={!branch || sourceOptions.length === 0}
+              >
+                <SelectTrigger className="w-full" aria-label="Nguồn hàng">
+                  <SelectValue placeholder="Chọn nơi bán trước" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sourceOptions.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                      {location.id === defaultSource?.id ? " (mặc định)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Cả đơn xuất từ một nơi, đổi được tới trước khi đóng gói.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>
+                Người phụ trách <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={assigneeId}
+                onValueChange={setAssigneeId}
+                disabled={!optionsReady || !branch}
+              >
+                <SelectTrigger className="w-full" aria-label="Người phụ trách">
+                  <SelectValue placeholder={branch ? "Chọn người" : "Chọn nơi bán trước"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {assigneeOptions.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {show(errors.assignee) && (
+                <p className="text-sm text-destructive">{errors.assignee}</p>
+              )}
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className={sectionLabel}>Hình thức giao</Label>
@@ -562,10 +812,7 @@ function OrderDraftForm({
                   value={fulfillment}
                   onValueChange={(v) => setFulfillment(v as FulfillmentChoice)}
                 >
-                  <SelectTrigger
-                    className="w-full"
-                    aria-label="Hình thức giao hàng"
-                  >
+                  <SelectTrigger className="w-full" aria-label="Hình thức giao hàng">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -588,68 +835,15 @@ function OrderDraftForm({
                 {show(errors.requestedDate) && (
                   <p className="text-sm text-destructive">{errors.requestedDate}</p>
                 )}
-                <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
-                  Mức ưu tiên:
-                  <Badge variant={priorityDisplay(priority).variant}>
-                    {ORDER_PRIORITY_LABELS[priority]}
-                  </Badge>
-                  tự động theo ngày hẹn
-                </p>
               </div>
-              {/* Khách tới lấy cũng ghi người sẽ đến nhận để quầy đối chiếu; chỉ địa chỉ là của giao tận nơi. */}
-              <div className="space-y-1.5">
-                <Label htmlFor="recipient-name" className={sectionLabel}>
-                  {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận *"}
-                </Label>
-                <Input
-                  id="recipient-name"
-                  value={recipientName}
-                  onChange={(event) => setRecipientName(event.target.value)}
-                />
-                {show(errors.recipientName) && (
-                  <p className="text-sm text-destructive">{errors.recipientName}</p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="recipient-phone" className={sectionLabel}>
-                  {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận *"}
-                </Label>
-                <Input
-                  id="recipient-phone"
-                  inputMode="tel"
-                  value={recipientPhone}
-                  onChange={(event) => setRecipientPhone(event.target.value)}
-                />
-                {show(errors.recipientPhone) && (
-                  <p className="text-sm text-destructive">{errors.recipientPhone}</p>
-                )}
-              </div>
-              {fulfillment === "STORE_PICKUP" && (
-                <p className="text-sm text-muted-foreground sm:col-span-2">
-                  Khách tới cửa hàng nhận hàng: không có phí giao hàng, không cần địa chỉ. Đơn đóng gói xong sẽ nằm ở
-                  &quot;Chờ khách lấy&quot; cho tới khi thu đủ tiền và giao tại quầy.
-                </p>
-              )}
-              {fulfillment === "HOME_DELIVERY" && (
-                <>
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="delivery-address" className={sectionLabel}>
-                      Địa chỉ giao hàng *
-                    </Label>
-                    <Input
-                      id="delivery-address"
-                      value={deliveryAddress}
-                      onChange={(event) =>
-                        setDeliveryAddress(event.target.value)
-                      }
-                    />
-                    {show(errors.deliveryAddress) && (
-                      <p className="text-sm text-destructive">{errors.deliveryAddress}</p>
-                    )}
-                  </div>
-                </>
-              )}
             </div>
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+              Mức ưu tiên:
+              <Badge variant={priorityDisplay(priority).variant}>
+                {ORDER_PRIORITY_LABELS[priority]}
+              </Badge>
+              tự động theo ngày hẹn
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -887,6 +1081,42 @@ function OrderDraftForm({
           Tạo đơn
         </Button>
       </div>
+      <Dialog
+        open={addedCustomer !== null}
+        onOpenChange={(open) => {
+          if (!open && addedCustomer) router.push(`/sales/orders/${addedCustomer.orderId}`);
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Đã thêm khách hàng mới</DialogTitle>
+            <DialogDescription>
+              Khách hàng được lưu vào hệ thống cùng với đơn vừa tạo.
+            </DialogDescription>
+          </DialogHeader>
+          {addedCustomer && (
+            <div className="rounded-lg border bg-primary/5 p-3">
+              <div className="text-base font-bold">{addedCustomer.customer.name}</div>
+              <div className="mt-0.5 font-mono text-sm text-muted-foreground">
+                {[
+                  addedCustomer.customer.phone && `SĐT: ${addedCustomer.customer.phone}`,
+                  addedCustomer.customer.customerCode,
+                ]
+                  .filter(Boolean)
+                  .join(" • ")}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              onClick={() => addedCustomer && router.push(`/sales/orders/${addedCustomer.orderId}`)}
+            >
+              Xem đơn hàng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
