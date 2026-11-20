@@ -38,6 +38,8 @@ import {
 } from "@/app/(protected)/exchange/shared/form-fields";
 import { MovementProductSearch } from "@/app/(protected)/exchange/shared/movement-product-search";
 import { QuantityStepper } from "@/app/(protected)/exchange/shared/quantity-stepper";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 import { useStockMovementDetail } from "@/app/(protected)/exchange/shared/use-stock-movement-detail";
 import { getAuthScope } from "@/app/(protected)/exchange/shared/auth-scope";
 import { stockMovementApi } from "@/lib/api/stock-movement";
@@ -114,6 +116,8 @@ export function AdjustmentsExpandedPanel({
   const isTenantOwner = authScope.role === "TENANT_OWNER";
   const canActAsFrom = isTenantOwner || matchesFromLocation;
   const canEditPending = isPending && canActAsFrom;
+  // Đang sửa số đếm: người khác đổi phiếu thì hoãn tải lại và báo, không ghi đè.
+  const { pending: livePending, clear: clearLive } = useLiveHold(isExpanded && canEditPending, [request.id]);
 
   useEffect(() => {
     if (!isExpanded || !isPending) {
@@ -237,6 +241,15 @@ export function AdjustmentsExpandedPanel({
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm animate-in fade-in-0 duration-200">
+      <LiveChangeBanner
+        className="mb-4"
+        event={livePending}
+        reloadLabel="Tải lại phiếu"
+        onReload={() => {
+          void refreshDetail();
+          clearLive();
+        }}
+      />
       <MovementDetailHeader
         movementId={detail.id}
         title={`Điều chỉnh tồn kho - ${detail.fromLocationName || "-"}`}

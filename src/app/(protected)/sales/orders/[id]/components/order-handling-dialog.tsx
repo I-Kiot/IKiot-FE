@@ -28,6 +28,8 @@ import {
   type OrderDetail,
   type OrderPriority,
 } from "@/types/order-flow";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type Props = {
   order: OrderDetail;
@@ -48,6 +50,7 @@ interface AssigneeOption {
  * Được phép tới khi đơn giao đi, kể cả đơn đã đóng gói.
  */
 export function OrderHandlingDialog({ order, open, onOpenChange, onSaved, canSetPriority }: Props) {
+  const { pending: livePending } = useLiveHold(open, [order.id]);
   const [assignees, setAssignees] = React.useState<AssigneeOption[] | null>(null);
   const [assigneeId, setAssigneeId] = React.useState(order.assignee?.id ?? "");
   const [priority, setPriority] = React.useState<OrderPriority>(order.priority);
@@ -98,6 +101,7 @@ export function OrderHandlingDialog({ order, open, onOpenChange, onSaved, canSet
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={() => onOpenChange(false)} />
         <DialogHeader>
           <DialogTitle>Người phụ trách và ưu tiên</DialogTitle>
           <DialogDescription>Đổi được cho tới khi đơn chuyển sang đang vận chuyển.</DialogDescription>

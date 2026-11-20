@@ -10,7 +10,13 @@ import { PermissionButton } from "@/components/permission-button";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import { SHIPMENT_PAGE_SIZE } from "@/lib/api/shipment";
 import type { HandOverReadyOrder } from "@/types/order-flow";
-import { PagedTable, usePagedList, type PageParams } from "./paged-table";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
+import { PagedTable, usePagedList, type PageParams, type PagedLive } from "./paged-table";
+
+const LIVE: PagedLive<HandOverReadyOrder> = {
+  resources: [CHANGE_RESOURCES.ORDERS, CHANGE_RESOURCES.SHIPMENTS],
+  idsOf: (row) => [row.id],
+};
 
 /** Khai báo ngoài component để `usePagedList` nhận một hàm ổn định. */
 const loadReadyOrders = (query: PageParams) => orderJourneyApi.listHandOverReady(query.page, query.limit);
@@ -87,7 +93,7 @@ interface ReadyOrdersTabProps {
 /** Bảng đơn chờ giao, phân trang ở server. */
 export function ReadyOrdersTab({ reloadKey, canHandOver, onHandOver }: ReadyOrdersTabProps) {
   const [query, setQuery] = useState<PageParams>({ page: 1, limit: SHIPMENT_PAGE_SIZE });
-  const state = usePagedList(loadReadyOrders, query, setQuery, reloadKey);
+  const state = usePagedList(loadReadyOrders, query, setQuery, reloadKey, LIVE);
   const columns = useMemo(() => readyOrdersColumns(canHandOver, onHandOver), [canHandOver, onHandOver]);
 
   return (

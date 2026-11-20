@@ -17,6 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import type { OrderDetail } from "@/types/order-flow";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type Props = {
   order: OrderDetail;
@@ -29,6 +31,7 @@ type Props = {
  * đơn hoàn thành và xuất hoá đơn. Không quay lại được.
  */
 export function PickupHandOverDialog({ order, onClose, onHandedOver }: Props) {
+  const { pending: livePending } = useLiveHold(true, [order.id]);
   const [receiverName, setReceiverName] = React.useState(order.recipientName ?? "");
   const [note, setNote] = React.useState("");
   const [saving, setSaving] = React.useState(false);
@@ -52,6 +55,7 @@ export function PickupHandOverDialog({ order, onClose, onHandedOver }: Props) {
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <DialogHeader>
           <DialogTitle>Giao hàng cho khách</DialogTitle>
           <DialogDescription>

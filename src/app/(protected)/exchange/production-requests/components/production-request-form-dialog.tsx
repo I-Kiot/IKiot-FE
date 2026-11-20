@@ -148,9 +148,18 @@ export function ProductionRequestForm({
   const [supplierId, setSupplierId] = React.useState(
     request?.supplier.id ?? "",
   );
-  const [locationId, setLocationId] = React.useState(
+  const [pickedLocationId, setLocationId] = React.useState(
     request?.location.id ?? initialLocationId ?? "",
   );
+  // Nơi nhận điền sẵn khi tạo mới (nút "Tạo YCSX" trên đơn) mà không có trong danh sách chọn được
+  // (đã xoá, ngoài phạm vi tài khoản) thì coi như chưa chọn: Select trống thì form cũng không được gửi id đó.
+  const prefilledLocationMissing =
+    !request &&
+    !loading &&
+    pickedLocationId !== "" &&
+    pickedLocationId === initialLocationId &&
+    !locations.some((l) => l.id === pickedLocationId);
+  const locationId = prefilledLocationMissing ? "" : pickedLocationId;
   const [expectedReadyDate, setExpectedReadyDate] = React.useState(
     // API trả ISO instant; <input type="date"> chỉ nhận ngày lịch.
     request?.expectedReadyDate?.slice(0, 10) ?? "",

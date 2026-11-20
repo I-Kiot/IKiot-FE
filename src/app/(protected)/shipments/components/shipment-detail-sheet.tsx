@@ -4,6 +4,9 @@
 // shipper, đang đi giao, giao không thành) cùng dialog ghi chú của các nút đó.
 
 import { useEffect, useState } from "react";
+import { useLiveHold, useLiveTick } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PermissionButton } from "@/components/permission-button";
@@ -33,6 +36,8 @@ import {
   ShipmentTimeline,
 } from "./shipment-ui";
 
+const LIVE_RESOURCES = [CHANGE_RESOURCES.SHIPMENTS, CHANGE_RESOURCES.ORDERS] as const;
+
 type DetailState = { status: "loading" } | { status: "error" } | { status: "ready"; shipment: Shipment };
 
 /** Thao tác đang mở dialog. */
@@ -58,6 +63,8 @@ interface ShipmentNoteDialogProps {
   placeholder?: string;
   /** Nút xác nhận màu đỏ cho thao tác không quay lại được. */
   destructive?: boolean;
+  /** Id chứng từ dialog đang sửa (lần giao, đơn): người khác đổi chúng lúc đang mở thì hiện báo thay vì lặng lẽ ghi đè. */
+  holdIds?: string[];
   onClose: () => void;
   /** Gọi BE; dialog khoá nút cho tới khi promise xong. Nơi gọi tự báo lỗi / tải lại. */
   onConfirm: (note: string | undefined) => Promise<void>;
@@ -72,9 +79,11 @@ export function ShipmentNoteDialog({
   requireNote = false,
   placeholder = "Ghi chú",
   destructive = false,
+  holdIds,
   onClose,
   onConfirm,
 }: ShipmentNoteDialogProps) {
+  const { pending: livePending } = useLiveHold(open, holdIds ?? []);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const missingNote = requireNote && note.trim() === "";
@@ -89,6 +98,7 @@ export function ShipmentNoteDialog({
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !submitting && onClose()}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -128,6 +138,13 @@ const WHO_TRACK = "Chủ shop, shipper của lần giao, hoặc nhân viên có 
 export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged }: ShipmentDetailSheetProps) {
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [action, setAction] = useState<OpenAction>(null);
+  const shipmentOrderId = state.status === "ready" ? state.shipment.order.id : null;
+  // Người khác đổi lần giao / đơn này: tải lại nền (giữ nguyên dữ liệu đang hiện, lỗi thì im lặng).
+  const liveTick = useLiveTick({
+    resources: LIVE_RESOURCES,
+    ids: [shipmentId, shipmentOrderId],
+    enabled: shipmentId !== null,
+  });
 
   useEffect(() => {
     if (!shipmentId) return;
@@ -137,13 +154,13 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
         if (!cancelled) setState({ status: "ready", shipment });
       },
       () => {
-        if (!cancelled) setState({ status: "error" });
+        if (!cancelled) setState((previous) => (previous.status === "ready" ? previous : { status: "error" }));
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [shipmentId, reloadKey]);
+  }, [shipmentId, reloadKey, liveTick]);
 
   /** Chạy một thao tác: thành công → báo, đóng dialog, tải lại; dữ liệu cũ → cũng đóng và tải lại; lỗi khác → giữ dialog. */
   const run = (call: () => Promise<unknown>, success: string, fallback: string) =>
@@ -249,6 +266,7 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
             </div>
 
             <ShipmentNoteDialog
+              holdIds={[shipment.id, shipment.order.id]}
               key={`ship-${action === "ship"}`}
               open={action === "ship"}
               title="Chuyển sang Đang vận chuyển"
@@ -264,6 +282,7 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
               }
             />
             <ShipmentNoteDialog
+              holdIds={[shipment.id, shipment.order.id]}
               key={`out-${action === "outForDelivery"}`}
               open={action === "outForDelivery"}
               title="Đang đi giao"
@@ -280,6 +299,7 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
               }
             />
             <ShipmentNoteDialog
+              holdIds={[shipment.id, shipment.order.id]}
               key={`fail-${action === "fail"}`}
               open={action === "fail"}
               title="Giao không thành"

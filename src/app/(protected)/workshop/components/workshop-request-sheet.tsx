@@ -24,6 +24,8 @@ import {
   formatDateTime,
   requestStatusDisplay,
 } from "../../exchange/production-requests/shared/production-display";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type DetailState = { status: "loading" } | { status: "error" } | { status: "ready"; request: ProductionRequest };
 
@@ -44,6 +46,7 @@ const STALE_CODES: ReadonlySet<string> = new Set([
 ]);
 
 export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
+  const { pending: livePending } = useLiveHold(requestId !== null, [requestId]);
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [inputs, setInputs] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
@@ -172,6 +175,7 @@ export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
   return (
     <Sheet open={requestId !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <SheetHeader>
           <SheetTitle>{request ? request.code : state.status === "error" ? "Không tải được" : "Đang tải..."}</SheetTitle>
           {request && (

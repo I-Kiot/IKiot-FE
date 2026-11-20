@@ -20,6 +20,8 @@ import { QrCountdown } from "@/components/qr-countdown";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import type { OrderDetail, PickupCollectMethod, PickupQrPayment } from "@/types/order-flow";
 import { formatVND } from "../../shared/order-display";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 /** Cứ chừng này mili giây lại hỏi xem tiền QR đã về chưa. */
 const POLL_MS = 5000;
@@ -36,6 +38,7 @@ type Props = {
  * Tiền mặt ghi luôn; QR hiện mã cho khách quét rồi chờ tiền về, khách không chuyển thì đổi sang tiền mặt.
  */
 export function PickupCollectDialog({ order, onClose, onCollected }: Props) {
+  const { pending: livePending } = useLiveHold(true, [order.id]);
   const [method, setMethod] = React.useState<PickupCollectMethod>("CASH");
   const [note, setNote] = React.useState("");
   const [saving, setSaving] = React.useState(false);
@@ -101,6 +104,7 @@ export function PickupCollectDialog({ order, onClose, onCollected }: Props) {
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <DialogHeader>
           <DialogTitle>Thu tiền còn lại</DialogTitle>
           <DialogDescription>

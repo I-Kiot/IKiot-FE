@@ -20,6 +20,8 @@ import {
   type ShortStockLine,
 } from "@/lib/api/error-codes";
 import type { PackableOrder } from "@/types/order-flow";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 /** Mã lỗi nghĩa là "đơn đã bị người khác đóng / đổi trạng thái" - danh sách đang cũ, phải tải lại. */
 const STALE_ORDER_CODES = new Set(["ORDER_STATUS_CONFLICT", "ORDER_STATUS_TRANSITION_INVALID"]);
@@ -36,6 +38,7 @@ interface PackOrderDialogProps {
  * Xác nhận đã đóng gói một đơn (`POST /orders/:id/pack`). Trang cha đặt `key={order.id}`, nên mỗi đơn mở ra là một dialog mới.
  */
 export function PackOrderDialog({ order, onClose, onNeedsReload }: PackOrderDialogProps) {
+  const { pending: livePending } = useLiveHold(order !== null, [order?.id]);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [shortLines, setShortLines] = useState<ShortStockLine[]>([]);
@@ -69,6 +72,7 @@ export function PackOrderDialog({ order, onClose, onNeedsReload }: PackOrderDial
   return (
     <Dialog open={order !== null} onOpenChange={(open) => !open && !submitting && onClose()}>
       <DialogContent className="sm:max-w-lg">
+        <LiveChangeBanner event={livePending} onReload={onClose} />
         <DialogHeader>
           <DialogTitle>Đóng gói đơn {order?.code}</DialogTitle>
           <DialogDescription>

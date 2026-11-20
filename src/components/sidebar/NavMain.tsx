@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -12,6 +12,8 @@ import { useAuthStore } from "@/store/auth-store";
 import { parseLocationKey } from "@/lib/location-key";
 import { getSessionRole } from "@/lib/auth";
 import { allows } from "@/components/sidebar/constants/role-permissions";
+import { useLiveRefresh } from "@/hooks/use-live-refresh";
+import type { ChangeResource } from "@/types/change-feed";
 
 import {
   Collapsible,
@@ -31,6 +33,15 @@ import {
 
 const ORDERS_URL = "/sales/orders";
 const IMPORTS_URL = "/exchange/imports";
+// Bảng làm đổi số badge: đơn, tồn kho (thiếu/đủ hàng), YCSX + phiếu nhận xưởng, phiếu chuyển kho, vận đơn. Không truyền `ids` nên không toast.
+const ALERT_RESOURCES: readonly ChangeResource[] = [
+  "orders",
+  "inventories",
+  "production-requests",
+  "production-deliveries",
+  "stock-movements",
+  "shipments",
+];
 
 export function NavMain({
   label,
@@ -91,6 +102,28 @@ export function NavMain({
     }
     return total;
   }
+
+  const refreshOrderAlerts = useCallback(() => {
+    if (!hasOrdersEntry || !allows(getSessionRole(), "orders", "read")) return;
+    const scope = parseLocationKey(locationKey);
+    const branchId = scope?.locationType === "BRANCH" ? scope.locationId : undefined;
+    void fetchOrderAlerts(branchId);
+  }, [hasOrdersEntry, locationKey, fetchOrderAlerts]);
+
+  const refreshProductionNeed = useCallback(() => {
+    if (!hasProductionNeedEntry || !allows(getSessionRole(), "production_requests", "read")) return;
+    void fetchProductionNeed();
+  }, [hasProductionNeedEntry, fetchProductionNeed]);
+
+  // Realtime: sự kiện của người khác + tín hiệu ghi của chính tab này (xem `notifyLocalMutation`). Poll bên dưới là dự phòng.
+  useLiveRefresh({
+    resources: ALERT_RESOURCES,
+    enabled: hasOrdersEntry || hasProductionNeedEntry,
+    onChange: () => {
+      refreshOrderAlerts();
+      refreshProductionNeed();
+    },
+  });
 
   // Làm mới khi poll mỗi phút và khi đổi trang, để badge theo kịp đơn bán và phiếu nhập kho mà không cần socket riêng.
   useEffect(() => {

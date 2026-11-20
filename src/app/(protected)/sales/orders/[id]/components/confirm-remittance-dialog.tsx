@@ -18,6 +18,8 @@ import { getApiErrorBody, remittanceGapOf } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import type { OrderDetail } from "@/types/order-flow";
 import { formatDateTime, formatVND } from "../../shared/order-display";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type Props = {
   order: OrderDetail;
@@ -31,6 +33,7 @@ type Props = {
  * Đơn chuyển RECEIVED → COMPLETED. Nộp thiếu thì server từ chối; dialog hiện số còn thiếu.
  */
 export function ConfirmRemittanceDialog({ order, open, onOpenChange, onConfirmed }: Props) {
+  const { pending: livePending } = useLiveHold(open, [order.id]);
   const collected = order.collection?.amount ?? 0;
   const [amount, setAmount] = React.useState(String(collected));
   const [note, setNote] = React.useState("");
@@ -67,6 +70,7 @@ export function ConfirmRemittanceDialog({ order, open, onOpenChange, onConfirmed
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
+        <LiveChangeBanner event={livePending} onReload={() => onOpenChange(false)} />
         <DialogHeader>
           <DialogTitle>Xác nhận đã nhận tiền từ shipper</DialogTitle>
           <DialogDescription>

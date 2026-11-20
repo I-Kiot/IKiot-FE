@@ -13,6 +13,7 @@ import {
 } from "@/types/order-flow";
 import { formatVND, orderedLines, stockDisplay } from "../shared/order-display";
 import { canCreateProductionFor } from "../shared/production-prefill";
+import { ProductionProgressList } from "../shared/production-progress-list";
 import { CreateProductionRequestButton } from "../shared/create-production-request-button";
 
 function StockCell({ line }: { line: OrderLine }) {
@@ -23,10 +24,20 @@ function StockCell({ line }: { line: OrderLine }) {
       <Badge variant={display.variant}>{display.label}</Badge>
       <span className="text-xs text-muted-foreground">
         Trên kệ {line.stockCheck.stock}
-        {line.stockCheck.shortQuantity > 0 && ` · thiếu ${line.stockCheck.shortQuantity}`}
+        {line.stockCheck.shortQuantity > 0 &&
+          ` · thiếu ${line.stockCheck.shortQuantity}`}
       </span>
     </div>
   );
+}
+/** Ô "Nguồn hàng": mặt hàng đặt xưởng được hay chỉ nhập từ NCC. Combo và dịch vụ không đặt xưởng nên để trống. */
+function ManufacturableCell({ line }: { line: OrderLine }) {
+  const hasNoGoods = line.lineType === "COMBO" || line.lineType === "SERVICE";
+  if (hasNoGoods) return <span className="text-muted-foreground">-</span>;
+  if (line.isManufacturable) {
+    return <Badge variant="info">Có thể sản xuất</Badge>;
+  }
+  return <span className="text-xs text-muted-foreground">Nhập từ NCC</span>;
 }
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
@@ -44,7 +55,10 @@ type OrdersExpandedPanelProps = {
 };
 
 /** Dòng hàng của một đơn kèm tồn, cách giao và thanh toán; mở ngay trong danh sách. */
-export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelProps) {
+export function OrdersExpandedPanel({
+  order,
+  isLastRow,
+}: OrdersExpandedPanelProps) {
   const lines = orderedLines(order.items ?? []);
 
   return (
@@ -53,8 +67,15 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="text-sm font-semibold">Sản phẩm ({order.itemCount})</p>
           <div className="flex items-center gap-2">
-            {canCreateProductionFor(order) && <CreateProductionRequestButton orderId={order.id} />}
-            <Button asChild variant="outline" size="sm" className="cursor-pointer">
+            {canCreateProductionFor(order) && (
+              <CreateProductionRequestButton orderId={order.id} />
+            )}
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+            >
               <Link href={`/sales/orders/${order.id}`}>
                 Xem chi tiết
                 <ArrowRight />
@@ -70,6 +91,7 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
                 <th className="px-3 py-2 text-right font-medium">SL</th>
                 <th className="px-3 py-2 text-right font-medium">Thành tiền</th>
                 <th className="px-3 py-2 font-medium">Tồn kho</th>
+                <th className="px-3 py-2 font-medium">Nguồn hàng</th>
               </tr>
             </thead>
             <tbody>
@@ -86,17 +108,25 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
                         )}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {[line.sku, line.variantLabel].filter(Boolean).join(" · ")}
+                        {[line.sku, line.variantLabel]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
+                      <ProductionProgressList progress={line.production?.progress ?? []} compact />
                     </div>
                   </td>
                   <td className="px-3 py-2 text-right">{line.quantity}</td>
                   <td className="px-3 py-2 text-right">
                     {/* Thành phần combo có giá 0; giá nằm ở dòng combo. */}
-                    {line.lineType === "COMBO_COMPONENT" ? "-" : formatVND(line.lineTotal)}
+                    {line.lineType === "COMBO_COMPONENT"
+                      ? "-"
+                      : formatVND(line.lineTotal)}
                   </td>
                   <td className="px-3 py-2">
                     <StockCell line={line} />
+                  </td>
+                  <td className="px-3 py-2">
+                    <ManufacturableCell line={line} />
                   </td>
                 </tr>
               ))}
@@ -109,10 +139,19 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
         <p className="mb-2 text-sm font-semibold">Giao hàng & thanh toán</p>
         <InfoRow
           label="Hình thức"
-          value={FULFILLMENT_TYPE_LABELS[order.fulfillmentType] ?? order.fulfillmentType}
+          value={
+            FULFILLMENT_TYPE_LABELS[order.fulfillmentType] ??
+            order.fulfillmentType
+          }
         />
-        <InfoRow label="Người nhận" value={order.recipientName ?? order.customer?.name ?? "-"} />
-        <InfoRow label="SĐT nhận" value={order.recipientPhone ?? order.customer?.phone ?? "-"} />
+        <InfoRow
+          label="Người nhận"
+          value={order.recipientName ?? order.customer?.name ?? "-"}
+        />
+        <InfoRow
+          label="SĐT nhận"
+          value={order.recipientPhone ?? order.customer?.phone ?? "-"}
+        />
         <InfoRow label="Địa chỉ" value={order.deliveryAddress ?? "-"} />
         <InfoRow label="Tổng tiền" value={formatVND(order.grandTotal)} />
         <InfoRow
@@ -120,12 +159,17 @@ export function OrdersExpandedPanel({ order, isLastRow }: OrdersExpandedPanelPro
           value={
             order.deposit
               ? `${formatVND(order.deposit.amount)}${
-                  order.deposit.percent !== null ? ` (${order.deposit.percent}%)` : ""
+                  order.deposit.percent !== null
+                    ? ` (${order.deposit.percent}%)`
+                    : ""
                 }`
               : "-"
           }
         />
-        <InfoRow label="Còn phải thu" value={<strong>{formatVND(amountStillDue(order))}</strong>} />
+        <InfoRow
+          label="Còn phải thu"
+          value={<strong>{formatVND(amountStillDue(order))}</strong>}
+        />
         {order.collection && (
           <InfoRow
             label="Tiền shipper thu"

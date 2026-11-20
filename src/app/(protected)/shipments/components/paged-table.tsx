@@ -3,7 +3,7 @@
 // Bảng phân trang ở server dùng chung cho hai tab của màn Giao hàng: hook tải dữ liệu (`usePagedList`),
 // bảng TanStack `manualPagination` (`PagedTable`) và thanh phân trang dùng chung.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -17,6 +17,8 @@ import { DataTableLoading } from "@/components/data-table/data-table-loading";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { cn } from "@/lib/utils";
 import type { Paginated } from "@/types/order-flow";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import type { ChangeResource } from "@/types/change-feed";
 
 
 /** Tình trạng danh sách: đang tải lần đầu, tải lỗi, hoặc đã có một trang. */
@@ -32,16 +34,33 @@ export type PageParams = { page: number; limit: number };
  * Tải trang `query` khi query hoặc `reloadKey` đổi. `load` phải ổn định (khai báo ngoài component).
  * Response cũ về sau thì bỏ. Trang rỗng mà không phải trang 1 thì lùi về trang cuối còn dữ liệu; effect tự chạy lại.
  * Mỗi nhánh `.then()` chỉ gọi một setter (lint cấm setState trong useEffect).
+ * `live`: tự tải lại NỀN khi người khác đổi dữ liệu (`resources` khai báo ngoài component; `idsOf` trả id của dòng + chứng từ liên quan, để biết sự kiện có đang hiện trên bảng không).
+ * Tải nền giữ nguyên trang đang xem, không đổi sang "loading", lỗi thì im lặng.
  */
+export interface PagedLive<T> {
+  resources: readonly ChangeResource[];
+  idsOf: (row: T) => string[];
+}
+
+const NO_RESOURCES: readonly ChangeResource[] = [];
+
 export function usePagedList<T, Q extends PageParams>(
   load: (query: Q) => Promise<Paginated<T>>,
   query: Q,
   setQuery: (query: Q) => void,
   reloadKey: number,
+  live?: PagedLive<T>,
 ): PagedState<T> {
   const [state, setState] = useState<PagedState<T>>({ status: "loading" });
+  const visibleIds = live && state.status === "ready" ? state.result.data.flatMap(live.idsOf) : [];
+  const liveTick = useLiveTick({ resources: live?.resources ?? NO_RESOURCES, visibleIds, enabled: !!live });
+  const lastLoadRef = useRef<{ load: unknown; query: Q; reloadKey: number } | null>(null);
 
   useEffect(() => {
+    // Cùng load / query / reloadKey với lần trước = tải nền do sự kiện.
+    const last = lastLoadRef.current;
+    const silent = last?.load === load && last.query === query && last.reloadKey === reloadKey;
+    lastLoadRef.current = { load, query, reloadKey };
     let cancelled = false;
     load(query).then(
       (result) => {
@@ -53,13 +72,15 @@ export function usePagedList<T, Q extends PageParams>(
         }
       },
       () => {
-        if (!cancelled) setState({ status: "error" });
+        if (cancelled) return;
+        // Lỗi khi tải nền: giữ trang đang hiện.
+        setState((previous) => (silent && previous.status === "ready" ? previous : { status: "error" }));
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [load, query, setQuery, reloadKey]);
+  }, [load, query, setQuery, reloadKey, liveTick]);
 
   return state;
 }

@@ -5,6 +5,10 @@ import { toast } from 'sonner'
 import { stockMovementApi } from '@/lib/api/stock-movement'
 import { getStockMovementErrorMessage, reportMovementError } from '@/app/(protected)/exchange/shared/stock-movement-error'
 import type { StockMovement, MovementStatus } from '@/types/stock-movement'
+import { useLiveRefresh } from '@/hooks/use-live-refresh'
+import { CHANGE_RESOURCES } from '@/types/change-feed'
+
+const LIVE_RESOURCES = [CHANGE_RESOURCES.STOCK_MOVEMENTS] as const
 
 export type AdjustmentsDialogType = 'create'
 
@@ -16,7 +20,8 @@ interface AdjustmentsContextType {
   setOpen: (v: AdjustmentsDialogType | null) => void
   statusFilter: MovementStatus | 'ALL'
   setStatusFilter: (v: MovementStatus | 'ALL') => void
-  fetchAdjustments: () => Promise<void>
+  /** `silent`: tải nền do sự kiện thời gian thực - không bật `isLoading`, lỗi thì giữ dòng đang hiện. */
+  fetchAdjustments: (opts?: { silent?: boolean }) => Promise<void>
   handleUpdateDetails: (
     id: string,
     details: { productItemId: string; receivedQuantity: number; note?: string }[],
@@ -34,8 +39,9 @@ export function AdjustmentsProvider({ children }: { children: React.ReactNode })
   const [open, setOpen] = useState<AdjustmentsDialogType | null>(null)
   const [statusFilter, setStatusFilter] = useState<MovementStatus | 'ALL'>('ALL')
 
-  const fetchAdjustments = useCallback(async () => {
-    setIsLoading(true)
+  const fetchAdjustments = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent === true
+    if (!silent) setIsLoading(true)
     try {
       const res = await stockMovementApi.getList({
         movementType: 'ADJUST',
@@ -45,6 +51,10 @@ export function AdjustmentsProvider({ children }: { children: React.ReactNode })
       setAdjustments(res.data)
       setTotal(res.total ?? res.data.length)
     } catch (error) {
+      if (silent) {
+        console.warn('Không tải lại được danh sách phiếu kiểm kê', error)
+        return
+      }
       console.error(error)
       setAdjustments([])
       setTotal(0)
@@ -52,13 +62,20 @@ export function AdjustmentsProvider({ children }: { children: React.ReactNode })
         getStockMovementErrorMessage(error, 'Không thể tải danh sách điều chỉnh tồn kho'),
       )
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }, [statusFilter])
 
   useEffect(() => {
     void fetchAdjustments()
   }, [fetchAdjustments])
+
+  // Người khác tạo / duyệt / huỷ phiếu kiểm kê: tải lại nền.
+  useLiveRefresh({
+    resources: LIVE_RESOURCES,
+    visibleIds: adjustments.map((adjustment) => adjustment.id),
+    onChange: () => void fetchAdjustments({ silent: true }),
+  })
 
   const handleUpdateDetails = async (
     id: string,

@@ -9,10 +9,14 @@ import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { shipmentApi } from "@/lib/api/shipment";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DeliverySheet } from "./components/delivery-sheet";
 import { DeliveryHistory } from "./components/delivery-history";
 import { CurrentDeliveries, type MineState } from "./components/current-deliveries";
+
+const LIVE_RESOURCES = [CHANGE_RESOURCES.SHIPMENTS, CHANGE_RESOURCES.ORDERS] as const;
 
 /** Màn đơn giao của tôi. `?tab=history&open=<id>` / `?open=<id>` là đích của đường dẫn trong thông báo. */
 function ShipperScreen() {
@@ -24,6 +28,10 @@ function ShipperScreen() {
   // Drawer của tab "Đang giao"; tab lịch sử tự giữ drawer của nó.
   const [openId, setOpenId] = useState<string | null>(initialTab === "current" ? openParam : null);
 
+  // Người khác đổi lần giao / đơn của tôi: tải lại nền, giữ danh sách đang hiện.
+  const visibleIds = state.status === "ready" ? state.shipments.flatMap((s) => [s.id, s.order.id]) : [];
+  const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds });
+
   useEffect(() => {
     // Response cũ về sau (bấm "Tải lại" liên tiếp) thì bỏ. Mỗi nhánh chỉ một setter (lint cấm setState trong useEffect).
     let cancelled = false;
@@ -32,13 +40,13 @@ function ShipperScreen() {
         if (!cancelled) setState({ status: "ready", shipments });
       },
       () => {
-        if (!cancelled) setState({ status: "error" });
+        if (!cancelled) setState((previous) => (previous.status === "ready" ? previous : { status: "error" }));
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [reloadKey]);
+  }, [reloadKey, liveTick]);
 
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
 

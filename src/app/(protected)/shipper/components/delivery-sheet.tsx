@@ -5,6 +5,8 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -31,6 +33,8 @@ import {
   ShipmentTimeline,
 } from "../../shipments/components/shipment-ui";
 import { DeliverDialog } from "./deliver-dialog";
+
+const LIVE_RESOURCES = [CHANGE_RESOURCES.SHIPMENTS, CHANGE_RESOURCES.ORDERS] as const;
 
 type DetailState =
   | { status: "loading" }
@@ -186,6 +190,12 @@ export function DeliverySheet({
   const [reloadKey, setReloadKey] = useState(0);
   const [checking, setChecking] = useState(false);
   const [reissuing, setReissuing] = useState(false);
+  // Tiền QR về (webhook) hay người khác đổi lần giao: tải lại nền, màn QR tự chuyển sang đã thu không cần bấm "Kiểm tra tiền về".
+  const liveTick = useLiveTick({
+    resources: LIVE_RESOURCES,
+    ids: [shipmentId, state.status === "ready" ? state.shipment.order.id : null],
+    enabled: !!shipmentId,
+  });
 
   useEffect(() => {
     if (!shipmentId) return;
@@ -195,13 +205,13 @@ export function DeliverySheet({
         if (!cancelled) setState({ status: "ready", shipment });
       },
       () => {
-        if (!cancelled) setState({ status: "error" });
+        if (!cancelled) setState((previous) => (previous.status === "ready" ? previous : { status: "error" }));
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [shipmentId, reloadKey]);
+  }, [shipmentId, reloadKey, liveTick]);
 
   const reloadSheet = () => setReloadKey((key) => key + 1);
 
@@ -370,6 +380,7 @@ export function DeliverySheet({
               onNeedsReload={afterWrite}
             />
             <ShipmentNoteDialog
+              holdIds={[shipment.id, shipment.order.id]}
               key={`pickup-${action === "pickUp"}`}
               open={action === "pickUp"}
               title="Xác nhận đã lấy hàng"
@@ -386,6 +397,7 @@ export function DeliverySheet({
               }
             />
             <ShipmentNoteDialog
+              holdIds={[shipment.id, shipment.order.id]}
               key={`out-${action === "outForDelivery"}`}
               open={action === "outForDelivery"}
               title="Đang đi giao"
@@ -406,6 +418,7 @@ export function DeliverySheet({
               }
             />
             <ShipmentNoteDialog
+              holdIds={[shipment.id, shipment.order.id]}
               key={`fail-${action === "fail"}`}
               open={action === "fail"}
               title="Giao không thành"
@@ -424,6 +437,7 @@ export function DeliverySheet({
               }
             />
             <ShipmentNoteDialog
+              holdIds={[shipment.id, shipment.order.id]}
               key={`cash-${action === "payCash"}`}
               open={action === "payCash"}
               title="Thu tiền mặt thay chuyển khoản"

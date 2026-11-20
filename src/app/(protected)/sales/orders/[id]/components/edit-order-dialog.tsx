@@ -39,6 +39,8 @@ import {
   type OrderLineDraft,
 } from "../../new/components/order-lines-editor";
 import { formatVND } from "../../shared/order-display";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type Props = {
   order: OrderDetail;
@@ -78,6 +80,7 @@ const linesKey = (lines: OrderLineDraft[]) =>
  * sẽ bị từ chối (ORDER_DEPOSIT_CHANGED); form cho phép giữ nguyên số đã thu.
  */
 export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
+  const { pending: livePending } = useLiveHold(open, [order.id]);
   const linesEditable = order.status === "CONFIRMED";
   const initialLines = React.useMemo(() => draftsOf(order), [order]);
   const [lines, setLines] = React.useState(initialLines);
@@ -248,6 +251,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl">
+        <LiveChangeBanner event={livePending} onReload={() => onOpenChange(false)} />
         <DialogHeader>
           <DialogTitle>Sửa đơn {order.code}</DialogTitle>
           <DialogDescription>

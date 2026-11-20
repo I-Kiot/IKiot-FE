@@ -4,6 +4,7 @@ import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
   PRODUCTION_DELIVERY_STATUS_LABELS,
+  type LineProductionProgress,
   PRODUCTION_REQUEST_STATUS_LABELS,
   type ProductionDeliveryStatus,
   type ProductionRequest,
@@ -42,13 +43,32 @@ export function requestStatusDisplay(
 export function workshopAcceptanceDisplay(
   request: Pick<ProductionRequest, "status" | "acceptedAt" | "deliveries">,
 ): { label: string; variant: BadgeVariant } | null {
-  const inProgress = request.status === "SENT" || request.status === "PARTIALLY_RECEIVED";
-  if (!inProgress) return null;
   const hasPendingDelivery = (request.deliveries ?? []).some((delivery) => delivery.status === "PENDING");
+  return workshopStageDisplay(request.status, request.acceptedAt, hasPendingDelivery);
+}
+
+/** Cùng luật với `workshopAcceptanceDisplay` nhưng nhận dữ liệu rời, cho nơi chỉ có tóm tắt (tiến độ trên dòng đơn). */
+export function workshopStageDisplay(
+  status: ProductionRequestStatus,
+  acceptedAt: string | null | undefined,
+  hasPendingDelivery: boolean,
+): { label: string; variant: BadgeVariant } | null {
+  const inProgress = status === "SENT" || status === "PARTIALLY_RECEIVED";
+  if (!inProgress) return null;
   if (hasPendingDelivery) return { label: "Xưởng đã giao hàng", variant: "warning" };
-  if (request.acceptedAt) return { label: "Xưởng đang làm", variant: "success" };
-  if (request.status === "SENT") return { label: "Chờ xưởng xác nhận", variant: "warning" };
+  if (acceptedAt) return { label: "Xưởng đang làm", variant: "success" };
+  if (status === "SENT") return { label: "Chờ xưởng xác nhận", variant: "warning" };
   return null;
+}
+
+/** Nhãn tiến độ của một YCSX trên dòng đơn: bước của xưởng khi đang làm, còn lại là trạng thái YCSX ("Nháp", "Nhận một phần", "Hoàn tất", "Đóng (nhận thiếu)"). */
+export function lineProgressDisplay(
+  progress: Pick<LineProductionProgress, "status" | "acceptedAt" | "deliveringQuantity" | "closedShort">,
+): { label: string; variant: BadgeVariant } {
+  return (
+    workshopStageDisplay(progress.status, progress.acceptedAt, progress.deliveringQuantity > 0) ??
+    requestStatusDisplay(progress.status, progress.closedShort)
+  );
 }
 
 /** Phiếu giao xưởng: chờ nhận = warning, đã nhận = success, đã huỷ = error. */

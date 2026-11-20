@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FileQuestion } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +14,8 @@ import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import { getSessionRole } from "@/lib/auth";
 import { orderJourneyApi } from "@/lib/api/order-journey";
 import type { OrderDetail } from "@/types/order-flow";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
 import {
   orderStatusDisplay,
   priorityDisplay,
@@ -32,6 +34,18 @@ import { OrderPaymentCard } from "./components/order-payment-card";
 type LoadState =
   | { id: string; kind: "loaded"; order: OrderDetail }
   | { id: string; kind: "error"; message: string };
+
+/** Chi tiết đơn tự tải lại (nền) khi bảng đơn đổi và id này nằm trong sự kiện. */
+const LIVE_RESOURCES = [CHANGE_RESOURCES.ORDERS] as const;
+/**
+ * "Đủ / thiếu hàng" của dòng đơn tính lúc đọc từ tồn kho, nên nhận hàng xưởng, nhập kho, chuyển kho là thay đổi của bảng khác chứ không phải của đơn.
+ * Đăng ký riêng, không truyền `ids`/`visibleIds` nên chỉ tải lại im lặng, không bao giờ toast.
+ */
+const STOCK_RESOURCES = [
+  CHANGE_RESOURCES.INVENTORIES,
+  CHANGE_RESOURCES.PRODUCTION_REQUESTS,
+  CHANGE_RESOURCES.PRODUCTION_DELIVERIES,
+] as const;
 
 const BREADCRUMBS = [
   { label: "Trang chủ", href: "/dashboard" },
@@ -52,9 +66,17 @@ export default function OrderDetailPage() {
   const [state, setState] = useState<LoadState | null>(null);
   // Tăng sau mỗi bước hành trình: các route đó trả về fulfillment/shipment chứ không phải đơn.
   const [reloadKey, setReloadKey] = useState(0);
+  // Tăng mỗi khi có sự kiện từ người khác đổi đơn này: tải lại nền, không skeleton, lỗi thì im lặng.
+  const ordersTick = useLiveTick({ resources: LIVE_RESOURCES, ids: [id], enabled: canView });
+  const stockTick = useLiveTick({ resources: STOCK_RESOURCES, enabled: canView });
+  const liveTick = ordersTick + stockTick;
+  const handledReloadKeyRef = useRef(0);
 
   useEffect(() => {
     if (!canView || !id) return;
+    // Chỉ lần tải do người dùng vừa làm một bước (reloadKey đổi) mới báo lỗi; lần tải do sự kiện thì im lặng.
+    const explicitReload = reloadKey > 0 && reloadKey !== handledReloadKeyRef.current;
+    handledReloadKeyRef.current = reloadKey;
     // Lần tải mới huỷ lần này, nên kết quả cũ về muộn không đè kết quả mới.
     let cancelled = false;
     orderJourneyApi
@@ -65,7 +87,7 @@ export default function OrderDetailPage() {
       .catch((error: unknown) => {
         if (cancelled) return;
         // Đọc lại lỗi sau một bước vẫn giữ đơn (và sheet đang mở) trên màn; chỉ lần tải đầu không có gì để hiện mới thành trang lỗi.
-        if (reloadKey > 0) toast.error("Không tải lại được đơn hàng, vui lòng tải lại trang");
+        if (explicitReload) toast.error("Không tải lại được đơn hàng, vui lòng tải lại trang");
         setState((previous) => {
           if (previous?.id === id && previous.kind === "loaded") return previous;
           return { id, kind: "error", message: errorMessage(error) };
@@ -74,7 +96,7 @@ export default function OrderDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, canView, reloadKey]);
+  }, [id, canView, reloadKey, liveTick]);
 
   const goBack = () => router.push("/sales/orders");
   // Kết quả của id khác (vừa chuyển sang đơn khác) coi như vẫn đang tải.
@@ -155,7 +177,7 @@ export default function OrderDetailPage() {
             onChanged={replaceOrder}
             onNeedsReload={() => setReloadKey((key) => key + 1)}
           />
-          <OrderHistoryCard orderId={order.id} refreshKey={`${order.updatedAt}|${reloadKey}`} />
+          <OrderHistoryCard orderId={order.id} refreshKey={`${order.updatedAt}|${reloadKey}|${liveTick}`} />
         </div>
         <div className="space-y-6">
           <OrderInfoCard order={order} />
