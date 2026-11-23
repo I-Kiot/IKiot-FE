@@ -1,9 +1,8 @@
-// [Query – số liệu trang Báo cáo chi tiết]
+// [Query – số liệu trang Báo cáo tổng hợp]
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/store/auth-store'
 import { locationFilter } from '@/lib/location-key'
 import {
   statsApi,
@@ -12,10 +11,7 @@ import {
   type Cashflow,
   type TopCustomers,
   type InventoryStats,
-  type RevenueComparison,
   type OrdersByStatus,
-  type RevenueByBranch,
-  type SalesHeatmap,
   type RevenueSeries,
   type TopProducts,
 } from '@/lib/api/stats'
@@ -175,13 +171,10 @@ interface ReportData {
   key: string
   revenueDateRange: RevenueDateRange | null
   revenueByPaymentMethod: RevenueByPaymentMethod | null
-  revenueByBranch: RevenueByBranch | null
   ordersByStatus: OrdersByStatus | null
-  salesHeatmap: SalesHeatmap | null
   topCustomers: TopCustomers | null
   cashflow: Cashflow | null
   inventory: InventoryStats | null
-  comparison: RevenueComparison | null
   overview: StatsOverview | null
   /** Cùng chỉ tiêu của khoảng cùng độ dài ngay trước kỳ đang xem. */
   previousOverview: StatsOverview | null
@@ -192,13 +185,10 @@ interface ReportData {
 const EMPTY_REPORT: Omit<ReportData, 'key'> = {
   revenueDateRange: null,
   revenueByPaymentMethod: null,
-  revenueByBranch: null,
   ordersByStatus: null,
-  salesHeatmap: null,
   topCustomers: null,
   cashflow: null,
   inventory: null,
-  comparison: null,
   overview: null,
   previousOverview: null,
   revenueSeries: null,
@@ -208,12 +198,12 @@ const EMPTY_REPORT: Omit<ReportData, 'key'> = {
 /** Tải tất cả số liệu cho kỳ và địa điểm đang chọn. Kho không có doanh thu bán hàng, nên chỉ lấy dòng tiền và tồn kho. */
 async function loadReport(
   key: string,
-  range: DashboardRange,
+  period: ReportPeriod,
   branchId: string | undefined,
   warehouseId: string | undefined,
   lowStockThreshold: number,
 ): Promise<ReportData> {
-  const resolved = resolveDashboardRange(range)
+  const resolved = resolvePeriod(period)
   const { fromDate, toDate } = resolved
 
   // Kho cũng bán được, và id địa điểm dùng chung, nên báo cáo đơn hàng lọc theo đúng nơi đang xem. Sổ thu chi và tồn thì phân biệt kho với chi nhánh.
@@ -221,22 +211,17 @@ async function loadReport(
   const dateParams = { fromDate, toDate, branchId: place }
   const [
     revenueByPaymentMethod,
-    revenueByBranch,
     ordersByStatus,
-    salesHeatmap,
     topCustomers,
     cashflow,
     inventory,
-    comparison,
     overview,
     previousOverview,
     revenueSeries,
     topProducts,
   ] = await Promise.all([
     statsApi.getRevenueByPaymentMethod(dateParams),
-    optional(statsApi.getRevenueByBranch(dateParams)),
     optional(statsApi.getOrdersByStatus(dateParams)),
-    optional(statsApi.getSalesHeatmap(dateParams)),
     optional(statsApi.getTopCustomers({ ...dateParams, limit: TOP_ROWS })),
     warehouseId
       ? statsApi.getCashflow({ fromDate, toDate, warehouseId })
@@ -244,7 +229,6 @@ async function loadReport(
     warehouseId
       ? statsApi.getInventory({ warehouseId, lowStockThreshold })
       : statsApi.getInventory({ branchId, lowStockThreshold }),
-    optional(statsApi.getRevenueComparison({ branchId: place })),
     optional(statsApi.getOverview(dateParams)),
     optional(
       statsApi.getOverview({
@@ -261,13 +245,10 @@ async function loadReport(
     key,
     revenueDateRange: resolved,
     revenueByPaymentMethod,
-    revenueByBranch,
     ordersByStatus,
-    salesHeatmap,
     topCustomers,
     cashflow,
     inventory,
-    comparison,
     overview,
     previousOverview,
     revenueSeries,
@@ -275,8 +256,8 @@ async function loadReport(
   }
 }
 
-export function useDashboardStats(range: DashboardRange) {
-  const locationKey = useAuthStore((state) => state.locationKey)
+/** `locationKey`: nơi chọn trên trang (`all` | `branch-<id>` | `warehouse-<id>`), không phải bộ chọn trên header. */
+export function useDashboardStats(period: ReportPeriod, locationKey: string) {
   const { branchId, warehouseId } = locationFilter(locationKey)
   const isWarehouse = Boolean(warehouseId)
 
@@ -286,15 +267,15 @@ export function useDashboardStats(range: DashboardRange) {
 
   // Khoá của bộ lọc hiện tại: câu trả lời nào mang khoá khác là của bộ lọc cũ.
   const key = useMemo(
-    () => [range, branchId, warehouseId, lowStockThreshold, reloadCount].join('|'),
-    [range, branchId, warehouseId, lowStockThreshold, reloadCount],
+    () => [period.fromDate, period.toDate, branchId, warehouseId, lowStockThreshold, reloadCount].join('|'),
+    [period.fromDate, period.toDate, branchId, warehouseId, lowStockThreshold, reloadCount],
   )
 
   useEffect(() => {
     // Đổi kỳ / địa điểm nhanh hơn server trả lời: câu trả lời đến muộn của bộ lọc cũ bị bỏ,
     // không được ghi đè số liệu của bộ lọc mới.
     let cancelled = false
-    loadReport(key, range, branchId, warehouseId, lowStockThreshold)
+    loadReport(key, period, branchId, warehouseId, lowStockThreshold)
       .then((result) => {
         if (!cancelled) setData(result)
       })
@@ -308,20 +289,19 @@ export function useDashboardStats(range: DashboardRange) {
     return () => {
       cancelled = true
     }
-  }, [key, range, branchId, warehouseId, lowStockThreshold])
+    // `period` đổi thì `key` đổi; đọc qua `key` để effect không chạy lại vì object kỳ mới mà cùng ngày.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
 
   const refetch = useCallback(() => setReloadCount((count) => count + 1), [])
 
   return {
     revenueDateRange: data?.revenueDateRange ?? null,
     revenueByPaymentMethod: data?.revenueByPaymentMethod ?? null,
-    revenueByBranch: data?.revenueByBranch ?? null,
     ordersByStatus: data?.ordersByStatus ?? null,
-    salesHeatmap: data?.salesHeatmap ?? null,
     topCustomers: data?.topCustomers ?? null,
     cashflow: data?.cashflow ?? null,
     inventory: data?.inventory ?? null,
-    comparison: data?.comparison ?? null,
     overview: data?.overview ?? null,
     previousOverview: data?.previousOverview ?? null,
     revenueSeries: data?.revenueSeries ?? null,
