@@ -107,6 +107,58 @@ export function resolveDashboardRange(range: DashboardRange): RevenueDateRange {
   }
 }
 
+/** Kỳ báo cáo do người dùng chọn: hai ngày `YYYY-MM-DD` (giờ VN), tính cả hai đầu. */
+export interface ReportPeriod {
+  fromDate: string
+  toDate: string
+}
+
+/** Kỳ dài nhất được chọn: một năm (năm nhuận). Dài hơn thì query sổ doanh thu nặng mà bảng theo ngày cũng không đọc nổi. */
+export const MAX_PERIOD_DAYS = 366
+
+/** Kỳ dài hơn ngưỡng này thì bảng/biểu đồ theo thời gian gom theo tháng thay vì theo ngày. */
+const MONTHLY_AFTER_DAYS = 92
+
+/** Số ngày của kỳ, tính cả hai đầu. */
+export function periodDays({ fromDate, toDate }: ReportPeriod): number {
+  return Math.round((parseDay(toDate) - parseDay(fromDate)) / DAY_MS) + 1
+}
+
+/** Kỳ của một lựa chọn nhanh (7 ngày qua, tháng này...). */
+export function presetPeriod(range: DashboardRange): ReportPeriod {
+  const { fromDate, toDate } = resolveDashboardRange(range)
+  return { fromDate, toDate }
+}
+
+/** Mặc định của mọi trang báo cáo: 30 ngày gần nhất, tính cả hôm nay. */
+export function defaultPeriod(): ReportPeriod {
+  return presetPeriod('30d')
+}
+
+/** Lựa chọn nhanh trùng đúng kỳ đang xem (để tô sáng), không trùng thì `null`. */
+export function matchPreset(period: ReportPeriod): DashboardRange | null {
+  const hit = RANGE_OPTIONS.find((option) => {
+    const p = presetPeriod(option.value)
+    return p.fromDate === period.fromDate && p.toDate === period.toDate
+  })
+  return hit?.value ?? null
+}
+
+/** Kỳ tuỳ ý -> ngày cụ thể, cách gom theo thời gian và khoảng cùng độ dài ngay trước đó. */
+export function resolvePeriod(period: ReportPeriod): RevenueDateRange {
+  const days = periodDays(period)
+  const from = parseDay(period.fromDate)
+  const previousTo = from - DAY_MS
+  const previousFrom = previousTo - (days - 1) * DAY_MS
+  return {
+    fromDate: period.fromDate,
+    toDate: period.toDate,
+    groupBy: days > MONTHLY_AFTER_DAYS ? 'month' : 'day',
+    previousFromDate: formatDay(previousFrom),
+    previousToDate: formatDay(previousTo),
+  }
+}
+
 /** Số dòng tối đa của bảng xếp hạng (hàng hóa, khách hàng): giới hạn của API khách hàng. */
 const TOP_ROWS = 50
 
