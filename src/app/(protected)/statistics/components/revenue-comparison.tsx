@@ -4,7 +4,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import { useDashboard } from "./dashboard-provider"
+import type { RevenueComparison as RevenueComparisonData } from "@/lib/api/stats"
 import { COMPARISON_LABELS, formatCompactVND, formatInstantShort, formatNumber, formatVND, negativeClass } from "@/lib/stats-format"
 
 function DeltaBadge({ pct }: { pct: number | null }) {
@@ -35,8 +35,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
 }
 
 /** Doanh thu tại các mốc lịch cố định, mỗi mốc so với cùng khoảng đã trôi của kỳ trước; không phụ thuộc bộ chọn kỳ. */
-export function RevenueComparison() {
-  const { comparison, isLoading } = useDashboard()
+export function RevenueComparison({ comparison, isLoading }: { comparison: RevenueComparisonData | null; isLoading: boolean }) {
 
   return (
     <Card>

@@ -5,8 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { JournalGapNotice } from '@/components/journal-gap-notice'
 import { useDashboard } from './dashboard-provider'
 import { DashboardToolbar } from './dashboard-toolbar'
-import { RevenueComparison } from './revenue-comparison'
-import { SalesHeatmap } from './sales-heatmap'
 import {
   OrdersByStatusReport,
   SalesByBranchReport,
@@ -20,7 +18,7 @@ import { CashflowReport, InventoryReport, PaymentMethodReport } from './finance-
 
 /**
  * Trang báo cáo là số liệu để đọc và đối chiếu: mỗi tab một bảng có dòng cộng, khớp với một sheet của file xuất Excel.
- * Biểu đồ mang tính phân tích (so sánh mốc thời gian, khung giờ bán chạy) nằm riêng ở tab "Phân tích"; xu hướng và KPI đã có ở trang Tổng quan.
+ * Biểu đồ (so sánh mốc thời gian, khung giờ bán chạy, tăng trưởng) nằm ở trang Thống kê (/statistics).
  */
 export function DashboardGrid() {
   const { revenueByBranch, overview, activeTab, setActiveTab } = useDashboard()
@@ -45,16 +43,6 @@ export function DashboardGrid() {
       ),
     },
     { value: 'inventory', label: 'Tồn kho', content: <InventoryReport /> },
-    {
-      value: 'analysis',
-      label: 'Phân tích',
-      content: (
-        <div className="space-y-6">
-          <RevenueComparison />
-          <SalesHeatmap />
-        </div>
-      ),
-    },
   ]
 
   return (
