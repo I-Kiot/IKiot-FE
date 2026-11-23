@@ -51,7 +51,7 @@ function ShipmentsScreen() {
       <PageHeader
         breadcrumbs={[{ label: "Trang chủ", href: "/dashboard" }, { label: "Vận hành" }, { label: "Giao hàng" }]}
         title="Giao hàng"
-        description="Giao đơn đã đóng gói cho đơn vị vận chuyển / shipper và theo dõi từng lần giao."
+        description="Giao đơn đã đóng gói cho shipper và theo dõi từng lần giao."
         actions={
           <Button variant="outline" onClick={reload}>
             Tải lại

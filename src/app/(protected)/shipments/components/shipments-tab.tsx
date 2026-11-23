@@ -13,18 +13,16 @@ import { shipmentApi, SHIPMENT_PAGE_SIZE } from "@/lib/api/shipment";
 import {
   personName,
   SHIPMENT_STATUS_LABELS,
-  type CarrierType,
   type ShipmentStatus,
   type ShipmentSummary,
 } from "@/types/order-flow";
 import { CHANGE_RESOURCES } from "@/types/change-feed";
 import { PagedTable, usePagedList, type PageParams, type PagedLive } from "./paged-table";
-import { amountDueText, carrierLabel, ShipmentStatusBadge } from "./shipment-ui";
+import { amountDueText, ShipmentStatusBadge } from "./shipment-ui";
 
 /** Bộ lọc của tab (không gồm trang). */
 interface ShipmentFilters {
   status?: ShipmentStatus;
-  carrierType?: CarrierType;
   from?: string;
   to?: string;
   search?: string;
@@ -56,15 +54,8 @@ const shipmentsColumns: ColumnDef<ShipmentSummary>[] = [
   },
   {
     id: "carrier",
-    header: "Giao bởi",
-    cell: ({ row }) => (
-      <>
-        {carrierLabel(row.original.carrierType, row.original.carrierName)}
-        <span className="block text-xs text-muted-foreground">
-          {row.original.carrierType === "INTERNAL" ? personName(row.original.driver) : row.original.trackingCode}
-        </span>
-      </>
-    ),
+    header: "Shipper",
+    cell: ({ row }) => personName(row.original.driver),
   },
   {
     accessorKey: "status",
@@ -135,22 +126,6 @@ function ShipmentsToolbar({
                 {SHIPMENT_STATUS_LABELS[status]}
               </SelectItem>
             ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={filters.carrierType ?? ALL}
-        onValueChange={(value) =>
-          onChange({ ...filters, carrierType: value === ALL ? undefined : (value as CarrierType) })
-        }
-      >
-        <SelectTrigger className="h-9 w-44 cursor-pointer">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Mọi hình thức</SelectItem>
-          <SelectItem value="INTERNAL">Shipper của shop</SelectItem>
-          <SelectItem value="EXTERNAL">Đơn vị vận chuyển</SelectItem>
         </SelectContent>
       </Select>
 

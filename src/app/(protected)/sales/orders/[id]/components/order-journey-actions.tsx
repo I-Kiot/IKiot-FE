@@ -265,7 +265,7 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
                   className={STEP_BUTTON_CLASS}
                 >
                   <Send className="size-4" />
-                  Giao cho ĐVVC
+                  Giao cho shipper
                 </PermissionButton>
               )}
               {showPickUp && (
