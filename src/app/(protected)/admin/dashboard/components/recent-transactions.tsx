@@ -66,13 +66,13 @@ export function RecentTransactions() {
             return (
               <div key={inv.id} className="flex p-3 rounded-lg border gap-3 items-center">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="text-xs">{initials(inv.tenantId?.name)}</AvatarFallback>
+                  <AvatarFallback className="text-xs">{initials(inv.tenant?.name)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-1 items-center flex-wrap justify-between gap-2 min-w-0">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{inv.tenantId?.name || "Cửa hàng"}</p>
+                    <p className="text-sm font-medium truncate">{inv.tenant?.name || "Cửa hàng"}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {inv.planId?.planName || inv.planId?.planCode || "-"}
+                      {inv.plan?.planName || inv.plan?.planCode || "-"}
                       {inv.paymentReference ? ` · ${inv.paymentReference}` : ""}
                     </p>
                   </div>

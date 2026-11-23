@@ -14,19 +14,19 @@ export interface TenantOwnerProfile {
 
 export interface TenantOwner {
   id: string;
-  email: string;
+  email: string | null;
   phoneNumber: string;
-  role: string;
   status: string;
   profile?: TenantOwnerProfile;
   createdAt: string;
 }
 
+/** Gói rút gọn đi kèm subscription / hoá đơn trong `GET /tenants`. */
 export interface Plan {
   id: string;
   planName: string;
   planCode: string;
-  price: number;
+  billingCycle: "MONTHLY" | "YEARLY" | "NONE";
 }
 
 export interface Subscription {
@@ -34,7 +34,8 @@ export interface Subscription {
   status: "TRIAL" | "ACTIVE" | "EXPIRED" | "PAST_DUE" | "CANCELLED";
   startDate: string;
   endDate: string;
-  planId?: Plan;
+  trialEndDate?: string | null;
+  plan: Plan | null;
 }
 
 export interface Invoice {
@@ -44,17 +45,19 @@ export interface Invoice {
   status: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
   billingPeriodStart: string;
   billingPeriodEnd: string;
-  paidAt?: string;
-  paymentReference?: string;
-  paymentMethod?: string;
-  planId?: Plan;
+  paidAt?: string | null;
+  paymentReference?: string | null;
+  paymentMethod?: string | null;
+  plan: Plan | null;
   createdAt: string;
 }
 
 export interface Tenant {
   id: string;
   name: string;
-  tenantOwnerId?: TenantOwner;
+  tenantOwnerId?: string | null;
+  /** Chủ shop, chỉ có ở `listTenants()` (admin). */
+  tenantOwner?: TenantOwner | null;
   status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   phoneNumber?: string;
   mainAddress?: string;
@@ -67,7 +70,9 @@ export interface Tenant {
     accountName?: string;
   };
   createdAt: string;
-  activeSubscription?: Subscription;
+  /** Gói hiện tại (mỗi shop một bản ghi), chỉ có ở `listTenants()`; null khi shop chưa nhận gói nào. */
+  subscription?: Subscription | null;
+  /** Hoá đơn gói, mới nhất trước, chỉ có ở `listTenants()`. */
   invoices?: Invoice[];
   /** Đã liên kết SePay, qua webhook key hoặc qua đồng bộ. Key không bao giờ được trả ra. */
   hasSepayKey?: boolean;

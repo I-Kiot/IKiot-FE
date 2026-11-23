@@ -29,8 +29,31 @@ import {
   Calendar,
 } from "lucide-react"
 import { type Tenant } from "@/lib/api/tenant"
+import { listAllPlans, PLAN_TIER_ORDER, basePlanTier, type Plan } from "@/lib/api/subscription"
 import client from "@/lib/api/client"
 import { toast } from "sonner"
+import { ownerName, tenantPlanCode } from "./tenant-display"
+
+/** Danh sách gói dùng chung cho mọi panel: tải một lần khi admin bấm "Chỉnh sửa" lần đầu. */
+let plansRequest: Promise<Plan[]> | null = null
+function loadPlans(): Promise<Plan[]> {
+  plansRequest ??= listAllPlans().catch((err) => {
+    plansRequest = null
+    throw err
+  })
+  return plansRequest
+}
+
+/** Thứ tự TRIAL → PLUS → PRO, trong mỗi hạng gói tháng trước gói năm. */
+function sortPlans(plans: Plan[]): Plan[] {
+  const rank = (plan: Plan) => {
+    const tier = (PLAN_TIER_ORDER as readonly string[]).indexOf(basePlanTier(plan.planCode))
+    return (tier === -1 ? PLAN_TIER_ORDER.length : tier) * 2 + (plan.billingCycle === "YEARLY" ? 1 : 0)
+  }
+  return [...plans].sort((a, b) => rank(a) - rank(b) || a.planCode.localeCompare(b.planCode))
+}
+
+const CYCLE_LABEL: Record<Plan["billingCycle"], string> = { MONTHLY: "tháng", YEARLY: "năm", NONE: "" }
 
 interface UsersExpandedPanelProps {
   tenant: Tenant
@@ -47,41 +70,56 @@ export function UsersExpandedPanel({
 }: UsersExpandedPanelProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editStatus, setEditStatus] = useState(tenant.status)
-  const [editPlan, setEditPlan] = useState(tenant.activeSubscription?.planId?.planCode || "TRIAL")
+  const currentPlan = tenantPlanCode(tenant) ?? ""
+  const [editPlan, setEditPlan] = useState(currentPlan)
   const [isSaving, setIsSaving] = useState(false)
+  const [plans, setPlans] = useState<Plan[] | null>(null)
 
   React.useEffect(() => {
     setEditStatus(tenant.status)
-    setEditPlan(tenant.activeSubscription?.planId?.planCode || "TRIAL")
+    setEditPlan(tenantPlanCode(tenant) ?? "")
   }, [tenant])
+
+  // Gói lấy từ bảng gói (gồm cả gói năm), không viết cứng.
+  React.useEffect(() => {
+    if (!isEditing || plans) return
+    let cancelled = false
+    loadPlans()
+      .then((list) => {
+        if (!cancelled) setPlans(sortPlans(list))
+      })
+      .catch(() => toast.error("Không tải được danh sách gói dịch vụ"))
+    return () => {
+      cancelled = true
+    }
+  }, [isEditing, plans])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
       if (editStatus !== tenant.status) {
-        await client.put(`/tenant/${tenant.id}`, { status: editStatus })
+        await client.patch(`/tenants/${tenant.id}`, { status: editStatus })
       }
 
-      const currentPlan = tenant.activeSubscription?.planId?.planCode || "TRIAL"
-      if (editPlan !== currentPlan) {
+      if (editPlan && editPlan !== currentPlan) {
         await client.post(`/subscription/upgrade/${tenant.id}`, { planCode: editPlan })
       }
 
       toast.success("Cập nhật thông tin thành công!")
       setIsEditing(false)
-      onRefresh()
     } catch (err: any) {
       console.error(err)
       toast.error(err.response?.data?.message || "Lỗi khi cập nhật thông tin!")
     } finally {
       setIsSaving(false)
+      // Tải lại cả khi lỗi: bước đổi trạng thái có thể đã lưu trước khi bước đổi gói lỗi.
+      onRefresh()
     }
   }
 
-  const ownerName = [tenant.tenantOwnerId?.profile?.lastName, tenant.tenantOwnerId?.profile?.firstName]
-    .filter(Boolean)
-    .join(" ")
-    .trim() || "Chưa thiết lập"
+  const ownerLabel = ownerName(tenant) || "Chưa thiết lập"
+  const owner = tenant.tenantOwner
+  const subscription = tenant.subscription
 
   return (
     <div className="bg-muted/10 p-6 border-t animate-in fade-in-0 duration-200">
@@ -116,7 +154,7 @@ export function UsersExpandedPanel({
                     onClick={() => {
                       setIsEditing(false)
                       setEditStatus(tenant.status)
-                      setEditPlan(tenant.activeSubscription?.planId?.planCode || "TRIAL")
+                      setEditPlan(currentPlan)
                     }}
                     disabled={isSaving}
                     className="h-8 text-xs cursor-pointer"
@@ -139,53 +177,59 @@ export function UsersExpandedPanel({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5 text-xs">
               <div className="flex justify-between border-b pb-2 items-center">
                 <span className="text-muted-foreground">Họ tên:</span>
-                <span className="font-semibold text-foreground">{ownerName}</span>
+                <span className="font-semibold text-foreground">{ownerLabel}</span>
               </div>
               <div className="flex justify-between border-b pb-2 items-center">
                 <span className="text-muted-foreground">Số điện thoại:</span>
                 <span className="font-semibold text-foreground flex items-center gap-1">
-                  <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> {tenant.tenantOwnerId?.phoneNumber || "N/A"}
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> {owner?.phoneNumber || "N/A"}
                 </span>
               </div>
               <div className="flex justify-between border-b pb-2 items-center">
                 <span className="text-muted-foreground">Email:</span>
                 <span className="font-semibold text-foreground flex items-center gap-1">
-                  <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> {tenant.tenantOwnerId?.email || "N/A"}
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> {owner?.email || "N/A"}
                 </span>
               </div>
               <div className="flex justify-between border-b pb-2 items-center">
                 <span className="text-muted-foreground">Ngày tham gia:</span>
                 <span className="font-semibold text-foreground flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> {tenant.tenantOwnerId?.createdAt ? new Date(tenant.tenantOwnerId.createdAt).toLocaleDateString("vi-VN") : "N/A"}
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> {owner?.createdAt ? new Date(owner.createdAt).toLocaleDateString("vi-VN") : "N/A"}
                 </span>
               </div>
 
               <div className="flex justify-between border-b pb-2 items-center">
                 <span className="text-muted-foreground">Gói dịch vụ:</span>
                 {isEditing ? (
-                  <div className="w-[180px]">
-                    <Select value={editPlan} onValueChange={setEditPlan}>
+                  <div className="w-[220px]">
+                    {/* Đổi gói sửa bản ghi subscription hiện có: shop chưa từng nhận gói thì không đổi được. */}
+                    <Select value={editPlan} onValueChange={setEditPlan} disabled={!subscription || !plans}>
                       <SelectTrigger className="h-8 text-xs cursor-pointer">
-                        <SelectValue placeholder="Chọn gói dịch vụ" />
+                        <SelectValue placeholder={!subscription ? "Shop chưa có gói" : plans ? "Chọn gói dịch vụ" : "Đang tải gói..."} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="TRIAL">Dùng thử (TRIAL)</SelectItem>
-                        <SelectItem value="PLUS">Chuyên nghiệp (PLUS)</SelectItem>
-                        <SelectItem value="PRO">Doanh nghiệp (PRO)</SelectItem>
+                        {/* Gói đã tắt chỉ hiện khi đang là gói của shop; BE không cho chuyển sang gói đã tắt. */}
+                        {(plans ?? [])
+                          .filter((plan) => plan.isActive || plan.planCode === currentPlan)
+                          .map((plan) => (
+                            <SelectItem key={plan.id} value={plan.planCode} disabled={!plan.isActive} className="cursor-pointer text-xs">
+                              {plan.planName}
+                              {CYCLE_LABEL[plan.billingCycle] ? ` / ${CYCLE_LABEL[plan.billingCycle]}` : ""}
+                              {!plan.isActive ? " (đã tắt)" : ""}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
                 ) : (
-                  <span>{getPlanBadge(tenant.activeSubscription?.planId?.planCode)}</span>
+                  <span>{getPlanBadge(currentPlan || undefined)}</span>
                 )}
               </div>
 
               <div className="flex justify-between border-b pb-2 items-center">
                 <span className="text-muted-foreground">Thời gian hết hạn:</span>
                 <span className="font-semibold text-foreground">
-                  {tenant.activeSubscription?.endDate
-                    ? new Date(tenant.activeSubscription.endDate).toLocaleDateString("vi-VN")
-                    : "Không giới hạn"}
+                  {subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString("vi-VN") : "-"}
                 </span>
               </div>
 
@@ -304,13 +348,13 @@ export function UsersExpandedPanel({
                     tenant.invoices.map((txn) => (
                       <TableRow key={txn.id} className="text-xs hover:bg-muted/30">
                         <TableCell className="font-semibold text-2xs">{txn.id}</TableCell>
-                        <TableCell>{getPlanBadge(txn.planId?.planCode || "Trial")}</TableCell>
+                        <TableCell>{getPlanBadge(txn.plan?.planCode)}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {txn.billingPeriodStart ? `${new Date(txn.billingPeriodStart).toLocaleDateString("vi-VN")} - ${new Date(txn.billingPeriodEnd).toLocaleDateString("vi-VN")}` : "N/A"}
                         </TableCell>
                         <TableCell className="font-semibold text-primary">{txn.amount.toLocaleString()}đ</TableCell>
                         <TableCell className="font-mono text-2xs text-muted-foreground">{txn.paymentReference || "-"}</TableCell>
-                        <TableCell className="text-muted-foreground">{txn.createdAt ? new Date(txn.createdAt).toLocaleDateString("vi-VN") : "N/A"}</TableCell>
+                        <TableCell className="text-muted-foreground">{txn.paidAt ? new Date(txn.paidAt).toLocaleDateString("vi-VN") : "-"}</TableCell>
                         <TableCell>
                           {txn.status === "PAID" && <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px] px-1.5 py-0" variant="outline">Thành công</Badge>}
                           {txn.status === "PENDING" && <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-[10px] px-1.5 py-0" variant="outline">Chờ duyệt</Badge>}

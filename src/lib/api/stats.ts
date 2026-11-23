@@ -384,8 +384,8 @@ export interface AdminRecentInvoice {
   paymentReference?: string;
   createdAt: string;
   paidAt?: string;
-  planId?: { planName?: string; planCode?: string };
-  tenantId?: { name?: string };
+  plan?: { planName?: string; planCode?: string } | null;
+  tenant?: { name?: string } | null;
 }
 
 export interface AdminOverview {
