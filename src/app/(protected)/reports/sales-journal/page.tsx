@@ -1,7 +1,7 @@
 // [Page – Sổ doanh thu] Từng bút toán ghi nhận doanh thu: bán hàng, trả hàng, thu nhập khác. Số trên báo cáo cộng từ đây.
 'use client'
 
-import { Fragment, useCallback, useState } from 'react'
+import { Fragment, Suspense, useCallback, useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import { ExportExcelButton } from '@/components/export-excel-button'
@@ -10,11 +10,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ReportDateRangeFilter } from '@/components/report-date-range-filter'
+import { ReportLocationSelect } from '@/components/report-location-select'
+import { useReportLocation } from '@/hooks/use-report-location'
+import { useReportPeriod } from '@/hooks/use-report-period'
 import { DataTableEmpty } from '@/components/data-table/data-table-empty'
 import { DataTableLoading } from '@/components/data-table/data-table-loading'
 import { DataTablePagination } from '@/components/data-table/data-table-pagination'
-import { locationFilter } from '@/lib/location-key'
 import { statsApi, type SalesJournalEntryType } from '@/lib/api/stats'
 import {
   formatDayVi,
@@ -24,9 +27,8 @@ import {
   JOURNAL_SOURCE_LABELS,
   negativeClass,
 } from '@/lib/stats-format'
-import { useAuthStore } from '@/store/auth-store'
 import { useAsyncData } from '../../dashboard/hooks/use-async-data'
-import { RANGE_OPTIONS, resolveDashboardRange, type DashboardRange } from '../hooks/use-dashboard-stats'
+import type { ReportPeriod } from '../hooks/use-dashboard-stats'
 
 type TypeFilter = 'ALL' | SalesJournalEntryType
 
@@ -38,12 +40,20 @@ const TYPE_VARIANT: Record<SalesJournalEntryType, 'success' | 'error' | 'seconda
 
 const DEFAULT_PAGE_SIZE = 20
 
+/** Bọc Suspense vì kỳ đọc từ URL (`useSearchParams`). */
 export default function SalesJournalPage() {
-  const locationKey = useAuthStore((state) => state.locationKey)
-  const { branchId, warehouseId } = locationFilter(locationKey)
-  const place = branchId ?? warehouseId
+  return (
+    <Suspense fallback={null}>
+      <SalesJournal />
+    </Suspense>
+  )
+}
 
-  const [range, setRangeState] = useState<DashboardRange>('30d')
+function SalesJournal() {
+  const location = useReportLocation()
+  const { place } = location
+
+  const { period, setPeriod: setPeriodParam } = useReportPeriod()
   const [entryType, setEntryTypeState] = useState<TypeFilter>('ALL')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSizeState] = useState(DEFAULT_PAGE_SIZE)
@@ -51,8 +61,12 @@ export default function SalesJournalPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   // Đổi bộ lọc bất kỳ sẽ về trang đầu.
-  const setRange = (value: DashboardRange) => {
-    setRangeState(value)
+  const setPeriod = (value: ReportPeriod) => {
+    setPeriodParam(value)
+    setPage(1)
+  }
+  const setLocationKey = (key: string) => {
+    location.setLocationKey(key)
     setPage(1)
   }
   const setEntryType = (value: TypeFilter) => {
@@ -65,20 +79,19 @@ export default function SalesJournalPage() {
   }
 
   const load = useCallback(() => {
-    const { fromDate, toDate } = resolveDashboardRange(range)
     return statsApi.getSalesJournal({
-      fromDate,
-      toDate,
+      fromDate: period.fromDate,
+      toDate: period.toDate,
       branchId: place,
       entryType: entryType === 'ALL' ? undefined : entryType,
       page,
       limit: pageSize,
     })
-  }, [range, entryType, place, page, pageSize])
+  }, [period.fromDate, period.toDate, entryType, place, page, pageSize])
   const { data: list, isLoading, failed } = useAsyncData(load, reloadKey)
 
   // Xuất cả kỳ theo đúng bộ lọc đang xem (không chỉ trang hiện tại).
-  const exportRange = resolveDashboardRange(range)
+  const exportRange = period
   const exportJournal = () =>
     statsApi.exportSalesJournal({
       fromDate: exportRange.fromDate,
@@ -144,18 +157,8 @@ export default function SalesJournalPage() {
       <p className="-mt-3 text-xs text-muted-foreground">Tổng cộng trên toàn bộ bộ lọc, không chỉ trang đang xem.</p>
 
       <div className="flex flex-wrap gap-3">
-        <Select value={range} onValueChange={(v) => setRange(v as DashboardRange)}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {RANGE_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ReportLocationSelect location={{ ...location, setLocationKey }} />
+        <ReportDateRangeFilter period={period} onChange={setPeriod} />
         <Select value={entryType} onValueChange={(v) => setEntryType(v as TypeFilter)}>
           <SelectTrigger className="w-44">
             <SelectValue />
@@ -173,7 +176,9 @@ export default function SalesJournalPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          {/* Khung cuộn riêng (không dùng <Table>: khung overflow-x của nó làm sticky dọc vô hiệu) để đầu bảng và dòng Tổng luôn thấy khi cuộn. */}
+          <div className="max-h-[70vh] overflow-auto">
+          <table className="w-full caption-bottom text-sm [&>thead>tr>th]:sticky [&>thead>tr>th]:top-0 [&>thead>tr>th]:z-20 [&>thead>tr>th]:border-b [&>thead>tr>th]:bg-muted">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8" />
@@ -283,7 +288,21 @@ export default function SalesJournalPage() {
                 )
               })}
             </TableBody>
-          </Table>
+            {totals && rows.length > 0 && (
+              <TableFooter className="border-t-0 bg-transparent">
+                <TableRow className="font-semibold hover:bg-transparent [&>td]:sticky [&>td]:bottom-0 [&>td]:z-20 [&>td]:h-10 [&>td]:border-t [&>td]:bg-muted [&>td]:py-0">
+                  <TableCell />
+                  <TableCell colSpan={5}>Tổng cộng (toàn bộ bộ lọc)</TableCell>
+                  <TableCell className={`text-right tabular-nums ${negativeClass(totals.goodsAmount)}`}>{formatVND(totals.goodsAmount)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatVND(totals.shippingAmount)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatVND(totals.otherIncomeAmount)}</TableCell>
+                  <TableCell className={`text-right tabular-nums ${negativeClass(totals.totalAmount)}`}>{formatVND(totals.totalAmount)}</TableCell>
+                  <TableCell className={`text-right tabular-nums ${negativeClass(totals.cogsAmount)}`}>{formatVND(totals.cogsAmount)}</TableCell>
+                </TableRow>
+              </TableFooter>
+            )}
+          </table>
+          </div>
         </CardContent>
       </Card>
 
