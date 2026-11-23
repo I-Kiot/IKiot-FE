@@ -138,6 +138,7 @@ export const JOURNAL_SOURCE_LABELS: Record<string, string> = {
   ORDER_CANCEL: 'Huỷ đơn (giữ tiền)',
   POS_CANCEL: 'Huỷ đơn quầy (giữ tiền)',
   RETURN_KEPT: 'Trả hàng (giữ tiền)',
+  HELD_DECISION: 'Quyết định giữ tiền',
 }
 
 /** Cho cột giá trị có thể âm: số âm tô đỏ, số dương giữ màu mặc định. */

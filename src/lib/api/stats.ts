@@ -156,9 +156,32 @@ export interface RevenueByStaffItem {
 /** Người được tính: phụ trách đơn, người lên đơn hoặc người thu tiền. */
 export type RevenueByStaffGroupBy = 'assignee' | 'creator' | 'collector';
 
+/** Tổng của cả kỳ (mọi dòng, không chỉ trang đang xem) - dòng Tổng của bảng xếp hạng. */
+export interface RankingSummary {
+  revenue: number;
+  orderCount: number;
+  aov: number;
+}
+
+export interface RankingPagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/** Phân trang tuỳ chọn của bảng xếp hạng: không gửi `limit` thì server trả đủ mọi dòng. */
+export interface RankingPageParams {
+  page?: number;
+  limit?: number;
+}
+
 export interface RevenueByStaff {
   groupBy?: RevenueByStaffGroupBy;
   staff: RevenueByStaffItem[];
+  summary: RankingSummary;
+  /** Chỉ có khi gọi kèm `limit`. */
+  pagination?: RankingPagination;
 }
 
 export interface CashflowByType {
@@ -305,6 +328,8 @@ export interface RevenueByBranchItem {
 
 export interface RevenueByBranch {
   branches: RevenueByBranchItem[];
+  summary: RankingSummary;
+  pagination?: RankingPagination;
 }
 
 /** weekday: 0 = Chủ nhật .. 6 = Thứ bảy; hour: 0..23, theo giờ của shop. */
@@ -571,7 +596,7 @@ export const statsApi = {
   getRevenueByPaymentMethod: (params?: StatsDateRangeParams) =>
     getStats<RevenueByPaymentMethod>('/stats/revenue-by-payment-method', params),
 
-  getRevenueByStaff: (params?: StatsDateRangeParams & { groupBy?: RevenueByStaffGroupBy }) =>
+  getRevenueByStaff: (params?: StatsDateRangeParams & RankingPageParams & { groupBy?: RevenueByStaffGroupBy }) =>
     getStats<RevenueByStaff>('/stats/revenue-by-staff', params),
 
   getCashflow: (
@@ -603,17 +628,17 @@ export const statsApi = {
 
   getUnreconciled: (params?: { branchId?: string }) => getStats<Unreconciled>('/stats/unreconciled', params),
 
-  /** Sổ doanh thu cả kỳ theo mẫu S03a4-DN và S35-DN (Thông tư 99/2025/TT-BTC). */
+  /** Sổ doanh thu cả kỳ, dạng bảng như trên trang (sheet bút toán + sheet dòng hàng). */
   exportSalesJournal: (params?: Omit<SalesJournalParams, 'page' | 'limit'>) =>
     getExport('/stats/export/sales-journal', params),
 
   exportUnreconciled: (params?: { branchId?: string }) => getExport('/stats/export/unreconciled', params),
 
-  /** File của trang Báo cáo chi tiết: mỗi nhóm số liệu một sheet. */
+  /** File của các trang Báo cáo: mỗi báo cáo một sheet, cùng cột với bảng trên trang. */
   exportReport: (
     params?: StatsDateRangeParams & {
       groupBy?: 'day' | 'month';
-      /** Chỉ xuất một báo cáo (một tab); bỏ trống là xuất tất cả. */
+      /** Chỉ xuất một báo cáo (một tab của Tổng hợp, hoặc `staff` / `branch`); bỏ trống là mọi tab của trang Tổng hợp. */
       section?: string;
       staffGroupBy?: RevenueByStaffGroupBy;
       lowStockThreshold?: number;
@@ -632,7 +657,7 @@ export const statsApi = {
   getOrdersByStatus: (params?: StatsDateRangeParams) =>
     getStats<OrdersByStatus>('/stats/orders-by-status', params),
 
-  getRevenueByBranch: (params?: StatsDateRangeParams) =>
+  getRevenueByBranch: (params?: StatsDateRangeParams & RankingPageParams) =>
     getStats<RevenueByBranch>('/stats/revenue-by-branch', params),
 
   getSalesHeatmap: (params?: StatsDateRangeParams) =>
