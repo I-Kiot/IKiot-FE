@@ -47,7 +47,7 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       items: [
         sidebarItems.tongQuan,
         sidebarItems.baoCao,
-        sidebarItems.soThuChi,
+        sidebarItems.thongKe,
         sidebarItems.nhanVienChuCuaHang,
       ],
     },
@@ -74,7 +74,7 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       items: [
         sidebarItems.tongQuan,
         sidebarItems.baoCao,
-        sidebarItems.soThuChi,
+        sidebarItems.thongKe,
         sidebarItems.nhanVien,
       ],
     },
