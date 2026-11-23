@@ -76,7 +76,7 @@ function readyOrdersColumns(
             size="sm"
             onClick={() => onHandOver(row.original)}
           >
-            Giao cho ĐVVC
+            Giao cho shipper
           </PermissionButton>
         );
       },

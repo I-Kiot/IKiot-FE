@@ -1,7 +1,7 @@
 "use client";
 
-// Dialog "Giao cho vận chuyển" cho một đơn đã đóng gói (POST /shipments): ghi nhận ĐVVC đã lấy hàng, hoặc gán
-// shipper của shop - shipper đó còn phải tự xác nhận đã lấy hàng.
+// Dialog "Giao cho vận chuyển" cho một đơn đã đóng gói (POST /shipments): gán người giao, người đó còn phải
+// tự xác nhận đã lấy hàng.
 
 import { useState } from "react";
 import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
@@ -18,10 +18,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { shipmentApi } from "@/lib/api/shipment";
-import type { CarrierType, HandOverReadyOrder } from "@/types/order-flow";
+import type { HandOverReadyOrder } from "@/types/order-flow";
 import { DriverSelect } from "./driver-dialogs";
 import { reportShipmentError } from "./shipment-ui";
 import { useLiveHold } from "@/hooks/use-live-refresh";
@@ -38,10 +37,7 @@ interface HandOverDialogProps {
 /** Trang cha đặt `key={order.id}` nên mỗi đơn mở ra là một form mới. */
 export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialogProps) {
   const { pending: livePending } = useLiveHold(order !== null, [order?.id]);
-  const [carrierType, setCarrierType] = useState<CarrierType>("INTERNAL");
   const [driverId, setDriverId] = useState("");
-  const [carrierName, setCarrierName] = useState("");
-  const [trackingCode, setTrackingCode] = useState("");
   // Ngày hẹn đã có sẵn trên đơn thì lấy luôn và khoá; chưa có mới cho chọn.
   const orderDate = order?.requestedDeliveryDate?.slice(0, 10) ?? "";
   const dateLocked = !!orderDate;
@@ -53,8 +49,7 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const internal = carrierType === "INTERNAL";
-  const missingDriver = internal && !driverId;
+  const missingDriver = !driverId;
   // Khung giờ lưu dạng "HH:mm-HH:mm"; chỉ chọn một đầu thì lưu đầu đó.
   const scheduledSlot = slotFrom && slotTo ? `${slotFrom}-${slotTo}` : slotFrom || slotTo;
   const dateInvalid = !dateLocked && isPastDate(scheduledDate);
@@ -67,10 +62,8 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
     shipmentApi
       .create({
         orderId: order.id,
-        carrierType,
-        driverId: internal ? driverId : undefined,
-        carrierName: internal ? undefined : carrierName.trim() || undefined,
-        trackingCode: internal ? undefined : trackingCode.trim() || undefined,
+        carrierType: "INTERNAL",
+        driverId,
         scheduledDate: scheduledDate || undefined,
         scheduledSlot: scheduledSlot || undefined,
         requiresInstallation,
@@ -79,12 +72,8 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
         note: note.trim() || undefined,
       })
       .then(() => {
-        // Shipper của shop mới chỉ được gán: còn phải tới kho lấy hàng và tự xác nhận (chốt 2026-10-15).
-        toast.success(
-          internal
-            ? `Đã gán shipper cho đơn ${order.code} - chờ shipper xác nhận đã lấy hàng`
-            : `Đã giao đơn ${order.code} cho đơn vị vận chuyển`,
-        );
+        // Mới chỉ gán người giao: họ còn phải tới kho lấy hàng và tự xác nhận (chốt 2026-10-15).
+        toast.success(`Đã gán shipper cho đơn ${order.code} - chờ shipper xác nhận đã lấy hàng`);
         onNeedsReload();
       })
       .catch((error: unknown) => {
@@ -101,42 +90,15 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
         <DialogHeader>
           <DialogTitle>Giao đơn {order?.code} cho vận chuyển</DialogTitle>
           <DialogDescription>
-            {internal
-              ? "Gán shipper của shop. Đơn chuyển sang ĐVVC đã lấy hàng khi shipper tới kho lấy hàng và bấm xác nhận."
-              : "Ghi nhận đơn vị vận chuyển đã lấy hàng."}{" "}
-            Tồn kho chưa bị trừ - chỉ trừ khi chuyển sang Đang vận chuyển.
+            Gán shipper cho đơn. Đơn chuyển sang đã lấy hàng khi shipper tới kho lấy hàng và bấm xác nhận. Tồn kho chưa bị trừ - chỉ trừ khi chuyển sang Đang vận chuyển.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <RadioGroup
-            value={carrierType}
-            onValueChange={(value) => setCarrierType(value as CarrierType)}
-            className="flex gap-6"
-          >
-            <Label className="flex items-center gap-2 font-normal">
-              <RadioGroupItem value="INTERNAL" /> Shipper của shop
-            </Label>
-            <Label className="flex items-center gap-2 font-normal">
-              <RadioGroupItem value="EXTERNAL" /> Đơn vị vận chuyển
-            </Label>
-          </RadioGroup>
-
-          {internal && order ? (
+          {order && (
             <div className="space-y-2">
               <Label>Shipper</Label>
               <DriverSelect orderId={order.id} value={driverId} onChange={setDriverId} disabled={submitting} />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Tên đơn vị</Label>
-                <Input value={carrierName} onChange={(e) => setCarrierName(e.target.value)} maxLength={100} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mã vận đơn</Label>
-                <Input value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} maxLength={100} />
-              </div>
             </div>
           )}
 
@@ -191,7 +153,7 @@ export function HandOverDialog({ order, onClose, onNeedsReload }: HandOverDialog
             Huỷ
           </Button>
           <Button onClick={submit} disabled={submitting || missingDriver || slotInvalid || dateInvalid}>
-            {submitting ? "Đang xử lý..." : "Xác nhận đã giao"}
+            {submitting ? "Đang xử lý..." : "Giao cho shipper"}
           </Button>
         </DialogFooter>
       </DialogContent>
