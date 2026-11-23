@@ -15,6 +15,7 @@ import { UsersRow } from "./users-row"
 import { UsersPagination } from "./users-pagination"
 import { listTenants, type Tenant } from "@/lib/api/tenant"
 import { toast } from "sonner"
+import { ownerName, tenantPlanTier } from "./tenant-display"
 
 export function UsersTable() {
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -67,20 +68,16 @@ export function UsersTable() {
 
   const filteredTenants = useMemo(() => {
     return tenants.filter((tenant) => {
-      const ownerName = [tenant.tenantOwnerId?.profile?.lastName, tenant.tenantOwnerId?.profile?.firstName]
-        .filter(Boolean)
-        .join(" ")
-        .trim()
-      const searchStr = `${ownerName} ${tenant.tenantOwnerId?.email || ""} ${tenant.name || ""} ${tenant.id}`.toLowerCase()
+      const owner = tenant.tenantOwner
+      const searchStr = `${ownerName(tenant)} ${owner?.email || ""} ${owner?.phoneNumber || ""} ${tenant.name || ""} ${tenant.id}`.toLowerCase()
       if (globalFilter && !searchStr.includes(globalFilter.toLowerCase())) {
         return false
       }
-      
-      const planCode = tenant.activeSubscription?.planId?.planCode || "TRIAL"
-      if (planFilter !== "all" && planCode !== planFilter) {
+
+      if (planFilter !== "all" && tenantPlanTier(tenant) !== planFilter) {
         return false
       }
-      
+
       if (statusFilter !== "all" && tenant.status !== statusFilter) {
         return false
       }

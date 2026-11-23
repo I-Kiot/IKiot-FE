@@ -6,7 +6,9 @@ import { TableCell, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ChevronRight } from "lucide-react"
 import { UsersExpandedPanel } from "./users-expanded-panel"
+import { basePlanTier } from "@/lib/api/subscription"
 import { type Tenant } from "@/lib/api/tenant"
+import { ownerName, tenantPlanCode } from "./tenant-display"
 
 interface UsersRowProps {
   tenant: Tenant
@@ -39,26 +41,23 @@ export function UsersRow({ tenant, onRefresh }: UsersRowProps) {
     }
   }
 
-  const getPlanBadge = (plan?: string) => {
-    switch (plan?.toUpperCase()) {
+  const getPlanBadge = (planCode?: string) => {
+    if (!planCode) return <Badge variant="outline" className="text-2xs text-muted-foreground">Chưa có gói</Badge>
+    const yearly = planCode.toUpperCase().endsWith("_YEARLY")
+    const suffix = yearly ? " · Năm" : ""
+    switch (basePlanTier(planCode.toUpperCase())) {
       case "PRO":
-      case "ENTERPRISE":
-        return <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/20 font-semibold text-2xs" variant="outline">Doanh nghiệp (PRO)</Badge>
+        return <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/20 font-semibold text-2xs" variant="outline">Doanh nghiệp (PRO){suffix}</Badge>
       case "PLUS":
-      case "PROFESSIONAL":
-        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 font-medium text-2xs" variant="outline">Chuyên nghiệp (PLUS)</Badge>
+        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 font-medium text-2xs" variant="outline">Chuyên nghiệp (PLUS){suffix}</Badge>
       case "TRIAL":
-      case "BASIC":
         return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-2xs" variant="outline">Dùng thử (TRIAL)</Badge>
       default:
-        return <Badge variant="outline" className="text-2xs">{plan || "Dùng thử"}</Badge>
+        return <Badge variant="outline" className="text-2xs">{planCode}</Badge>
     }
   }
 
-  const ownerName = [tenant.tenantOwnerId?.profile?.lastName, tenant.tenantOwnerId?.profile?.firstName]
-    .filter(Boolean)
-    .join(" ")
-    .trim() || "Chưa thiết lập"
+  const ownerLabel = ownerName(tenant) || "Chưa thiết lập"
 
   return (
     <>
@@ -71,8 +70,8 @@ export function UsersRow({ tenant, onRefresh }: UsersRowProps) {
         </TableCell>
         <TableCell className="font-semibold">
           <div className="flex flex-col">
-            <span>{ownerName}</span>
-            <span className="text-xs text-muted-foreground font-normal">{tenant.tenantOwnerId?.email || "N/A"}</span>
+            <span>{ownerLabel}</span>
+            <span className="text-xs text-muted-foreground font-normal">{tenant.tenantOwner?.email || tenant.tenantOwner?.phoneNumber || "N/A"}</span>
           </div>
         </TableCell>
         <TableCell>
@@ -81,7 +80,7 @@ export function UsersRow({ tenant, onRefresh }: UsersRowProps) {
             <span className="text-2xs text-muted-foreground font-normal">{tenant.id}</span>
           </div>
         </TableCell>
-        <TableCell>{getPlanBadge(tenant.activeSubscription?.planId?.planCode)}</TableCell>
+        <TableCell>{getPlanBadge(tenantPlanCode(tenant))}</TableCell>
         <TableCell>{getStatusBadge(tenant.status)}</TableCell>
         <TableCell className="text-muted-foreground text-sm">
           {tenant.createdAt ? new Date(tenant.createdAt).toLocaleDateString("vi-VN") : "N/A"}

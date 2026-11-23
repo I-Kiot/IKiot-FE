@@ -54,7 +54,7 @@ export function BillingHistoryCard({
               <div key={invoice.id}>
                 <div className="flex items-center justify-between py-2">
                   <div>
-                    <p className="font-medium">{invoice.planId?.planName ?? "-"}</p>
+                    <p className="font-medium">{invoice.plan?.planName ?? "-"}</p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(invoice.paidAt ?? invoice.createdAt).toLocaleDateString("vi-VN", {
                         year: "numeric",

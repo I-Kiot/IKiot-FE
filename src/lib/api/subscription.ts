@@ -162,7 +162,8 @@ export async function initiateRenewal(): Promise<InitiateUpgradeResult> {
 
 export interface Invoice {
   id: string;
-  planId: { planName: string; planCode: string };
+  /** Quan hệ `plan` của Prisma; `planId` là chuỗi id. */
+  plan: { planName: string; planCode: string } | null;
   amount: number;
   currency: string;
   status: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
@@ -178,9 +179,9 @@ export async function listInvoices(): Promise<Invoice[]> {
   return (response.data.data as Invoice[]).map(toInvoice);
 }
 
-export interface AdminInvoice extends Omit<Invoice, "planId"> {
-  planId?: { planName: string; planCode: string };
-  tenantId?: { id: string; name: string; phoneNumber?: string };
+export interface AdminInvoice extends Invoice {
+  tenantId: string;
+  tenant: { name: string; phoneNumber?: string | null } | null;
 }
 
 export async function listAllInvoices(): Promise<AdminInvoice[]> {

@@ -44,7 +44,7 @@ import {
 } from "@/lib/api/tenant";
 
 function ownerLabel(tenant: Tenant): string {
-  const owner = tenant.tenantOwnerId;
+  const owner = tenant.tenantOwner;
   const name = [owner?.profile?.lastName, owner?.profile?.firstName]
     .filter(Boolean)
     .join(" ")
