@@ -16,10 +16,17 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Suspense } from 'react'
+import { ReportDateRangeFilter } from '@/components/report-date-range-filter'
+import { ReportLocationSelect } from '@/components/report-location-select'
+import { useReportLocation } from '@/hooks/use-report-location'
+import { useReportPeriod } from '@/hooks/use-report-period'
+import type { ReportPeriod } from '../reports/hooks/use-dashboard-stats'
 
 import Link from 'next/link'
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet } from 'lucide-react'
@@ -38,19 +45,11 @@ import {
 } from '@/lib/stats-format'
 import {
   useCashflow,
-  type CashflowRange,
   type FlowTypeFilter,
   type FlowPrefixFilter,
   type CategoryFilter,
   type FundFilter,
 } from './_hooks/use-cashflow'
-
-const RANGE_LABELS: Record<CashflowRange, string> = {
-  '7d': '7 ngày qua',
-  '30d': '30 ngày qua',
-  '90d': '90 ngày qua',
-  '12m': '12 tháng qua',
-}
 
 const FLOW_LABELS: Record<FlowPrefixFilter, string> = {
   ALL: 'Tất cả nguồn',
@@ -68,15 +67,24 @@ function formatDateTime(iso: string): string {
   })
 }
 
+/** Bọc Suspense vì kỳ và nơi đọc từ URL (`useSearchParams`). */
 export default function CashflowPage() {
+  return (
+    <Suspense fallback={null}>
+      <Cashflow />
+    </Suspense>
+  )
+}
+
+function Cashflow() {
   const { user } = useAuth()
+  const { period, setPeriod: setPeriodParam } = useReportPeriod()
+  const location = useReportLocation()
   const canSeeSepay = allows(user?.role, 'cash_flows', 'read')
   const {
     summary,
     list,
     isLoading,
-    range,
-    setRange,
     flowType,
     setFlowType,
     flow,
@@ -90,7 +98,22 @@ export default function CashflowPage() {
     pageSize,
     setPageSize,
     refetch,
-  } = useCashflow()
+  } = useCashflow({
+    fromDate: period.fromDate,
+    toDate: period.toDate,
+    branchId: location.branchId,
+    warehouseId: location.warehouseId,
+  })
+
+  // Đổi kỳ hay nơi xem thì về trang đầu.
+  const setPeriod = (value: ReportPeriod) => {
+    setPeriodParam(value)
+    setPage(1)
+  }
+  const setLocationKey = (key: string) => {
+    location.setLocationKey(key)
+    setPage(1)
+  }
 
   const rows = list?.data ?? []
   const pagination = list?.pagination
@@ -98,9 +121,13 @@ export default function CashflowPage() {
   return (
     <div className="flex-1 space-y-6 px-6 pt-0">
       <PageHeader
-        breadcrumbs={[{ label: 'Trang chủ', href: '/dashboard' }, { label: 'Sổ thu chi' }]}
+        breadcrumbs={[
+          { label: 'Trang chủ', href: '/dashboard' },
+          { label: 'Báo cáo', href: '/reports' },
+          { label: 'Sổ thu chi' },
+        ]}
         title="Sổ thu chi"
-        description="Danh sách chi tiết các khoản tiền vào và tiền ra"
+        description="Tiền thực vào và ra theo ngày phát sinh, theo quỹ (két, quỹ chủ, ngân hàng); khác Sổ doanh thu ghi theo ngày đơn hoàn thành"
         actions={
           <div className="flex gap-2">
             {canSeeSepay && (
@@ -160,18 +187,8 @@ export default function CashflowPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Select value={range} onValueChange={(v) => setRange(v as CashflowRange)}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(RANGE_LABELS) as CashflowRange[]).map((r) => (
-              <SelectItem key={r} value={r}>
-                {RANGE_LABELS[r]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ReportLocationSelect location={{ ...location, setLocationKey }} />
+        <ReportDateRangeFilter period={period} onChange={setPeriod} />
 
         <Select value={flowType} onValueChange={(v) => setFlowType(v as FlowTypeFilter)}>
           <SelectTrigger className="w-40">
@@ -300,7 +317,9 @@ export default function CashflowPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          {/* Khung cuộn riêng (không dùng <Table>: khung overflow-x của nó làm sticky dọc vô hiệu) để đầu bảng và dòng Tổng luôn thấy khi cuộn. */}
+          <div className="max-h-[70vh] overflow-auto">
+          <table className="w-full caption-bottom text-sm [&>thead>tr>th]:sticky [&>thead>tr>th]:top-0 [&>thead>tr>th]:z-20 [&>thead>tr>th]:border-b [&>thead>tr>th]:bg-muted">
             <TableHeader>
               <TableRow>
                 <TableHead>Thời gian</TableHead>
@@ -372,7 +391,23 @@ export default function CashflowPage() {
                 })
               )}
             </TableBody>
-          </Table>
+            {summary && rows.length > 0 && (
+              <TableFooter className="border-t-0 bg-transparent">
+                <TableRow className="font-semibold hover:bg-transparent [&>td]:sticky [&>td]:bottom-0 [&>td]:z-20 [&>td]:h-10 [&>td]:border-t [&>td]:bg-muted [&>td]:py-0">
+                  <TableCell colSpan={8}>
+                    Tổng (toàn bộ lọc):{' '}
+                    <span className="text-green-600">+{formatVND(summary.income)}</span>
+                    {' · '}
+                    <span className="text-red-600">−{formatVND(summary.expense)}</span>
+                  </TableCell>
+                  <TableCell className={`text-right whitespace-nowrap ${summary.net >= 0 ? '' : 'text-red-600'}`}>
+                    {formatVND(summary.net)}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            )}
+          </table>
+          </div>
         </CardContent>
       </Card>
 

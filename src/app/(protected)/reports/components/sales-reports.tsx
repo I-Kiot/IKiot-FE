@@ -1,13 +1,7 @@
 "use client"
 
-import { useCallback } from "react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  statsApi,
-  type RevenueByStaff as RevenueByStaffData,
-  type RevenueByStaffGroupBy,
-  type StatsOverview,
-} from "@/lib/api/stats"
+import { useCallback, useState } from "react"
+import { statsApi, type StatsOverview } from "@/lib/api/stats"
 import {
   ORDER_STATUS_LABELS,
   formatBucket,
@@ -20,7 +14,7 @@ import {
 } from "@/lib/stats-format"
 import { useAsyncData } from "../../dashboard/hooks/use-async-data"
 import { useDashboard } from "./dashboard-provider"
-import { Money, ReportTable, sharePct, sumOf, type ReportColumn } from "./report-table"
+import { DEFAULT_REPORT_PAGE_SIZE, Money, ReportTable, sharePct, sumOf, type ReportColumn } from "./report-table"
 
 const REVENUE_NOTE = "Doanh thu thuần ghi theo ngày đơn hoàn thành, đã trừ hàng trả."
 
@@ -229,17 +223,24 @@ export function SalesByProductReport() {
   )
 }
 
-// ---------------------------------------------------------------- Theo chi nhánh / nhân viên / khách hàng
+// ---------------------------------------------------------------- Theo đối tượng (khách hàng; nhân viên và điểm bán có trang riêng)
 
-/** Bốn cột số chung của các bảng doanh thu theo đối tượng. */
-function revenueColumns<T extends { orderCount: number; revenue: number; aov: number }>(rows: T[]): ReportColumn<T>[] {
-  const revenue = sumOf(rows, (r) => r.revenue)
+/**
+ * Bốn cột số chung của các bảng doanh thu theo đối tượng. `totals` là tổng cả kỳ do server trả (bảng phân trang):
+ * dòng Cộng và tỷ trọng tính trên tổng đó, không trên trang đang xem. Không có thì cộng các dòng đang có.
+ */
+export function revenueColumns<T extends { orderCount: number; revenue: number; aov: number }>(
+  rows: T[],
+  totals?: { orderCount: number; revenue: number },
+): ReportColumn<T>[] {
+  const revenue = totals?.revenue ?? sumOf(rows, (r) => r.revenue)
+  const orderCount = totals?.orderCount ?? sumOf(rows, (r) => r.orderCount)
   return [
     {
       header: "Số đơn",
       numeric: true,
       cell: (row) => formatNumber(row.orderCount),
-      footer: formatNumber(sumOf(rows, (r) => r.orderCount)),
+      footer: formatNumber(orderCount),
     },
     { header: "Doanh thu thuần", numeric: true, cell: (row) => <Money value={row.revenue} />, footer: <Money value={revenue} /> },
     { header: "Giá trị đơn TB", numeric: true, cell: (row) => formatVND(row.aov), footer: "" },
@@ -247,81 +248,54 @@ function revenueColumns<T extends { orderCount: number; revenue: number; aov: nu
   ]
 }
 
+/**
+ * So sánh doanh thu các điểm bán (chi nhánh) - chỉ hiện khi xem toàn cửa hàng. Phân trang phía server;
+ * dòng Cộng và tỷ trọng tính trên tổng cả kỳ của mọi điểm bán, không đổi khi chuyển trang.
+ */
 export function SalesByBranchReport() {
-  const { revenueByBranch, isLoading } = useDashboard()
-  const rows = revenueByBranch?.branches ?? []
+  const { revenueDateRange } = useDashboard()
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_REPORT_PAGE_SIZE)
+  const fromDate = revenueDateRange?.fromDate
+  const toDate = revenueDateRange?.toDate
+
+  // Kỳ đổi thì `load` đổi (tải lại); trang giữ nguyên nếu vẫn còn, quá số trang thì thanh phân trang tự kẹp.
+  const load = useCallback(
+    () =>
+      !fromDate || !toDate
+        ? new Promise<never>(() => {})
+        : statsApi.getRevenueByBranch({ fromDate, toDate, page, limit: pageSize }),
+    [fromDate, toDate, page, pageSize],
+  )
+  const { data, isLoading, failed } = useAsyncData(load)
+  const rows = data?.branches ?? []
 
   return (
     <ReportTable
-      title="Doanh thu theo chi nhánh"
-      description="Doanh thu thuần của từng chi nhánh trong kỳ"
-      isLoading={isLoading && !revenueByBranch}
+      title="Doanh thu theo điểm bán"
+      description="Doanh thu thuần của từng chi nhánh trong kỳ; chọn một nơi ở ô bên trên để xem mọi báo cáo của riêng nơi đó"
+      isLoading={isLoading && !data}
+      emptyText={failed ? "Không tải được doanh thu theo điểm bán" : undefined}
       rows={rows}
       rowKey={(row) => row.branchId}
       columns={[
         { header: "STT", className: "w-14", cell: (_, index) => index + 1 },
         { header: "Chi nhánh", cell: (row) => row.branchName ?? "Chi nhánh", footer: "Cộng" },
-        ...revenueColumns(rows),
+        ...revenueColumns(rows, data?.summary),
       ]}
       note={REVENUE_NOTE}
-    />
-  )
-}
-
-/** Ba cách tính người: phụ trách đơn (mặc định), người lên đơn, người thu tiền (theo tiền thực thu). */
-const STAFF_GROUP_BY: { value: RevenueByStaffGroupBy; label: string; description: string }[] = [
-  { value: "assignee", label: "Người phụ trách", description: "Doanh thu thuần theo người phụ trách đơn (đơn quầy tính cho người lên đơn)" },
-  { value: "creator", label: "Người lên đơn", description: "Doanh thu thuần theo người tạo đơn" },
-  { value: "collector", label: "Người thu tiền", description: "Tiền thực thu theo người thu (ngày thu tiền, không phải ngày hoàn thành đơn)" },
-]
-
-export function SalesByStaffReport() {
-  const { revenueDateRange, place, staffGroupBy: groupBy, setStaffGroupBy: setGroupBy } = useDashboard()
-
-  // Kỳ chưa quy ra ngày (lần tải đầu của trang): chưa gọi, vẫn hiện khung chờ.
-  const load = useCallback(
-    () =>
-      !revenueDateRange
-        ? new Promise<RevenueByStaffData>(() => {})
-        : statsApi.getRevenueByStaff({
-            fromDate: revenueDateRange.fromDate,
-            toDate: revenueDateRange.toDate,
-            branchId: place,
-            groupBy,
-          }),
-    [revenueDateRange, place, groupBy],
-  )
-  const { data, isLoading, failed } = useAsyncData(load)
-  const rows = data?.staff ?? []
-  const option = STAFF_GROUP_BY.find((o) => o.value === groupBy) ?? STAFF_GROUP_BY[0]
-
-  return (
-    <ReportTable
-      title="Doanh thu theo nhân viên"
-      description={option.description}
-      isLoading={isLoading && !data}
-      emptyText={failed ? "Không tải được doanh thu theo nhân viên" : undefined}
-      rows={rows}
-      rowKey={(row, index) => row.userId ?? `none-${index}`}
-      actions={
-        <Select value={groupBy} onValueChange={(value) => setGroupBy(value as RevenueByStaffGroupBy)}>
-          <SelectTrigger className="w-44 cursor-pointer" aria-label="Tính theo">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STAFF_GROUP_BY.map((o) => (
-              <SelectItem key={o.value} value={o.value} className="cursor-pointer">
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      }
-      columns={[
-        { header: "STT", className: "w-14", cell: (_, index) => index + 1 },
-        { header: "Nhân viên", cell: (row) => row.staffName ?? "Không gắn nhân viên", footer: "Cộng" },
-        ...revenueColumns(rows),
-      ]}
+      pagination={{
+        page,
+        pageSize,
+        total: data?.pagination?.total ?? rows.length,
+        unit: "điểm bán",
+        disabled: isLoading,
+        onPageChange: setPage,
+        onPageSizeChange: (size) => {
+          setPageSize(size)
+          setPage(1)
+        },
+      }}
     />
   )
 }

@@ -1,7 +1,7 @@
 // [Page – Đối soát tiền] Tình trạng tại thời điểm xem (không theo kỳ): tiền còn nằm ngoài sổ két / ngân hàng, cần người xử lý.
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { RefreshCw } from 'lucide-react'
 import { ExportExcelButton } from '@/components/export-excel-button'
@@ -14,8 +14,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { allows } from '@/components/sidebar/constants/role-permissions'
 import { useAuth } from '@/store/hooks/use-auth'
-import { useAuthStore } from '@/store/auth-store'
-import { locationFilter } from '@/lib/location-key'
+import { ReportLocationSelect } from '@/components/report-location-select'
+import { useReportLocation } from '@/hooks/use-report-location'
 import { statsApi } from '@/lib/api/stats'
 import { SEPAY_OUTCOME_LABELS, SEPAY_REJECT_REASON_LABELS } from '@/types/sepay-transaction'
 import { categoryLabel, formatNumber, formatVND, negativeClass } from '@/lib/stats-format'
@@ -60,12 +60,20 @@ function Section({
 
 const Empty = ({ text }: { text: string }) => <p className="py-2 text-sm text-muted-foreground">{text}</p>
 
+/** Bọc Suspense vì nơi xem đọc từ URL (`useSearchParams`). */
 export default function UnreconciledPage() {
+  return (
+    <Suspense fallback={null}>
+      <Unreconciled />
+    </Suspense>
+  )
+}
+
+function Unreconciled() {
   const { user } = useAuth()
   const canSeeSepay = allows(user?.role, 'cash_flows', 'read')
-  const locationKey = useAuthStore((state) => state.locationKey)
-  const { branchId, warehouseId } = locationFilter(locationKey)
-  const place = branchId ?? warehouseId
+  const location = useReportLocation()
+  const { place } = location
   const [reloadKey, setReloadKey] = useState(0)
 
   const load = useCallback(() => statsApi.getUnreconciled({ branchId: place }), [place])
@@ -86,7 +94,8 @@ export default function UnreconciledPage() {
             : 'Tiền còn nằm ngoài sổ két và ngân hàng, cần người xử lý'
         }
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <ReportLocationSelect location={location} />
             <ExportExcelButton
               load={() => statsApi.exportUnreconciled({ branchId: place })}
               filename={`doi-soat-tien_${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })}.xlsx`}

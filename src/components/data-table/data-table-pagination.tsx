@@ -27,6 +27,8 @@ type Props = {
   onPageChange: (page: number) => void;
   /** Đổi số dòng mỗi trang; bên gọi tự quay về trang 1. */
   onPageSizeChange: (pageSize: number) => void;
+  /** Các lựa chọn số dòng mỗi trang; mặc định 10/20/30/50. */
+  pageSizeOptions?: number[];
 };
 
 // Thanh phân trang dùng chung cho mọi bảng (client, server hay bảng thô): chọn số dòng mỗi trang,
@@ -41,6 +43,7 @@ export function DataTablePagination({
   disabled = false,
   onPageChange,
   onPageSizeChange,
+  pageSizeOptions = PAGE_SIZE_OPTIONS,
 }: Props) {
   // Bảng rỗng vẫn là "Trang 1 / 1", không phải "Trang 1 / 0".
   const lastPage = Math.max(pageCount, 1);
@@ -67,7 +70,7 @@ export function DataTablePagination({
             <SelectValue placeholder={pageSize} />
           </SelectTrigger>
           <SelectContent side="top">
-            {PAGE_SIZE_OPTIONS.map((option) => (
+            {pageSizeOptions.map((option) => (
               <SelectItem key={option} value={`${option}`}>
                 {option}
               </SelectItem>

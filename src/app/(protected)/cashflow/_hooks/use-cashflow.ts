@@ -3,8 +3,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/store/auth-store'
-import { locationFilter } from '@/lib/location-key'
 import {
   statsApi,
   type Cashflow,
@@ -13,30 +11,22 @@ import {
   type CashflowList,
 } from '@/lib/api/stats'
 
-export type CashflowRange = '7d' | '30d' | '90d' | '12m'
 export type FlowTypeFilter = 'ALL' | 'INCOME' | 'EXPENSE'
 export type FlowPrefixFilter = 'ALL' | 'ORD' | 'SUP'
 export type CategoryFilter = 'ALL' | CashflowCategory
 export type FundFilter = 'ALL' | CashflowFund
 
-const RANGE_DAYS: Record<CashflowRange, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-  '12m': 365,
-}
-
 const DEFAULT_PAGE_SIZE = 15
 
-function toDateOnly(date: Date): string {
-  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+/** Bộ lọc chung của các trang báo cáo: kỳ (`YYYY-MM-DD`, giờ VN) và nơi, do trang đọc từ URL. Đổi kỳ / nơi thì trang tự về trang 1 (`setPage`). */
+export interface CashflowScope {
+  fromDate: string
+  toDate: string
+  branchId?: string
+  warehouseId?: string
 }
 
-export function useCashflow() {
-  const locationKey = useAuthStore((state) => state.locationKey)
-  const { branchId, warehouseId } = locationFilter(locationKey)
-
-  const [range, setRangeState] = useState<CashflowRange>('30d')
+export function useCashflow({ fromDate, toDate, branchId, warehouseId }: CashflowScope) {
   const [flowType, setFlowTypeState] = useState<FlowTypeFilter>('ALL')
   const [flow, setFlowState] = useState<FlowPrefixFilter>('ALL')
   const [category, setCategoryState] = useState<CategoryFilter>('ALL')
@@ -48,11 +38,7 @@ export function useCashflow() {
   const [list, setList] = useState<CashflowList | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Đổi bộ lọc bất kỳ sẽ về trang đầu. Reset trong setter (không dùng effect) để tránh render lặp; chi nhánh/kho đang chọn ở sidebar cũng lọc sổ.
-  const setRange = useCallback((value: CashflowRange) => {
-    setRangeState(value)
-    setPage(1)
-  }, [])
+  // Đổi bộ lọc bất kỳ sẽ về trang đầu. Reset trong setter (không dùng effect) để tránh render lặp.
   const setFlowType = useCallback((value: FlowTypeFilter) => {
     setFlowTypeState(value)
     setPage(1)
@@ -77,14 +63,7 @@ export function useCashflow() {
   const fetchAll = useCallback(async () => {
     setIsLoading(true)
     try {
-      const toDate = new Date()
-      const fromDate = new Date(toDate.getTime() - RANGE_DAYS[range] * 24 * 60 * 60 * 1000)
-      const dateParams = {
-        fromDate: toDateOnly(fromDate),
-        toDate: toDateOnly(toDate),
-        branchId,
-        warehouseId,
-      }
+      const dateParams = { fromDate, toDate, branchId, warehouseId }
       const flowTypeParam = flowType === 'ALL' ? undefined : flowType
       const flowParam = flow === 'ALL' ? undefined : flow
       const categoryParam = category === 'ALL' ? undefined : category
@@ -117,7 +96,7 @@ export function useCashflow() {
     } finally {
       setIsLoading(false)
     }
-  }, [range, flowType, flow, category, fund, branchId, warehouseId, page, pageSize])
+  }, [fromDate, toDate, flowType, flow, category, fund, branchId, warehouseId, page, pageSize])
 
   useEffect(() => {
     fetchAll()
@@ -127,8 +106,6 @@ export function useCashflow() {
     summary,
     list,
     isLoading,
-    range,
-    setRange,
     flowType,
     setFlowType,
     flow,

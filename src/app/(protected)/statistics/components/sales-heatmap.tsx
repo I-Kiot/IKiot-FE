@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useDashboard } from "./dashboard-provider"
+import type { SalesHeatmap as SalesHeatmapData } from "@/lib/api/stats"
 import { formatCompactVND, formatNumber } from "@/lib/stats-format"
 
 // Thứ Hai đứng đầu như tuần làm việc ở Việt Nam; giá trị là DOW của Postgres (0 = Chủ nhật).
@@ -19,8 +19,7 @@ const WEEKDAYS = [
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 
 /** Lúc quầy đông khách: doanh thu theo thứ x giờ trong ngày địa phương của cửa hàng. */
-export function SalesHeatmap() {
-  const { salesHeatmap, isLoading } = useDashboard()
+export function SalesHeatmap({ salesHeatmap, isLoading }: { salesHeatmap: SalesHeatmapData | null; isLoading: boolean }) {
 
   const { grid, max, bestSlot } = useMemo(() => {
     const grid = new Map<string, { revenue: number; orderCount: number }>()

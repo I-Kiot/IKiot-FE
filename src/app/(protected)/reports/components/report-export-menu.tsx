@@ -12,32 +12,30 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { statsApi } from "@/lib/api/stats"
 import { saveBlob } from "@/lib/download-file"
-import { locationFilter } from "@/lib/location-key"
-import { useAuthStore } from "@/store/auth-store"
 import { useDashboard } from "./dashboard-provider"
 
-/** Tab có bảng số liệu xuất được: tên báo cáo và tên file (cùng tên server đặt). Tab "Phân tích" là biểu đồ nên không có ở đây. */
+/** Các tab của trang Tổng hợp: tên báo cáo và tên file (cùng tên server đặt). */
 export const EXPORTABLE_TABS: Record<string, { label: string; slug: string }> = {
   result: { label: "Kết quả bán hàng", slug: "ket-qua-ban-hang" },
   time: { label: "Doanh thu theo thời gian", slug: "doanh-thu-theo-thoi-gian" },
   product: { label: "Doanh thu theo hàng hóa", slug: "doanh-thu-theo-hang-hoa" },
-  branch: { label: "Doanh thu theo chi nhánh", slug: "doanh-thu-theo-chi-nhanh" },
-  staff: { label: "Doanh thu theo nhân viên", slug: "doanh-thu-theo-nhan-vien" },
+  branch: { label: "Doanh thu theo điểm bán", slug: "doanh-thu-theo-diem-ban" },
   customer: { label: "Doanh thu theo khách hàng", slug: "doanh-thu-theo-khach-hang" },
   orders: { label: "Đơn hàng theo trạng thái", slug: "don-hang-theo-trang-thai" },
   cash: { label: "Thu chi", slug: "thu-chi" },
   inventory: { label: "Tồn kho", slug: "ton-kho" },
 }
 
-/** Nút xuất Excel của trang Báo cáo: xuất riêng báo cáo đang xem, hoặc tất cả báo cáo trong một file nhiều sheet. */
+/** Nút xuất Excel của trang Tổng hợp: xuất riêng báo cáo đang xem, hoặc mọi tab trong một file nhiều sheet. */
 export function ReportExportMenu() {
-  const { revenueDateRange, activeTab, staffGroupBy, lowStockThreshold } = useDashboard()
-  const locationKey = useAuthStore((state) => state.locationKey)
-  const { branchId, warehouseId } = locationFilter(locationKey)
+  const { revenueDateRange, activeTab, lowStockThreshold, location } = useDashboard()
+  const { branchId, warehouseId } = location
   const [exporting, setExporting] = useState(false)
 
   if (!revenueDateRange) return null
-  const current = EXPORTABLE_TABS[activeTab]
+  // Tab "Theo điểm bán" ẩn khi đang xem một nơi: lưới về tab đầu, nút xuất cũng vậy.
+  const tab = activeTab === "branch" && !location.isAll ? "result" : activeTab
+  const current = EXPORTABLE_TABS[tab]
   const { fromDate, toDate, groupBy } = revenueDateRange
 
   const exportFile = async (section?: string) => {
@@ -50,10 +48,9 @@ export function ReportExportMenu() {
         warehouseId,
         groupBy,
         section,
-        staffGroupBy,
         lowStockThreshold,
       })
-      const slug = section ? EXPORTABLE_TABS[section].slug : "bao-cao-ban-hang"
+      const slug = section ? EXPORTABLE_TABS[section].slug : "bao-cao-tong-hop"
       saveBlob(blob, `${slug}_${fromDate}_${toDate}.xlsx`)
     } catch {
       toast.error("Xuất file thất bại. Vui lòng thử lại.")
@@ -73,7 +70,7 @@ export function ReportExportMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
         {current ? (
-          <DropdownMenuItem className="cursor-pointer items-start" onSelect={() => exportFile(activeTab)}>
+          <DropdownMenuItem className="cursor-pointer items-start" onSelect={() => exportFile(tab)}>
             <FileSpreadsheet className="mt-0.5 size-4" />
             <div>
               <p className="font-medium">Báo cáo đang xem</p>

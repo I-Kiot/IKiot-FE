@@ -12,7 +12,7 @@ export function getSidebar(role?: string): NavGroup[] {
 }
 
 /**
- * `sidebarRoleConfig` quy định loại tài khoản tới được đâu; bộ lọc quyền quyết định role này được thấy gì. Cha có mọi con bị lọc thì bị ẩn; leaf đi qua `filterLeafNavItems`.
+ * `sidebarRoleConfig` quy định loại tài khoản tới được đâu; bộ lọc quyền quyết định role này được thấy gì. Cha có mọi con bị lọc thì bị ẩn; leaf và mục con có URL trong `nav-leaf-permissions.ts` đi qua `filterLeafNavItems`.
  * Sidebar và `RoutePermissionGuard` cùng dùng hàm này, nên màn ẩn khỏi menu cũng bị chặn khi gõ URL tay.
  */
 export function getFilteredSidebar(role?: string | null): NavGroup[] {
@@ -24,8 +24,11 @@ export function getFilteredSidebar(role?: string | null): NavGroup[] {
           item.items
             ? {
                 ...item,
-                items: filterOrderFlowNavItems(
-                  filterExchangeNavItems(filterHrNavItems(item.items, role), role),
+                items: filterLeafNavItems(
+                  filterOrderFlowNavItems(
+                    filterExchangeNavItems(filterHrNavItems(item.items, role), role),
+                    role,
+                  ),
                   role,
                 ),
               }

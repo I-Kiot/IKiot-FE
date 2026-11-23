@@ -11,12 +11,12 @@ import {
   Megaphone,
   LifeBuoy,
   MessageSquarePlus,
-  Wallet,
   Landmark,
   Vault,
   PackageCheck,
   Truck,
   BarChart3,
+  ChartLine,
   Factory,
 } from "lucide-react";
 import { type NavItem } from "./types";
@@ -27,16 +27,26 @@ export const sidebarItems = {
     url: "/dashboard",
     icon: LayoutDashboard,
   },
-  // Phân tích sâu tách khỏi dashboard tổng quan (2026-10-20).
+  // Phân tích sâu tách khỏi dashboard tổng quan (2026-10-20). Từ 2026-11-23 là nhóm: Tổng hợp giữ các tab cũ,
+  // nhân viên / sổ doanh thu / sổ thu chi (trước là mục riêng ngoài nhóm) / đối soát tiền là mục riêng; doanh số từng điểm bán xem bằng dropdown nơi + tab "Theo điểm bán" trong Tổng hợp (trước là nút trên đầu trang Báo cáo). Mọi mục cần `reports:read` (nav-leaf-permissions.ts).
   baoCao: {
     title: "Báo cáo",
-    url: "/reports",
+    url: "#",
     icon: BarChart3,
+    items: [
+      { title: "Tổng hợp", url: "/reports" },
+      { title: "Nhân viên", url: "/reports/staff" },
+      { title: "Sổ doanh thu", url: "/reports/sales-journal" },
+      // URL giữ nguyên `/cashflow` (công nợ NCC, đối soát tiền đang link tới); quyền `reports:read` như trước.
+      { title: "Sổ thu chi", url: "/cashflow" },
+      { title: "Đối soát tiền", url: "/reports/unreconciled" },
+    ],
   },
-  soThuChi: {
-    title: "Sổ thu chi",
-    url: "/cashflow",
-    icon: Wallet,
+  // Biểu đồ tăng trưởng, tách khỏi trang Báo cáo (2026-11-23).
+  thongKe: {
+    title: "Thống kê",
+    url: "/statistics",
+    icon: ChartLine,
   },
   nhanVien: {
     title: "Nhân viên",
