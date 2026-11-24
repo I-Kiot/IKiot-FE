@@ -7,16 +7,20 @@
 // FIREBASE_PRIVATE_KEY vào đây.
 //
 // Dùng bản "compat" vì service worker không hỗ trợ ES module import.
-importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
+importScripts(
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
+);
+importScripts(
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js",
+);
 
 firebase.initializeApp({
-  apiKey: "AIzaSyD5loWE4eQZC3MtNiU8YcU71bSdpYJ25D0",
-  authDomain: "ikiot-70cce.firebaseapp.com",
-  projectId: "ikiot-70cce",
-  storageBucket: "ikiot-70cce.firebasestorage.app",
-  messagingSenderId: "579327926276",
-  appId: "1:579327926276:web:30b4559738b7ff2d1cd551",
+  apiKey: "AIzaSyA64E_dBjQw7zEr08gSADH3A5ejVyY42dk",
+  authDomain: "ikiot-ms.firebaseapp.com",
+  projectId: "ikiot-ms",
+  storageBucket: "ikiot-ms.firebasestorage.app",
+  messagingSenderId: "742070044187",
+  appId: "1:742070044187:web:d7761df98368cd80c05abe",
 });
 
 const messaging = firebase.messaging();
