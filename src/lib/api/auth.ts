@@ -7,31 +7,96 @@ import type { User } from "../auth";
 import type { LocationRef } from "@/types/location";
 import { resetSocket } from "../socket";
 
-/** Đăng nhập, nhận token phiên và hồ sơ người dùng. */
-export async function loginUser(data: LoginInput) {
+/** Phiên đăng nhập: token + hồ sơ người dùng. */
+export interface SessionResult {
+  accessToken: string;
+  refreshToken: string;
+  user?: User;
+}
+
+/** Thử thách OTP qua email mà backend trả thay cho phiên (đăng nhập lần đầu, đăng ký, quên mật khẩu). */
+export interface OtpChallenge {
+  requiresOtp: true;
+  challengeToken: string;
+  /** Email đã che, ví dụ `ng***@gmail.com`. */
+  sentTo: string;
+  expiresInSeconds: number;
+  resendAfterSeconds: number;
+}
+
+/** Kết quả đăng nhập: hoặc phiên, hoặc thử thách OTP cần hoàn tất. */
+export type LoginResult = SessionResult | OtpChallenge;
+
+export function isOtpChallenge(result: unknown): result is OtpChallenge {
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    (result as { requiresOtp?: unknown }).requiresOtp === true
+  );
+}
+
+/** Lấy payload trong envelope `{ success, message, data }` (chịu được cả dạng không bọc). */
+/** Payload đăng nhập / thử thách OTP của backend (mọi trường tuỳ chọn vì hai dạng dùng chung). */
+interface AuthPayload extends Partial<OtpChallenge> {
+  accessToken?: string;
+  token?: string;
+  refreshToken?: string;
+  user?: ApiSessionUser;
+  resetToken?: string;
+}
+
+function unwrap(body: { data?: AuthPayload } & AuthPayload): AuthPayload {
+  return body?.data ?? body;
+}
+
+function toChallenge(payload: AuthPayload): OtpChallenge {
+  return {
+    requiresOtp: true,
+    challengeToken: payload.challengeToken as string,
+    sentTo: payload.sentTo as string,
+    expiresInSeconds: payload.expiresInSeconds as number,
+    resendAfterSeconds: payload.resendAfterSeconds as number,
+  };
+}
+
+function toSession(payload: AuthPayload): SessionResult {
+  const accessToken = (payload?.accessToken || payload?.token) as string;
+  const refreshToken = payload?.refreshToken || accessToken;
+  return { accessToken, refreshToken, user: normalizeSessionUser(payload?.user) };
+}
+
+/**
+ * Đăng nhập bằng SĐT hoặc email (`identifier`). Tài khoản chưa xác minh email nhận về thử thách OTP
+ * thay vì phiên; hoàn tất bằng `verifyLoginOtp`.
+ */
+export async function loginUser(data: LoginInput): Promise<LoginResult> {
   const response = await client.post("/auth/login", {
-    phoneNumber: data.phone,
+    identifier: data.identifier.trim(),
     password: data.password,
   });
+  const payload = unwrap(response.data);
+  return payload?.requiresOtp ? toChallenge(payload) : toSession(payload);
+}
 
-  const accessToken =
-    response.data?.accessToken ||
-    response.data?.token ||
-    response.data?.data?.accessToken ||
-    response.data?.data?.token;
+/** Nhập mã OTP của thử thách đăng nhập / đăng ký để nhận phiên. */
+export async function verifyLoginOtp(
+  challengeToken: string,
+  otpCode: string,
+): Promise<SessionResult> {
+  const response = await client.post("/auth/login/verify-otp", {
+    challengeToken,
+    otpCode,
+  });
+  return toSession(unwrap(response.data));
+}
 
-  const refreshToken =
-    response.data?.refreshToken ||
-    response.data?.data?.refreshToken ||
-    accessToken;
-
-  const user =
-    normalizeSessionUser(response.data?.user ?? response.data?.data?.user) ?? {
-      phoneNumber: data.phone,
-      name: "User",
-    };
-
-  return { accessToken, refreshToken, user };
+/** Gửi lại mã cho một thử thách đang mở. Trả lại thông tin gửi mới (không đổi `challengeToken`). */
+export async function resendOtp(challengeToken: string) {
+  const response = await client.post("/auth/resend-otp", { challengeToken });
+  return unwrap(response.data) as Pick<
+    OtpChallenge,
+    "sentTo" | "expiresInSeconds" | "resendAfterSeconds"
+  >;
 }
 
 /**
@@ -55,46 +120,31 @@ export async function loginWithGoogle() {
     platform: "web",
   });
 
-  const accessToken =
-    response.data?.accessToken || response.data?.data?.accessToken;
-  const refreshToken =
-    response.data?.refreshToken ||
-    response.data?.data?.refreshToken ||
-    accessToken;
-  const user = normalizeSessionUser(
-    response.data?.user ?? response.data?.data?.user,
-  );
-
-  return { accessToken, refreshToken, user };
+  return toSession(unwrap(response.data));
 }
 
-/** Kiểm tra SĐT / tên cửa hàng đã được dùng chưa, trước khi gửi OTP để báo ngay và không tốn SMS. */
-export async function checkRegistrationAvailability(
-  phoneNumber: string,
-  tenantName: string,
-) {
-  const response = await client.post("/auth/check-availability", {
-    phoneNumber,
-    tenantName,
-  });
+/** Kiểm tra SĐT / email / tên cửa hàng đã được dùng chưa, để báo ngay trước khi tạo tài khoản. Chỉ gửi các trường có giá trị. */
+export async function checkRegistrationAvailability(fields: {
+  phoneNumber?: string;
+  email?: string;
+  tenantName?: string;
+}) {
+  const response = await client.post("/auth/check-availability", fields);
   return response.data.data as {
-    phoneNumberTaken: boolean;
-    tenantNameTaken: boolean;
+    phoneNumberTaken?: boolean;
+    emailTaken?: boolean;
+    tenantNameTaken?: boolean;
   };
 }
 
-/** Gửi OTP qua SMS (eSMS) tới số điện thoại trước khi đăng ký. */
-export async function sendOtpRequest(phoneNumber: string) {
-  const response = await client.post("/auth/send-otp", { phoneNumber });
-  return response.data;
-}
-
 /**
- * Đăng ký user và tenant. `otpCode` là mã 6 số nhận qua SMS (hoặc "DEV_BYPASS" khi bỏ qua OTP ở dev).
+ * Đăng ký chủ cửa hàng. Backend tạo tài khoản chưa xác minh, gửi OTP qua email và trả thử thách (không có token);
+ * hoàn tất bằng `verifyLoginOtp`.
  */
-export async function registerUser(data: SignupInput, otpCode: string) {
+export async function registerUser(data: SignupInput): Promise<OtpChallenge> {
   const response = await client.post("/auth/register", {
     phoneNumber: data.phoneNumber,
+    email: data.email.trim(),
     password: data.password,
     firstName: data.firstName,
     lastName: data.lastName,
@@ -102,9 +152,33 @@ export async function registerUser(data: SignupInput, otpCode: string) {
     tenantPhoneNumber: null,
     tenantMainAddress: null,
     tenantTaxNumber: null,
+  });
+  return toChallenge(unwrap(response.data));
+}
+
+/** Quên mật khẩu bước 1: gửi OTP tới email của tài khoản (nhập SĐT hoặc email). */
+export async function sendForgotPasswordOtp(identifier: string): Promise<OtpChallenge> {
+  const response = await client.post("/auth/send-forgot-password-otp", {
+    identifier: identifier.trim(),
+  });
+  return toChallenge(unwrap(response.data));
+}
+
+/** Quên mật khẩu bước 2: đổi mã OTP lấy `resetToken` (dùng một lần, 15 phút). */
+export async function verifyForgotPasswordOtp(
+  challengeToken: string,
+  otpCode: string,
+) {
+  const response = await client.post("/auth/verify-forgot-password-otp", {
+    challengeToken,
     otpCode,
   });
-  return response.data;
+  return unwrap(response.data).resetToken as string;
+}
+
+/** Quên mật khẩu bước 3: đặt mật khẩu mới bằng `resetToken`. */
+export async function resetPassword(token: string, newPassword: string) {
+  await client.post("/auth/reset-password", { token, newPassword });
 }
 
 /** Đăng xuất: gọi API rồi xoá dữ liệu local. */
