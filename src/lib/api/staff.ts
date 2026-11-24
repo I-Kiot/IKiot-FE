@@ -109,6 +109,9 @@ function buildUpdateBody(payload: UpdateStaffPayload) {
     data.branchId = payload.branchId;
   } else if (payload.warehouseId) {
     data.warehouseId = payload.warehouseId;
+  } else if (payload.clearLocation) {
+    // Chỉ một key, như trên: `branchId: null` là đủ để server xoá nơi làm việc (chi nhánh hay kho đều là `locationId`).
+    data.branchId = null;
   }
 
   const profile = buildProfileBody(

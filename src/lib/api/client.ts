@@ -96,6 +96,9 @@ client.interceptors.response.use(
       originalRequest.url?.includes("/auth/firebase-login") ||
       originalRequest.url?.includes("/auth/register") ||
       originalRequest.url?.includes("/auth/refresh") ||
+      originalRequest.url?.includes("/auth/resend-otp") ||
+      originalRequest.url?.includes("/auth/send-forgot-password-otp") ||
+      originalRequest.url?.includes("/auth/verify-forgot-password-otp") ||
       originalRequest.url?.includes("/auth/forgot-password") ||
       originalRequest.url?.includes("/auth/reset-password");
 

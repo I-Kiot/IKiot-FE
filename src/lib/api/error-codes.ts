@@ -12,6 +12,7 @@ export const ERROR_MESSAGES = {
   ACCOUNT_HAS_NO_BRANCH: "Tài khoản chưa được phân về chi nhánh nào",
   ACCOUNT_HAS_NO_LOCATION: "Tài khoản chưa được phân về chi nhánh hoặc kho nào",
   ACCOUNT_HAS_NO_TENANT: "Tài khoản không thuộc cửa hàng nào",
+  ACCOUNT_EMAIL_MISSING: "Tài khoản chưa có email nên chưa thể gửi mã xác minh. Vui lòng nhờ quản lý cập nhật email cho tài khoản",
   ACCOUNT_INACTIVE: "Tài khoản đã bị khóa hoặc chưa kích hoạt",
   ACCOUNT_NOT_FOUND_OR_LOCKED: "Tài khoản không tồn tại hoặc đã bị khóa",
   ACCOUNT_NOT_REGISTERED: "Email này chưa được đăng ký trong hệ thống",
@@ -48,6 +49,7 @@ export const ERROR_MESSAGES = {
   CUSTOMER_PHONE_TAKEN: "Số điện thoại này đã thuộc về một khách hàng khác",
   DATE_RANGE_INVALID: "fromDate phải trước hoặc bằng toDate",
   EMAIL_ALREADY_IN_USE: "Email đã được sử dụng",
+  EMAIL_NOT_CONFIGURED: "Dịch vụ gửi email chưa được cấu hình trên máy chủ",
   FOREIGN_KEY_VIOLATION: "Dữ liệu liên kết không tồn tại hoặc đang được sử dụng",
   GOOGLE_CALENDAR_NOT_CONFIGURED: "Chưa cấu hình GOOGLE_CALENDAR_API_KEY trên máy chủ",
   GOOGLE_CALENDAR_SYNC_FAILED: "Đồng bộ Google Calendar thất bại",
@@ -99,14 +101,17 @@ export const ERROR_MESSAGES = {
   ORDER_STATUS_TRANSITION_INVALID: "Không thể chuyển đơn hàng sang trạng thái này",
   ORDER_TRANSFER_AMOUNT_SHORT: "Số tiền chuyển khoản nhỏ hơn số phải trả",
   OTP_EXPIRED: "Mã OTP đã hết hạn hoặc chưa được yêu cầu. Vui lòng lấy mã mới.",
+  OTP_CHALLENGE_INVALID: "Phiên xác minh không còn hợp lệ. Vui lòng đăng nhập hoặc thử lại từ đầu",
   OTP_INVALID: "Mã OTP không đúng",
-  OTP_SEND_FAILED: "Không gửi được mã OTP qua SMS. Vui lòng thử lại sau ít phút.",
+  OTP_RESEND_TOO_SOON: "Bạn vừa yêu cầu mã, vui lòng đợi một lúc rồi gửi lại",
+  OTP_TOO_MANY_ATTEMPTS: "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới",
+  OTP_SEND_FAILED: "Không gửi được mã OTP qua email. Vui lòng thử lại sau ít phút.",
   PASSWORD_CONFIRMATION_MISMATCH: "Mật khẩu nhập lại không khớp",
   PASSWORD_NOT_SET: "Tài khoản này chưa đặt mật khẩu",
   PERMISSION_DENIED: "Bạn không có quyền thực hiện thao tác này",
   PHONE_ALREADY_REGISTERED: "Số điện thoại đã được đăng ký",
   PHONE_LENGTH_INVALID: "Số điện thoại phải gồm đúng 10 chữ số",
-  PHONE_NOT_REGISTERED: "Số điện thoại chưa được đăng ký trong hệ thống hoặc tài khoản đã bị khóa.",
+  PHONE_NOT_REGISTERED: "Số điện thoại hoặc email chưa được đăng ký trong hệ thống hoặc tài khoản đã bị khóa.",
   PHONE_PREFIX_INVALID: "Đầu số điện thoại di động Việt Nam không hợp lệ",
   PHONE_REQUIRED: "Số điện thoại là bắt buộc",
   PHONE_RESERVED_RANGE: "Số điện thoại này không dùng làm số nhân viên được",
@@ -142,6 +147,7 @@ export const ERROR_MESSAGES = {
   REPORT_RANGE_TOO_LONG: "Khoảng thời gian báo cáo vượt quá giới hạn cho phép",
   REQUIRED_FIELD_MISSING: "Thiếu trường bắt buộc",
   RESET_TOKEN_INVALID: "Mã xác thực đặt lại mật khẩu không hợp lệ hoặc đã hết hạn",
+  RESET_TOKEN_USED: "Mã đặt lại mật khẩu đã được sử dụng. Vui lòng yêu cầu mã mới",
   RESET_TOKEN_WRONG_TYPE: "Token không hợp lệ cho thao tác đặt lại mật khẩu",
   ROLE_BEYOND_GRANT: "Không thể gán vai trò có quyền vượt quá quyền của bạn",
   ROLE_IN_USE: "Không thể xoá vai trò đang được gán cho nhân viên. Hãy chuyển họ sang vai trò khác trước.",
@@ -413,6 +419,10 @@ interface ApiErrorBody {
   error?: string;
   /** Chi tiết đi kèm, hình dạng tuỳ mã lỗi - chỉ đọc qua type guard (vd. `shortStockLinesOf`). */
   errors?: unknown;
+  /** `OTP_INVALID`: số lần nhập còn lại. */
+  attemptsLeft?: number;
+  /** `OTP_RESEND_TOO_SOON`: số giây phải đợi để gửi lại. */
+  retryAfterSeconds?: number;
 }
 
 /** Lấy thân lỗi ra khỏi một lỗi axios bất kỳ. */
