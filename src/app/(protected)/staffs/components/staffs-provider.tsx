@@ -57,6 +57,8 @@ type StaffsContextType = {
   warehouseOptionsFailed: boolean;
   /** Xưởng (NCC loại WORKSHOP) để gắn nhân viên xưởng; rỗng nếu shop chưa có xưởng hoặc tài khoản không xem được NCC. */
   workshopOptions: { value: string; label: string }[];
+  /** Tải lại danh sách chi nhánh / kho / xưởng. Form nhân viên gọi mỗi lần mở, vì chi nhánh/kho/xưởng có thể vừa được tạo ở màn khác sau khi trang này đã tải. */
+  reloadWorkplaceOptions: () => Promise<void>;
   /** Key switcher chi nhánh/kho toàn cục ("all" | "branch-<id>" | "warehouse-<id>"), ưu tiên hơn bộ lọc thủ công bên dưới. */
   locationKey: string;
   open: StaffsDialogType | null;
@@ -166,10 +168,8 @@ export function StaffsProvider({
     return () => clearTimeout(timer);
   }, [keywordInput, canFetch]);
 
-  useEffect(() => {
+  const reloadWorkplaceOptions = useCallback(async () => {
     if (!canFetch) return;
-
-    async function loadFilterOptions() {
       try {
         const response = await branchApi.getList({ limit: 100 });
         setBranchOptions(
@@ -207,10 +207,14 @@ export function StaffsProvider({
       } catch {
         setWorkshopOptions([]);
       }
-    }
-
-    loadFilterOptions();
   }, [canFetch]);
+
+  useEffect(() => {
+    async function loadWorkplaceOptions() {
+      await reloadWorkplaceOptions();
+    }
+    loadWorkplaceOptions();
+  }, [reloadWorkplaceOptions]);
 
   const fetchStaffs = useCallback(async () => {
     if (!canFetch) return;
@@ -447,6 +451,7 @@ useEffect(() => {
         warehouseOptions,
         warehouseOptionsFailed,
         workshopOptions,
+        reloadWorkplaceOptions,
         locationKey,
         open,
         setOpen,

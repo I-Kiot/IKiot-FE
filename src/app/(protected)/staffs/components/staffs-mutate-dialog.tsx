@@ -62,7 +62,6 @@ import {
   shouldLockBranchOnCreate,
 } from "@/components/sidebar/constants/role-permissions";
 import {
-  validateStaffWorkplace,
 } from "@/app/(protected)/staffs/shared/staff-workplace";
 import { useStaffs } from "./staffs-provider";
 import { EmptyOptionsNotice, EmptyOptionsLink } from "@/components/empty-options-notice";
@@ -165,21 +164,59 @@ const profileFieldsSchema = {
   taxNumber: z.string().optional(),
 };
 
+/** Giá trị Select cho "chưa chọn xưởng" (Radix Select không nhận value rỗng). */
+const NO_WORKSHOP = "none";
+const workshopIdOf = (value?: string) => (value && value !== NO_WORKSHOP ? value : null);
+
+/** Nhân viên thuộc đúng một nơi: một chi nhánh, một kho, hoặc chỉ một xưởng (nhân viên xưởng không có địa điểm). Backend cũng bắt buộc như vậy. */
+const WORKPLACE_TYPE = {
+  BRANCH: "BRANCH",
+  WAREHOUSE: "WAREHOUSE",
+  WORKSHOP: "WORKSHOP",
+} as const;
+type WorkplaceType = (typeof WORKPLACE_TYPE)[keyof typeof WORKPLACE_TYPE];
+
+const WORKPLACE_TYPE_LABEL: Record<WorkplaceType, string> = {
+  BRANCH: "Chi nhánh",
+  WAREHOUSE: "Kho hàng",
+  WORKSHOP: "Xưởng",
+};
+
+function workplaceTypeOf(staff: Staff): WorkplaceType | "" {
+  if (staff.branchId) return WORKPLACE_TYPE.BRANCH;
+  if (staff.warehouseId) return WORKPLACE_TYPE.WAREHOUSE;
+  if (staff.workshopId) return WORKPLACE_TYPE.WORKSHOP;
+  return "";
+}
+
 function applyWorkplaceValidation(
-  data: { branchId?: string; warehouseId?: string },
+  data: {
+    workplaceType?: string;
+    branchId?: string;
+    warehouseId?: string;
+    workshopId?: string;
+  },
   ctx: z.RefinementCtx,
 ) {
-  // Một quy tắc cho mọi tài khoản: đúng một nơi làm việc (chi nhánh hoặc kho), backend cũng kiểm tra như vậy.
-  const workplaceError = validateStaffWorkplace(
-    data.branchId,
-    data.warehouseId,
-  );
-  if (workplaceError) {
-    ctx.addIssue({
-      code: "custom",
-      message: workplaceError,
-      path: ["branchId"],
-    });
+  switch (data.workplaceType) {
+    case WORKPLACE_TYPE.BRANCH:
+      if (!data.branchId?.trim())
+        ctx.addIssue({ code: "custom", message: "Chọn chi nhánh", path: ["branchId"] });
+      return;
+    case WORKPLACE_TYPE.WAREHOUSE:
+      if (!data.warehouseId?.trim())
+        ctx.addIssue({ code: "custom", message: "Chọn kho hàng", path: ["warehouseId"] });
+      return;
+    case WORKPLACE_TYPE.WORKSHOP:
+      if (!workshopIdOf(data.workshopId))
+        ctx.addIssue({ code: "custom", message: "Chọn xưởng", path: ["workshopId"] });
+      return;
+    default:
+      ctx.addIssue({
+        code: "custom",
+        message: "Chọn nhân viên thuộc chi nhánh, kho hay xưởng",
+        path: ["workplaceType"],
+      });
   }
 }
 
@@ -228,6 +265,7 @@ const createFormSchema = z
       }),
     email: requiredEmailSchema,
     roleId: z.string().min(1, "Vai trò là bắt buộc"),
+    workplaceType: z.string().optional(),
     branchId: z.string().optional(),
     warehouseId: z.string().optional(),
     workshopId: z.string().optional(),
@@ -251,6 +289,7 @@ const editFormSchema = z
     lastName: z.string().trim().min(1, "Họ là bắt buộc").max(50, "Họ tối đa 50 ký tự"),
     email: optionalEmailSchema,
     roleId: z.string().min(1, "Vai trò là bắt buộc"),
+    workplaceType: z.string().optional(),
     branchId: z.string().optional(),
     warehouseId: z.string().optional(),
     workshopId: z.string().optional(),
@@ -263,10 +302,6 @@ const editFormSchema = z
     applyWorkplaceValidation(data, ctx);
   });
 
-/** Giá trị Select cho "không thuộc xưởng" (Radix Select không nhận value rỗng). */
-const NO_WORKSHOP = "none";
-const workshopIdOf = (value?: string) => (value && value !== NO_WORKSHOP ? value : null);
-
 type CreateFormValues = z.infer<typeof createFormSchema>;
 type EditFormValues = z.infer<typeof editFormSchema>;
 
@@ -276,6 +311,7 @@ function getEditDefaults(staff: Staff): EditFormValues {
     lastName: staff.lastName ?? "",
     email: staff.email ?? "",
     roleId: staff.roleId ?? "",
+    workplaceType: workplaceTypeOf(staff),
     branchId: staff.branchId ?? "",
     warehouseId: staff.warehouseId ?? "",
     workshopId: staff.workshopId ?? NO_WORKSHOP,
@@ -296,6 +332,7 @@ const EMPTY_CREATE_VALUES: CreateFormValues = {
   phoneNumber: "",
   email: "",
   roleId: "",
+  workplaceType: "",
   branchId: "",
   warehouseId: "",
   workshopId: NO_WORKSHOP,
@@ -335,6 +372,7 @@ export function StaffsMutateDialog({
     warehouseOptions,
     warehouseOptionsFailed,
     workshopOptions,
+    reloadWorkplaceOptions,
   } = useStaffs();
 
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
@@ -356,6 +394,16 @@ export function StaffsMutateDialog({
   // Mọi chi nhánh/kho đều chọn được. Người quản lý là Branch.managerId, bổ nhiệm ở màn chi nhánh, nên thêm nhân viên vào chi nhánh không nói gì về ai quản lý.
   const visibleBranchOptions = branchOptions;
   const visibleWarehouseOptions = warehouseOptions;
+
+  const watchedWorkplaceType = form.watch("workplaceType");
+  // Kho chỉ hiện với tài khoản được gán kho; giữ loại hiện tại của nhân viên đang sửa để không mất lựa chọn.
+  const availableWorkplaceTypes: WorkplaceType[] = [
+    WORKPLACE_TYPE.BRANCH,
+    ...(canAssignWarehouse || watchedWorkplaceType === WORKPLACE_TYPE.WAREHOUSE
+      ? [WORKPLACE_TYPE.WAREHOUSE]
+      : []),
+    WORKPLACE_TYPE.WORKSHOP,
+  ];
 
   function clearAvatarBlobUrl() {
     if (avatarBlobUrlRef.current) {
@@ -398,6 +446,11 @@ export function StaffsMutateDialog({
 
 
 
+  // Chi nhánh/kho/xưởng có thể vừa được tạo ở màn khác sau khi trang nhân viên đã tải: lấy lại mỗi lần mở form.
+  useEffect(() => {
+    if (open) reloadWorkplaceOptions();
+  }, [open, reloadWorkplaceOptions]);
+
   useEffect(() => {
     if (!open) return;
     if (isEdit && currentRow) {
@@ -411,16 +464,31 @@ export function StaffsMutateDialog({
           : "";
       form.reset({
         ...EMPTY_CREATE_VALUES,
+        workplaceType: defaultBranchId ? WORKPLACE_TYPE.BRANCH : "",
         branchId: defaultBranchId,
         warehouseId: "",
       });
     }
   }, [open, isEdit, currentRow, form, lockBranchOnCreate]);
 
-  useEffect(() => {
-    if (!open || isEdit || canAssignWarehouse) return;
-    form.setValue("warehouseId", "");
-  }, [open, isEdit, canAssignWarehouse, form]);
+
+  /** Chỉ gửi nơi làm việc của loại đã chọn. Chuyển sang xưởng thì bỏ chi nhánh/kho (`clearLocation`); chuyển sang chi nhánh/kho thì bỏ gắn xưởng. */
+  function workplacePayload(
+    values: CreateFormValues | EditFormValues,
+    editing: boolean,
+  ) {
+    const type = values.workplaceType;
+    return {
+      branchId: type === WORKPLACE_TYPE.BRANCH ? values.branchId || null : null,
+      warehouseId:
+        type === WORKPLACE_TYPE.WAREHOUSE ? values.warehouseId || null : null,
+      workshopId:
+        type === WORKPLACE_TYPE.WORKSHOP ? workshopIdOf(values.workshopId) : null,
+      ...(editing && type === WORKPLACE_TYPE.WORKSHOP
+        ? { clearLocation: true }
+        : {}),
+    };
+  }
 
   async function onSubmit(data: CreateFormValues | EditFormValues) {
     const existingAvatarUrl = isEdit ? currentRow?.profile?.avatarUrl : undefined;
@@ -456,11 +524,7 @@ export function StaffsMutateDialog({
         // Thăng quản lý không làm ở form nhân viên: bổ nhiệm người điều hành chi nhánh/kho là PATCH /branches/:id/manager, làm ở màn chi nhánh/kho.
         if (canEditRoleWorkplace) {
           profilePayload.roleId = editData.roleId;
-          profilePayload.branchId = editData.branchId || null;
-          profilePayload.warehouseId = canAssignWarehouse
-            ? editData.warehouseId || null
-            : undefined;
-          profilePayload.workshopId = workshopIdOf(editData.workshopId);
+          Object.assign(profilePayload, workplacePayload(editData, true));
         }
 
         await handleEdit(currentRow.id, profilePayload);
@@ -472,11 +536,7 @@ export function StaffsMutateDialog({
           phoneNumber: normalizeStaffPhoneNumber(createData.phoneNumber),
           email: createData.email,
           roleId: createData.roleId,
-          branchId: createData.branchId || null,
-          warehouseId: canAssignWarehouse
-            ? createData.warehouseId || null
-            : undefined,
-          workshopId: workshopIdOf(createData.workshopId),
+          ...workplacePayload(createData, false),
           hireDate: normalizeDateInput(createData.hireDate),
           profile: buildProfilePayload({
             ...createData,
@@ -644,20 +704,56 @@ export function StaffsMutateDialog({
               />
 
               <FormField
+                control={form.control}
+                name="workplaceType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Thuộc về <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Đổi loại thì bỏ lựa chọn của loại cũ: nhân viên chỉ thuộc một nơi.
+                        form.setValue("branchId", "");
+                        form.setValue("warehouseId", "");
+                        form.setValue("workshopId", NO_WORKSHOP);
+                      }}
+                      value={field.value || ""}
+                      disabled={
+                        !canEditRoleWorkplace || (lockBranchOnCreate && !isEdit)
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger className="cursor-pointer w-full">
+                          <SelectValue placeholder="Chi nhánh, kho hay xưởng" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availableWorkplaceTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {WORKPLACE_TYPE_LABEL[type]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {watchedWorkplaceType === WORKPLACE_TYPE.BRANCH && (
+                <FormField
                   control={form.control}
                   name="branchId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Chi nhánh{" "}
-                        <span className="text-destructive">*</span>
+                        Chi nhánh <span className="text-destructive">*</span>
                       </FormLabel>
                       {visibleBranchOptions.length > 0 ? (
                         <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            form.setValue("warehouseId", "");
-                          }}
+                          onValueChange={field.onChange}
                           value={field.value || ""}
                           disabled={
                             !canEditRoleWorkplace ||
@@ -671,10 +767,7 @@ export function StaffsMutateDialog({
                           </FormControl>
                           <SelectContent>
                             {visibleBranchOptions.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
+                              <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -689,8 +782,9 @@ export function StaffsMutateDialog({
                     </FormItem>
                   )}
                 />
+              )}
 
-              {canAssignWarehouse && (
+              {watchedWorkplaceType === WORKPLACE_TYPE.WAREHOUSE && (
                 <FormField
                   control={form.control}
                   name="warehouseId"
@@ -701,10 +795,7 @@ export function StaffsMutateDialog({
                       </FormLabel>
                       {visibleWarehouseOptions.length > 0 ? (
                         <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            form.setValue("branchId", "");
-                          }}
+                          onValueChange={field.onChange}
                           value={field.value || ""}
                           disabled={!canEditRoleWorkplace}
                         >
@@ -715,10 +806,7 @@ export function StaffsMutateDialog({
                           </FormControl>
                           <SelectContent>
                             {visibleWarehouseOptions.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
+                              <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -728,9 +816,7 @@ export function StaffsMutateDialog({
                         <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-2">
                           {warehouseOptionsFailed
                             ? "Không tải được danh sách kho."
-                            : warehouseOptions.length > 0
-                              ? "Không có kho nào khả dụng."
-                              : "Hiện chưa có kho hàng nào trong hệ thống."}
+                            : "Hiện chưa có kho hàng nào trong hệ thống."}
                         </p>
                       )}
                       <FormMessage />
@@ -738,50 +824,63 @@ export function StaffsMutateDialog({
                   )}
                 />
               )}
-            </div>
 
-            {(workshopOptions.length > 0 || (isEdit && currentRow?.workshopId)) && (
-              <FormField
-                control={form.control}
-                name="workshopId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Thuộc xưởng</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || NO_WORKSHOP}
-                      disabled={!canEditRoleWorkplace}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="cursor-pointer w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value={NO_WORKSHOP}>Không thuộc xưởng</SelectItem>
-                        {workshopOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                        {/* Xưởng hiện tại không còn trong danh sách (không xem được NCC) vẫn phải hiện tên. */}
-                        {currentRow?.workshopId &&
-                          !workshopOptions.some((o) => o.value === currentRow.workshopId) && (
-                            <SelectItem value={currentRow.workshopId}>
-                              {currentRow.workshopName ?? "Xưởng hiện tại"}
-                            </SelectItem>
-                          )}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Nhân viên xưởng xem yêu cầu sản xuất của xưởng ở mọi kho và tạo phiếu giao. Vai trò
-                      cần quyền &quot;Giao hàng sản xuất (nhân viên xưởng)&quot;.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+              {watchedWorkplaceType === WORKPLACE_TYPE.WORKSHOP && (
+                <FormField
+                  control={form.control}
+                  name="workshopId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Xưởng <span className="text-destructive">*</span>
+                      </FormLabel>
+                      {workshopOptions.length > 0 || currentRow?.workshopId ? (
+                        <Select
+                          onValueChange={field.onChange}
+                          value={
+                            field.value && field.value !== NO_WORKSHOP
+                              ? field.value
+                              : ""
+                          }
+                          disabled={!canEditRoleWorkplace}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="cursor-pointer w-full">
+                              <SelectValue placeholder="Chọn xưởng" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {workshopOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                            {/* Xưởng hiện tại không còn trong danh sách (không xem được NCC) vẫn phải hiện tên. */}
+                            {currentRow?.workshopId &&
+                              !workshopOptions.some(
+                                (o) => o.value === currentRow.workshopId,
+                              ) && (
+                                <SelectItem value={currentRow.workshopId}>
+                                  {currentRow.workshopName ?? "Xưởng hiện tại"}
+                                </SelectItem>
+                              )}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-2">
+                          Hiện chưa có xưởng nào (nhà cung cấp loại Xưởng).
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Nhân viên xưởng xem yêu cầu sản xuất của xưởng ở mọi kho và tạo phiếu giao. Vai trò
+                        cần quyền &quot;Giao hàng sản xuất (nhân viên xưởng)&quot;.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
             <FormField
               control={form.control}

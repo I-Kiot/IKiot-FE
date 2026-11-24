@@ -108,6 +108,8 @@ export interface UpdateStaffPayload {
   warehouseId?: string | null;
   /** `null` bỏ gắn xưởng; `undefined` giữ nguyên. */
   workshopId?: string | null;
+  /** Bỏ gắn chi nhánh/kho (nhân viên chuyển sang làm cho xưởng): gửi `branchId: null`, server đặt `locationId` về null. */
+  clearLocation?: boolean;
   hireDate?: string;
   profile?: StaffProfilePayload;
   accountNote?: string;
