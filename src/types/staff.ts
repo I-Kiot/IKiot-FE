@@ -32,6 +32,8 @@ export interface Staff {
   fullName: string;
   phoneNumber: string;
   email?: string;
+  /** `null` = email chưa được xác minh bằng OTP. */
+  emailVerifiedAt?: string | null;
   roleId: string | null;
   roleName: string;
   status: StaffStatus;
@@ -83,7 +85,8 @@ export interface CreateStaffPayload {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  email?: string;
+  /** Bắt buộc: mã OTP đăng nhập lần đầu được gửi tới email này. */
+  email: string;
   roleId: string;
   branchId?: string | null;
   warehouseId?: string | null;

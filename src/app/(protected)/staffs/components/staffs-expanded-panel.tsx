@@ -138,7 +138,11 @@ export function StaffsExpandedPanel({
         <InfoItem
           icon={<Mail className="size-4" />}
           label="Email"
-          value={staff.email || "Chưa có email"}
+          value={
+            staff.email
+              ? `${staff.email}${staff.emailVerifiedAt ? "" : " (chưa xác minh)"}`
+              : "Chưa có email"
+          }
         />
         <InfoItem
           icon={<Building2 className="size-4" />}

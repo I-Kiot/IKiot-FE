@@ -67,15 +67,25 @@ import {
 import { useStaffs } from "./staffs-provider";
 import { EmptyOptionsNotice, EmptyOptionsLink } from "@/components/empty-options-notice";
 
+/** Một regex cho cả hai schema: bản chép tay từng mất dấu `\` (`[^s@]`), khiến mọi email có chữ "s" bị báo sai. */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /** Tránh Zod union hiện "Invalid input" khi email rỗng / sai định dạng. */
 const optionalEmailSchema = z
   .string()
   .trim()
-  .refine(
-    (value) =>
-      value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-    { message: "Email không hợp lệ" },
-  );
+  .refine((value) => value === "" || EMAIL_PATTERN.test(value), {
+    message: "Email không hợp lệ",
+  });
+
+/** Email bắt buộc khi tạo nhân viên: mã OTP đăng nhập lần đầu gửi về đây. */
+const requiredEmailSchema = z
+  .string()
+  .trim()
+  .min(1, "Email là bắt buộc")
+  .refine((value) => EMAIL_PATTERN.test(value), {
+    message: "Email không hợp lệ",
+  });
 
 const GENDER_OPTIONS: { value: StaffGender; label: string }[] = [
   { value: "MALE", label: "Nam" },
@@ -216,7 +226,7 @@ const createFormSchema = z
           ctx.addIssue({ code: "custom", message: error });
         }
       }),
-    email: optionalEmailSchema,
+    email: requiredEmailSchema,
     roleId: z.string().min(1, "Vai trò là bắt buộc"),
     branchId: z.string().optional(),
     warehouseId: z.string().optional(),
@@ -460,7 +470,7 @@ export function StaffsMutateDialog({
           firstName: createData.firstName,
           lastName: createData.lastName,
           phoneNumber: normalizeStaffPhoneNumber(createData.phoneNumber),
-          email: createData.email || undefined,
+          email: createData.email,
           roleId: createData.roleId,
           branchId: createData.branchId || null,
           warehouseId: canAssignWarehouse
@@ -577,7 +587,10 @@ export function StaffsMutateDialog({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>
+                    Email{" "}
+                    {!isEdit && <span className="text-destructive">*</span>}
+                  </FormLabel>
                   <FormControl>
                     <Input placeholder="name@ikiot.vn" {...field} />
                   </FormControl>

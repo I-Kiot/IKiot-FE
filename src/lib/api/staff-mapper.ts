@@ -16,6 +16,7 @@ export interface ApiStaffUser {
   id?: string;
   tenantId?: string;
   email?: string;
+  emailVerifiedAt?: string | null;
   phoneNumber: string;
   roleId?: string | null;
   role?: { id: string; name: string } | null;
@@ -135,6 +136,7 @@ export function mapStaffFromApi(user: ApiStaffUser): Staff {
     fullName: `${lastName} ${firstName}`.trim() || user.phoneNumber,
     phoneNumber: user.phoneNumber,
     email: user.email,
+    emailVerifiedAt: user.emailVerifiedAt ?? null,
     roleId: user.role?.id ?? user.roleId ?? null,
     roleName: getStaffRoleLabel(user.role?.name),
     status: mapStatus(user.status),
