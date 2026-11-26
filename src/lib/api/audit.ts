@@ -40,3 +40,8 @@ export async function listAuditLogs(params?: AuditLogsParams): Promise<AuditLogR
   const response = await client.get("/admin/audit-logs", { params });
   return response.data;
 }
+
+export async function listTenantAuditLogs(params?: AuditLogsParams): Promise<AuditLogResponse> {
+  const response = await client.get("/audit-logs", { params });
+  return response.data;
+}

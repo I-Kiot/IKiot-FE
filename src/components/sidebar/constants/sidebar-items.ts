@@ -18,6 +18,7 @@ import {
   BarChart3,
   ChartLine,
   Factory,
+  History,
 } from "lucide-react";
 import { type NavItem } from "./types";
 
@@ -169,6 +170,11 @@ export const sidebarItems = {
     title: "Nhật ký hệ thống",
     url: "/admin/audit-logs",
     icon: ShieldAlert,
+  },
+  tenantAuditLog: {
+    title: "Lịch sử hành động",
+    url: "/audit-logs",
+    icon: History,
   },
   adminNotifications: {
     title: "Gửi thông báo",
