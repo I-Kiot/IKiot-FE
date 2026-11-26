@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -44,6 +44,7 @@ export function LoginForm2({
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -52,6 +53,13 @@ export function LoginForm2({
       password: "",
     },
   });
+
+  // Điền sẵn tài khoản khi quay về từ "Quên mật khẩu" (`/sign-in?identifier=`).
+  // Đọc `window.location` thay vì `useSearchParams` để trang không cần bọc Suspense.
+  useEffect(() => {
+    const identifier = new URLSearchParams(window.location.search).get("identifier");
+    if (identifier) setValue("identifier", identifier);
+  }, [setValue]);
 
   // Lưu token, nạp hồ sơ rồi chuyển về trang chủ.
   const startSession = async ({ accessToken, refreshToken }: SessionResult) => {

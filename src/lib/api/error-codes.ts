@@ -141,7 +141,7 @@ export const ERROR_MESSAGES = {
   REQUIRED_FIELD_MISSING: "Thiếu trường bắt buộc",
   RESET_TOKEN_INVALID: "Mã xác thực đặt lại mật khẩu không hợp lệ hoặc đã hết hạn",
   RESET_TOKEN_USED: "Mã đặt lại mật khẩu đã được sử dụng. Vui lòng yêu cầu mã mới",
-  RESET_TOKEN_WRONG_TYPE: "Token không hợp lệ cho thao tác đặt lại mật khẩu",
+  RESET_TOKEN_WRONG_TYPE: "Mã xác thực không dùng được để đặt lại mật khẩu. Vui lòng yêu cầu mã mới",
   ROLE_BEYOND_GRANT: "Không thể gán vai trò có quyền vượt quá quyền của bạn",
   ROLE_IN_USE: "Không thể xoá vai trò đang được gán cho nhân viên. Hãy chuyển họ sang vai trò khác trước.",
   ROLE_NAME_TAKEN: "Tên vai trò đã tồn tại",
