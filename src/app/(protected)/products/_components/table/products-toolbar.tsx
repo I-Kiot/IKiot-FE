@@ -98,15 +98,17 @@ export function ProductsToolbar({ table }: ProductsToolbarProps) {
               if (value === 'all') table.getColumn('stock')?.setFilterValue(undefined)
               else if (value === 'out') table.getColumn('stock')?.setFilterValue('out')
               else if (value === 'low') table.getColumn('stock')?.setFilterValue('low')
+              else if (value === 'damaged') table.getColumn('stock')?.setFilterValue('damaged')
             }}
           >
-            <SelectTrigger className="cursor-pointer w-28 h-9 text-sm">
+            <SelectTrigger className="cursor-pointer w-36 h-9 text-sm">
               <SelectValue placeholder="Tồn kho" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả</SelectItem>
               <SelectItem value="out">Hết hàng (= 0)</SelectItem>
               <SelectItem value="low">Sắp hết (&lt; 10)</SelectItem>
+              <SelectItem value="damaged">Có hàng hỏng</SelectItem>
             </SelectContent>
           </Select>
         )}

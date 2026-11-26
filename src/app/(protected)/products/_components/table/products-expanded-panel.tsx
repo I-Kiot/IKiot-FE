@@ -47,7 +47,8 @@ export function ProductsExpandedPanel({
   isExpanded,
   isLastRow,
 }: ProductsExpandedPanelProps) {
-  const { setOpen, setCurrentRow, screen, detailVersionOf } = useProducts();
+  const { setOpen, setCurrentRow, screen, detailVersionOf, reloadProducts } =
+    useProducts();
   // Tăng sau mỗi lần sửa hàng hoá thành công (xem handleEditWrapper trong provider).
   const detailVersion = detailVersionOf(product.id);
   const locationKey = useAuthStore((s) => s.locationKey);
@@ -165,6 +166,21 @@ export function ProductsExpandedPanel({
           ?.data?.message || "Gỡ vị trí thất bại";
       toast.error(message);
     }
+  }
+
+  /** Sau khi đánh dấu hỏng / sửa xong / huỷ: nạp lại chi tiết (tồn từng nơi) và danh sách (tổng tồn, số hỏng). */
+  async function handleDamagedChanged() {
+    try {
+      const res = await productApi.getById(product.id);
+      const items = res.items ?? [];
+      setDetail({ ...res, items });
+      setViewingItem((prev) =>
+        prev ? (items.find((i) => i.id === prev.id) ?? prev) : prev,
+      );
+    } catch {
+      toast.error("Không tải lại được tồn kho");
+    }
+    reloadProducts();
   }
 
   if (loading || (isExpanded && !detail)) {
@@ -416,6 +432,7 @@ export function ProductsExpandedPanel({
             handleLocationRemove(viewingItem.id, inventoryId);
           }
         }}
+        onDamagedChanged={handleDamagedChanged}
       />
 
       <ProductsItemMutateDialog

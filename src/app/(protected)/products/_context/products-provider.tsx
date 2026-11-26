@@ -14,6 +14,11 @@ import type { Brand } from '@/types/brand'
 import type { Category } from '@/types/category'
 import type { Supplier } from '@/types/supplier'
 import type { ProductScreen } from '../_constants/product-screen'
+import { useLiveRefresh } from '@/hooks/use-live-refresh'
+import { CHANGE_RESOURCES } from '@/types/change-feed'
+
+// Tồn kho đổi ở nơi khác (bán, nhập, chuyển kho, đánh dấu hỏng / sửa / huỷ): tải lại số tồn và số hỏng.
+const LIVE_RESOURCES = [CHANGE_RESOURCES.INVENTORIES] as const
 
 type LocationOption = { value: string; label: string }
 
@@ -74,6 +79,8 @@ export function ProductsProvider({
   const [skuSearchIndex, setSkuSearchIndex] = useState<Map<string, string>>(new Map())
   // Theo từng productId, để sửa một hàng hoá chỉ nạp lại panel của đúng hàng đó.
   const [detailVersions, setDetailVersions] = useState<Record<string, number>>({})
+  // Tăng mỗi lần tồn kho đổi ở tab khác: mọi panel đang mở nạp lại ngầm (không skeleton).
+  const [liveVersion, setLiveVersion] = useState(0)
   const locationOptionsLoadedRef = useRef(false)
   const suppliersLoadedRef = useRef(false)
 
@@ -142,8 +149,17 @@ export function ProductsProvider({
   }
 
   function detailVersionOf(productId: string): number {
-    return detailVersions[productId] ?? 0
+    return (detailVersions[productId] ?? 0) + liveVersion
   }
+
+  // Không truyền visibleIds: tải lại im lặng, không toast.
+  useLiveRefresh({
+    resources: LIVE_RESOURCES,
+    onChange: () => {
+      void reload()
+      setLiveVersion((v) => v + 1)
+    },
+  })
 
   async function handleDeleteManyWrapper(ids: string[]): Promise<boolean> {
     const success = await handleDeleteMany(ids)

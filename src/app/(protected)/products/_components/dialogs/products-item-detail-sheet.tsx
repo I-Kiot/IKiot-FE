@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { History, Pencil, Trash2 } from "lucide-react";
+import { History, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PermissionButton } from "@/components/permission-button";
 import {
@@ -25,7 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { DamagedAction } from "@/lib/api/inventory";
+import { DamagedStockDialog } from "./damaged-stock-dialog";
 import { ImageGalleryDialog } from "../image-gallery-dialog";
 import { ProductsPriceHistoryDialog } from "./products-price-history-dialog";
 import { ComboComponentsTree } from "../combo-components-tree";
@@ -41,6 +50,7 @@ import {
   canUpdateProduct,
   canDeleteProduct,
   canRemoveInventoryLocation,
+  canManageDamaged,
 } from "@/components/sidebar/constants/role-permissions";
 
 const formatDate = (iso?: string) => {
@@ -58,6 +68,8 @@ type Props = {
   onEdit?: () => void;
   onDelete?: () => void;
   onRemoveLocation?: (inventoryId: string) => void;
+  /** Sau khi đánh dấu hỏng / sửa xong / huỷ: nạp lại tồn của phiên bản. */
+  onDamagedChanged?: () => void;
   isSubDialogOpen?: boolean;
 };
 
@@ -103,6 +115,7 @@ export function ProductsItemDetailSheet({
   onEdit,
   onDelete,
   onRemoveLocation,
+  onDamagedChanged,
   isSubDialogOpen,
 }: Props) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -115,6 +128,11 @@ export function ProductsItemDetailSheet({
   const canEdit = canUpdateProduct(role);
   const canDelete = canDeleteProduct(role);
   const canRemoveLocation = canRemoveInventoryLocation(role);
+  const canDamaged = canManageDamaged(role);
+  const [damagedTask, setDamagedTask] = useState<{
+    action: DamagedAction;
+    detail: StockDetail;
+  } | null>(null);
 
   if (!item) return null;
 
@@ -345,7 +363,64 @@ export function ProductsItemDetailSheet({
                           <span className="font-semibold tabular-nums">
                             {sd.stock}
                           </span>
-                          {sd.stock === 0 && (
+                          {(sd.damagedQuantity ?? 0) > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="border-destructive/40 text-destructive tabular-nums"
+                              title="Hàng hỏng tại đây, không tính vào tồn bán được"
+                            >
+                              Hỏng {sd.damagedQuantity}
+                            </Badge>
+                          )}
+                          {!canDamaged ? (
+                            // Thấy nhưng không làm được: bấm thì báo thiếu quyền nào, không mở menu.
+                            <PermissionButton
+                              allowed={false}
+                              permission="inventory:manage_damaged"
+                              size="icon"
+                              variant="ghost"
+                              className="size-6 cursor-pointer text-muted-foreground"
+                              aria-label={`Xử lý hàng hỏng tại ${sd.location.name}`}
+                            >
+                              <MoreHorizontal className="size-3.5" />
+                            </PermissionButton>
+                          ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-6 cursor-pointer text-muted-foreground"
+                                aria-label={`Xử lý hàng hỏng tại ${sd.location.name}`}
+                              >
+                                <MoreHorizontal className="size-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                disabled={(sd.shelf ?? sd.stock) === 0}
+                                onSelect={() => setDamagedTask({ action: "mark", detail: sd })}
+                              >
+                                Đánh dấu hỏng
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={(sd.damagedQuantity ?? 0) === 0}
+                                onSelect={() => setDamagedTask({ action: "repair", detail: sd })}
+                              >
+                                Sửa xong
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                disabled={(sd.damagedQuantity ?? 0) === 0}
+                                onSelect={() => setDamagedTask({ action: "writeOff", detail: sd })}
+                              >
+                                Huỷ hàng hỏng
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          )}
+                          {sd.stock === 0 && (sd.damagedQuantity ?? 0) === 0 && (
                             <PermissionButton
                               allowed={canRemoveLocation}
                               permission="inventory:delete"
@@ -494,6 +569,17 @@ export function ProductsItemDetailSheet({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {damagedTask && (
+          <DamagedStockDialog
+            open
+            onOpenChange={(v) => !v && setDamagedTask(null)}
+            action={damagedTask.action}
+            detail={damagedTask.detail}
+            itemLabel={item.sku || item.productName || product.name}
+            onDone={() => onDamagedChanged?.()}
+          />
+        )}
 
         {priceHistoryOpen && (
           <ProductsPriceHistoryDialog

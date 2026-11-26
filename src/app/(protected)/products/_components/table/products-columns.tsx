@@ -172,6 +172,7 @@ export function getProductsColumns(
       cell: ({ row }) => {
         const stock = row.original.totalStock ?? 0;
         const allLocations = row.original.totalStockAllLocations ?? stock;
+        const damaged = row.original.damagedStock ?? 0;
         return (
           <div className="flex flex-col leading-tight">
             <span
@@ -191,6 +192,14 @@ export function getProductsColumns(
                 Toàn chuỗi: {allLocations.toLocaleString("vi-VN")}
               </span>
             )}
+            {damaged > 0 && (
+              <span
+                className="text-xs text-destructive tabular-nums"
+                title="Hàng hỏng, không tính vào tồn bán được"
+              >
+                Hỏng: {damaged.toLocaleString("vi-VN")}
+              </span>
+            )}
           </div>
         );
       },
@@ -198,6 +207,7 @@ export function getProductsColumns(
         const stock = row.original.totalStock ?? 0;
         if (value === "out") return stock === 0;
         if (value === "low") return stock < 10;
+        if (value === "damaged") return (row.original.damagedStock ?? 0) > 0;
         return true;
       },
     },
