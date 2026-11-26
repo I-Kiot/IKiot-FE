@@ -7,7 +7,7 @@ import { PermissionButton } from "@/components/permission-button";
 import { useProducts } from '../_context/products-provider'
 import { getCachedUser } from '@/lib/auth'
 import { canCreateProduct, canDeleteProduct } from '@/components/sidebar/constants/role-permissions'
-import { copyTable, type TableCell } from '@/lib/clipboard-table'
+import { copyRows, type TableCell } from '@/lib/clipboard-table'
 import { parseLocationKey } from '@/lib/location-key'
 import { useAuthStore } from '@/store/auth-store'
 import { STATUS_MAP } from '../_constants/product.constants'
@@ -19,16 +19,14 @@ export function ProductsButtonGroup() {
   const canWrite = canCreateProduct(role)
   const canDelete = canDeleteProduct(role)
 
-  /** Chép các dòng đã tích, theo thứ tự trong danh sách, dán thẳng vào Excel. Cột tồn theo nơi đang xem. */
+  /**
+   * Chép giá trị các dòng đã tích (không có tiêu đề), theo thứ tự trong danh sách, để dán vào bảng Excel có sẵn.
+   * Thứ tự cột: Tên, Thương hiệu, Danh mục, Trạng thái, Tồn kho, Hàng hỏng, Tồn toàn chuỗi (khi xem theo một nơi).
+   */
   async function copySelected() {
     const selected = new Set(selectedIds)
     const rows = products.filter((p) => selected.has(p.id))
     const showChain = screen.showChainStock && parseLocationKey(locationKey) !== null
-    const header = ['Tên hàng hóa', 'Thương hiệu', 'Danh mục', 'Trạng thái']
-    if (screen.showStock) {
-      header.push('Tồn kho', 'Hàng hỏng')
-      if (showChain) header.push('Tồn toàn chuỗi')
-    }
     const body = rows.map((p) => {
       const row: TableCell[] = [
         p.name,
@@ -42,8 +40,8 @@ export function ProductsButtonGroup() {
       }
       return row
     })
-    if (await copyTable(header, body)) {
-      toast.success(`Đã sao chép ${rows.length} dòng, dán vào Excel là ra bảng`)
+    if (await copyRows(body)) {
+      toast.success(`Đã sao chép ${rows.length} dòng`)
     } else {
       toast.error('Trình duyệt chặn sao chép. Hãy thử lại hoặc dùng "Xuất file".')
     }
