@@ -56,5 +56,12 @@ jobs:
             cd ~/app
             docker compose -f docker-compose.prod.yml --env-file .env.prod pull nextjs
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-deps nextjs
-            sleep 5
-            curl -f https://ikiot.io.vn || exit 1
+            for i in $(seq 1 12); do
+              if curl -fsS -o /dev/null https://ikiot.io.vn; then
+                echo "Deployment health check passed"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "Deployment health check failed after 60 seconds"
+            exit 1
