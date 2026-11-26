@@ -13,6 +13,7 @@ import type { Product } from "@/types/product";
 import type { Brand } from "@/types/brand";
 import type { Category } from "@/types/category";
 import {
+  DAMAGED_FILTER,
   safeImageSrc,
   STATUS_MAP,
   STATUS_ORDER,
@@ -159,7 +160,9 @@ export function getProductsColumns(
         );
       },
       filterFn: (row, columnId, value: string) =>
-        row.getValue(columnId) === value,
+        value === DAMAGED_FILTER
+          ? (row.original.damagedStock ?? 0) > 0
+          : row.getValue(columnId) === value,
       sortingFn: (rowA, rowB) =>
         STATUS_ORDER[rowA.original.status] - STATUS_ORDER[rowB.original.status],
     },
@@ -207,7 +210,6 @@ export function getProductsColumns(
         const stock = row.original.totalStock ?? 0;
         if (value === "out") return stock === 0;
         if (value === "low") return stock < 10;
-        if (value === "damaged") return (row.original.damagedStock ?? 0) > 0;
         return true;
       },
     },
