@@ -1,74 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { OtpStep } from "@/components/otp-step";
 import {
   resendOtp,
   resetPassword,
-  sendForgotPasswordOtp,
   verifyForgotPasswordOtp,
   type OtpChallenge,
 } from "@/lib/api/auth";
 import { getApiErrorBody } from "@/lib/api/error-codes";
+import { EmailStep } from "./email-step";
+import { NewPasswordStep } from "./new-password-step";
 
-const identifierSchema = z.object({
-  identifier: z
-    .string()
-    .trim()
-    .min(1, { message: "Vui lòng nhập số điện thoại hoặc email." }),
-});
+/** Lỗi khiến reset token không dùng lại được (hết hạn, đã dùng, sai loại, tài khoản bị khoá), nên phải xin OTP mới từ bước 1. */
+const RESTART_CODES = new Set([
+  "RESET_TOKEN_INVALID",
+  "RESET_TOKEN_USED",
+  "RESET_TOKEN_WRONG_TYPE",
+  "ACCOUNT_NOT_FOUND_OR_LOCKED",
+]);
 
-const passwordSchema = z
-  .object({
-    newPassword: z
-      .string()
-      .min(6, { message: "Mật khẩu phải chứa ít nhất 6 ký tự." }),
-    confirmPassword: z.string().min(1, { message: "Vui lòng nhập lại mật khẩu." }),
-  })
-  .refine((d) => d.newPassword === d.confirmPassword, {
-    message: "Mật khẩu xác nhận không khớp.",
-    path: ["confirmPassword"],
-  });
+const RESTART_NOTICE =
+  "Phiên đặt lại mật khẩu đã hết hạn hoặc không còn hợp lệ. Vui lòng yêu cầu mã xác minh mới.";
 
-type IdentifierInput = z.infer<typeof identifierSchema>;
-type PasswordInput = z.infer<typeof passwordSchema>;
-
-/** Quên mật khẩu: nhập SĐT/email → nhập OTP → đặt mật khẩu mới. */
-export function ForgotPasswordForm2({
-  className,
-  ...props
-}: React.ComponentProps<"form">) {
+/** Quên mật khẩu: nhập email → nhập OTP gửi tới email → đặt mật khẩu mới → về đăng nhập. */
+export function ForgotPasswordForm2({ className }: { className?: string }) {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [resetToken, setResetToken] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const identifierForm = useForm<IdentifierInput>({
-    resolver: zodResolver(identifierSchema),
-    defaultValues: { identifier: "" },
-  });
-  const passwordForm = useForm<PasswordInput>({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: { newPassword: "", confirmPassword: "" },
-  });
-
-  const onSendOtp = async ({ identifier }: IdentifierInput) => {
-    try {
-      setChallenge(await sendForgotPasswordOtp(identifier));
-    } catch (error) {
-      toast.error(
-        getApiErrorBody(error)?.message ||
-          "Không gửi được mã OTP. Vui lòng thử lại.",
-      );
-    }
+  const restart = (message: string | null) => {
+    setResetToken(null);
+    setChallenge(null);
+    setNotice(message);
   };
 
   const onVerifyOtp = async (otpCode: string) => {
@@ -76,83 +44,28 @@ export function ForgotPasswordForm2({
     setResetToken(await verifyForgotPasswordOtp(challenge.challengeToken, otpCode));
   };
 
-  const onResetPassword = async ({ newPassword }: PasswordInput) => {
+  const onResetPassword = async (newPassword: string) => {
     if (!resetToken) return;
     try {
       await resetPassword(resetToken, newPassword);
-      toast.success("Đặt lại mật khẩu thành công. Vui lòng đăng nhập.");
-      router.push("/sign-in");
+      toast.success("Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.");
+      router.replace(`/sign-in?identifier=${encodeURIComponent(email)}`);
     } catch (error) {
       const body = getApiErrorBody(error);
-      toast.error(body?.message || "Không đặt lại được mật khẩu. Vui lòng thử lại.");
-      // Token hết hạn hoặc đã dùng: phải xin mã mới từ đầu.
-      if (
-        body?.code === "RESET_TOKEN_INVALID" ||
-        body?.code === "RESET_TOKEN_USED" ||
-        body?.code === "RESET_TOKEN_WRONG_TYPE"
-      ) {
-        setResetToken(null);
-        setChallenge(null);
+      if (body?.code && RESTART_CODES.has(body.code)) {
+        restart(RESTART_NOTICE);
+        return;
       }
+      toast.error(body?.message || "Không đặt lại được mật khẩu. Vui lòng thử lại.");
     }
   };
 
-  // Bước 3: mật khẩu mới.
   if (resetToken) {
-    const { register, handleSubmit, formState } = passwordForm;
-    const { errors, isSubmitting } = formState;
     return (
-      <form
-        className={cn("flex flex-col gap-6", className)}
-        onSubmit={handleSubmit(onResetPassword)}
-        {...props}
-      >
-        <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-2xl font-bold">Đặt mật khẩu mới</h1>
-          <p className="text-muted-foreground text-sm text-balance">
-            Email đã được xác minh. Nhập mật khẩu mới cho tài khoản của bạn.
-          </p>
-        </div>
-        <div className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="newPassword">Mật khẩu mới</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              autoComplete="new-password"
-              disabled={isSubmitting}
-              {...register("newPassword")}
-            />
-            {errors.newPassword && (
-              <p className="text-xs font-medium text-destructive">
-                {errors.newPassword.message}
-              </p>
-            )}
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="confirmPassword">Xác nhận mật khẩu</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              disabled={isSubmitting}
-              {...register("confirmPassword")}
-            />
-            {errors.confirmPassword && (
-              <p className="text-xs font-medium text-destructive">
-                {errors.confirmPassword.message}
-              </p>
-            )}
-          </div>
-          <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
-            {isSubmitting ? "Đang xử lý..." : "Đặt lại mật khẩu"}
-          </Button>
-        </div>
-      </form>
+      <NewPasswordStep className={className} email={email} onSubmit={onResetPassword} />
     );
   }
 
-  // Bước 2: nhập mã OTP.
   if (challenge) {
     return (
       <OtpStep
@@ -160,56 +73,31 @@ export function ForgotPasswordForm2({
         title="Xác minh email"
         submitLabel="Xác nhận"
         delivery={challenge}
+        description={(sentTo) => (
+          <>
+            Nếu{" "}
+            <span className="font-medium text-foreground">{sentTo}</span> đã
+            được đăng ký, mã gồm 6 chữ số đã được gửi tới email này. Không thấy
+            mã? Hãy kiểm tra thư rác hoặc kiểm tra lại email đã nhập.
+          </>
+        )}
         onSubmit={onVerifyOtp}
         onResend={() => resendOtp(challenge.challengeToken)}
-        onBack={() => setChallenge(null)}
+        onBack={() => restart(null)}
       />
     );
   }
 
-  // Bước 1: nhập SĐT hoặc email.
-  const { register, handleSubmit, formState } = identifierForm;
-  const { errors, isSubmitting } = formState;
   return (
-    <form
-      className={cn("flex flex-col gap-6", className)}
-      onSubmit={handleSubmit(onSendOtp)}
-      {...props}
-    >
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Quên mật khẩu?</h1>
-        <p className="text-muted-foreground text-sm text-balance">
-          Nhập số điện thoại hoặc email của tài khoản, chúng tôi sẽ gửi mã xác
-          minh đến email của bạn
-        </p>
-      </div>
-      <div className="grid gap-6">
-        <div className="grid gap-3">
-          <Label htmlFor="identifier">Số điện thoại hoặc email</Label>
-          <Input
-            id="identifier"
-            type="text"
-            autoComplete="username"
-            placeholder="Nhập số điện thoại hoặc email"
-            disabled={isSubmitting}
-            {...register("identifier")}
-          />
-          {errors.identifier && (
-            <p className="text-xs font-medium text-destructive">
-              {errors.identifier.message}
-            </p>
-          )}
-        </div>
-        <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
-          {isSubmitting ? "Đang gửi..." : "Gửi mã xác minh"}
-        </Button>
-      </div>
-      <div className="text-center text-sm">
-        Nhớ mật khẩu rồi?{" "}
-        <a href="/sign-in" className="underline underline-offset-4">
-          Quay lại đăng nhập
-        </a>
-      </div>
-    </form>
+    <EmailStep
+      className={className}
+      defaultEmail={email}
+      notice={notice}
+      onSent={(sentTo, next) => {
+        setEmail(sentTo);
+        setNotice(null);
+        setChallenge(next);
+      }}
+    />
   );
 }

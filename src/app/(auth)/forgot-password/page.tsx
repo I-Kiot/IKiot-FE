@@ -23,7 +23,7 @@ export default function ForgotPassword2Page() {
       </div>
       <div className="bg-muted relative hidden lg:block">
         <Image
-          src="https://ui.shadcn.com/placeholder.svg"
+          src="/login-pic.png"
           alt="Image"
           fill
           className="object-cover dark:brightness-[0.95] dark:invert"

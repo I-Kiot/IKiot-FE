@@ -11,33 +11,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PasswordInput } from "@/components/password-input"
 import { toast } from "sonner"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { changePassword } from "@/lib/api/auth"
 import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes"
 import { useAuthStore } from "@/store/auth-store"
 import { useRouter } from "next/navigation"
-
-/** Ô mật khẩu có nút ẩn/hiện, cùng kiểu với form đăng nhập. Mỗi ô tự giữ trạng thái hiện của mình. */
-function PasswordInput(props: Omit<React.ComponentProps<typeof Input>, "type">) {
-  const [visible, setVisible] = useState(false)
-  return (
-    <div className="relative">
-      <Input {...props} type={visible ? "text" : "password"} className="pr-10" />
-      <button
-        type="button"
-        tabIndex={-1}
-        onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
-      >
-        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-      </button>
-    </div>
-  )
-}
 
 interface ChangePasswordDialogProps {
   open: boolean;
