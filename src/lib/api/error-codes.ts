@@ -263,6 +263,7 @@ export const ERROR_MESSAGES = {
   ORDER_ASSIGNEE_REQUIRED: "Đơn đã xác nhận phải có người phụ trách",
   ORDER_ASSIGNEE_INVALID: "Người phụ trách không hợp lệ hoặc đã ngừng hoạt động",
   ORDER_ASSIGNEE_WRONG_LOCATION: "Người phụ trách phải làm việc tại nơi bán của đơn",
+  ORDER_SELLER_INVALID: "Nhân viên bán hàng không hợp lệ hoặc đã ngừng hoạt động",
   ORDER_CANCEL_NOT_ALLOWED: "Đơn đã bàn giao, không huỷ được - hãy tạo đơn hoàn",
   ORDER_COMBO_INVALID: "Combo không hợp lệ",
   ORDER_EMPTY: "Đơn hàng chưa có sản phẩm",
