@@ -76,7 +76,7 @@ export const ERROR_MESSAGES = {
   INVALID_CREDENTIALS: "Số điện thoại hoặc mật khẩu không đúng",
   INVENTORY_ALREADY_AT_LOCATION: "Mặt hàng đã có tại địa điểm này",
   INVENTORY_NOT_FOUND: "Không tìm thấy dòng tồn kho",
-  INVENTORY_STILL_HAS_STOCK: "Không thể gỡ mặt hàng khỏi địa điểm khi vẫn còn tồn kho. Hãy chuyển hoặc bán hết trước.",
+  INVENTORY_STILL_HAS_STOCK: "Không thể gỡ mặt hàng khỏi địa điểm khi vẫn còn hàng (kể cả hàng hỏng). Hãy chuyển, bán, sửa hoặc huỷ hết trước.",
   INVOICE_NOT_FOUND: "Không tìm thấy hoá đơn",
   LOCATION_ALREADY_DELETED: "Địa điểm đã bị xoá",
   LOCATION_NAME_TAKEN: "Đã có địa điểm cùng loại dùng tên này",
@@ -251,9 +251,12 @@ export const ERROR_MESSAGES = {
   INSUFFICIENT_AVAILABLE_STOCK: "Không đủ hàng có thể bán (một phần đã được giữ cho đơn khác)",
   INVENTORY_LOT_SHORTAGE: "Số liệu lô hàng không khớp tồn kho, vui lòng báo quản trị",
   INVENTORY_CUSTOM_LOT_NOT_FOUND: "Không tìm thấy lô hàng làm riêng cho dòng đơn này tại kho",
+  // Ba mã dưới không còn được BE ném (bỏ kho hàng hỏng riêng 2026-11-26), giữ vì mã chỉ thêm, không xoá.
   LOCATION_NOT_SELLABLE: "Không thể giữ hoặc bán hàng ở kho hàng hỏng",
   LOCATION_DAMAGED_INVALID: "Kho hàng hỏng phải là một kho hàng hỏng khác của cửa hàng",
   LOCATION_DAMAGED_REQUIRED: "Kho này chưa có kho hàng hỏng mặc định",
+  INSUFFICIENT_DAMAGED_STOCK: "Không đủ hàng hỏng tại đây để sửa hoặc huỷ",
+  INVENTORY_LOCATION_DENIED: "Bạn chỉ xử lý được hàng hỏng tại nơi mình làm việc",
   RESERVATION_NOT_ACTIVE: "Dòng đơn chưa được giữ đủ hàng tại kho này",
   RESERVATION_NOT_FOUND: "Không tìm thấy phần hàng đã giữ",
   // Nhập hàng 2 luồng

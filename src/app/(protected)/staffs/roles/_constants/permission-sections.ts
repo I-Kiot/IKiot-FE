@@ -293,6 +293,11 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
             label: 'Thiết lập tồn kho',
             hint: 'Thêm / bỏ sản phẩm khỏi kho, đặt mức tồn tối thiểu',
           },
+          {
+            keys: ['inventory:manage_damaged'],
+            label: 'Xử lý hàng hỏng',
+            hint: 'Đánh dấu hàng hỏng, xác nhận sửa xong, huỷ / thanh lý hàng hỏng tại nơi mình làm việc',
+          },
         ],
       },
     ],
