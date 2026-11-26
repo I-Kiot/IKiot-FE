@@ -1,7 +1,7 @@
 // [Query – Cashflow (sổ thu chi)]
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
   statsApi,
@@ -60,32 +60,29 @@ export function useCashflow({ fromDate, toDate, branchId, warehouseId }: Cashflo
     setPage(1)
   }, [])
 
+  // Một bộ lọc cho tổng, bảng và file xuất, để ba thứ luôn nói về cùng các dòng.
+  const filters = useMemo(
+    () => ({
+      fromDate,
+      toDate,
+      branchId,
+      warehouseId,
+      flowType: flowType === 'ALL' ? undefined : flowType,
+      flow: flow === 'ALL' ? undefined : flow,
+      category: category === 'ALL' ? undefined : category,
+      fund: fund === 'ALL' ? undefined : fund,
+    }),
+    [fromDate, toDate, branchId, warehouseId, flowType, flow, category, fund],
+  )
+
+  const exportFile = useCallback(() => statsApi.exportCashflow(filters), [filters])
+
   const fetchAll = useCallback(async () => {
     setIsLoading(true)
     try {
-      const dateParams = { fromDate, toDate, branchId, warehouseId }
-      const flowTypeParam = flowType === 'ALL' ? undefined : flowType
-      const flowParam = flow === 'ALL' ? undefined : flow
-      const categoryParam = category === 'ALL' ? undefined : category
-      const fundParam = fund === 'ALL' ? undefined : fund
-
       const [summaryRes, listRes] = await Promise.all([
-        statsApi.getCashflow({
-          ...dateParams,
-          flowType: flowTypeParam,
-          flow: flowParam,
-          category: categoryParam,
-          fund: fundParam,
-        }),
-        statsApi.getCashflowList({
-          ...dateParams,
-          flowType: flowTypeParam,
-          flow: flowParam,
-          category: categoryParam,
-          fund: fundParam,
-          page,
-          limit: pageSize,
-        }),
+        statsApi.getCashflow(filters),
+        statsApi.getCashflowList({ ...filters, page, limit: pageSize }),
       ])
 
       setSummary(summaryRes)
@@ -96,7 +93,7 @@ export function useCashflow({ fromDate, toDate, branchId, warehouseId }: Cashflo
     } finally {
       setIsLoading(false)
     }
-  }, [fromDate, toDate, flowType, flow, category, fund, branchId, warehouseId, page, pageSize])
+  }, [filters, page, pageSize])
 
   useEffect(() => {
     fetchAll()
@@ -119,5 +116,6 @@ export function useCashflow({ fromDate, toDate, branchId, warehouseId }: Cashflo
     pageSize,
     setPageSize,
     refetch: fetchAll,
+    exportFile,
   }
 }

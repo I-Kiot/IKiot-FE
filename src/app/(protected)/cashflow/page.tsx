@@ -2,6 +2,7 @@
 'use client'
 
 import { PageHeader } from '@/components/page-header'
+import { ExportExcelButton } from '@/components/export-excel-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -98,6 +99,7 @@ function Cashflow() {
     pageSize,
     setPageSize,
     refetch,
+    exportFile,
   } = useCashflow({
     fromDate: period.fromDate,
     toDate: period.toDate,
@@ -138,6 +140,7 @@ function Cashflow() {
                 </Link>
               </Button>
             )}
+            <ExportExcelButton load={exportFile} filename={`so-thu-chi_${period.fromDate}_${period.toDate}.xlsx`} />
             <Button variant="outline" size="sm" onClick={refetch} disabled={isLoading}>
               <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
               Làm mới
