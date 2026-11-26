@@ -1,4 +1,5 @@
 import client from "./client";
+import type { OrderEvent } from "@/types/order-event";
 
 export interface AuditLog {
   id: string;
@@ -43,5 +44,31 @@ export async function listAuditLogs(params?: AuditLogsParams): Promise<AuditLogR
 
 export async function listTenantAuditLogs(params?: AuditLogsParams): Promise<AuditLogResponse> {
   const response = await client.get("/audit-logs", { params });
+  return response.data;
+}
+
+export interface OrderActivity extends OrderEvent {
+  orderId: string;
+  orderCode: string;
+}
+
+export interface OrderActivityResponse {
+  success: boolean;
+  data: OrderActivity[];
+  pagination: AuditLogResponse["pagination"];
+}
+
+export interface OrderActivityParams {
+  actor?: string;
+  type?: string;
+  orderCode?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listOrderActivity(params?: OrderActivityParams): Promise<OrderActivityResponse> {
+  const response = await client.get("/audit-logs/order-events", { params });
   return response.data;
 }
