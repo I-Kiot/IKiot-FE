@@ -1,8 +1,7 @@
-import { Crown } from "lucide-react";
+import { User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { AuditActor } from "@/lib/api/audit";
-import { cn } from "@/lib/utils";
 
 interface ActorCellProps {
   actor?: AuditActor | null;
@@ -25,7 +24,7 @@ function initialOf(text: string): string {
   return (word.charAt(0) || "?").toUpperCase();
 }
 
-/** Người thao tác: ảnh, tên (hoặc số điện thoại nếu chưa có tên), số điện thoại và chức danh. */
+/** Người thao tác: ảnh, tên ("---" nếu hồ sơ chưa có tên), số điện thoại và chức danh. */
 export function ActorCell({ actor, fallbackName, fallbackRole, automated }: ActorCellProps) {
   if (automated) {
     return (
@@ -38,32 +37,24 @@ export function ActorCell({ actor, fallbackName, fallbackRole, automated }: Acto
     );
   }
 
-  const isOwner = (actor?.systemRole ?? fallbackRole) === "TENANT_OWNER";
-  const title = actor?.name ?? actor?.phone ?? fallbackName ?? "Người dùng đã xóa";
-  const phone = actor?.name ? actor.phone : null;
+  const name = actor ? actor.name : fallbackName;
+  const title = name || "---";
+  const phone = actor?.phone ?? null;
   const role = actor?.roleLabel ?? (fallbackRole ? (ROLE_FALLBACKS[fallbackRole] ?? fallbackRole) : null);
 
   return (
     <div className="flex items-center gap-2.5">
       <Avatar className="size-8">
         {actor?.avatarUrl && <AvatarImage src={actor.avatarUrl} alt={title} />}
-        <AvatarFallback
-          className={cn("text-xs font-semibold", isOwner ? "bg-primary/10 text-primary" : "bg-muted text-foreground")}
-        >
-          {isOwner ? <Crown className="size-4" /> : initialOf(title)}
+        <AvatarFallback className="bg-muted text-xs font-semibold text-foreground">
+          {name ? initialOf(name) : <User className="size-4 text-muted-foreground" />}
         </AvatarFallback>
       </Avatar>
       <div className="flex min-w-0 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="truncate text-sm font-medium">{title}</span>
           {role && (
-            <Badge
-              variant="outline"
-              className={cn(
-                "h-5 px-1.5 text-[11px] font-medium",
-                isOwner && "border-primary/30 bg-primary/10 text-primary",
-              )}
-            >
+            <Badge variant="outline" className="h-5 px-1.5 text-[11px] font-medium">
               {role}
             </Badge>
           )}
