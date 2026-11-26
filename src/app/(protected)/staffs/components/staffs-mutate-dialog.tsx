@@ -872,8 +872,8 @@ export function StaffsMutateDialog({
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Nhân viên xưởng xem yêu cầu sản xuất của xưởng ở mọi kho và tạo phiếu giao. Vai trò
-                        cần quyền &quot;Giao hàng sản xuất (nhân viên xưởng)&quot;.
+                        Nhân viên xưởng xem yêu cầu sản xuất của xưởng ở mọi kho và tạo phiếu giao. Quyền này
+                        tự có khi gắn xưởng, không cần cấp trong vai trò.
                       </p>
                       <FormMessage />
                     </FormItem>

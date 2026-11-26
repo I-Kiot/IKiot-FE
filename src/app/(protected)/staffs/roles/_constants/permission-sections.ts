@@ -305,7 +305,7 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
   {
     id: 'workshop',
     title: 'Xưởng sản xuất',
-    summary: 'Đặt xưởng làm hàng còn thiếu, nhận hàng xưởng giao; tài khoản của nhân viên xưởng.',
+    summary: 'Đặt xưởng làm hàng còn thiếu, nhận hàng xưởng giao. Nhân viên xưởng tự có quyền khi được gắn xưởng.',
     icon: Factory,
     blocks: [
       {
@@ -323,16 +323,6 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
             label: 'Nhận hàng xưởng giao',
             hint: 'Bước làm tăng tồn kho và công nợ xưởng',
             requires: PRODUCTION_READ,
-          },
-        ],
-      },
-      {
-        title: 'Nhân viên xưởng',
-        items: [
-          {
-            keys: ['production:deliver'],
-            label: 'Tạo phiếu giao hàng từ xưởng',
-            hint: 'Tài khoản phải gắn với một xưởng; chỉ thấy yêu cầu của xưởng mình',
           },
         ],
       },

@@ -14,7 +14,7 @@ const LEAF_NAV_PERMISSION: Record<string, readonly [string, string]> = {
   "/reports/unreconciled": ["reports", "read"],
   "/statistics": ["reports", "read"],
   "/cashflow": ["reports", "read"],
-  // Nhân viên xưởng: mọi route /workshop/* cần `production:deliver` (và tài khoản gắn xưởng - trang tự báo nếu chưa).
+  // Nhân viên xưởng: mọi route /workshop/* cần `production:deliver`, BE tự cấp cho tài khoản gắn xưởng (không qua vai trò).
   "/workshop": ["production", "deliver"],
   // "/shipper" (Đơn giao của tôi) cố ý không có ở đây: shipper có thể là chủ shop hay người phụ
   // trách đơn - không cần `shipments:deliver` (chốt 2026-10-06) - và `GET /shipments/mine` chỉ trả
