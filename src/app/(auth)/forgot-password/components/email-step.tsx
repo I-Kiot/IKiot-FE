@@ -30,7 +30,6 @@ export function EmailStep({ defaultEmail, notice, onSent, className }: EmailStep
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordEmailInput>({
     resolver: zodResolver(forgotPasswordEmailSchema),
@@ -41,14 +40,9 @@ export function EmailStep({ defaultEmail, notice, onSent, className }: EmailStep
     try {
       onSent(email, await sendForgotPasswordOtp(email));
     } catch (error) {
+      // Backend không cho biết email có tài khoản hay không: email lạ vẫn sang bước OTP.
+      // Lỗi tới đây chỉ là lỗi hệ thống (chưa cấu hình email, gửi mail lỗi, mạng...).
       const body = getApiErrorBody(error);
-      // Lỗi của chính ô email: hiện dưới ô để người dùng sửa, không chỉ toast.
-      if (body?.code === "PHONE_NOT_REGISTERED") {
-        setError("email", {
-          message: "Email này chưa được đăng ký hoặc tài khoản đã bị khóa.",
-        });
-        return;
-      }
       toast.error(body?.message || "Không gửi được mã OTP. Vui lòng thử lại.");
     }
   };
@@ -62,8 +56,8 @@ export function EmailStep({ defaultEmail, notice, onSent, className }: EmailStep
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Quên mật khẩu?</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Nhập email của tài khoản, chúng tôi sẽ gửi mã xác minh gồm 6 chữ số
-          tới email đó
+          Nhập email của tài khoản. Nếu email đã đăng ký, chúng tôi sẽ gửi mã
+          xác minh gồm 6 chữ số tới email đó
         </p>
       </div>
       {notice && (

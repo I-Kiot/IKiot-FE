@@ -24,6 +24,8 @@ interface OtpStepProps {
   /** Nhãn nút xác nhận. */
   submitLabel: string;
   delivery: OtpDelivery;
+  /** Câu dưới tiêu đề, thay câu mặc định "đã gửi đến email …". */
+  description?: (sentTo: string) => React.ReactNode;
   /** Gọi API xác thực; ném lỗi (axios) nếu mã sai. Thành công thì cha tự chuyển bước. */
   onSubmit: (otpCode: string) => Promise<void>;
   /** Gọi API gửi lại mã. */
@@ -57,6 +59,7 @@ export function OtpStep({
   onSubmit,
   onResend,
   onBack,
+  description,
   className,
 }: OtpStepProps) {
   const [code, setCode] = useState("");
@@ -124,8 +127,14 @@ export function OtpStep({
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Nhập mã gồm 6 chữ số đã gửi đến email{" "}
-          <span className="font-medium text-foreground">{current.sentTo}</span>
+          {description ? (
+            description(current.sentTo)
+          ) : (
+            <>
+              Nhập mã gồm 6 chữ số đã gửi đến email{" "}
+              <span className="font-medium text-foreground">{current.sentTo}</span>
+            </>
+          )}
         </p>
       </div>
 

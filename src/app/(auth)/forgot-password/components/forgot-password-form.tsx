@@ -76,6 +76,14 @@ export function ForgotPasswordForm2({ className }: { className?: string }) {
         title="Xác minh email"
         submitLabel="Xác nhận"
         delivery={challenge}
+        description={(sentTo) => (
+          <>
+            Nếu{" "}
+            <span className="font-medium text-foreground">{sentTo}</span> đã
+            được đăng ký, mã gồm 6 chữ số đã được gửi tới email này. Không thấy
+            mã? Hãy kiểm tra thư rác hoặc kiểm tra lại email đã nhập.
+          </>
+        )}
         onSubmit={onVerifyOtp}
         onResend={() => resendOtp(challenge.challengeToken)}
         onBack={() => restart(null)}
