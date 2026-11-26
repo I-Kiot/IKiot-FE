@@ -4,11 +4,12 @@ import type { ReactNode } from "react";
 import { formatVietnamDateTime, formatVietnamWorkDate } from "@/app/(protected)/staffs/shared/vietnam-datetime";
 import {
   CalendarDays,
+  CalendarX2,
   Clock,
   Hash,
   Lock,
   Phone,
-  Timer,
+  Repeat,
   Pencil,
   Trash2,
   User,
@@ -17,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { PermissionButton } from "@/components/permission-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SCHEDULE_STATUS_MAP } from "@/app/(protected)/staffs/shared/schedule-status";
+import { formatSeriesSummary } from "@/app/(protected)/staffs/shared/schedule-series";
 import {
   formatShiftTimeRange,
   isScheduleLocked,
@@ -63,9 +65,17 @@ const STATUS_ACCENT: Record<
   },
 };
 
-function AssigneeCard({ assignee }: { assignee: ScheduleAssignee }) {
+function AssigneeCard({
+  assignee,
+  canStopSeries,
+  onStopSeries,
+}: {
+  assignee: ScheduleAssignee;
+  canStopSeries: boolean;
+  onStopSeries?: (assignee: ScheduleAssignee) => void;
+}) {
   return (
-    <div className="rounded-xl border bg-muted/30 p-4">
+    <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
       <div className="flex items-center gap-3">
         <ScheduleStaffAvatar
           name={assignee.staffName}
@@ -80,6 +90,30 @@ function AssigneeCard({ assignee }: { assignee: ScheduleAssignee }) {
           </p>
         </div>
       </div>
+      {assignee.series && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background/60 px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2 text-xs">
+            <Repeat className="size-3.5 shrink-0 text-primary" />
+            <span className="text-muted-foreground">Lặp lại:</span>
+            <span className="font-medium">
+              {formatSeriesSummary(assignee.series)}
+            </span>
+          </div>
+          {onStopSeries && (
+            <PermissionButton
+              allowed={canStopSeries}
+              permission="schedules:delete"
+              variant="ghost"
+              size="sm"
+              className="h-7 cursor-pointer px-2 text-xs text-destructive hover:text-destructive"
+              onClick={() => onStopSeries(assignee)}
+            >
+              <CalendarX2 className="mr-1 size-3.5" />
+              Dừng lặp
+            </PermissionButton>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -92,6 +126,7 @@ type ScheduleDetailContentProps = {
   readOnlyHint?: string;
   onEdit?: () => void;
   onDelete?: () => void;
+  onStopSeries?: (assignee: ScheduleAssignee) => void;
 };
 
 export function ScheduleDetailContent({
@@ -102,12 +137,14 @@ export function ScheduleDetailContent({
   readOnlyHint,
   onEdit,
   onDelete,
+  onStopSeries,
 }: ScheduleDetailContentProps) {
   const status = SCHEDULE_STATUS_MAP[data.status];
   const isLocked = isScheduleLocked(data.status);
   const shiftTime = formatShiftTimeRange(data.startTime, data.endTime);
   const accent = STATUS_ACCENT[data.status] ?? STATUS_ACCENT.SCHEDULED;
   const assignees = data.assignees.length > 0 ? data.assignees : [];
+  const recurringCount = assignees.filter((a) => a.series).length;
 
   if (loading) {
     return (
@@ -153,9 +190,12 @@ export function ScheduleDetailContent({
               </p>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <Badge variant={status.variant}>{status.label}</Badge>
-                <Badge variant={data.scheduleType === "OVERTIME" ? "default" : "outline"}>
-                  {data.scheduleType === "OVERTIME" ? "Tăng ca" : "Ca thường"}
-                </Badge>
+                {recurringCount > 0 && (
+                  <Badge variant="outline" className="gap-1">
+                    <Repeat className="size-3" />
+                    Lặp lại
+                  </Badge>
+                )}
                 {data.dayInfo?.isHoliday && (
                   <Badge variant="secondary">
                     {data.dayInfo.holidayName || "Ngày lễ"}
@@ -178,9 +218,14 @@ export function ScheduleDetailContent({
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Badge variant={status.variant}>{status.label}</Badge>
                 <Badge variant="outline">{assignees.length} nhân viên</Badge>
-                <Badge variant={data.scheduleType === "OVERTIME" ? "default" : "outline"}>
-                  {data.scheduleType === "OVERTIME" ? "Tăng ca" : "Ca thường"}
-                </Badge>
+                {recurringCount > 0 && (
+                  <Badge variant="outline" className="gap-1">
+                    <Repeat className="size-3" />
+                    {recurringCount === assignees.length
+                      ? "Lặp lại"
+                      : `${recurringCount} lặp lại`}
+                  </Badge>
+                )}
                 {data.dayInfo?.isHoliday && (
                   <Badge variant="secondary">
                     {data.dayInfo.holidayName || "Ngày lễ"}
@@ -223,11 +268,6 @@ export function ScheduleDetailContent({
             label="Khung giờ ca"
             value={shiftTime}
           />
-          <InfoItem
-            icon={<Timer className="size-4" />}
-            label="Loại ca"
-            value={data.scheduleType === "OVERTIME" ? "Tăng ca" : "Ca thường"}
-          />
           {data.dayInfo && (
             <InfoItem
               icon={<CalendarDays className="size-4" />}
@@ -261,7 +301,12 @@ export function ScheduleDetailContent({
             Nhân viên trong ca
           </div>
           {assignees.map((assignee) => (
-            <AssigneeCard key={assignee.userId} assignee={assignee} />
+            <AssigneeCard
+              key={assignee.userId}
+              assignee={assignee}
+              canStopSeries={canDelete && !isLocked}
+              onStopSeries={onStopSeries}
+            />
           ))}
         </div>
 

@@ -24,7 +24,8 @@ import {
   sortSchedulesForDay,
   type CalendarScheduleEntry,
 } from "@/app/(protected)/staffs/shared/schedule-utils";
-import type { WorkingSchedule } from "@/types/working-schedule";
+import { getVietnamDateString } from "@/app/(protected)/staffs/shared/vietnam-datetime";
+import type { ScheduleAssignee, WorkingSchedule } from "@/types/working-schedule";
 import { ScheduleDayListItem } from "./schedule-day-list-item";
 import { ScheduleDetailContent } from "./schedule-detail-content";
 import { useSchedule } from "./schedule-provider";
@@ -40,6 +41,7 @@ export function ScheduleDetailPanel() {
     selectedDayDate,
     setSelectedDayDate,
     fetchScheduleDetail,
+    openStopSeries,
     setCurrentRow,
     setOpen,
     filters,
@@ -158,6 +160,18 @@ export function ScheduleDetailPanel() {
     setOpen("delete");
   }
 
+  function handleStopSeries(assignee: ScheduleAssignee) {
+    if (!data || !assignee.series) return;
+    // Mặc định dừng từ ngày đang xem, nhưng không lùi về quá khứ.
+    const today = getVietnamDateString();
+    const viewed = data.workDate.slice(0, 10);
+    openStopSeries({
+      series: assignee.series,
+      staffName: assignee.staffName,
+      defaultFromDate: viewed > today ? viewed : today,
+    });
+  }
+
   function handleEdit() {
     if (!selectedSchedule) return;
     setCurrentRow(selectedSchedule);
@@ -274,6 +288,7 @@ export function ScheduleDetailPanel() {
               readOnlyHint={readOnlyHint}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onStopSeries={handleStopSeries}
             />
           )}
         </div>

@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil, Plus } from "lucide-react";
+import { endOfMonth, format } from "date-fns";
+import { Pencil, Plus, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -31,26 +32,36 @@ import {
 } from "@/components/ui/select";
 import { getSessionRole } from "@/lib/auth";
 import { getVietnamDateString } from "@/app/(protected)/staffs/shared/vietnam-datetime";
+import { DEFAULT_SERIES_WEEKDAYS } from "@/app/(protected)/staffs/shared/schedule-series";
 import type { WorkingSchedule } from "@/types/working-schedule";
 import { ScheduleStaffPicker } from "./schedule-staff-picker";
 import { useSchedule } from "./schedule-provider";
+import { ScheduleSeriesFields } from "./schedule-series-fields";
+import {
+  scheduleFormSchema,
+  type ScheduleFormValues,
+} from "./schedule-form-schema";
 import { EmptyOptionsNotice } from "@/components/empty-options-notice";
 
-const scheduleFormSchema = z.object({
-  userIds: z.array(z.string()).min(1, "Vui lòng chọn ít nhất một nhân viên"),
-  shiftTemplateId: z.string().min(1, "Vui lòng chọn ca làm"),
-  workDate: z.string().min(1, "Vui lòng chọn ngày"),
-  scheduleType: z.enum(["NORMAL", "OVERTIME"]),
-});
-
-type ScheduleFormValues = z.infer<typeof scheduleFormSchema>;
+function getAddDefaults(): ScheduleFormValues {
+  const today = getVietnamDateString();
+  return {
+    userIds: [],
+    shiftTemplateId: "",
+    repeat: false,
+    workDate: today,
+    startDate: today,
+    endDate: format(endOfMonth(new Date(`${today}T00:00:00`)), "yyyy-MM-dd"),
+    weekdays: DEFAULT_SERIES_WEEKDAYS,
+  };
+}
 
 function getEditDefaults(schedule: WorkingSchedule): ScheduleFormValues {
   return {
+    ...getAddDefaults(),
     userIds: schedule.assignees.map((assignee) => assignee.userId),
     shiftTemplateId: schedule.shiftTemplateId,
     workDate: schedule.workDate.slice(0, 10),
-    scheduleType: schedule.scheduleType === "OVERTIME" ? "OVERTIME" : "NORMAL",
   };
 }
 
@@ -66,19 +77,21 @@ export function ScheduleMutateDialog({
   currentRow?: WorkingSchedule | null;
 }) {
   const isEdit = mode === "edit" && Boolean(currentRow);
-  const { handleAdd, handleEdit, shiftTemplateOptions, staffOptions, setOpen } =
-    useSchedule();
+  const {
+    handleAdd,
+    handleAddSeries,
+    handleEdit,
+    shiftTemplateOptions,
+    staffOptions,
+    setOpen,
+  } = useSchedule();
   const isTenantOwner = getSessionRole() === "TENANT_OWNER";
 
   const form = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleFormSchema),
-    defaultValues: {
-      userIds: [],
-      shiftTemplateId: "",
-      workDate: getVietnamDateString(),
-      scheduleType: "NORMAL",
-    },
+    defaultValues: getAddDefaults(),
   });
+  const repeat = form.watch("repeat");
 
   useEffect(() => {
     if (!open) return;
@@ -88,12 +101,7 @@ export function ScheduleMutateDialog({
       return;
     }
 
-    form.reset({
-      userIds: [],
-      shiftTemplateId: "",
-      workDate: getVietnamDateString(),
-      scheduleType: "NORMAL",
-    });
+    form.reset(getAddDefaults());
   }, [open, isEdit, currentRow, form]);
 
   async function onSubmit(values: ScheduleFormValues) {
@@ -101,12 +109,19 @@ export function ScheduleMutateDialog({
       userId: values.userIds,
       shiftTemplateId: values.shiftTemplateId,
       workDate: values.workDate,
-      scheduleType: values.scheduleType,
     };
 
     try {
       if (isEdit && currentRow) {
         await handleEdit(currentRow.id, payload);
+      } else if (values.repeat) {
+        await handleAddSeries({
+          userId: values.userIds,
+          shiftTemplateId: values.shiftTemplateId,
+          startDate: values.startDate,
+          endDate: values.endDate,
+          weekdays: values.weekdays,
+        });
       } else {
         await handleAdd(payload);
       }
@@ -175,20 +190,6 @@ export function ScheduleMutateDialog({
 
             <FormField
               control={form.control}
-              name="workDate"
-              render={({ field }) => (
-                <FormItem className="min-w-0 sm:max-w-[240px]">
-                  <FormLabel>Ngày làm</FormLabel>
-                  <FormControl>
-                    <Input type="date" className="w-full" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="shiftTemplateId"
               render={({ field }) => (
                 <FormItem>
@@ -228,27 +229,50 @@ export function ScheduleMutateDialog({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="scheduleType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Loại ca</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+            {!isEdit && (
+              <FormField
+                control={form.control}
+                name="repeat"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel className="flex items-center gap-2">
+                        <Repeat className="size-4" />
+                        Lặp lại theo khoảng ngày
+                      </FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Nhân viên giữ ca này từ ngày đến ngày, vào các thứ đã chọn.
+                      </p>
+                    </div>
                     <FormControl>
-                      <SelectTrigger className="cursor-pointer w-full">
-                        <SelectValue placeholder="Chọn loại ca" />
-                      </SelectTrigger>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="cursor-pointer"
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="NORMAL">Ca thường</SelectItem>
-                      <SelectItem value="OVERTIME">Tăng ca</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {repeat && !isEdit ? (
+              <ScheduleSeriesFields form={form} />
+            ) : (
+              <FormField
+                control={form.control}
+                name="workDate"
+                render={({ field }) => (
+                  <FormItem className="min-w-0 sm:max-w-[240px]">
+                    <FormLabel>Ngày làm</FormLabel>
+                    <FormControl>
+                      <Input type="date" className="w-full" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <DialogFooter>
               <Button
@@ -275,7 +299,7 @@ export function ScheduleMutateDialog({
                 ) : (
                   <>
                     <Plus className="mr-2 size-4" />
-                    Phân ca
+                    {repeat ? "Tạo lịch lặp" : "Phân ca"}
                   </>
                 )}
               </Button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Clock, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { SCHEDULE_STATUS_MAP } from "@/app/(protected)/staffs/shared/schedule-status";
@@ -45,9 +45,10 @@ export function ScheduleDayListItem({
           <Badge variant={status.variant} className="text-[10px] px-1.5 py-0">
             {status.label}
           </Badge>
-          {schedule.scheduleType === "OVERTIME" && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-              Tăng ca
+          {entry.assignee?.series && (
+            <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0">
+              <Repeat className="size-2.5" />
+              Lặp lại
             </Badge>
           )}
         </div>

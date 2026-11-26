@@ -1,6 +1,13 @@
 export type ScheduleStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
-export type ScheduleType = "NORMAL" | "OVERTIME";
+/** Lịch lặp lại một lượt phân công thuộc về (0 = CN … 6 = T7). */
+export interface ScheduleSeriesRef {
+  id: string;
+  startDate: string;
+  endDate: string;
+  weekdays: number[];
+  status: "ACTIVE" | "DELETED" | string;
+}
 
 export type ScheduleDayType =
   | "NORMAL"
@@ -42,6 +49,7 @@ export interface ApiScheduleUser {
   role?: string;
   branchId?: string | { id: string };
   warehouseId?: string | { id: string };
+  series?: ScheduleSeriesRef | null;
 }
 
 /** Lịch làm việc thô từ BE. */
@@ -61,7 +69,6 @@ export interface ApiWorkingSchedule {
   workDate: string;
   startAt: string;
   endAt: string;
-  scheduleType?: ScheduleType | string;
   dayInfo?: ScheduleDayInfo;
   status: ScheduleStatus | "DELETED";
   createdAt: string;
@@ -76,6 +83,8 @@ export interface ScheduleAssignee {
   role: string;
   branchId?: string;
   warehouseId?: string;
+  /** Khác null = lượt này sinh ra từ một lịch lặp lại. */
+  series: ScheduleSeriesRef | null;
 }
 
 /** Một ca làm (có thể nhiều nhân viên). */
@@ -94,7 +103,6 @@ export interface WorkingSchedule {
   startTime: string;
   endTime: string;
   workDate: string;
-  scheduleType: ScheduleType;
   dayInfo?: ScheduleDayInfo;
   status: ScheduleStatus;
   createdAt: string;
@@ -108,7 +116,6 @@ export interface WorkingScheduleQueryParams {
   startDate?: string;
   endDate?: string;
   status?: ScheduleStatus;
-  scheduleType?: ScheduleType;
 }
 
 export interface WorkingScheduleListApiResponse {
@@ -125,7 +132,21 @@ export interface CreateWorkingSchedulePayload {
   userId: string | string[];
   shiftTemplateId: string;
   workDate: string;
-  scheduleType?: ScheduleType;
+}
+
+export interface CreateScheduleSeriesPayload {
+  userId: string[];
+  shiftTemplateId: string;
+  startDate: string;
+  endDate: string;
+  /** 0 = CN … 6 = T7; bỏ trống = mọi ngày. */
+  weekdays?: number[];
+}
+
+export interface CreateScheduleSeriesResult {
+  series: ScheduleSeriesRef & { shiftTemplateId: string; userIds: string[] };
+  createdCount: number;
+  skipped: { userId: string; workDate: string }[];
 }
 
 export interface UpdateShiftTemplatePayload {

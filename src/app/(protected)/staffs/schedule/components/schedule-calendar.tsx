@@ -11,7 +11,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { Search } from "lucide-react";
+import { Repeat, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -50,7 +50,9 @@ function ScheduleDayChip({
 }) {
   const { schedule, displayName } = entry;
   const status = SCHEDULE_STATUS_MAP[schedule.status];
-  const isOvertime = schedule.scheduleType === "OVERTIME";
+  const isRecurring = entry.assignee
+    ? Boolean(entry.assignee.series)
+    : schedule.assignees.some((a) => a.series);
 
   return (
     <button
@@ -69,18 +71,18 @@ function ScheduleDayChip({
           "bg-sky-500/15 border-sky-500/30 text-sky-700 dark:text-sky-300",
         status.variant === "secondary" &&
           "bg-muted border-border text-muted-foreground",
-        isOvertime && "border-amber-500/50",
       )}
-      title={`${displayName} · ${schedule.shiftName}${isOvertime ? " · Tăng ca" : ""}`}
+      title={`${displayName} · ${schedule.shiftName}${isRecurring ? " · Lặp lại" : ""}`}
     >
       <span className="truncate">
         <span className="font-medium">{displayName}</span>
         <span className="opacity-75"> · {schedule.shiftName}</span>
       </span>
-      {isOvertime && (
-        <span className="ml-auto shrink-0 rounded bg-amber-500/20 px-1 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
-          TC
-        </span>
+      {isRecurring && (
+        <Repeat
+          className="ml-auto size-3 shrink-0 opacity-70"
+          aria-label="Lặp lại"
+        />
       )}
     </button>
   );
@@ -88,8 +90,6 @@ function ScheduleDayChip({
 
 function CurrentShiftBanner({ schedule }: { schedule: WorkingSchedule }) {
   const timeRange = formatShiftTimeRange(schedule.startTime, schedule.endTime);
-  const isOvertime = schedule.scheduleType === "OVERTIME";
-
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2.5 text-sm">
       <span className="font-semibold text-sky-800 dark:text-sky-200">
@@ -99,7 +99,6 @@ function CurrentShiftBanner({ schedule }: { schedule: WorkingSchedule }) {
         {schedule.shiftName !== "-" ? schedule.shiftName : "Ca làm"}
         {" · "}
         {timeRange}
-        {isOvertime ? " · Tăng ca" : ""}
       </span>
       {schedule.dayInfo?.isHoliday && schedule.dayInfo.holidayName && (
         <span className="text-xs text-amber-700 dark:text-amber-300">

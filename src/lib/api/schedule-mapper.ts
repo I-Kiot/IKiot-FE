@@ -66,6 +66,7 @@ function mapAssignee(user: ApiScheduleUser): ScheduleAssignee {
     role: user.role ?? "STAFF",
     branchId: resolveWorkplaceId(user.branchId),
     warehouseId: resolveWorkplaceId(user.warehouseId),
+    series: user.series ?? null,
   };
 }
 
@@ -127,8 +128,6 @@ export function mapScheduleFromApi(raw: ApiWorkingSchedule): WorkingSchedule {
   const workDate = resolveWorkDateText(raw.workDate, raw.startAt);
 
   const { startTime, endTime } = resolveShiftTimes(raw, shiftTemplate);
-  const scheduleType =
-    raw.scheduleType === "OVERTIME" ? "OVERTIME" : "NORMAL";
 
   return {
     id: raw.id,
@@ -144,7 +143,6 @@ export function mapScheduleFromApi(raw: ApiWorkingSchedule): WorkingSchedule {
     startTime,
     endTime,
     workDate,
-    scheduleType,
     dayInfo: raw.dayInfo
       ? {
           dayType: raw.dayInfo.dayType ?? "NORMAL",
