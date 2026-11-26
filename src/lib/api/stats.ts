@@ -670,6 +670,17 @@ export const statsApi = {
 
   exportUnreconciled: (params?: { branchId?: string }) => getExport('/stats/export/unreconciled', params),
 
+  /** Sổ thu chi: mọi dòng khớp bộ lọc đang xem (không phân trang). */
+  exportCashflow: (
+    params?: StatsDateRangeParams & {
+      flow?: 'ORD' | 'SUP';
+      flowType?: 'INCOME' | 'EXPENSE';
+      paymentMethod?: string;
+      category?: CashflowCategory;
+      fund?: CashflowFund;
+    },
+  ) => getExport('/stats/export/cashflow', params),
+
   /** File của các trang Báo cáo: mỗi báo cáo một sheet, cùng cột với bảng trên trang. */
   exportReport: (
     params?: StatsDateRangeParams & {

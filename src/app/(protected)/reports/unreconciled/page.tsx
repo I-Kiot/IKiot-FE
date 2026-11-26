@@ -1,66 +1,31 @@
 // [Trang – Đối soát tiền] Tiền còn nằm ngoài sổ két / ngân hàng tại thời điểm xem.
+// Ô tóm tắt kiêm tab: mỗi lúc một danh sách, mục chọn nằm trên URL (`?muc=`) để gửi link được.
 'use client'
 
 import { useCallback, useState, Suspense } from 'react'
-import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { RefreshCw } from 'lucide-react'
 import { ExportExcelButton } from '@/components/export-excel-button'
 import { PageHeader } from '@/components/page-header'
 import { JournalGapNotice } from '@/components/journal-gap-notice'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { allows } from '@/components/sidebar/constants/role-permissions'
 import { useAuth } from '@/store/hooks/use-auth'
 import { ReportLocationSelect } from '@/components/report-location-select'
 import { useReportLocation } from '@/hooks/use-report-location'
 import { statsApi } from '@/lib/api/stats'
-import { SEPAY_OUTCOME_LABELS, SEPAY_REJECT_REASON_LABELS } from '@/types/sepay-transaction'
-import { categoryLabel, formatNumber, formatVND, negativeClass } from '@/lib/stats-format'
+import { formatNumber, formatVND } from '@/lib/stats-format'
 import { useAsyncData } from '../../dashboard/hooks/use-async-data'
+import { TONE_TEXT } from '../../dashboard/shared/tones'
+import { HeldPanel, OverpaidPanel, SepayPanel, ShipperCashPanel } from './_components/action-panels'
+import { BalancesPanel } from './_components/balances-panel'
+import { formatDateTime } from './_components/shared'
+import { SECTIONS, SummaryTabs, actionKinds, type Section } from './_components/summary-tabs'
 
-const formatDateTime = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Asia/Ho_Chi_Minh',
-      })
-    : '-'
-
-function Section({
-  title,
-  description,
-  total,
-  children,
-}: {
-  title: string
-  description: string
-  total?: string
-  children: React.ReactNode
-}) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-3">
-        <div className="space-y-1.5">
-          <CardTitle className="text-base">{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </div>
-        {total && <p className="shrink-0 text-lg font-semibold tabular-nums">{total}</p>}
-      </CardHeader>
-      <CardContent className="space-y-3">{children}</CardContent>
-    </Card>
-  )
-}
-
-const Empty = ({ text }: { text: string }) => <p className="py-2 text-sm text-muted-foreground">{text}</p>
-
-/** Bọc Suspense vì nơi xem đọc từ URL (`useSearchParams`). */
+/** Bọc Suspense vì nơi xem và mục đang mở đọc từ URL (`useSearchParams`). */
 export default function UnreconciledPage() {
   return (
     <Suspense fallback={null}>
@@ -75,9 +40,28 @@ function Unreconciled() {
   const location = useReportLocation()
   const { place } = location
   const [reloadKey, setReloadKey] = useState(0)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const load = useCallback(() => statsApi.getUnreconciled({ branchId: place }), [place])
   const { data, isLoading, failed } = useAsyncData(load, reloadKey)
+
+  const kinds = data ? actionKinds(data) : []
+  const pending = kinds.filter((kind) => kind.count > 0)
+  const pendingTotal = pending.reduce((sum, kind) => sum + kind.amount, 0)
+  const pendingCount = pending.reduce((sum, kind) => sum + kind.count, 0)
+
+  // Không chọn gì thì mở loại đầu tiên còn khoản treo; hết thì mở số dư tham khảo.
+  const fromUrl = searchParams.get('muc')
+  const section: Section = (SECTIONS as readonly string[]).includes(fromUrl ?? '')
+    ? (fromUrl as Section)
+    : (pending[0]?.id ?? 'balances')
+  const selectSection = (next: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('muc', next)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
 
   return (
     <div className="flex-1 space-y-6 px-6 pt-0">
@@ -109,10 +93,13 @@ function Unreconciled() {
       />
 
       {!data && isLoading && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 w-full" />
-          ))}
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-[100px] w-full rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="h-64 w-full" />
         </div>
       )}
       {failed && <Card className="p-6 text-sm text-muted-foreground">Không tải được số liệu đối soát. Bấm làm mới để thử lại.</Card>}
@@ -124,277 +111,35 @@ function Unreconciled() {
             firstJournalAt={data.journalCoverage.firstJournalAt}
           />
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Section
-              title="Tiền mặt shipper đang giữ"
-              description="Khách đã trả tiền mặt cho shipper nhưng chưa nộp về, chưa vào két hay quỹ nào"
-              total={formatVND(data.shipperCash.amount)}
-            >
-              {data.shipperCash.items.length === 0 ? (
-                <Empty text="Không có khoản nào đang chờ nộp." />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Shipper</TableHead>
-                      <TableHead className="text-right">Số đơn</TableHead>
-                      <TableHead>Cũ nhất</TableHead>
-                      <TableHead className="text-right">Số tiền</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.shipperCash.items.map((item, index) => (
-                      <TableRow key={item.collectorId ?? index}>
-                        <TableCell>{item.collectorName ?? 'Không rõ'}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatNumber(item.orderCount)}</TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(item.oldestPaidAt)}</TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">{formatVND(item.amount)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </Section>
-
-            <Section
-              title="Giao dịch SePay chưa xử lý"
-              description="Chuyển thiếu, bị từ chối, không gắn được đơn hoặc trả dư mà chưa có người xử lý"
-              total={`${formatNumber(data.sepayExceptions.count)} dòng · ${formatVND(data.sepayExceptions.amount)}`}
-            >
-              {data.sepayExceptions.excessAmount > 0 && (
-                <p className="text-xs text-muted-foreground">Trong đó trả dư: {formatVND(data.sepayExceptions.excessAmount)}</p>
-              )}
-              {data.sepayExceptions.items.length === 0 ? (
-                <Empty text="Không có giao dịch nào cần xử lý." />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Kết quả</TableHead>
-                      <TableHead>Đơn</TableHead>
-                      <TableHead>Thời gian</TableHead>
-                      <TableHead className="text-right">Số tiền</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.sepayExceptions.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <Badge variant="warning">{SEPAY_OUTCOME_LABELS[item.outcome as keyof typeof SEPAY_OUTCOME_LABELS] ?? item.outcome}</Badge>
-                          {item.rejectReason && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {SEPAY_REJECT_REASON_LABELS[item.rejectReason as keyof typeof SEPAY_REJECT_REASON_LABELS] ?? item.rejectReason}
-                            </p>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {item.orderId ? (
-                            <Link href={`/sales/orders/${item.orderId}`} className="text-primary hover:underline">
-                              {item.orderCode ?? 'Xem đơn'}
-                            </Link>
-                          ) : (
-                            '-'
-                          )}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(item.createdAt)}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatVND(item.amount)}
-                          {item.excessAmount > 0 && <p className="text-xs text-muted-foreground">dư {formatVND(item.excessAmount)}</p>}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-              {data.sepayExceptions.count > data.sepayExceptions.items.length && (
-                <p className="text-xs text-muted-foreground">Chỉ hiện {data.sepayExceptions.items.length} dòng đầu.</p>
-              )}
-              {canSeeSepay && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/cashflow/sepay">Mở danh sách giao dịch SePay để xử lý</Link>
-                </Button>
-              )}
-            </Section>
-
-            <Section
-              title="Đơn thu dư tiền"
-              description="Khách đã trả nhiều hơn giá trị đơn - cần hoàn phần dư"
-              total={`${formatNumber(data.overpaidOrders.count)} đơn · ${formatVND(data.overpaidOrders.amount)}`}
-            >
-              {data.overpaidOrders.items.length === 0 ? (
-                <Empty text="Không có đơn nào thu dư." />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Đơn</TableHead>
-                      <TableHead className="text-right">Giá trị đơn</TableHead>
-                      <TableHead className="text-right">Thu dư</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.overpaidOrders.items.map((item) => (
-                      <TableRow key={item.orderId}>
-                        <TableCell>
-                          <Link href={`/sales/orders/${item.orderId}`} className="font-medium text-primary hover:underline">
-                            {item.code}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">{formatVND(item.grandTotal)}</TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">{formatVND(item.overpaidBy)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </Section>
-
-            <Section
-              title="Tiền giữ treo chưa quyết định"
-              description="Đơn đã trả hàng / huỷ mà shop còn giữ tiền của khách - mở đơn để hoàn lại hoặc giữ lại (ghi thu nhập khác)"
-              total={`${formatNumber(data.heldUndecided.count)} đơn · ${formatVND(data.heldUndecided.amount)}`}
-            >
-              {data.heldUndecided.items.length === 0 ? (
-                <Empty text="Không có khoản tiền giữ treo nào." />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Đơn</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead>Kết thúc lúc</TableHead>
-                      <TableHead className="text-right">Tiền đang giữ</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.heldUndecided.items.map((item) => (
-                      <TableRow key={item.orderId}>
-                        <TableCell>
-                          <Link href={`/sales/orders/${item.orderId}`} className="font-medium text-primary hover:underline">
-                            {item.code}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{item.status === 'CANCELLED' ? 'Đã huỷ' : 'Đã trả hàng'}</TableCell>
-                        <TableCell>{formatDateTime(item.closedAt)}</TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">{formatVND(item.held)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </Section>
-
-            {data.unallocatedBank && (
-              <Section
-                title="Tiền về ngân hàng chưa gắn đơn"
-                description="Tiền khách chuyển khoản vào tài khoản của shop nhưng chưa gắn được đơn nào (đã trừ phần hoàn)"
-                total={formatVND(data.unallocatedBank.net)}
-              >
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-lg border p-3">
-                    <p className="text-xs text-muted-foreground">Tiền về</p>
-                    <p className="font-semibold tabular-nums">{formatVND(data.unallocatedBank.receipts)}</p>
-                  </div>
-                  <div className="rounded-lg border p-3">
-                    <p className="text-xs text-muted-foreground">Đã hoàn</p>
-                    <p className="font-semibold tabular-nums">{formatVND(data.unallocatedBank.refunds)}</p>
-                  </div>
-                </div>
-              </Section>
+          <p className="text-sm text-muted-foreground" role="status">
+            {pending.length === 0 ? (
+              <span className={TONE_TEXT.emerald}>Mọi khoản đều đã khớp, không có gì cần xử lý.</span>
+            ) : (
+              <>
+                Còn <span className="font-semibold text-foreground tabular-nums">{formatNumber(pendingCount)}</span> khoản cần xử lý, tổng{' '}
+                <span className="font-semibold text-foreground tabular-nums">{formatVND(pendingTotal)}</span>. Chọn một ô để xem danh sách.
+              </>
             )}
+          </p>
 
-            <Section
-              title="Quỹ chủ"
-              description="Tiền shipper nộp thẳng cho chủ và khoản chi tiền mặt trả nhà cung cấp - không đi qua két chi nhánh"
-              total={formatVND(data.ownerFund.balance)}
-            >
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Tiền vào</p>
-                  <p className="font-semibold tabular-nums text-green-600">{formatVND(data.ownerFund.income)}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Tiền ra</p>
-                  <p className="font-semibold tabular-nums text-red-600">{formatVND(data.ownerFund.expense)}</p>
-                </div>
-              </div>
-              {data.ownerFund.byCategory.length > 0 && (
-                <ul className="space-y-1 text-sm">
-                  {data.ownerFund.byCategory.map((row) => (
-                    <li key={`${row.category}-${row.flowType}`} className="flex justify-between gap-3">
-                      <span>
-                        {categoryLabel(row.category)} <span className="text-xs text-muted-foreground">({row.count})</span>
-                      </span>
-                      <span className={`tabular-nums ${row.flowType === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
-                        {row.flowType === 'INCOME' ? '+' : '−'}
-                        {formatVND(row.amount)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Section>
-
-            <Section
-              title="Tiền mặt tại quầy kho"
-              description="Khách tới kho nhận hàng và trả tiền mặt tại quầy. Kho không có két nên khoản này không nằm trong đối soát két nào"
-              total={formatVND(data.warehouseCounterCash.net)}
-            >
-              {data.warehouseCounterCash.items.length === 0 ? (
-                <Empty text="Chưa có tiền mặt thu tại quầy kho." />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Kho</TableHead>
-                      <TableHead className="text-right">Thu</TableHead>
-                      <TableHead className="text-right">Chi</TableHead>
-                      <TableHead className="text-right">Ròng</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.warehouseCounterCash.items.map((item) => (
-                      <TableRow key={item.locationId}>
-                        <TableCell>{item.locationName ?? 'Kho'}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatVND(item.income)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatVND(item.expense)}</TableCell>
-                        <TableCell className={`text-right font-medium tabular-nums ${negativeClass(item.net)}`}>{formatVND(item.net)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </Section>
-
-            <Section
-              title="Hoàn tiền mặt trừ vào két chi nhánh"
-              description="Đơn thu tiền qua shipper hoặc quầy kho nhưng hoàn bằng tiền mặt từ két chi nhánh: két sẽ hụt đúng bằng số này khi đối soát"
-              total={`${formatNumber(data.cashRefundsAgainstDrawer.count)} lần · ${formatVND(data.cashRefundsAgainstDrawer.amount)}`}
-            >
-              {data.cashRefundsAgainstDrawer.items.length === 0 ? (
-                <Empty text="Không có khoản hoàn nào như vậy." />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nơi đặt két</TableHead>
-                      <TableHead className="text-right">Số lần</TableHead>
-                      <TableHead className="text-right">Số tiền</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.cashRefundsAgainstDrawer.items.map((item) => (
-                      <TableRow key={item.locationId}>
-                        <TableCell>{item.locationName ?? 'Chi nhánh'}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatNumber(item.count)}</TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">{formatVND(item.amount)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </Section>
-          </div>
+          <Tabs value={section} onValueChange={selectSection} className="gap-4">
+            <SummaryTabs kinds={kinds} />
+            <TabsContent value="shipper">
+              <ShipperCashPanel data={data} />
+            </TabsContent>
+            <TabsContent value="sepay">
+              <SepayPanel data={data} canHandle={canSeeSepay} />
+            </TabsContent>
+            <TabsContent value="overpaid">
+              <OverpaidPanel data={data} />
+            </TabsContent>
+            <TabsContent value="held">
+              <HeldPanel data={data} />
+            </TabsContent>
+            <TabsContent value="balances">
+              <BalancesPanel data={data} />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
     </div>
