@@ -4,6 +4,7 @@ import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
+import { ActorCell } from "./actor-cell";
 import { formatVietnamDateTime } from "@/app/(protected)/staffs/shared/vietnam-datetime";
 import { listTenantAuditLogs, type AuditLog } from "@/lib/api/audit";
 import { Badge } from "@/components/ui/badge";
@@ -62,11 +63,6 @@ const RESOURCE_LABELS: Record<string, string> = {
   "Stock-movements": "Phiếu kho",
   "Cash-flows": "Thu chi",
   "Cash-drawer-sessions": "Ca két tiền",
-};
-
-const ROLE_LABELS: Record<string, string> = {
-  TENANT_OWNER: "Chủ cửa hàng",
-  STAFF: "Nhân viên",
 };
 
 const resourceLabel = (resource?: string | null) =>
@@ -219,7 +215,7 @@ export function AllActivityTab() {
           <TableHeader className="bg-muted/40">
             <TableRow>
               <TableHead className="w-[170px] text-sm font-semibold">Thời gian</TableHead>
-              <TableHead className="text-sm font-semibold">Người thực hiện</TableHead>
+              <TableHead className="w-[240px] text-sm font-semibold">Người thực hiện</TableHead>
               <TableHead className="w-[110px] text-sm font-semibold">Thao tác</TableHead>
               <TableHead className="w-[150px] text-sm font-semibold">Đối tượng</TableHead>
               <TableHead className="text-sm font-semibold">Chi tiết</TableHead>
@@ -249,14 +245,7 @@ export function AllActivityTab() {
                     {formatVietnamDateTime(log.createdAt)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{log.userName || "Không rõ"}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {[log.userRole && (ROLE_LABELS[log.userRole] ?? log.userRole), log.userEmail]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    </div>
+                    <ActorCell actor={log.actor} fallbackName={log.userName} fallbackRole={log.userRole} />
                   </TableCell>
                   <TableCell>
                     <Badge

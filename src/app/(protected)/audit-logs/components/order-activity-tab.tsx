@@ -22,9 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ActorCell } from "./actor-cell";
 import { formatVietnamDateTime } from "@/app/(protected)/staffs/shared/vietnam-datetime";
 import {
-  actorLabel,
   eventTypeLabel,
   formatChangeValue,
   lineChangeTexts,
@@ -196,7 +196,7 @@ export function OrderActivityTab() {
           <TableHeader className="bg-muted/40">
             <TableRow>
               <TableHead className="w-[170px] text-sm font-semibold">Thời gian</TableHead>
-              <TableHead className="w-[210px] text-sm font-semibold">Người thực hiện</TableHead>
+              <TableHead className="w-[260px] text-sm font-semibold">Người thực hiện</TableHead>
               <TableHead className="w-[210px] text-sm font-semibold">Thao tác</TableHead>
               <TableHead className="w-[150px] text-sm font-semibold">Đơn hàng</TableHead>
               <TableHead className="text-sm font-semibold">Thay đổi</TableHead>
@@ -226,7 +226,20 @@ export function OrderActivityTab() {
                     <TableCell className="text-xs text-muted-foreground">
                       {formatVietnamDateTime(event.occurredAt)}
                     </TableCell>
-                    <TableCell className="text-sm">{actorLabel(event)}</TableCell>
+                    <TableCell>
+                      <ActorCell
+                        actor={event.actor}
+                        fallbackName={event.actorName}
+                        fallbackRole={event.actorRole}
+                        automated={
+                          event.source === "WEBHOOK"
+                            ? "SePay (tự động)"
+                            : event.source === "SYSTEM"
+                              ? "Hệ thống"
+                              : null
+                        }
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col items-start gap-1">
                         <span className="text-sm font-medium">

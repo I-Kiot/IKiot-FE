@@ -1,6 +1,15 @@
 import client from "./client";
 import type { OrderEvent } from "@/types/order-event";
 
+export interface AuditActor {
+  id: string;
+  name: string | null;
+  phone: string;
+  avatarUrl: string | null;
+  systemRole: string;
+  roleLabel: string;
+}
+
 export interface AuditLog {
   id: string;
   userId?: string;
@@ -14,6 +23,7 @@ export interface AuditLog {
   tenantName?: string;
   ipAddress?: string;
   createdAt: string;
+  actor?: AuditActor | null;
 }
 
 export interface AuditLogResponse {
@@ -50,6 +60,7 @@ export async function listTenantAuditLogs(params?: AuditLogsParams): Promise<Aud
 export interface OrderActivity extends OrderEvent {
   orderId: string;
   orderCode: string;
+  actor?: AuditActor | null;
 }
 
 export interface OrderActivityResponse {
