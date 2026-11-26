@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +66,7 @@ export function OtpStep({
   const [code, setCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [isDone, setIsDone] = useState(false);
   const [current, setCurrent] = useState<OtpDelivery>(delivery);
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [hint, setHint] = useState<string | null>(null);
@@ -79,7 +81,10 @@ export function OtpStep({
       setHint(null);
       try {
         await onSubmit(value);
+        // Thành công thì cha chuyển trang/bước; giữ trạng thái chờ đến khi rời màn để không bấm lại được.
+        setIsDone(true);
       } catch (error) {
+        setIsSubmitting(false);
         const body = getApiErrorBody(error);
         toast.error(body?.message || "Xác minh thất bại. Vui lòng thử lại.");
         setCode("");
@@ -88,8 +93,6 @@ export function OtpStep({
         }
         // Phiên xác minh hỏng hẳn: không còn gì để nhập tiếp, đưa người dùng về bước trước.
         if (body?.code === "OTP_CHALLENGE_INVALID") onBack();
-      } finally {
-        setIsSubmitting(false);
       }
     },
     [onSubmit, onBack],
@@ -120,7 +123,7 @@ export function OtpStep({
     }
   };
 
-  const busy = isSubmitting || isResending;
+  const busy = isSubmitting || isResending || isDone;
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
@@ -178,7 +181,8 @@ export function OtpStep({
         onClick={() => submit(code)}
         disabled={busy || code.length < OTP_LENGTH}
       >
-        {isSubmitting ? "Đang xác thực..." : submitLabel}
+        {(isSubmitting || isDone) && <Loader2 className="size-4 animate-spin" />}
+        {isDone ? "Đang chuyển trang..." : isSubmitting ? "Đang xác thực..." : submitLabel}
       </Button>
 
       <div className="flex items-center justify-between text-sm">
