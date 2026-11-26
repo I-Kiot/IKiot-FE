@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   type ExpandedState,
   type VisibilityState,
@@ -9,7 +9,10 @@ import {
   getExpandedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Funnel, RotateCcw, Search, TriangleAlert } from "lucide-react";
+import { Copy, Funnel, RotateCcw, Search, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
+import { copyRows } from "@/lib/clipboard-table";
+import { orderCopyRow } from "../shared/orders-copy";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -95,6 +98,12 @@ export function OrdersTable() {
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+
+  // Danh sách phân trang ở server: chỉ giữ lựa chọn trong trang đang xem, đổi trang / bộ lọc thì bỏ chọn.
+  useEffect(() => {
+    setRowSelection({});
+  }, [listQuery]);
 
   const table = useReactTable({
     data: orders,
@@ -107,9 +116,12 @@ export function OrdersTable() {
     getRowCanExpand: () => true,
     onColumnVisibilityChange: setColumnVisibility,
     onExpandedChange: setExpanded,
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     state: {
       columnVisibility,
       expanded,
+      rowSelection,
       pagination: { pageIndex: listQuery.page - 1, pageSize: listQuery.limit },
     },
   });
@@ -126,6 +138,16 @@ export function OrdersTable() {
 
 
   const columnCount = table.getVisibleLeafColumns().length;
+  const selectedOrders = orders.filter((order) => rowSelection[order.id]);
+
+  /** Mỗi đơn một dòng, chỉ giá trị, theo thứ tự trong danh sách - dán thẳng vào bảng Excel có sẵn cột. */
+  async function copySelected() {
+    if (await copyRows(selectedOrders.map(orderCopyRow))) {
+      toast.success(`Đã sao chép ${selectedOrders.length} đơn`);
+    } else {
+      toast.error("Trình duyệt chặn sao chép. Hãy thử lại.");
+    }
+  }
   const alerts = useOrderAlertsStore((state) => state.alerts);
   const showAlertBanner =
     !!alerts && (alerts.short > 0 || alerts.dueSoon > 0 || alerts.pickupOverdue > 0);
@@ -325,6 +347,19 @@ export function OrdersTable() {
           )}
         </div>
 
+        <div className="flex items-center gap-2">
+          {selectedOrders.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 cursor-pointer"
+              onClick={copySelected}
+              title="Mỗi đơn một dòng, dán vào Excel / Google Sheets"
+            >
+              <Copy />
+              Sao chép {selectedOrders.length} đơn
+            </Button>
+          )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-9 cursor-pointer">
@@ -346,6 +381,7 @@ export function OrdersTable() {
               ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       <div

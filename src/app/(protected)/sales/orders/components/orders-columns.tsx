@@ -3,6 +3,7 @@ import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { FULFILLMENT_TYPE_LABELS, type OrderListItem } from "@/types/order-flow";
@@ -39,6 +40,33 @@ export const ORDERS_COLUMN_LABELS: Record<string, string> = {
 };
 
 export const ordersColumns: ColumnDef<OrderListItem>[] = [
+  {
+    // Tích để sao chép (mỗi đơn một dòng, dán vào Excel). Chặn lan lên để tích không mở/đóng dòng.
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex items-center justify-center" onClick={(event) => event.stopPropagation()}>
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Chọn tất cả đơn trên trang"
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center" onClick={(event) => event.stopPropagation()}>
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label={`Chọn đơn ${row.original.code}`}
+        />
+      </div>
+    ),
+    size: 40,
+    enableHiding: false,
+  },
   {
     accessorKey: "code",
     header: ORDERS_COLUMN_LABELS.code,
