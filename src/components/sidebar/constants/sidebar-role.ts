@@ -46,8 +46,8 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       label: "Quản lý",
       items: [
         sidebarItems.tongQuan,
-        sidebarItems.baoCao,
         sidebarItems.thongKe,
+        sidebarItems.baoCao,
         sidebarItems.nhanVienChuCuaHang,
       ],
     },
@@ -73,8 +73,8 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       label: "Quản lý",
       items: [
         sidebarItems.tongQuan,
-        sidebarItems.baoCao,
         sidebarItems.thongKe,
+        sidebarItems.baoCao,
         sidebarItems.nhanVien,
       ],
     },
