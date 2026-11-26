@@ -6,9 +6,19 @@
  */
 export type TableCell = string | number | null | undefined;
 
-/** Tab / xuống dòng trong ô sẽ tách sai cột / dòng ở bản text: thay bằng khoảng trắng. */
+/** Nội dung ô: tab thành khoảng trắng (tab tách cột), xuống dòng giữ lại dạng `\n` để thành nhiều dòng trong cùng một ô. */
 function plain(cell: TableCell): string {
-  return cell === null || cell === undefined ? "" : String(cell).replace(/[\t\r\n]+/g, " ");
+  if (cell === null || cell === undefined) return "";
+  return String(cell)
+    .replace(/\t+/g, " ")
+    .replace(/\r\n?/g, "\n")
+    .trim();
+}
+
+/** Bản text: ô có xuống dòng hoặc dấu `"` được bọc trong `"..."` (nhân đôi `"` bên trong), như Excel / Sheets đọc TSV. */
+function tsvCell(cell: TableCell): string {
+  const text = plain(cell);
+  return /["\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 function escapeHtml(text: string): string {
@@ -21,7 +31,7 @@ function escapeHtml(text: string): string {
 
 /** Bản TSV: một dòng mỗi hàng, cột cách nhau bằng tab. */
 export function toTsv(rows: readonly (readonly TableCell[])[]): string {
-  return rows.map((row) => row.map(plain).join("\t")).join("\n");
+  return rows.map((row) => row.map(tsvCell).join("\t")).join("\n");
 }
 
 /** Bản HTML: số giữ kiểu số (`mso-number-format`) để Excel cộng được, chữ giữ dạng chữ (mã "001" không mất số 0). */
@@ -30,7 +40,9 @@ export function toHtmlTable(rows: readonly (readonly TableCell[])[]): string {
     if (typeof value === "number") {
       return `<td style="mso-number-format:'0'">${value}</td>`;
     }
-    return `<td style="mso-number-format:'\\@'">${escapeHtml(plain(value))}</td>`;
+    // `<br>` kèm `mso-data-placement:same-cell`: Excel xuống dòng trong ô thay vì sang dòng mới (như Alt+Enter).
+    const lines = plain(value).split("\n").map(escapeHtml);
+    return `<td style="mso-number-format:'\\@'">${lines.join('<br style="mso-data-placement:same-cell">')}</td>`;
   };
   const body = rows.map((row) => `<tr>${row.map(cell).join("")}</tr>`).join("");
   return `<meta charset="utf-8"><table>${body}</table>`;

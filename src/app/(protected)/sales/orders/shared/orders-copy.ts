@@ -41,7 +41,8 @@ export function orderCopyRow(order: OrderListItem): TableCell[] {
       (item) =>
         `${item.productName ?? item.sku ?? ""}${item.variantLabel ? ` (${item.variantLabel})` : ""} × ${item.quantity}`,
     )
-    .join("; ");
+    // Mỗi sản phẩm một dòng trong cùng ô (như Alt+Enter trong Excel).
+    .join("\n");
   return [
     order.code,
     order.branch?.name ?? "",
