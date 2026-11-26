@@ -29,9 +29,13 @@ import {
   canViewSchedule,
 } from "@/app/(protected)/staffs/shared/schedule-permissions";
 import { buildHolidayNamesByDate } from "@/app/(protected)/staffs/shared/schedule-day-meta";
+import { overlapDatesOf } from "@/app/(protected)/staffs/shared/schedule-series";
+import { formatVietnamWorkDate } from "@/app/(protected)/staffs/shared/vietnam-datetime";
 import type { Holiday } from "@/types/holiday";
 import type {
+  CreateScheduleSeriesPayload,
   CreateWorkingSchedulePayload,
+  ScheduleSeriesRef,
   ScheduleCalendarFilters,
   ScheduleStatus,
   ShiftTemplate,
@@ -44,7 +48,31 @@ import type { ScheduleStaffOption } from "./schedule-staff-picker";
 const EMPTY_SCHEDULES: WorkingSchedule[] = [];
 const EMPTY_STAFF_OPTIONS: ScheduleStaffOption[] = [];
 
-type ScheduleDialogType = "add" | "edit" | "delete" | "shiftTemplate";
+type ScheduleDialogType =
+  | "add"
+  | "edit"
+  | "delete"
+  | "shiftTemplate"
+  | "stopSeries";
+
+/** Lịch lặp đang được dừng: của ai, từ ngày nào (mặc định ngày ca đang xem). */
+export type StopSeriesTarget = {
+  series: ScheduleSeriesRef;
+  staffName: string;
+  defaultFromDate: string;
+};
+
+/** Toast lỗi; chồng ca thì nêu luôn các ngày bị chồng (BE trả trong `errors`). */
+function toastScheduleError(error: unknown) {
+  const dates = overlapDatesOf(error);
+  if (dates.length === 0) {
+    toast.error(getApiErrorMessage(error));
+    return;
+  }
+  const shown = dates.slice(0, 5).map(formatVietnamWorkDate).join(", ");
+  const more = dates.length > 5 ? ` và ${dates.length - 5} ngày khác` : "";
+  toast.error(`${getApiErrorMessage(error)}: ${shown}${more}`);
+}
 
 function getMonthRange(date: Date) {
   return {
@@ -93,6 +121,10 @@ type ScheduleContextType = {
     userId?: string | null,
   ) => Promise<WorkingSchedule | null>;
   handleAdd: (payload: CreateWorkingSchedulePayload) => Promise<void>;
+  handleAddSeries: (payload: CreateScheduleSeriesPayload) => Promise<void>;
+  stopSeriesTarget: StopSeriesTarget | null;
+  openStopSeries: (target: StopSeriesTarget) => void;
+  handleStopSeries: (seriesId: string, fromDate: string) => Promise<void>;
   handleEdit: (
     scheduleId: string,
     payload: CreateWorkingSchedulePayload,
@@ -149,6 +181,8 @@ export function ScheduleProvider({
   );
   const [open, setOpen] = useState<ScheduleDialogType | null>(null);
   const [currentRow, setCurrentRow] = useState<WorkingSchedule | null>(null);
+  const [stopSeriesTarget, setStopSeriesTarget] =
+    useState<StopSeriesTarget | null>(null);
   const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
   const [shiftTemplateOptions, setShiftTemplateOptions] = useState<
     ShiftTemplateOption[]
@@ -376,6 +410,46 @@ export function ScheduleProvider({
       toast.success("Đã thêm lịch làm việc");
       await Promise.all([fetchSchedules(), fetchCurrentSchedule()]);
     } catch (error) {
+      toastScheduleError(error);
+      throw error;
+    }
+  }
+
+  async function handleAddSeries(payload: CreateScheduleSeriesPayload) {
+    try {
+      const result = await workingScheduleApi.createSeries(payload);
+      const skipped = result.skipped.length;
+      toast.success(
+        `Đã tạo lịch lặp lại: ${result.createdCount} lượt ca`,
+        skipped > 0
+          ? {
+              description: `Bỏ qua ${skipped} lượt vì nhân viên đã có đúng ca đó trong ngày.`,
+            }
+          : undefined,
+      );
+      await Promise.all([fetchSchedules(), fetchCurrentSchedule()]);
+    } catch (error) {
+      toastScheduleError(error);
+      throw error;
+    }
+  }
+
+  const openStopSeries = useCallback((target: StopSeriesTarget) => {
+    setStopSeriesTarget(target);
+    setOpen("stopSeries");
+  }, []);
+
+  async function handleStopSeries(seriesId: string, fromDate: string) {
+    try {
+      const result = await workingScheduleApi.removeSeries(seriesId, fromDate);
+      toast.success(
+        `Đã dừng lịch lặp lại, gỡ ${result.removedCount} lượt ca từ ${formatVietnamWorkDate(fromDate)}`,
+      );
+      setSelectedSchedule(null);
+      setSelectedAssigneeUserId(null);
+      setStopSeriesTarget(null);
+      await Promise.all([fetchSchedules(), fetchCurrentSchedule()]);
+    } catch (error) {
       toast.error(getApiErrorMessage(error));
       throw error;
     }
@@ -386,15 +460,14 @@ export function ScheduleProvider({
     payload: CreateWorkingSchedulePayload,
   ) {
     try {
-      await workingScheduleApi.remove(scheduleId);
-      await workingScheduleApi.create(payload);
+      await workingScheduleApi.update(scheduleId, payload);
       toast.success("Đã cập nhật lịch làm việc");
       setSelectedSchedule((prev) => (prev?.id === scheduleId ? null : prev));
       setSelectedAssigneeUserId(null);
       setCurrentRow((prev) => (prev?.id === scheduleId ? null : prev));
       await Promise.all([fetchSchedules(), fetchCurrentSchedule()]);
     } catch (error) {
-      toast.error(getApiErrorMessage(error));
+      toastScheduleError(error);
       throw error;
     }
   }
@@ -541,6 +614,10 @@ export function ScheduleProvider({
         fetchScheduleById,
         fetchScheduleDetail,
         handleAdd,
+        handleAddSeries,
+        stopSeriesTarget,
+        openStopSeries,
+        handleStopSeries,
         handleEdit,
         handleDelete,
         handleCreateShiftTemplate,
