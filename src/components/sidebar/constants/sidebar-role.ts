@@ -49,6 +49,7 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
         sidebarItems.thongKe,
         sidebarItems.baoCao,
         sidebarItems.nhanVienChuCuaHang,
+        sidebarItems.tenantAuditLog,
       ],
     },
     quanLyBanHangGroup([
