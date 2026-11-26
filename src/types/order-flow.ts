@@ -361,6 +361,8 @@ export interface OrderListItem {
   branch: LocationRef;
   customer: { id: string; name: string; phone: string | null };
   assignee: UserRef | null;
+  /** Nhân viên bán hàng, chọn lúc tạo đơn; null ở đơn cũ và đơn sàn. */
+  seller?: UserRef | null;
   driver: UserRef | null;
   createdBy: UserRef | null;
   confirmedBy: UserRef | null;
@@ -570,6 +572,8 @@ export interface CreateOrderJourneyPayload {
   customer?: { name: string; phone?: string; address?: string };
   /** Bắt buộc: người phụ trách chọn trên form (ORDER_ASSIGNEE_REQUIRED / _INVALID). */
   assigneeId: string;
+  /** Nhân viên bán hàng, bỏ trống là người tạo đơn; không sửa được sau khi tạo. */
+  sellerId?: string;
   /** Chỉ hai loại của hành trình; TAKEAWAY là của quầy. */
   fulfillmentType: "STORE_PICKUP" | "HOME_DELIVERY";
   priority?: OrderPriority;

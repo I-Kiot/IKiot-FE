@@ -56,6 +56,7 @@ export function OrderInfoCard({ order }: { order: OrderDetail }) {
         <InfoRow label={order.fulfillmentType === "STORE_PICKUP" ? "Khách hẹn lấy" : "Khách hẹn giao"} value={formatPlainDate(order.requestedDeliveryDate)} />
         <div className="my-2 border-t" />
         <InfoRow label="Người phụ trách" value={person(order.assignee)} />
+        <InfoRow label="Nhân viên bán hàng" value={person(order.seller ?? null)} />
         <InfoRow label="Người tạo" value={person(order.createdBy, order.createdAt)} />
         <InfoRow label="Người xác nhận" value={person(order.confirmedBy, order.confirmedAt)} />
         {order.shippedBy && (

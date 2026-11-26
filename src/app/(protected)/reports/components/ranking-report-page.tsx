@@ -29,10 +29,14 @@ export interface RankingPage<T> {
   pagination?: RankingPagination
 }
 
-export interface RankingQuery {
+/** Kỳ và nơi đang xem, cho bộ lọc / bảng chi tiết riêng của trang. */
+export interface RankingContext {
   fromDate: string
   toDate: string
   branchId?: string
+}
+
+export interface RankingQuery extends RankingContext {
   page: number
   limit: number
 }
@@ -58,6 +62,10 @@ interface RankingReportPageProps<T extends RankingRow> {
   /** Bộ lọc riêng của bảng, đặt ở góc phải tiêu đề bảng. */
   actions?: ReactNode
   note?: ReactNode
+  /** Bộ lọc thêm trên thanh công cụ của trang. */
+  filters?: (context: RankingContext) => ReactNode
+  /** Bảng chi tiết thay cho bảng xếp hạng (ẩn nút xuất); trả null để hiện bảng xếp hạng. */
+  detail?: (context: RankingContext) => ReactNode
 }
 
 export function RankingReportPage<T extends RankingRow>({
@@ -74,6 +82,8 @@ export function RankingReportPage<T extends RankingRow>({
   load,
   actions,
   note,
+  filters,
+  detail,
 }: RankingReportPageProps<T>) {
   const { period, setPeriod: setPeriodParam } = useReportPeriod()
   const location = useReportLocation()
@@ -99,6 +109,8 @@ export function RankingReportPage<T extends RankingRow>({
   )
   const { data, isLoading, failed } = useAsyncData(request, reloadKey)
   const rows = data?.rows ?? []
+  const context: RankingContext = { fromDate: period.fromDate, toDate: period.toDate, branchId: place }
+  const detailView = detail?.(context) ?? null
 
   const exportFile = () =>
     statsApi.exportReport({
@@ -119,7 +131,10 @@ export function RankingReportPage<T extends RankingRow>({
       />
 
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <ExportExcelButton load={exportFile} filename={`${exportSlug}_${period.fromDate}_${period.toDate}.xlsx`} />
+        {detailView ? null : (
+          <ExportExcelButton load={exportFile} filename={`${exportSlug}_${period.fromDate}_${period.toDate}.xlsx`} />
+        )}
+        {filters?.(context)}
         <ReportLocationSelect location={{ ...location, setLocationKey }} />
         <ReportDateRangeFilter period={period} onChange={setPeriod} />
         <Button
@@ -133,33 +148,35 @@ export function RankingReportPage<T extends RankingRow>({
         </Button>
       </div>
 
-      <ReportTable
-        title={tableTitle}
-        description={tableDescription}
-        actions={actions}
-        isLoading={isLoading && !data}
-        emptyText={failed ? `Không tải được ${tableTitle.toLowerCase()}` : undefined}
-        rows={rows}
-        rowKey={rowKey}
-        columns={[
-          { header: "STT", className: "w-14", cell: (_, index) => index + 1 },
-          { ...nameColumn, footer: "Cộng" },
-          ...revenueColumns(rows, data?.summary),
-        ]}
-        note={note}
-        pagination={{
-          page,
-          pageSize,
-          total: data?.pagination?.total ?? rows.length,
-          unit,
-          disabled: isLoading,
-          onPageChange: setPage,
-          onPageSizeChange: (size) => {
-            setPageSize(size)
-            setPage(1)
-          },
-        }}
-      />
+      {detailView ?? (
+        <ReportTable
+          title={tableTitle}
+          description={tableDescription}
+          actions={actions}
+          isLoading={isLoading && !data}
+          emptyText={failed ? `Không tải được ${tableTitle.toLowerCase()}` : undefined}
+          rows={rows}
+          rowKey={rowKey}
+          columns={[
+            { header: "STT", className: "w-14", cell: (_, index) => index + 1 },
+            { ...nameColumn, footer: "Cộng" },
+            ...revenueColumns(rows, data?.summary),
+          ]}
+          note={note}
+          pagination={{
+            page,
+            pageSize,
+            total: data?.pagination?.total ?? rows.length,
+            unit,
+            disabled: isLoading,
+            onPageChange: setPage,
+            onPageSizeChange: (size) => {
+              setPageSize(size)
+              setPage(1)
+            },
+          }}
+        />
+      )}
     </div>
   )
 }

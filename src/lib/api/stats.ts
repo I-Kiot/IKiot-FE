@@ -153,8 +153,8 @@ export interface RevenueByStaffItem {
   aov: number;
 }
 
-/** Người được tính: phụ trách đơn, người lên đơn hoặc người thu tiền. */
-export type RevenueByStaffGroupBy = 'assignee' | 'creator' | 'collector';
+/** Người được tính: nhân viên bán hàng, phụ trách đơn, người lên đơn hoặc người thu tiền. */
+export type RevenueByStaffGroupBy = 'seller' | 'assignee' | 'creator' | 'collector';
 
 /** Tổng của cả kỳ (mọi dòng, không chỉ trang đang xem) - dòng Tổng của bảng xếp hạng. */
 export interface RankingSummary {
@@ -182,6 +182,34 @@ export interface RevenueByStaff {
   summary: RankingSummary;
   /** Chỉ có khi gọi kèm `limit`. */
   pagination?: RankingPagination;
+}
+
+/** Giá trị `userId` cho phần doanh thu không gắn nhân viên. */
+export const NO_STAFF_ID = 'none';
+
+/** Một bút toán sổ doanh thu (phụ trách / lên đơn) hoặc một khoản thu (người thu) của nhân viên. */
+export interface RevenueByStaffEntry {
+  id: string;
+  kind: SalesJournalEntryType | 'PAYMENT';
+  /** `YYYY-MM-DD`: ngày ghi sổ, hoặc ngày thu tiền. */
+  date: string;
+  orderId: string | null;
+  orderCode: string | null;
+  customerName: string | null;
+  branchName: string | null;
+  /** Chỉ có khi tính theo người thu tiền. */
+  paymentMethod: string | null;
+  amount: number;
+}
+
+export interface RevenueByStaffEntries {
+  groupBy: RevenueByStaffGroupBy;
+  userId: string | null;
+  staffName: string | null;
+  data: RevenueByStaffEntry[];
+  pagination: RankingPagination;
+  /** Tổng cả kỳ, khớp dòng của nhân viên này trên bảng xếp hạng. */
+  summary: RankingSummary;
 }
 
 export interface CashflowByType {
@@ -598,6 +626,14 @@ export const statsApi = {
 
   getRevenueByStaff: (params?: StatsDateRangeParams & RankingPageParams & { groupBy?: RevenueByStaffGroupBy }) =>
     getStats<RevenueByStaff>('/stats/revenue-by-staff', params),
+
+  getRevenueByStaffEntries: async (
+    params: StatsDateRangeParams & { groupBy?: RevenueByStaffGroupBy; userId: string; page?: number; limit?: number },
+  ): Promise<RevenueByStaffEntries> => {
+    const res = await client.get<{ success: boolean } & RevenueByStaffEntries>('/stats/revenue-by-staff/entries', { params });
+    const { groupBy, userId, staffName, data, pagination, summary } = res.data;
+    return { groupBy, userId, staffName, data, pagination, summary };
+  },
 
   getCashflow: (
     params?: StatsDateRangeParams & {

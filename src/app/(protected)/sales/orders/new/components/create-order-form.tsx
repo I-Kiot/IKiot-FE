@@ -107,6 +107,9 @@ function OrderDraftForm({
 
   const [customer, setCustomer] = React.useState<PickedCustomer | null>(null);
   const [pickedAssigneeId, setAssigneeId] = React.useState("");
+  // Nhân viên bán hàng: mặc định là người tạo đơn, chốt khi tạo.
+  const [myId, setMyId] = React.useState("");
+  const [pickedSellerId, setSellerId] = React.useState("");
   const [fulfillment, setFulfillment] =
     React.useState<FulfillmentChoice>("HOME_DELIVERY");
   const [requestedDate, setRequestedDate] = React.useState("");
@@ -170,6 +173,7 @@ function OrderDraftForm({
               ]
             : [];
         setAssignees([...mine, ...staff]);
+        setMyId(me?.id ?? "");
         setOptionsReady(true);
       });
     return () => {
@@ -200,6 +204,8 @@ function OrderDraftForm({
   const assigneeId = assigneeOptions.some((a) => a.id === pickedAssigneeId)
     ? pickedAssigneeId
     : "";
+  // Nhân viên bán hàng chọn được ở mọi nơi làm việc.
+  const sellerId = pickedSellerId || myId;
   // Nơi xuất hàng mặc định: kho xuất mặc định của nơi bán, không có thì lấy chính nơi bán.
   const defaultFulfillment = branch?.defaultFulfillmentLocationId;
   const defaultSource = branch
@@ -423,6 +429,7 @@ function OrderDraftForm({
     const payload: CreateOrderJourneyPayload = {
       branchId,
       assigneeId,
+      ...(sellerId && sellerId !== myId ? { sellerId } : {}),
       fulfillmentType: fulfillment,
       priority,
       items: lines.map((line) => ({
@@ -802,6 +809,24 @@ function OrderDraftForm({
               {show(errors.assignee) && (
                 <p className="text-sm text-destructive">{errors.assignee}</p>
               )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>Nhân viên bán hàng</Label>
+              <Select value={sellerId} onValueChange={setSellerId} disabled={!optionsReady}>
+                <SelectTrigger className="w-full" aria-label="Nhân viên bán hàng">
+                  <SelectValue placeholder="Chọn người" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignees.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Mặc định là người tạo đơn; không sửa được sau khi tạo.
+              </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
