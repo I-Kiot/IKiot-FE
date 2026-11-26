@@ -77,6 +77,11 @@ export function canRemoveInventoryLocation(role?: string | null): boolean {
   return allows(role, 'inventory', 'delete');
 }
 
+/** Đánh dấu hỏng / sửa xong / huỷ hàng hỏng (2026-11-26). BE còn chặn nhân viên ở nơi khác (`INVENTORY_LOCATION_DENIED`). */
+export function canManageDamaged(role?: string | null): boolean {
+  return allows(role, 'inventory', 'manage_damaged');
+}
+
 export function canManageStaff(role?: string | null): boolean {
   return allows(role, 'users', 'update');
 }

@@ -13,6 +13,7 @@ import type { Product } from "@/types/product";
 import type { Brand } from "@/types/brand";
 import type { Category } from "@/types/category";
 import {
+  DAMAGED_FILTER,
   safeImageSrc,
   STATUS_MAP,
   STATUS_ORDER,
@@ -159,19 +160,45 @@ export function getProductsColumns(
         );
       },
       filterFn: (row, columnId, value: string) =>
-        row.getValue(columnId) === value,
+        value === DAMAGED_FILTER
+          ? (row.original.damagedStock ?? 0) > 0
+          : row.getValue(columnId) === value,
       sortingFn: (rowA, rowB) =>
         STATUS_ORDER[rowA.original.status] - STATUS_ORDER[rowB.original.status],
     },
     {
       id: "stock",
       accessorKey: "totalStock",
-      header: ({ column }) => (
-        <SortableHeader label="Tồn kho" column={column} />
+      // Đang lọc "Hàng hỏng" ở ô Trạng thái: cột này đổi sang số hàng hỏng.
+      header: ({ column, table }) => (
+        <SortableHeader
+          label={
+            table.getColumn("status")?.getFilterValue() === DAMAGED_FILTER
+              ? "Hàng hỏng"
+              : "Tồn kho"
+          }
+          column={column}
+        />
       ),
-      cell: ({ row }) => {
+      cell: ({ row, table }) => {
         const stock = row.original.totalStock ?? 0;
         const allLocations = row.original.totalStockAllLocations ?? stock;
+        const damaged = row.original.damagedStock ?? 0;
+        if (table.getColumn("status")?.getFilterValue() === DAMAGED_FILTER) {
+          return (
+            <div className="flex flex-col leading-tight">
+              <span
+                className="font-semibold tabular-nums text-destructive"
+                title="Hàng hỏng, không tính vào tồn bán được"
+              >
+                {damaged.toLocaleString("vi-VN")}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Tồn bán được: {stock.toLocaleString("vi-VN")}
+              </span>
+            </div>
+          );
+        }
         return (
           <div className="flex flex-col leading-tight">
             <span
@@ -189,6 +216,14 @@ export function getProductsColumns(
             {isLocationScoped && allLocations !== stock && (
               <span className="text-xs text-muted-foreground tabular-nums">
                 Toàn chuỗi: {allLocations.toLocaleString("vi-VN")}
+              </span>
+            )}
+            {damaged > 0 && (
+              <span
+                className="text-xs text-destructive tabular-nums"
+                title="Hàng hỏng, không tính vào tồn bán được"
+              >
+                Hỏng: {damaged.toLocaleString("vi-VN")}
               </span>
             )}
           </div>

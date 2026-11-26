@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { COLUMN_LABELS } from '../../_constants/product.constants'
+import { COLUMN_LABELS, DAMAGED_FILTER } from '../../_constants/product.constants'
 import type { Product } from '@/types/product'
 import { useProducts } from '../../_context/products-provider'
 
@@ -125,6 +125,10 @@ export function ProductsToolbar({ table }: ProductsToolbarProps) {
             <SelectItem value="ACTIVE">Đang kinh doanh</SelectItem>
             <SelectItem value="INACTIVE">Ngừng kinh doanh</SelectItem>
             <SelectItem value="DISCONTINUED">Ngừng sản xuất</SelectItem>
+            {/* Không phải trạng thái của sản phẩm: lọc sản phẩm còn hàng hỏng (lô không bán được) ở nơi đang xem. */}
+            {screen.showStock && (
+              <SelectItem value={DAMAGED_FILTER}>Hàng hỏng</SelectItem>
+            )}
           </SelectContent>
         </Select>
       </div>

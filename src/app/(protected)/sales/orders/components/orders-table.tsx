@@ -91,6 +91,8 @@ export function OrdersTable() {
     updateQuery,
     updatePage,
     resetFilters,
+    rowSelection,
+    setRowSelection,
   } = useOrders();
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -107,9 +109,12 @@ export function OrdersTable() {
     getRowCanExpand: () => true,
     onColumnVisibilityChange: setColumnVisibility,
     onExpandedChange: setExpanded,
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     state: {
       columnVisibility,
       expanded,
+      rowSelection,
       pagination: { pageIndex: listQuery.page - 1, pageSize: listQuery.limit },
     },
   });

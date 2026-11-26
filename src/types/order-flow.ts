@@ -819,8 +819,6 @@ export interface ReceiveProductionPayload {
     /** Giá xưởng cho mỗi đơn vị; để trống = giá vốn của SKU. */
     unitCost?: number;
   }[];
-  /** Mặc định là kho hàng hỏng của địa điểm nhận. */
-  defectLocationId?: string;
   note?: string;
 }
 

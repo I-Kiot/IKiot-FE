@@ -15,13 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -33,9 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { productionRequestApi } from "@/lib/api/production-request";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import type { ProductionRequest } from "@/types/order-flow";
-import { useProductionOptions } from "../shared/use-production-options";
 
-const DEFAULT_DEFECT_LOCATION = "default";
 
 type LineInput = { received: string; defect: string; unitCost: string };
 
@@ -54,14 +45,12 @@ const toInt = (value: string) => (value.trim() === "" ? 0 : Math.floor(Number(va
  * công nợ xưởng = số hàng tốt × giá.
  */
 export function ReceiveProductionDialog({ request, open, onOpenChange, onReceived }: Props) {
-  const { locations } = useProductionOptions();
   const pending = request.items.filter((line) => line.receivedQuantity < line.quantity);
   const [inputs, setInputs] = React.useState<Record<string, LineInput>>(() =>
     Object.fromEntries(
       pending.map((line) => [line.id, { received: "", defect: "", unitCost: "" }]),
     ),
   );
-  const [defectLocationId, setDefectLocationId] = React.useState(DEFAULT_DEFECT_LOCATION);
   const [note, setNote] = React.useState("");
   const [saving, setSaving] = React.useState(false);
 
@@ -99,8 +88,6 @@ export function ReceiveProductionDialog({ request, open, onOpenChange, onReceive
               unitCost: input.unitCost.trim() === "" ? undefined : Number(input.unitCost),
             };
           }),
-        defectLocationId:
-          anyDefect && defectLocationId !== DEFAULT_DEFECT_LOCATION ? defectLocationId : undefined,
         note: note.trim() || undefined,
       });
       toast.success("Đã nhận hàng xưởng, tồn kho đã cập nhật");
@@ -198,24 +185,11 @@ export function ReceiveProductionDialog({ request, open, onOpenChange, onReceive
 
         <div className="grid gap-4">
           {anyDefect && (
-            <div className="grid gap-2">
-              <Label>Kho nhận hàng lỗi</Label>
-              <Select value={defectLocationId} onValueChange={setDefectLocationId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={DEFAULT_DEFECT_LOCATION}>
-                    Mặc định (kho hàng hỏng của nơi nhận)
-                  </SelectItem>
-                  {locations.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              Hàng lỗi được ghi là <span className="font-medium text-foreground">hàng hỏng</span> ngay
+              tại nơi nhận: không tính vào tồn bán được, không bán hay đóng gói được. Xem lại ở danh
+              sách hàng hoá, lọc &quot;Có hàng hỏng&quot;.
+            </p>
           )}
           <div className="grid gap-2">
             <Label>Ghi chú</Label>

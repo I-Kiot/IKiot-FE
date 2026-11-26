@@ -9,8 +9,6 @@ export interface Branch {
   status: BranchStatus;
   /** Kho xuất hàng mặc định của đơn chi nhánh này; để trống = chính chi nhánh. */
   defaultFulfillmentLocationId?: string | null;
-  /** D-4: nơi hàng hỏng / lỗi của chi nhánh này chuyển đến (một kho không bán được). */
-  damagedLocationId?: string | null;
   /** Người quản lý địa điểm, gán qua `PATCH /:id/manager` chứ không theo vai trò tài khoản. */
   managerId?: string | null;
   createdAt: string;
@@ -41,7 +39,6 @@ export interface BranchCreatePayload {
   phoneNumber: string[];
   address?: string;
   email?: string;
-  damagedLocationId?: string | null;
 }
 
 export interface BranchUpdatePayload {
@@ -50,5 +47,4 @@ export interface BranchUpdatePayload {
   address?: string;
   email?: string;
   status?: BranchStatus;
-  damagedLocationId?: string | null;
 }

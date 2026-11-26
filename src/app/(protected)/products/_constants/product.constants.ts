@@ -76,3 +76,6 @@ export const COLUMN_LABELS: Record<string, string> = {
   stock: 'Tồn kho',
   status: 'Trạng thái',
 }
+
+/** Giá trị đặc biệt của ô lọc Trạng thái: chỉ sản phẩm còn hàng hỏng (`damagedStock > 0`) ở nơi đang xem. */
+export const DAMAGED_FILTER = "DAMAGED";

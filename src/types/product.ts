@@ -67,7 +67,14 @@ export interface ComboComponentPayload {
 
 export interface StockDetail {
   inventoryId: string;
+  /** Hàng bán được tại đây (kể cả đã đóng gói cho đơn). Không gồm hàng hỏng. */
   stock: number;
+  /** Trên kệ (`stock − đã đóng gói`): phần đánh dấu hỏng được. */
+  shelf?: number;
+  /** Hàng hỏng tại đây, nằm ngoài `stock` (2026-11-26). */
+  damagedQuantity?: number;
+  /** Chiếc may riêng còn tốt tại đây, theo dòng đơn - chọn đúng chiếc khi đánh dấu hỏng. */
+  customUnits?: { orderItemId: string; orderCode: string; quantity: number }[];
   location: LocationRef;
 }
 
@@ -130,6 +137,8 @@ export interface Product {
   // Tồn toàn chuỗi (mọi chi nhánh + kho). Dùng để trả lời "cửa hàng có mặt hàng này không"
   // khi chi nhánh đang xem chưa nhập về - lúc đó totalStock là 0 còn số này thì không.
   totalStockAllLocations?: number;
+  /** Hàng hỏng cùng phạm vi địa điểm với totalStock, nằm ngoài totalStock (2026-11-26). */
+  damagedStock?: number;
   createdAt?: string;
   updatedAt?: string;
 }
