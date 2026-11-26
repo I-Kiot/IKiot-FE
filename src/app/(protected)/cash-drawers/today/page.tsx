@@ -8,7 +8,7 @@ import { parseLocationKey } from "@/lib/location-key";
 import { cashDrawerApi } from "@/lib/api/cash-drawer";
 import { OverdueDrawerBanner } from "@/components/cash-drawer/overdue-drawer-banner";
 import { branchApi } from "@/lib/api/branch";
-import { canManageCashDrawer } from "@/components/sidebar/constants/role-permissions";
+import { canFinalizeCashDrawer, canManageCashDrawer } from "@/components/sidebar/constants/role-permissions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PermissionButton } from "@/components/permission-button";
@@ -37,16 +37,27 @@ import {
   Loader2,
   Plus,
   ArrowRight,
+  CheckCircle2,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Branch } from "@/types/branch";
-import type { CashDrawerSession, CashierOption } from "@/types/cash-drawer";
+import type { CashDrawerToday, CashDrawerUserRef, CashierOption } from "@/types/cash-drawer";
+import { messageForCode } from "@/lib/api/error-codes";
 
 const BREADCRUMBS = [
   { label: "Trang chủ", href: "/dashboard" },
   { label: "Két tiền", href: "/cash-drawers/today" },
   { label: "Hôm nay" },
 ];
+
+const personName = (ref?: CashDrawerUserRef | null) =>
+  ref
+    ? [ref.profile?.lastName, ref.profile?.firstName].filter(Boolean).join(" ").trim() || ref.phoneNumber || "Nhân viên"
+    : "";
+
+const formatClock = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "";
 
 export default function CashDrawersTodayPage() {
   const router = useRouter();
@@ -59,8 +70,10 @@ export default function CashDrawersTodayPage() {
   // Bộ chọn chi nhánh cho TENANT_OWNER
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchSessions, setBranchSessions] = useState<
-    Record<string, { session: CashDrawerSession | null; isLoading: boolean }>
+    Record<string, { today: CashDrawerToday | null; isLoading: boolean }>
   >({});
+  /** Két hôm nay của chi nhánh đang xem (một chi nhánh); null khi chưa tải. */
+  const [branchToday, setBranchToday] = useState<CashDrawerToday | null>(null);
 
   // Nhân viên để mở két
   const [branchStaffs, setBranchStaffs] = useState<CashierOption[]>([]);
@@ -72,29 +85,28 @@ export default function CashDrawersTodayPage() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isStaffLoading, setIsStaffLoading] = useState(false);
+  /** Tiền lẻ phiên trước để lại; null khi chưa tải được (vẫn mở két được). */
+  const [keptAmount, setKeptAmount] = useState<number | null>(null);
 
   // Tải trạng thái phiên của từng chi nhánh
   const loadBranchSessions = async (branchList: Branch[]) => {
-    const initialMap: Record<
-      string,
-      { session: CashDrawerSession | null; isLoading: boolean }
-    > = {};
+    const initialMap: Record<string, { today: CashDrawerToday | null; isLoading: boolean }> = {};
     branchList.forEach((b) => {
-      initialMap[b.id] = { session: null, isLoading: true };
+      initialMap[b.id] = { today: null, isLoading: true };
     });
     setBranchSessions(initialMap);
 
     branchList.forEach(async (b) => {
       try {
-        const sess = await cashDrawerApi.getCurrentSession(b.id);
+        const today = await cashDrawerApi.getToday(b.id);
         setBranchSessions((prev) => ({
           ...prev,
-          [b.id]: { session: sess, isLoading: false },
+          [b.id]: { today, isLoading: false },
         }));
       } catch {
         setBranchSessions((prev) => ({
           ...prev,
-          [b.id]: { session: null, isLoading: false },
+          [b.id]: { today: null, isLoading: false },
         }));
       }
     });
@@ -142,24 +154,25 @@ export default function CashDrawersTodayPage() {
     }
   }, [user, locationKey]);
 
-  // Lấy phiên hiện tại của chi nhánh đã xác định, chuyển hướng nếu đang mở
+  /**
+   * Két hôm nay của chi nhánh. Đang mở và được xem thì vào thẳng phiên; đã chốt hoặc đang mở nhưng không được xem
+   * thì ở lại màn này với thông báo; chỉ "chưa mở" mới cho mở két. Trước đây chỉ hỏi két đang mở, nên két đã chốt
+   * trông như chưa mở và màn hình mời mở két lần hai trong ngày.
+   */
   const fetchSession = async (branchId: string) => {
     try {
-      const data = await cashDrawerApi.getCurrentSession(branchId);
-      if (data && data.id) {
-        router.push(`/cash-drawers/${data.id}`);
-      } else {
-        setIsLoading(false);
+      const today = await cashDrawerApi.getToday(branchId);
+      setBranchToday(today);
+      if (today.state === "OPEN" && today.session) {
+        router.push(`/cash-drawers/${today.sessionId}`);
+        return;
       }
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
-        setIsLoading(false);
-      } else {
-        console.error(err);
-        toast.error("Không thể tải thông tin két tiền");
-        setIsLoading(false);
-      }
+    } catch (err) {
+      console.error(err);
+      setBranchToday(null);
+      toast.error("Không thể tải thông tin két tiền");
     }
+    setIsLoading(false);
   };
 
   // Tải phiên khi đã có chi nhánh; danh sách người nhận két tải lúc mở két.
@@ -173,7 +186,16 @@ export default function CashDrawersTodayPage() {
   /** Tải người nhận được két, chọn sẵn chính mình; false khi lỗi. */
   const loadEligibleStaff = async (branchId: string): Promise<boolean> => {
     setSelectedStaffId("");
+    setKeptAmount(null);
     setIsStaffLoading(true);
+    // Không chặn mở két nếu gợi ý lỗi: chỉ mất phần điền sẵn.
+    cashDrawerApi
+      .getOpeningHint(branchId)
+      .then((hint) => {
+        setKeptAmount(hint.keptAmount);
+        if (hint.previousSession) setOpeningAmount(String(hint.keptAmount));
+      })
+      .catch(() => setKeptAmount(null));
     try {
       const valid = await cashDrawerApi.getEligibleStaff(branchId);
       setBranchStaffs(valid);
@@ -245,12 +267,49 @@ export default function CashDrawersTodayPage() {
         toast.error("Két ngày trước của chi nhánh chưa chốt. Hãy chốt két đó trước khi mở két mới.", {
           action: { label: "Vào chốt", onClick: () => router.push(`/cash-drawers/${data.sessionId}`) },
         });
+      } else if (data?.code === "CASH_DRAWER_CLOSED_TODAY" && data?.sessionId) {
+        toast.error(messageForCode(data.code), {
+          action: { label: "Xem phiên", onClick: () => router.push(`/cash-drawers/${data.sessionId}`) },
+        });
       } else {
-        toast.error(data?.message || "Không thể mở két đầu ngày");
+        toast.error(messageForCode(data?.code) || "Không thể mở két đầu ngày");
       }
+      // Trạng thái đã đổi dưới tay người dùng (người khác vừa mở / chốt): đọc lại.
+      setIsDialogOpen(false);
+      if (branches.length > 0) void loadBranchSessions(branches);
+      if (activeBranchId) void fetchSession(activeBranchId);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  /** Giải thích số tiền đầu ca sẽ ghi vào sổ quỹ thế nào, theo số phiên trước để lại. */
+  const openingNote = () => {
+    const amount = parseInt(openingAmount || "0", 10) || 0;
+    const kept = keptAmount ?? 0;
+    const diff = amount - kept;
+    const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
+    return (
+      <div className="grid gap-1 text-xs text-muted-foreground">
+        <p>Đếm tiền mặt đang có trong két (tiền lẻ để thối cho khách) rồi nhập đúng số đó.</p>
+        {keptAmount !== null && (
+          <p>
+            Phiên trước để lại <span className="font-medium text-foreground">{vnd(kept)}</span>.{" "}
+            {diff > 0 && (
+              <span className="text-foreground">
+                Sổ quỹ sẽ ghi chủ đưa thêm {vnd(diff)} vào két (chuyển quỹ, không tính là chi).
+              </span>
+            )}
+            {diff < 0 && (
+              <span className="font-medium text-red-600">
+                Két thiếu {vnd(-diff)} so với lúc chốt; sổ quỹ sẽ ghi thiếu két.
+              </span>
+            )}
+            {diff === 0 && <span>Khớp, không ghi gì thêm vào sổ quỹ.</span>}
+          </p>
+        )}
+      </div>
+    );
   };
 
   const formattedToday = new Intl.DateTimeFormat("vi-VN", {
@@ -327,18 +386,28 @@ export default function CashDrawersTodayPage() {
             ) : (
               branches.map((branch) => {
                 const state = branchSessions[branch.id];
-                const sessionInfo = state?.session;
+                const today = state?.today ?? null;
                 const isSessionLoading = state?.isLoading;
+                // Đang mở hay đã chốt hôm nay đều vào phiên; chỉ "chưa mở" mới mở két.
+                const sessionId = today && today.state !== "NOT_OPENED" ? today.sessionId : null;
+                const badge =
+                  today?.state === "OPEN"
+                    ? today.overdue
+                      ? { label: "QUÊN CHỐT", className: "bg-red-500/10 text-red-600 border-red-500/20" }
+                      : { label: "ĐANG MỞ", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" }
+                    : today?.state === "CLOSED_TODAY"
+                      ? { label: "ĐÃ CHỐT", className: "bg-sky-500/10 text-sky-700 border-sky-500/20" }
+                      : { label: "CHƯA MỞ", className: "bg-neutral-100 text-neutral-500 border-neutral-200" };
 
                 return (
                   <Button
                     key={branch.id}
                     variant="outline"
                     className="h-auto flex flex-col items-start gap-2 p-4 justify-between hover:border-primary hover:bg-primary/5 transition cursor-pointer"
-                    disabled={openBranchId === branch.id && isStaffLoading}
+                    disabled={isSessionLoading || (openBranchId === branch.id && isStaffLoading)}
                     onClick={() => {
-                      if (sessionInfo && sessionInfo.id) {
-                        router.push(`/cash-drawers/${sessionInfo.id}`);
+                      if (sessionId) {
+                        router.push(`/cash-drawers/${sessionId}`);
                       } else {
                         handleGridBranchClick(branch.id, branch.name);
                       }
@@ -353,19 +422,12 @@ export default function CashDrawersTodayPage() {
                       </div>
                       {isSessionLoading ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
-                      ) : sessionInfo ? (
-                        <Badge
-                          variant="success"
-                          className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] py-0 px-1.5 font-semibold shrink-0"
-                        >
-                          ĐANG MỞ
-                        </Badge>
                       ) : (
                         <Badge
                           variant="secondary"
-                          className="bg-neutral-100 text-neutral-500 border-neutral-200 text-[10px] py-0 px-1.5 font-semibold shrink-0"
+                          className={`${badge.className} text-[10px] py-0 px-1.5 font-semibold shrink-0`}
                         >
-                          CHƯA MỞ
+                          {badge.label}
                         </Badge>
                       )}
                     </div>
@@ -374,10 +436,17 @@ export default function CashDrawersTodayPage() {
                         {branch.address}
                       </span>
                     )}
+                    {today?.state === "CLOSED_TODAY" && (
+                      <span className="text-xs text-muted-foreground text-left">
+                        Chốt lúc {formatClock(today.closedAt)}
+                        {today.closedBy ? ` bởi ${personName(today.closedBy)}` : ""}
+                      </span>
+                    )}
                     <div className="w-full flex justify-end items-center text-xs text-primary font-medium mt-3 gap-1">
-                      {sessionInfo ? (
+                      {sessionId ? (
                         <>
-                          Xem chi tiết <ArrowRight className="h-3 w-3" />
+                          {today?.state === "CLOSED_TODAY" ? "Xem phiên đã chốt" : "Xem chi tiết"}{" "}
+                          <ArrowRight className="h-3 w-3" />
                         </>
                       ) : openBranchId === branch.id && isStaffLoading ? (
                         <>
@@ -441,10 +510,7 @@ export default function CashDrawersTodayPage() {
                   />
                     <CurrencySuffix className="text-base" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Đây là số tiền mặt có sẵn trong két để thối lại tiền thừa
-                    cho khách.
-                  </p>
+                  {openingNote()}
                 </div>
 
                 <div className="grid gap-2">
@@ -528,7 +594,62 @@ export default function CashDrawersTodayPage() {
         </h1>
 
         <div className="flex flex-col items-center justify-center py-8 w-full">
-          {isManager ? (
+          {branchToday?.state === "CLOSED_TODAY" ? (
+            <>
+              <div className="w-16 h-16 rounded-full bg-sky-500/10 text-sky-600 flex items-center justify-center mb-4">
+                <CheckCircle2 className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">Hôm nay đã chốt két</h3>
+              <p className="text-sm text-muted-foreground mt-2 max-w-xs">
+                {branchToday.closedBy ? `${personName(branchToday.closedBy)} chốt` : "Đã chốt"}
+                {branchToday.closedAt ? ` lúc ${formatClock(branchToday.closedAt)}` : ""}. Mỗi chi nhánh mở
+                một két mỗi ngày; két ngày mai mở được từ 0 giờ. Chốt nhầm thì mở lại két để bán tiếp.
+              </p>
+              <div className="mt-8 grid w-full gap-2">
+                {canFinalizeCashDrawer(user?.role) && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full font-semibold"
+                    onClick={() => router.push(`/cash-drawers/${branchToday.sessionId}?reopen=1`)}
+                  >
+                    Mở lại két (chốt nhầm)
+                  </Button>
+                )}
+                {branchToday.session && (
+                  <Button
+                    size="lg"
+                    className="w-full font-semibold"
+                    onClick={() => router.push(`/cash-drawers/${branchToday.sessionId}`)}
+                  >
+                    Xem phiên đã chốt
+                  </Button>
+                )}
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full font-semibold"
+                  onClick={() => router.push("/cash-drawers/history")}
+                >
+                  <History className="h-4 w-4 me-2" /> Lịch sử két
+                </Button>
+              </div>
+            </>
+          ) : branchToday?.state === "OPEN" ? (
+            // Két đang mở nhưng người xem không được đọc phiên (chưa từng giữ két hôm nay).
+            <>
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-4">
+                <Landmark className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">
+                {branchToday.overdue ? "Két ngày trước chưa chốt" : "Két đang mở"}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-2 max-w-xs">
+                {branchToday.holder ? `${personName(branchToday.holder)} đang giữ két. ` : ""}
+                Bạn chưa được bàn giao két nên không xem được chi tiết. Nhận bàn giao từ người đang giữ két để bắt đầu ca.
+              </p>
+            </>
+          ) : isManager ? (
             <>
               <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
                 <Landmark className="h-8 w-8" />
@@ -608,10 +729,7 @@ export default function CashDrawersTodayPage() {
                 />
                   <CurrencySuffix className="text-base" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Đây là số tiền mặt có sẵn trong két để thối lại tiền thừa cho
-                  khách.
-                </p>
+                {openingNote()}
               </div>
 
               <div className="grid gap-2">

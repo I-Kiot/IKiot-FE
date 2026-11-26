@@ -40,9 +40,16 @@ import {
   CheckCircle,
   AlertCircle,
   AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { CashDrawerSession, CashDrawerUserRef, CashierOption } from "@/types/cash-drawer";
+import { ReopenDrawerDialog, vietnamToday } from "../_components/reopen-drawer-dialog";
+import type {
+  CashDrawerReconciliation,
+  CashDrawerSession,
+  CashDrawerUserRef,
+  CashierOption,
+} from "@/types/cash-drawer";
 import { shortBusinessDate } from "@/components/cash-drawer/overdue-drawer-banner";
 
 const formatCurrency = (val: number) => {
@@ -101,8 +108,12 @@ export default function CashDrawerDetailPage() {
   const [isCloseOpen, setIsCloseOpen] = useState(false);
   const [closeAmount, setCloseAmount] = useState<string>("");
   const [closeNote, setCloseNote] = useState<string>("");
+  const [withdrawAmount, setWithdrawAmount] = useState<string>("");
+  /** Số sổ của phiên (tiền đầu ca + thu − chi tiền mặt qua két); null khi chưa tải được. */
+  const [reconciliation, setReconciliation] = useState<CashDrawerReconciliation | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReopenOpen, setIsReopenOpen] = useState(false);
 
   const prevLocationKeyRef = useRef<string | null>(null);
 
@@ -117,6 +128,11 @@ export default function CashDrawerDetailPage() {
     try {
       const data = await cashDrawerApi.getSessionById(id);
       setSession(data);
+      // Màn "Hôm nay" dẫn tới đây với `?reopen=1` để mở luôn hộp thoại mở lại két.
+      if (new URLSearchParams(window.location.search).get("reopen") === "1") {
+        window.history.replaceState(null, "", window.location.pathname);
+        if (data.status === "CLOSED") setIsReopenOpen(true);
+      }
     } catch (err: any) {
       console.error(err);
       toast.error("Không thể tải chi tiết phiên két tiền");
@@ -131,6 +147,23 @@ export default function CashDrawerDetailPage() {
       fetchSession();
     }
   }, [id]);
+
+  // Số sổ cho form chốt và dòng chốt két; tải lại mỗi khi phiên đổi. Lỗi chỉ làm mất phần so sánh.
+  useEffect(() => {
+    if (!session) return;
+    let stale = false;
+    cashDrawerApi
+      .getReconciliation(session.id)
+      .then((data) => {
+        if (!stale) setReconciliation(data);
+      })
+      .catch(() => {
+        if (!stale) setReconciliation(null);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [session]);
 
   // Lắng nghe thay đổi từ bộ chọn chi nhánh toàn cục
   useEffect(() => {
@@ -207,6 +240,7 @@ export default function CashDrawerDetailPage() {
   const handleOpenClose = () => {
     setCloseAmount("");
     setCloseNote("");
+    setWithdrawAmount("");
     setIsCloseOpen(true);
   };
 
@@ -253,11 +287,17 @@ export default function CashDrawerDetailPage() {
       toast.error("Số tiền chốt két không hợp lệ");
       return;
     }
+    const withdraw = parseInt(withdrawAmount.replace(/\D/g, "") || "0", 10);
+    if (withdraw > amount) {
+      toast.error("Số tiền rút về không được lớn hơn số tiền đếm được trong két");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       await cashDrawerApi.finalizeSession(id, {
         finalAmount: amount,
+        withdrawAmount: withdraw,
         note: closeNote || undefined,
       });
       toast.success("Chốt két và đóng ca hôm nay thành công!");
@@ -286,9 +326,18 @@ export default function CashDrawerDetailPage() {
     return branchStaffs.filter((s) => s.id !== session.currentStaffId);
   }, [branchStaffs, session]);
 
+  /** Két vừa mở lại sau lần trả cuối: người được giao phải nhận ca lại, lần trả đó không còn tính để chốt. */
+  const reopenedAfterLastLog = useMemo(() => {
+    if (!session?.lastReopenedAt) return false;
+    const lastLog = session.shiftLogs.at(-1);
+    return !!lastLog && new Date(session.lastReopenedAt).getTime() > new Date(lastLog.loggedAt).getTime();
+  }, [session]);
+
   // Thông tin bàn giao cho nhân viên
   const staffHandoverAmount = useMemo(() => {
     if (!session || !user) return 0;
+    // Mở lại: nhận đúng số đã đếm lúc trả két lần trước.
+    if (reopenedAfterLastLog) return session.shiftLogs.at(-1)?.amount ?? session.openingAmount;
     if (session.shiftLogs && session.shiftLogs.length > 0) {
       const lastLogIdx = session.shiftLogs.findIndex(
         (log) => log.nextStaffId === user.id
@@ -298,10 +347,11 @@ export default function CashDrawerDetailPage() {
       }
     }
     return session.openingAmount;
-  }, [session, user]);
+  }, [session, user, reopenedAfterLastLog]);
 
   const staffHandoverFrom = useMemo(() => {
     if (!session || !user) return "N/A";
+    if (reopenedAfterLastLog) return getUserFullName(session.lastReopenedBy, "Quản lý");
     if (session.shiftLogs && session.shiftLogs.length > 0) {
       const lastLogIdx = session.shiftLogs.findIndex(
         (log) => log.nextStaffId === user.id
@@ -311,10 +361,11 @@ export default function CashDrawerDetailPage() {
       }
     }
     return getUserFullName(session.openedBy, "Quản lý");
-  }, [session, user]);
+  }, [session, user, reopenedAfterLastLog]);
 
   const staffHandoverTime = useMemo(() => {
     if (!session || !user) return "";
+    if (reopenedAfterLastLog && session.lastReopenedAt) return session.lastReopenedAt;
     if (session.shiftLogs && session.shiftLogs.length > 0) {
       const lastLogIdx = session.shiftLogs.findIndex(
         (log) => log.nextStaffId === user.id
@@ -324,7 +375,7 @@ export default function CashDrawerDetailPage() {
       }
     }
     return session.createdAt;
-  }, [session, user]);
+  }, [session, user, reopenedAfterLastLog]);
 
   const isCurrentKeeper = useMemo(() => {
     if (!session || !user) return false;
@@ -345,9 +396,17 @@ export default function CashDrawerDetailPage() {
     return (
       lastLog?.type === "END" &&
       lastLog.staffId === session.currentStaffId &&
-      !lastLog.nextStaffId
+      !lastLog.nextStaffId &&
+      !reopenedAfterLastLog
     );
-  }, [session]);
+  }, [session, reopenedAfterLastLog]);
+
+  // Chỉ phiên của ngày giao dịch hôm nay mở lại được (BE kiểm lại).
+  const canReopen =
+    !!session &&
+    session.status === "CLOSED" &&
+    session.businessDate.slice(0, 10) === vietnamToday() &&
+    canFinalizeCashDrawer(user?.role);
 
   // "Nhận ca": gửi log START với số tiền đã bàn giao.
   const handleStartShift = async () => {
@@ -481,7 +540,18 @@ export default function CashDrawerDetailPage() {
                 </div>
               </div>
 
-              <HandoverTimeline session={session} isOpen={isOpen} openedByName={openedByName} />
+              <HandoverTimeline session={session} isOpen={isOpen} openedByName={openedByName} reconciliation={reconciliation} />
+
+              {canReopen && (
+                <div className="pt-6 border-t mt-6 flex flex-wrap items-center gap-3">
+                  <Button variant="outline" className="font-semibold" onClick={() => setIsReopenOpen(true)}>
+                    <RotateCcw className="h-4 w-4 me-2" /> Mở lại két (chốt nhầm)
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Gỡ kết quả chốt hôm nay để bán tiếp; chốt lại sẽ ghi sổ quỹ theo số đếm mới.
+                  </span>
+                </div>
+              )}
 
               {isOpen && (
                 <div className="pt-6 border-t mt-6 flex flex-wrap items-center gap-3">
@@ -582,7 +652,7 @@ export default function CashDrawerDetailPage() {
                 </div>
               </div>
 
-              <HandoverTimeline session={session} isOpen={isOpen} openedByName={openedByName} />
+              <HandoverTimeline session={session} isOpen={isOpen} openedByName={openedByName} reconciliation={reconciliation} />
 
               {isOpen && isCurrentKeeper && awaitingFinalize ? (
                 <div className="text-center text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-4 font-medium">
@@ -754,6 +824,39 @@ export default function CashDrawerDetailPage() {
                 />
                   <CurrencySuffix className="text-base" />
                 </div>
+                <CloseVarianceNote
+                  expected={reconciliation?.expectedClosing ?? null}
+                  counted={closeAmount === "" ? null : parseInt(closeAmount, 10)}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="withdrawAmount" className="font-semibold">
+                  Số tiền chủ rút về (VND)
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="withdrawAmount"
+                    type="text"
+                    value={withdrawAmount === "" ? "" : parseInt(withdrawAmount, 10).toLocaleString("vi-VN")}
+                    onChange={(e) => setWithdrawAmount(e.target.value.replace(/\D/g, ""))}
+                    placeholder="0"
+                    className="text-lg font-semibold tracking-wide"
+                  />
+                  <CurrencySuffix className="text-base" />
+                </div>
+                {(() => {
+                  const counted = parseInt(closeAmount || "0", 10) || 0;
+                  const withdraw = parseInt(withdrawAmount || "0", 10) || 0;
+                  const kept = counted - withdraw;
+                  return (
+                    <p className={`text-xs ${kept < 0 ? "font-medium text-red-600" : "text-muted-foreground"}`}>
+                      {kept < 0
+                        ? "Không rút được nhiều hơn số đếm được."
+                        : `Để lại trong két làm tiền lẻ cho ca sau: ${formatCurrency(kept)}. Tiền chủ rút ghi là chuyển quỹ Két → Chủ, không tính là chi.`}
+                    </p>
+                  );
+                })()}
               </div>
 
               <div className="grid gap-2">
@@ -797,6 +900,17 @@ export default function CashDrawerDetailPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {session && (
+        <ReopenDrawerDialog
+          open={isReopenOpen}
+          onOpenChange={setIsReopenOpen}
+          sessionId={session.id}
+          branchId={session.branchId}
+          defaultStaffId={session.currentStaffId}
+          onReopened={fetchSession}
+        />
+      )}
     </div>
   );
 }
@@ -806,11 +920,17 @@ function HandoverTimeline({
   session,
   isOpen,
   openedByName,
+  reconciliation,
 }: {
   session: CashDrawerSession;
   isOpen: boolean;
   openedByName: string;
+  reconciliation: CashDrawerReconciliation | null;
 }) {
+  // Lần mở lại (nếu có) chen giữa các lần giao ca theo thời gian.
+  const reopenAt = session.lastReopenedAt ? new Date(session.lastReopenedAt).getTime() : null;
+  const logsBefore = session.shiftLogs.filter((log) => reopenAt === null || new Date(log.loggedAt).getTime() <= reopenAt);
+  const logsAfter = session.shiftLogs.filter((log) => reopenAt !== null && new Date(log.loggedAt).getTime() > reopenAt);
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-extrabold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
@@ -837,7 +957,59 @@ function HandoverTimeline({
           </div>
         </div>
 
-        {session.shiftLogs.map((log, idx) => (
+        {logsBefore.map((log, idx) => (
+          <div key={log.id || idx} className="relative">
+            <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-amber-500 bg-background ring-4 ring-amber-500/10" />
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-amber-500">
+                  {formatTime(log.loggedAt)}
+                </span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  {getUserFullName(log.staff)}{" "}
+                  {log.type === "START" ? "nhận két" : "báo cáo cuối ca"}
+                </span>
+              </div>
+              <div className="text-sm font-semibold text-foreground mt-0.5 flex flex-wrap items-center gap-1.5">
+                <span>{formatCurrency(log.amount)}</span>
+                {log.nextStaffId && (
+                  <>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    <span>{getUserFullName(log.nextStaff)}</span>
+                  </>
+                )}
+              </div>
+              {log.note && (
+                <div className="text-xs text-muted-foreground bg-amber-500/5 border border-amber-500/10 rounded px-2.5 py-1 mt-1">
+                  Ghi chú: {log.note}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {session.lastReopenedAt && (
+          <div className="relative">
+            <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-sky-500 bg-background ring-4 ring-sky-500/10" />
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-sky-600">{formatTime(session.lastReopenedAt)}</span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  {getUserFullName(session.lastReopenedBy, "Quản lý")} mở lại két
+                  {(session.reopenCount ?? 0) > 1 ? ` (lần ${session.reopenCount})` : ""} →{" "}
+                  {getUserFullName(session.currentStaff)}
+                </span>
+              </div>
+              {session.lastReopenReason && (
+                <div className="text-xs text-muted-foreground bg-sky-500/5 border border-sky-500/10 rounded px-2.5 py-1 mt-1">
+                  Lý do: {session.lastReopenReason}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {logsAfter.map((log, idx) => (
           <div key={log.id || idx} className="relative">
             <div className="absolute -left-6 top-1.5 w-3 h-3 rounded-full border-2 border-amber-500 bg-background ring-4 ring-amber-500/10" />
             <div className="flex flex-col gap-1">
@@ -883,6 +1055,23 @@ function HandoverTimeline({
               <div className="text-sm font-extrabold text-destructive mt-0.5">
                 Tổng kết: {formatCurrency(session.finalLog.amount)}
               </div>
+              {reconciliation?.variance != null && reconciliation.variance !== 0 && (
+                <div
+                  className={`text-xs font-medium ${
+                    reconciliation.variance < 0 ? "text-red-600" : "text-green-600"
+                  }`}
+                >
+                  {reconciliation.variance < 0 ? "Thiếu két" : "Thừa két"}{" "}
+                  {formatCurrency(Math.abs(reconciliation.variance))} so với sổ (
+                  {formatCurrency(reconciliation.expectedClosing)})
+                </div>
+              )}
+              {session.finalLog.withdrawnAmount != null && (
+                <div className="text-xs text-muted-foreground">
+                  Chủ rút về {formatCurrency(session.finalLog.withdrawnAmount)} · Để lại trong két{" "}
+                  {formatCurrency(session.finalLog.keptAmount ?? 0)}
+                </div>
+              )}
               {session.finalLog.note && (
                 <div className="text-xs text-muted-foreground bg-destructive/5 border border-destructive/10 rounded px-2.5 py-1 mt-1">
                   Ghi chú: {session.finalLog.note}
@@ -893,6 +1082,24 @@ function HandoverTimeline({
         )}
       </div>
     </div>
+  );
+}
+
+/** So số đếm với sổ ngay khi nhập: thừa / thiếu sẽ được ghi vào sổ quỹ lúc chốt. */
+function CloseVarianceNote({ expected, counted }: { expected: number | null; counted: number | null }) {
+  if (expected === null) return null;
+  const variance = counted === null || isNaN(counted) ? null : counted - expected;
+  return (
+    <p className="text-xs text-muted-foreground">
+      Theo sổ, két phải có <span className="font-medium text-foreground">{formatCurrency(expected)}</span>.
+      {variance !== null && variance !== 0 && (
+        <span className={`ml-1 font-medium ${variance < 0 ? "text-red-600" : "text-green-600"}`}>
+          {variance < 0 ? "Thiếu" : "Thừa"} {formatCurrency(Math.abs(variance))}, sẽ ghi vào sổ quỹ là{" "}
+          {variance < 0 ? "thiếu két" : "thừa két"}.
+        </span>
+      )}
+      {variance === 0 && <span className="ml-1 font-medium text-green-600">Khớp sổ.</span>}
+    </p>
   );
 }
 
