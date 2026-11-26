@@ -99,11 +99,6 @@ export function BranchSwitcher() {
     handleAssignManagerSuccess,
   } = useBranchSwitcher();
 
-  // D-4: kho mà một địa điểm có thể chọn làm kho hàng hỏng.
-  const damagedWarehouses = dbWarehouses
-    .filter((w) => w.isSellable === false)
-    .map((w) => ({ id: w.id, name: w.name }));
-
   if (loading || !activeItem) {
     return (
       <SidebarMenu>
@@ -389,7 +384,6 @@ export function BranchSwitcher() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleCreateBranch}
-        damagedWarehouses={damagedWarehouses}
       />
 
       <BranchFormDialog
@@ -397,7 +391,6 @@ export function BranchSwitcher() {
         onOpenChange={setIsEditBranchDialogOpen}
         onSubmit={handleEditBranch}
         title="Cập nhật chi nhánh"
-        damagedWarehouses={damagedWarehouses}
         defaultValues={
           editingBranch
             ? {
@@ -406,7 +399,6 @@ export function BranchSwitcher() {
                 address: editingBranch.address || "",
                 phoneNumber: editingBranch.phoneNumber[0] || "",
                 email: editingBranch.email || "",
-                damagedLocationId: editingBranch.damagedLocationId || "",
               }
             : undefined
         }
@@ -426,7 +418,6 @@ export function BranchSwitcher() {
         open={isWarehouseDialogOpen}
         onOpenChange={setIsWarehouseDialogOpen}
         onSubmit={handleCreateWarehouse}
-        damagedWarehouses={damagedWarehouses}
       />
 
       <WarehouseFormDialog
@@ -434,9 +425,6 @@ export function BranchSwitcher() {
         onOpenChange={setIsEditWarehouseDialogOpen}
         onSubmit={handleEditWarehouse}
         title="Cập nhật kho hàng"
-        damagedWarehouses={damagedWarehouses.filter(
-          (w) => w.id !== editingWarehouse?.id,
-        )}
         defaultValues={
           editingWarehouse
             ? {
@@ -445,8 +433,6 @@ export function BranchSwitcher() {
                 address: editingWarehouse.address || "",
                 phoneNumber: editingWarehouse.phoneNumber?.[0] || "",
                 email: editingWarehouse.email || "",
-                isSellable: editingWarehouse.isSellable ?? true,
-                damagedLocationId: editingWarehouse.damagedLocationId || "",
               }
             : undefined
         }

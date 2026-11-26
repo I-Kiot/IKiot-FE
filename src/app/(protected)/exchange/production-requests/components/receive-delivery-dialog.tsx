@@ -15,13 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -33,11 +26,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import { productionDeliveryApi } from "@/lib/api/production-delivery";
 import type { ProductionDelivery } from "@/types/order-flow";
-import { useProductionOptions } from "../shared/use-production-options";
 import { useLiveHold } from "@/hooks/use-live-refresh";
 import { LiveChangeBanner } from "@/components/live-change-banner";
 
-const DEFAULT_DEFECT_LOCATION = "default";
 
 type LineInput = { received: string; defect: string; unitCost: string };
 
@@ -57,7 +48,6 @@ const toInt = (value: string) => (value.trim() === "" ? 0 : Math.floor(Number(va
  */
 export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived }: Props) {
   const { pending: livePending } = useLiveHold(open, [delivery.id, delivery.productionRequest.id]);
-  const { locations } = useProductionOptions();
   const [inputs, setInputs] = React.useState<Record<string, LineInput>>(() =>
     Object.fromEntries(
       delivery.items.map((line) => [
@@ -66,7 +56,6 @@ export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived
       ]),
     ),
   );
-  const [defectLocationId, setDefectLocationId] = React.useState(DEFAULT_DEFECT_LOCATION);
   const [note, setNote] = React.useState("");
   const [saving, setSaving] = React.useState(false);
 
@@ -106,8 +95,6 @@ export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived
               unitCost: input.unitCost.trim() === "" ? undefined : Number(input.unitCost),
             };
           }),
-        defectLocationId:
-          anyDefect && defectLocationId !== DEFAULT_DEFECT_LOCATION ? defectLocationId : undefined,
         note: note.trim() || undefined,
       });
       toast.success("Đã nhận phiếu giao, tồn kho đã cập nhật");
@@ -200,24 +187,11 @@ export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived
 
         <div className="grid gap-4">
           {anyDefect && (
-            <div className="grid gap-2">
-              <Label>Kho nhận hàng lỗi</Label>
-              <Select value={defectLocationId} onValueChange={setDefectLocationId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={DEFAULT_DEFECT_LOCATION}>
-                    Mặc định (kho hàng hỏng của nơi nhận)
-                  </SelectItem>
-                  {locations.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              Hàng lỗi được ghi là <span className="font-medium text-foreground">hàng hỏng</span> ngay
+              tại nơi nhận: không tính vào tồn bán được, không bán hay đóng gói được. Xem lại ở danh
+              sách hàng hoá, lọc &quot;Có hàng hỏng&quot;.
+            </p>
           )}
           <div className="grid gap-2">
             <Label>Ghi chú</Label>
