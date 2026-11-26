@@ -1,6 +1,9 @@
 export type CustomerGender = 'MALE' | 'FEMALE' | 'OTHER'
-export type CustomerOrderStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'RETURNED'
-export type CustomerOrderPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOMO' | 'VNPAY'
+import type { OrderStatus } from './order-flow'
+import type { OrderPaymentMethod } from './order'
+
+export type CustomerOrderStatus = OrderStatus
+export type CustomerOrderPaymentMethod = OrderPaymentMethod
 
 export interface CustomerOrderItem {
   productName: string

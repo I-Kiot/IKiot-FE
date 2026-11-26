@@ -174,11 +174,11 @@ function SalesJournal() {
         </Select>
       </div>
 
-      <Card>
+      <Card className="gap-0 overflow-hidden py-0">
         <CardContent className="p-0">
           {/* Khung cuộn riêng để đầu bảng và dòng Tổng luôn thấy. */}
           <div className="max-h-[70vh] overflow-auto">
-          <table className="w-full caption-bottom text-sm [&>thead>tr>th]:sticky [&>thead>tr>th]:top-0 [&>thead>tr>th]:z-20 [&>thead>tr>th]:border-b [&>thead>tr>th]:bg-muted">
+          <table className="w-full caption-bottom text-sm [&>*>tr>:first-child]:pl-6 [&>*>tr>:last-child]:pr-6 [&>thead>tr>th]:sticky [&>thead>tr>th]:top-0 [&>thead>tr>th]:z-20 [&>thead>tr>th]:border-b [&>thead>tr>th]:bg-muted">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8" />
