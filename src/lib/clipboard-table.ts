@@ -36,15 +36,21 @@ export function toHtmlTable(rows: readonly (readonly TableCell[])[]): string {
   return `<meta charset="utf-8"><table>${body}</table>`;
 }
 
-/** `true` nếu đã chép. Trình duyệt không có ClipboardItem (hoặc từ chối HTML) thì chép bản TSV. */
-export async function copyRows(rows: readonly (readonly TableCell[])[]): Promise<boolean> {
-  const tsv = toTsv(rows);
+type Rows = readonly (readonly TableCell[])[];
+
+/**
+ * `true` nếu đã chép. Nhận cả Promise để dữ liệu nạp sau (gọi API) vẫn ghi được: ClipboardItem được tạo ngay trong
+ * click (Safari đòi vậy), nội dung đến sau. Trình duyệt không có ClipboardItem (hoặc từ chối HTML) thì chép bản TSV.
+ * Promise dữ liệu bị lỗi thì lỗi đó được ném ra cho nơi gọi.
+ */
+export async function copyRows(rows: Rows | Promise<Rows>): Promise<boolean> {
+  const ready = Promise.resolve(rows);
   try {
     if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
       await navigator.clipboard.write([
         new ClipboardItem({
-          "text/html": new Blob([toHtmlTable(rows)], { type: "text/html" }),
-          "text/plain": new Blob([tsv], { type: "text/plain" }),
+          "text/html": ready.then((r) => new Blob([toHtmlTable(r)], { type: "text/html" })),
+          "text/plain": ready.then((r) => new Blob([toTsv(r)], { type: "text/plain" })),
         }),
       ]);
       return true;
@@ -52,6 +58,7 @@ export async function copyRows(rows: readonly (readonly TableCell[])[]): Promise
   } catch {
     // Rơi xuống bản text bên dưới.
   }
+  const tsv = toTsv(await ready);
   try {
     await navigator.clipboard.writeText(tsv);
     return true;

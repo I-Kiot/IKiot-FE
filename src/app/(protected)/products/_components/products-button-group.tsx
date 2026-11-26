@@ -7,43 +7,46 @@ import { PermissionButton } from "@/components/permission-button";
 import { useProducts } from '../_context/products-provider'
 import { getCachedUser } from '@/lib/auth'
 import { canCreateProduct, canDeleteProduct } from '@/components/sidebar/constants/role-permissions'
-import { copyRows, type TableCell } from '@/lib/clipboard-table'
-import { parseLocationKey } from '@/lib/location-key'
-import { useAuthStore } from '@/store/auth-store'
-import { STATUS_MAP } from '../_constants/product.constants'
+import { useState } from 'react'
+import { copyRows } from '@/lib/clipboard-table'
+import { productApi } from '@/lib/api/product'
+import { productImportRows } from '../_constants/product-copy'
 
 export function ProductsButtonGroup() {
   const { setOpen, selectedIds, screen, products, brands, categories } = useProducts()
-  const locationKey = useAuthStore((s) => s.locationKey)
   const role = getCachedUser()?.role
   const canWrite = canCreateProduct(role)
   const canDelete = canDeleteProduct(role)
 
+  const [copying, setCopying] = useState(false)
+
   /**
-   * Chép giá trị các dòng đã tích (không có tiêu đề), theo thứ tự trong danh sách, để dán vào bảng Excel có sẵn.
-   * Thứ tự cột: Tên, Thương hiệu, Danh mục, Trạng thái, Tồn kho, Hàng hỏng, Tồn toàn chuỗi (khi xem theo một nơi).
+   * Chép các hàng hoá đã tích theo đúng cột của file mẫu "Nhập file" - mỗi phiên bản (SKU) một dòng, không tiêu đề -
+   * để dán thẳng vào template. Danh sách không kèm phiên bản nên nạp chi tiết từng hàng hoá đã chọn.
    */
   async function copySelected() {
     const selected = new Set(selectedIds)
-    const rows = products.filter((p) => selected.has(p.id))
-    const showChain = screen.showChainStock && parseLocationKey(locationKey) !== null
-    const body = rows.map((p) => {
-      const row: TableCell[] = [
-        p.name,
-        brands.find((b) => b.id === p.brandId)?.name ?? '',
-        categories.find((c) => c.id === p.categoryId)?.name ?? p.categoryName ?? '',
-        STATUS_MAP[p.status]?.label ?? p.status,
-      ]
-      if (screen.showStock) {
-        row.push(p.totalStock ?? 0, p.damagedStock ?? 0)
-        if (showChain) row.push(p.totalStockAllLocations ?? p.totalStock ?? 0)
+    const chosen = products.filter((p) => selected.has(p.id))
+    // Tạo Promise trước rồi đưa ngay cho clipboard: ClipboardItem phải được tạo trong chính lần click.
+    const rows = Promise.all(chosen.map((p) => productApi.getById(p.id))).then((details) =>
+      productImportRows(
+        details.map((d) => ({ ...d, items: d.items ?? [] })),
+        brands,
+        categories,
+      ),
+    )
+    setCopying(true)
+    try {
+      if (await copyRows(rows)) {
+        const count = (await rows).length
+        toast.success(`Đã sao chép ${count} phiên bản của ${chosen.length} hàng hóa theo mẫu nhập file`)
+      } else {
+        toast.error('Trình duyệt chặn sao chép. Hãy thử lại hoặc dùng "Xuất file".')
       }
-      return row
-    })
-    if (await copyRows(body)) {
-      toast.success(`Đã sao chép ${rows.length} dòng`)
-    } else {
-      toast.error('Trình duyệt chặn sao chép. Hãy thử lại hoặc dùng "Xuất file".')
+    } catch {
+      toast.error('Không tải được chi tiết hàng hóa để sao chép')
+    } finally {
+      setCopying(false)
     }
   }
 
@@ -54,7 +57,9 @@ export function ProductsButtonGroup() {
           variant="outline"
           size="sm"
           className="cursor-pointer"
+          disabled={copying}
           onClick={copySelected}
+          title="Mỗi phiên bản một dòng, theo cột của file mẫu nhập hàng hóa"
         >
           <Copy className="mr-2 size-4" />
           Sao chép {selectedIds.length} mục
