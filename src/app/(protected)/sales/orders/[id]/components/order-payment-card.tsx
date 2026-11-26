@@ -18,7 +18,7 @@ import { InfoRow } from "./order-info-card";
 import { RefundExcessDialog } from "./refund-excess-dialog";
 import { SettleHeldDialog } from "./settle-held-dialog";
 
-/** The money: totals, deposit, what the shipper collects (journey GĐ1 – Bước 1, 7). Số đã thu / đã hoàn / còn phải thu lấy từ `paymentSummary` của server. */
+/** Tiền của đơn: tổng, cọc, số shipper thu; số liệu từ `paymentSummary`. */
 export function OrderPaymentCard({
   order,
   onChanged,

@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { safeImageSrc } from '../_constants/product.constants'
 
-/** Ảnh vuông nhỏ của một phiên bản trong danh sách chọn / thành phần combo. Không có ảnh thì ảnh giữ chỗ. */
+/** Ảnh nhỏ của một phiên bản. */
 export function ItemThumbnail({
   url,
   alt,

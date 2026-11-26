@@ -4,11 +4,7 @@ import type { ProductDetailResponse } from "@/types/product";
 import type { TableCell } from "@/lib/clipboard-table";
 import { STATUS_MAP } from "./product.constants";
 
-/**
- * Chép hàng hoá theo đúng cột của file mẫu "Nhập file" (BE `products/import/product-import.columns.ts`, sheet "Hàng hóa"):
- * mỗi dòng một phiên bản (SKU), chỉ giá trị, để dán thẳng vào template. Đổi cột ở BE thì đổi ở đây.
- * Cột cấp hàng hoá được điền lại ở mọi dòng - parser chấp nhận khi các dòng khớp nhau.
- */
+/** Chép hàng hoá theo cột file mẫu nhập. */
 export const IMPORT_ATTRIBUTE_SLOTS = 3;
 
 const PRODUCT_TYPE_LABEL: Record<string, string> = {

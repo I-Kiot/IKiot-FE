@@ -162,9 +162,7 @@ export default function CashDrawersTodayPage() {
     }
   };
 
-  // 2. Lấy phiên khi đã có chi nhánh đang chọn. Danh sách người nhận két không tải ở đây: chỉ người mở két cần nó,
-  // nên tải lúc bấm "Mở két đầu ngày" (xem `loadEligibleStaff`). Tải sẵn từng làm mọi nhân viên vào màn này gọi
-  // `GET /users` - không có `users:read` thì nhận 403 và một toast lỗi trên màn họ không định thao tác gì.
+  // Tải phiên khi đã có chi nhánh; danh sách người nhận két tải lúc mở két.
   useEffect(() => {
     if (!activeBranchId) return;
 
@@ -172,7 +170,7 @@ export default function CashDrawersTodayPage() {
     fetchSession(activeBranchId);
   }, [activeBranchId, user]);
 
-  /** Tải người nhận được két của chi nhánh, chọn sẵn chính mình nếu có. Trả false khi lỗi để dialog không mở với danh sách rỗng giả. */
+  /** Tải người nhận được két, chọn sẵn chính mình; false khi lỗi. */
   const loadEligibleStaff = async (branchId: string): Promise<boolean> => {
     setSelectedStaffId("");
     setIsStaffLoading(true);
@@ -235,14 +233,14 @@ export default function CashDrawersTodayPage() {
       if (data && data.id) {
         router.push(`/cash-drawers/${data.id}`);
       } else {
-        // Phòng thủ: server trả về không có id, nên đọc lại trạng thái thay vì để "chưa mở két" tới khi reload thủ công.
+        // Đọc lại trạng thái khi response thiếu id.
         if (branches.length > 0) void loadBranchSessions(branches);
         if (activeBranchId) void fetchSession(activeBranchId);
       }
     } catch (error: any) {
       console.error(error);
       const data = error?.response?.data;
-      // Két ngày trước của chi nhánh chưa chốt: nói rõ và dẫn tới két đó, thay vì hiện message tiếng Anh của BE.
+      // Két ngày trước chưa chốt: dẫn tới két đó.
       if (data?.code === "CASH_DRAWER_OVERDUE" && data?.sessionId) {
         toast.error("Két ngày trước của chi nhánh chưa chốt. Hãy chốt két đó trước khi mở két mới.", {
           action: { label: "Vào chốt", onClick: () => router.push(`/cash-drawers/${data.sessionId}`) },

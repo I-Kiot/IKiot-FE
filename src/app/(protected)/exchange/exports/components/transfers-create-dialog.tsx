@@ -36,12 +36,7 @@ import type {
 } from '@/types/stock-movement'
 import { useTransfers } from './transfers-provider'
 
-/**
- * BR: chọn loại yêu cầu trước khi điền phiếu.
- *
- * `inbound` là chiều ngược lại: chi nhánh xin hàng về chỗ mình nên nơi nhận bị khoá vào chi nhánh đó, nơi gửi là ô chọn.
- * Backend cho phép tạo phiếu từ cả hai đầu; bên gửi nhận thông báo vì họ là bên soạn hàng.
- */
+/** Chọn loại yêu cầu trước khi điền phiếu (gửi đi hoặc xin hàng về). */
 type BranchRequestKind = 'transfer' | 'return' | 'inbound'
 
 type TransferFormValues = {

@@ -43,10 +43,7 @@ function badgedIcon(source: string): Promise<string | null> {
   });
 }
 
-/**
- * Hiện thông báo chưa đọc trên tab trình duyệt: tiền tố "(3) " ở title và chấm đỏ ở favicon,
- * để người đang làm tab khác biết có việc chờ. Xoá ngay khi số lượng về 0.
- */
+/** Hiện số thông báo chưa đọc trên tiêu đề và favicon của tab. */
 export function useTabBadge() {
   const unreadCount = useNotificationInboxStore((state) => state.unreadCount);
   const pathname = usePathname();

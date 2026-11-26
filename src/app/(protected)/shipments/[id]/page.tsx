@@ -1,10 +1,6 @@
 "use client";
 
-// Đích của đường dẫn trong thông báo giao hàng (`/shipments/<id>`, do BE ghi vào thông báo). Không có màn
-// riêng cho một lần giao: trang này tra lần giao rồi chuyển tới màn đang chứa nó và mở sẵn drawer.
-//   - Mình là shipper của lần giao: còn cần giao → "Đang giao"; đã kết thúc → "Lịch sử giao".
-//   - Người khác (chủ shop, người phụ trách đơn): màn Giao hàng, tab theo dõi.
-// Đường dẫn quyết định theo trạng thái lúc bấm, nên thông báo cũ của đơn đã giao xong tự dẫn vào lịch sử.
+// Đích link thông báo giao hàng; chuyển tới màn chứa lần giao.
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";

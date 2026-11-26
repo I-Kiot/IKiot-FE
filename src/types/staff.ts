@@ -1,4 +1,4 @@
-/** Vai trò là dòng do chủ cửa hàng tạo (`User.roleId` → `Role` của tenant, xem `GET /roles`), không phải union cố định; màn hình hiện đúng tên vai trò. */
+/** Vai trò do chủ cửa hàng tạo. */
 export interface StaffRoleRef {
   id: string;
   name: string;
@@ -108,7 +108,7 @@ export interface UpdateStaffPayload {
   warehouseId?: string | null;
   /** `null` bỏ gắn xưởng; `undefined` giữ nguyên. */
   workshopId?: string | null;
-  /** Bỏ gắn chi nhánh/kho (nhân viên chuyển sang làm cho xưởng): gửi `branchId: null`, server đặt `locationId` về null. */
+  /** Bỏ gắn chi nhánh/kho. */
   clearLocation?: boolean;
   hireDate?: string;
   profile?: StaffProfilePayload;

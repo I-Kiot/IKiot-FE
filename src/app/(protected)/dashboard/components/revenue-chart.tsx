@@ -1,7 +1,6 @@
 "use client";
 
-// Biểu đồ doanh thu theo giờ / ngày / tháng của kỳ đang chọn: doanh thu (vùng), số đơn (cột) và
-// doanh thu kỳ liền trước (nét đứt) để thấy lúc nào bán tăng hay giảm.
+// Biểu đồ doanh thu, số đơn và doanh thu kỳ trước.
 
 import { useCallback, useState, type ReactNode } from "react";
 import Link from "next/link";
@@ -58,7 +57,7 @@ function rowsOf(current: RevenueSeries, previous: RevenueSeries, range: Resolved
 
 type TrendTab = "revenue" | "orders";
 
-/** `showOrdersTab`: thêm tab "Đơn hàng gần đây" (chỉ khi người xem có quyền đọc đơn) - đơn gần đây ở chung thẻ để dashboard không phải cuộn. */
+/** Thêm tab "Đơn hàng gần đây" khi có quyền đọc đơn. */
 export function RevenueChart({ showOrdersTab = false }: { showOrdersTab?: boolean }) {
   const { resolved, branchId } = useOverview();
   const [showPrevious, setShowPrevious] = useState(true);

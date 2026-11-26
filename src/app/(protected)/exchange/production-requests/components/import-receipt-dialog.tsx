@@ -35,10 +35,7 @@ type Loaded =
   | { kind: "ok"; movement: StockMovement }
   | { kind: "error"; message: string };
 
-/**
- * Xem (chỉ đọc) phiếu nhập do một lần nhận hàng xưởng sinh ra: mặt hàng, số nhận, số lỗi, giá và thành tiền.
- * Phiếu này không nằm trong danh sách Nhập hàng (bảng đó chỉ có hàng từ nhà cung cấp), nên đây là chỗ duy nhất xem được giá từng đợt.
- */
+/** Xem phiếu nhập của một lần nhận hàng xưởng. */
 export function ImportReceiptDialog({ movementId, receivedAt, onClose }: Props) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
 

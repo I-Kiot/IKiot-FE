@@ -36,8 +36,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (authenticated && user) {
       try {
-        // Không join room ở đây nữa: backend tự đưa socket vào `user:<id>`, `tenant:<id>`, `admin` từ JWT đã xác thực lúc connect.
-        // Server cũ cho client join room bất kỳ theo tên, kể cả "admin", nên socket có thể nghe broadcast dành cho vận hành.
+        // Backend tự đưa socket vào room từ JWT.
         const { getSocket } = require("@/lib/socket");
         const socket = getSocket();
 

@@ -58,7 +58,7 @@ interface OrderLinesEditorProps {
 }
 
 
-/** Tìm sản phẩm và các dòng đơn. Tồn hiển thị theo dòng và không bao giờ chặn (contract §2: vẫn nhận đơn khi hàng chưa có trên kệ). */
+/** Tìm sản phẩm và các dòng đơn; tồn không chặn đơn. */
 export function OrderLinesEditor({
   lines,
   onChange,

@@ -16,7 +16,7 @@ export function useSepayTransactions(enabled: boolean) {
   const [pageSize, setPageSizeState] = useState(DEFAULT_PAGE_SIZE);
   const [list, setList] = useState<Paginated<SepayTransaction> | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  // Khoá của lần tải đã xong gần nhất; đang tải = khoá hiện tại chưa được tải xong (không cần setState đồng bộ trong effect).
+  // Khoá của lần tải gần nhất.
   const [settledKey, setSettledKey] = useState<string | null>(null);
   const requestKey = `${unresolvedOnly}|${page}|${pageSize}|${reloadKey}`;
   const isLoading = enabled && settledKey !== requestKey;

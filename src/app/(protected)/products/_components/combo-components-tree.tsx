@@ -11,7 +11,7 @@ import { ItemThumbnail } from './item-thumbnail'
 /** Khớp MAX_COMBO_DEPTH của BE - BE đã chặn sâu hơn, đây chỉ là chốt chống lặp vô hạn khi dữ liệu lạ. */
 const MAX_DEPTH = 5
 
-/** Cây thành phần của combo. Thành phần là combo thì bấm để mở, tải bằng GET /products/:productId của nó. */
+/** Cây thành phần của combo. */
 export function ComboComponentsTree({
   components,
   depth = 1,

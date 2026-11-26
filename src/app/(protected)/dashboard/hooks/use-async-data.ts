@@ -1,7 +1,6 @@
 "use client";
 
-// Tải dữ liệu cho một widget và bỏ câu trả lời đến muộn của lần tải cũ.
-// Mỗi widget tự gọi API của mình: một endpoint lỗi chỉ làm trống đúng widget đó, không cả trang.
+// Tải dữ liệu cho một widget, bỏ kết quả muộn.
 
 import { useEffect, useState } from "react";
 
@@ -21,9 +20,7 @@ export interface AsyncData<T> {
   failed: boolean;
 }
 
-/**
- * `load` phải được `useCallback` đúng các tham số request (đổi tham số là đổi hàm, đổi hàm là tải lại). `reloadKey` buộc tải lại khi tham số không đổi. Câu trả lời của lần tải cũ bị bỏ để không ghi đè số liệu mới.
- */
+/** `load` phải được useCallback; `reloadKey` buộc tải lại. */
 export function useAsyncData<T>(load: () => Promise<T>, reloadKey = 0): AsyncData<T> {
   const [loaded, setLoaded] = useState<Loaded<T> | null>(null);
 

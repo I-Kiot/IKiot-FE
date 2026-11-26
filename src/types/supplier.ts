@@ -52,12 +52,12 @@ export type SupplierUpdatePayload = Partial<SupplierCreatePayload>
 
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOMO' | 'VNPAY' | 'SEPAY'
 
-/** Đúng ba trường của `PaySupplierDebtDto`. Không gửi `branchId`: server bỏ có chủ ý, vì `payDebt` ghi `CashFlow` EXPENSE không gắn chi nhánh. */
+/** Body trả nợ NCC. */
 export interface SupplierPayDebtPayload {
   amount: number
   paymentMethod?: PaymentMethod
   note?: string
-  /** Trả tiền mặt từ két của địa điểm này (quỹ DRAWER). Bỏ trống = quỹ chủ (OWNER). 404 LOCATION_NOT_FOUND nếu không phải nơi người gọi được làm việc. */
+  /** Trả tiền mặt từ két địa điểm này; bỏ trống là quỹ chủ. */
   locationId?: string
 }
 

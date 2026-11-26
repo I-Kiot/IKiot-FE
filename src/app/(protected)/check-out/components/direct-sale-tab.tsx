@@ -118,9 +118,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
   // Chi nhánh bán được xác định giống nhau cho preview khuyến mãi và payload đơn cuối.
   const resolveBranchId = (): string => salesBranchId;
 
-  // Đọc lại tồn của mọi dòng trong mọi hóa đơn nháp khi đổi nơi bán (nơi bán dùng chung cho các tab).
-  // Tồn trong giỏ được chụp lúc thêm hàng, nên không đọc lại thì giỏ vẫn hiện tồn của nơi cũ.
-  // Không tự giảm số lượng: thu ngân có thể đổi nơi bán lại; dòng thiếu được đánh dấu và bị chặn lúc thanh toán.
+  // Đọc lại tồn của giỏ khi đổi nơi bán.
   useEffect(() => {
     if (!salesBranchId) return;
     const allItemIds = invoices.flatMap((invoice) =>
@@ -195,8 +193,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salesBranchId]);
 
-  // Preview giảm giá cho khuyến mãi gán tay của hóa đơn đang chọn.
-  // Kèm signature (giỏ + id khuyến mãi) lúc tính; kết quả cũ còn đang bay sẽ bị bỏ qua khi render, không xoá bằng setState trong effect.
+  // Kết quả tính khuyến mãi kèm signature lúc tính.
   const [promotionResult, setPromotionResult] = useState<
     (PromotionCalculateResponse & { signature: string }) | null
   >(null);
@@ -231,7 +228,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     );
   };
 
-  // Signature của giỏ (items + khách) trên hóa đơn đang chọn; dùng để khoá tính khuyến mãi và truyền vào picker.
+  // Signature của giỏ trên hoá đơn đang chọn.
   const cartSignature = useMemo(() => {
     if (activeInvoice.items.length === 0) return null;
     const itemsKey = activeInvoice.items
@@ -240,14 +237,13 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     return `${itemsKey}|${activeInvoice.selectedCustomer?.id ?? ""}`;
   }, [activeInvoice.items, activeInvoice.selectedCustomer]);
 
-  // Signature mà promotionResult hiện tại hợp lệ; gồm id khuyến mãi nên đổi (hoặc bỏ) lựa chọn cũng làm kết quả cũ mất hiệu lực.
+  // Signature mà kết quả khuyến mãi hiện tại hợp lệ.
   const promotionSignature = useMemo(() => {
     if (!cartSignature || activeInvoice.selectedPromotionIds.length === 0) return null;
     return `${cartSignature}|${[...activeInvoice.selectedPromotionIds].sort().join(",")}`;
   }, [cartSignature, activeInvoice.selectedPromotionIds]);
 
-  // Tính lại giảm giá khi giỏ hoặc lựa chọn khuyến mãi đổi (debounce). Nếu khuyến mãi không còn đủ điều kiện (vd giỏ dưới minOrderValue),
-  // BE từ chối cả lựa chọn: bỏ chọn để người dùng gán lại.
+  // Tính lại khuyến mãi khi giỏ đổi (debounce); BE từ chối thì bỏ chọn.
   useEffect(() => {
     if (!promotionSignature) return;
 
@@ -420,8 +416,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     toast.info("Đã xóa sản phẩm khỏi giỏ hàng.");
   };
 
-  // Mỗi dòng không xuống dưới 0, khớp "Thành tiền" trong giỏ: giảm giá vượt thành tiền không còn bị cắt ở ô nhập
-  // (thanh toán sẽ chặn), nên không chặn ở đây thì "Tổng tiền hàng" hiện số âm.
+  // Mỗi dòng không âm.
   const subtotal = useMemo(() => {
     return activeInvoice.items.reduce(
       (acc, item) =>
@@ -430,7 +425,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     );
   }, [activeInvoice.items]);
 
-  // Khuyến mãi gán và giảm giá tay cấp đơn loại trừ nhau: khi đã gán khuyến mãi thì nó thắng, giảm giá tay bị bỏ qua.
+  // Khuyến mãi gán thì bỏ qua giảm giá tay.
   const grandTotal = useMemo(() => {
     const calculatedDiscount = hasPromotionApplied
       ? promotionDiscount
@@ -459,7 +454,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     }
   }, [grandTotal]);
 
-  // Điền tiền khách đưa đúng bằng tổng hóa đơn và báo cho thu ngân; nút "Đủ tiền" và phím F4 cùng gọi hàm này.
+  // Điền tiền khách đưa bằng tổng hoá đơn (nút "Đủ tiền", phím F4).
   const handleExactPay = () => {
     updateActiveInvoice({ customerPay: grandTotal });
     toast.info("Đã cập nhật số tiền khách trả khớp với hóa đơn!", {
@@ -473,7 +468,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
       return;
     }
 
-    // Giảm giá nhập theo từng cái, nên vượt đơn giá cũng là vượt thành tiền dòng. Từ chối, không tự cắt (BE cũng từ chối đơn như vậy).
+    // Từ chối giảm giá vượt đơn giá.
     const overDiscounted = activeInvoice.items.filter(
       (item) => item.discountAmount > item.unitPrice,
     );
@@ -511,7 +506,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
       return;
     }
 
-    // Chụp giỏ lúc preview khuyến mãi được tính, phải lấy ngay vì hóa đơn reset ngay khi tạo đơn thành công.
+    // Chụp giỏ lúc tính khuyến mãi.
     const promotionToApply =
       hasPromotionApplied && activePromotionResult
         ? {
@@ -546,14 +541,12 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
           : (subtotal * activeInvoice.discount) / 100;
     }
 
-    // Payload chỉ gửi những gì BE cần: POST /orders tự tính tổng từ các dòng và giảm giá từ engine khuyến mãi.
-    // `discountType: "PROMOTION"` bị BE từ chối (@IsIn(['ORDER']), 400); gửi `appliedPromotions` đã đủ để thành đơn khuyến mãi.
-    // `ORDER` (giảm giá tay cả đơn) vẫn gửi kèm giá trị. Không gửi `grandTotal`, `unitPrice`, `productName`: server tự định giá từ catalogue.
+    // Payload tạo đơn quầy, chỉ gửi những gì BE cần.
     const payload = {
       customerId: activeInvoice.selectedCustomer?.id,
       branchId: resolvedBranchId,
       paymentMethod: activeInvoice.paymentMethod,
-      // POS nhập giảm giá theo từng cái, còn BE hiểu `discountAmount` là giảm của cả dòng: nhân số lượng để hai bên cùng một con số.
+      // Giảm giá theo cái nhân số lượng thành giảm cả dòng.
       items: activeInvoice.items.map((item) => ({
         productItemId: item.productItemId,
         quantity: item.quantity,
@@ -602,7 +595,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         const orderId = createdOrder.id || (createdOrder as any).id || "";
         const receipt = buildReceipt(createdOrder, orderId);
 
-        // Ghi nhận lượt dùng khuyến mãi sau khi đơn đã tạo, best-effort: đơn đã thu tiền nên lỗi ghi log không chặn luồng thanh toán.
+        // Ghi lượt dùng khuyến mãi sau khi tạo đơn, lỗi không chặn.
         if (promotionToApply && orderId) {
           promotionApi.apply({ ...promotionToApply, orderId }).catch((error) => {
             console.error("Lỗi khi ghi nhận khuyến mãi cho đơn hàng:", error);
@@ -640,8 +633,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
     });
   };
 
-  // Mở hộp xác nhận hủy trong ứng dụng thay cho `confirm()` của trình duyệt (hộp gốc chặn trang và chặn test tự động).
-  // Ghi lại đúng hóa đơn lúc mở hộp: đổi tab trong lúc hộp đang mở cũng không xóa nhầm hóa đơn khác.
+  // Mở hộp xác nhận huỷ, ghi lại đúng hoá đơn lúc mở.
   const handleCancelOrder = () => {
     setCancelTarget({ id: activeInvoice.id, tabName: activeInvoice.tabName });
   };
@@ -684,7 +676,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
 
   return (
     <div className="h-full w-full flex flex-col gap-4 p-4 overflow-hidden bg-background">
-      {/* Két chi nhánh này còn mở từ ngày trước: cảnh báo, không chặn bán (chặn bán là quyết định của chủ shop, chưa có cài đặt). */}
+      {/* Két chi nhánh còn mở từ ngày trước: cảnh báo, không chặn bán. */}
       <OverdueDrawerBanner branchId={salesBranchId} className="shrink-0" />
       <ResizablePanelGroup direction={direction} className="flex-1 min-h-0 gap-4">
         <ResizablePanel defaultSize={65} minSize={30}>

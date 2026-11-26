@@ -47,7 +47,7 @@ export function formatVND(value: number): string {
   return VND.format(value);
 }
 
-/** "Còn phải thu" của một lần giao: số tiền nếu còn (server trừ mọi khoản đã nhận, kể cả chuyển thiếu), "Đã thu" khi shipper đã giao và không còn gì, "Không phải thu" khi đơn đã trả đủ từ trước. */
+/** "Còn phải thu" của một lần giao. */
 export function amountDueText(shipment: { status: string; order: { amountDue: number } }): string {
   if (shipment.order.amountDue > 0) return formatVND(shipment.order.amountDue);
   return shipment.status === "DELIVERED" ? "Đã thu" : "Không phải thu";
@@ -69,10 +69,7 @@ export function ShipmentStatusBadge({ status }: { status: ShipmentStatus }) {
   return <Badge variant={STATUS_VARIANT[status]}>{SHIPMENT_STATUS_LABELS[status]}</Badge>;
 }
 
-/**
- * Lần giao đang trên đường (đơn Đang vận chuyển): chỉ lúc này mới ghi "Đang đi giao". FAILED vẫn tính vì hàng chưa về shop,
- * nên shipper còn giao lại được tới khi shop xác nhận hàng đã hoàn về.
- */
+/** Lần giao đang trên đường. */
 export function isOnTheRoad(status: ShipmentStatus): boolean {
   return status === "IN_TRANSIT" || status === "OUT_FOR_DELIVERY" || status === "FAILED";
 }
@@ -82,10 +79,7 @@ export function isFinished(status: ShipmentStatus): boolean {
   return status === "DELIVERED" || status === "RETURNED" || status === "CANCELLED";
 }
 
-/**
- * Nút nào bấm được với người đăng nhập; không được thì nút mờ và báo cần quyền. Luật thật (người phụ trách đơn, đúng kho)
- * do BE quyết; sai thì BE trả `ORDER_STEP_DENIED`.
- */
+/** Nút bấm được theo quyền. */
 export function shipmentActions(shipment?: Pick<ShipmentSummary, "driver"> | null) {
   const user = getCachedUser();
   const role = user?.role;
@@ -98,10 +92,7 @@ export function shipmentActions(shipment?: Pick<ShipmentSummary, "driver"> | nul
   };
 }
 
-/**
- * Nhật trình của một lần giao, mới nhất lên đầu. Ảnh bằng chứng nằm ở lần giao chứ không ở từng mốc,
- * nên chỉ gắn vào mốc DELIVERED.
- */
+/** Nhật trình của lần giao, mới nhất trước. */
 export function ShipmentTimeline({ shipment }: { shipment: Pick<Shipment, "events" | "proofPhotoUrls"> }) {
   const events = [...shipment.events].sort(
     (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),

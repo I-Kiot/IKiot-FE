@@ -106,10 +106,7 @@ export const CURRENCY_SYMBOL = "đ";
 
 const WIDTH_CLASS = /^(w|min-w|max-w)-|^flex-1$/;
 
-/**
- * Đặt ký hiệu tiền ở mép phải ô nhập. Class độ rộng của caller (`w-28`, `max-w-[180px]`...) chuyển sang wrapper
- * để ký hiệu nằm sát ô nhập; các class còn lại vẫn ở ô nhập.
- */
+/** Ký hiệu tiền ở mép phải ô nhập. */
 function splitMoneyClasses(className?: string) {
   const tokens = (className ?? "").split(/\s+/).filter(Boolean);
   return {

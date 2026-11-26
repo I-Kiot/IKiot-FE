@@ -23,9 +23,7 @@ type Props = {
   alt: string;
 };
 
-// Lightbox xem ảnh: ảnh lớn ở giữa, nút / phím mũi tên chuyển ảnh trước-sau (vòng lại khi tới cuối),
-// dải ảnh nhỏ bên dưới để nhảy thẳng tới một ảnh.
-// Muốn mở lại từ ảnh đầu tiên: component cha đổi `key` khi mở, vì index khởi tạo từ initialIndex.
+// Lightbox xem ảnh.
 export function ImageGalleryDialog({
   images,
   open,

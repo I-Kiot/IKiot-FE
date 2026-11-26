@@ -23,10 +23,7 @@ export interface Plan {
   isActive: boolean;
 }
 
-/**
- * Cột tiền của BE là `Decimal`, lên JSON thành chuỗi (`"100000.00"`). Ép về số ngay ở đây để `toLocaleString` định dạng
- * được (`100.000đ`) và so sánh kiểu `price === 0` đúng; kiểu `number` khai báo bên dưới mới là thật.
- */
+/** Ép cột tiền Decimal về số. */
 const toPlan = (raw: Plan): Plan => ({ ...raw, price: Number(raw.price) });
 const toInvoice = <T extends { amount: number }>(raw: T): T => ({
   ...raw,
@@ -81,9 +78,7 @@ export async function setPlanActive(
   return toPlan(response.data.data);
 }
 
-/**
- * Ba hạng giá cố định. Mỗi hạng có gói tháng (planCode = hạng) và gói năm tuỳ chọn (`${tier}_YEARLY`).
- */
+/** Ba hạng giá cố định, mỗi hạng có gói tháng và năm. */
 export const PLAN_TIER_ORDER = ["TRIAL", "PLUS", "PRO"] as const;
 export type PlanTier = (typeof PLAN_TIER_ORDER)[number];
 
@@ -97,10 +92,7 @@ export interface PlanTierGroup {
 export const basePlanTier = (planCode: string): string =>
   planCode.replace(/_YEARLY$/, "");
 
-/**
- * Gom danh sách gói phẳng thành TRIAL/PLUS/PRO, ghép bản tháng và năm. Dùng chung cho trang landing và billing.
- * Hạng không có gói nào thì bỏ qua.
- */
+/** Gom gói thành TRIAL/PLUS/PRO. */
 export function groupPlansByTier(plans: Plan[]): PlanTierGroup[] {
   return PLAN_TIER_ORDER.map((tier) => ({
     tier,
@@ -130,11 +122,7 @@ export interface CurrentSubscription {
   };
 }
 
-/**
- * Gói shop đang dùng. **Không lấy từ `/auth/me`**: `AuthService.me` chỉ trả user và role, nên `user.subscription` luôn undefined
- * và thẻ "Gói hiện tại" không bao giờ hiện đúng gói.
- * Trả `null` khi tenant chưa có dòng subscription nào.
- */
+/** Gói shop đang dùng, null nếu chưa có. */
 export async function getCurrentSubscription(): Promise<CurrentSubscription | null> {
   const response = await client.get("/subscription/current");
   return response.data?.data ?? null;

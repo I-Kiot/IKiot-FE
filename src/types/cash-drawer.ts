@@ -9,7 +9,7 @@ export interface CashDrawerUserRef {
   email?: string;
 }
 
-/** Một người có thể giữ két, cho ô chọn ở màn mở két và báo cáo cuối ca. BE chỉ trả tên, không trả hồ sơ. */
+/** Người có thể giữ két. */
 export interface CashierOption {
   id: string;
   fullName: string;
@@ -59,7 +59,7 @@ export interface CashDrawerSession {
   updatedAt: string;
 }
 
-/** Một két quá hạn, từ `GET /cash-drawer-sessions/overdue` - chỉ ngày, chi nhánh và người đang giữ, không có tiền. */
+/** Một két quá hạn. */
 export interface OverdueCashDrawer {
   id: string;
   branchId: string;
@@ -75,7 +75,7 @@ export interface OpenSessionPayload {
 }
 
 export interface ShiftLogPayload {
-  /** `START` nhận két, `END` trả lại. Server mặc định `END`; chuỗi kiểm tra cần `START` trước nên FE phải gửi được nó. */
+  /** `START` nhận két, `END` trả lại. */
   type?: "START" | "END";
   amount: number;
   nextStaffId?: string;

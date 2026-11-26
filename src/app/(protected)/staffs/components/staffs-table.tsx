@@ -86,7 +86,7 @@ export function StaffsTable() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
-  // Bộ lọc chi nhánh/kho toàn cục ưu tiên hơn bộ lọc thủ công (cùng thứ tự với provider khi tải): khóa bộ lọc và hiện đúng phạm vi đang áp dụng.
+  // Khoá bộ lọc khi đang dùng địa điểm toàn cục.
   const isLocationLocked = locationKey !== "all";
   const lockedLocation = parseLocationKey(locationKey);
   const lockedBranchId =

@@ -4,14 +4,11 @@ import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import { ENTITY_CHANGED_EVENT, type EntityChangedEvent } from "@/types/change-feed";
 
-/**
- * Lõi (không React) của "tự cập nhật khi người khác đổi dữ liệu": một listener `entity:changed` duy nhất chia cho mọi
- * màn hình đang mở, cổng toast dùng chung, và các "hold" bảo vệ hộp thoại đang sửa. Hook React nằm ở `src/hooks/use-live-refresh.ts`.
- */
+/** Lõi tự cập nhật khi người khác đổi dữ liệu: một listener `entity:changed`, cổng toast, hold hộp thoại. */
 
 /** Chờ tối đa bấy lâu kể từ sự kiện đầu của một loạt trước khi tải lại, dù sự kiện cứ dồn tới. */
 export const MAX_WAIT_MS = 3000;
-/** Toast chờ chừng này để thông báo (notification) của cùng chứng từ kịp tới, tránh hai toast cho một việc. */
+/** Thời gian chờ trước khi toast. */
 const TOAST_DELAY_MS = 400;
 const NOTIFIED_WINDOW_MS = 5000;
 const BURST = { windowMs: 3000, threshold: 3 };
@@ -28,7 +25,7 @@ function dispatch(event: EntityChangedEvent): void {
   listeners.forEach((listener) => listener(event));
 }
 
-/** `resetSocket()` thay instance socket, nên mỗi lần đăng ký lại kiểm tra đã gắn đúng socket hiện tại chưa. */
+/** Gắn lại listener khi socket đổi instance. */
 function ensureAttached(): void {
   const socket = getSocket();
   if (attachedTo === socket) return;
@@ -45,14 +42,11 @@ export function subscribeEntityChanged(listener: Listener): () => void {
   };
 }
 
-// --- Thay đổi do chính tab này gây ra ---------------------------------------------------------------------------
+// --- Thay đổi do chính tab này ---
 
 const localMutationListeners = new Set<() => void>();
 
-/**
- * BE không phát lại sự kiện cho chính tab gây ra thay đổi (X-Socket-Id), nên interceptor axios gọi hàm này sau mỗi
- * ghi thành công: mọi màn đang theo dõi tải lại im lặng một lần. Tín hiệu không mang thông tin bảng/id.
- */
+/** Báo mọi màn tải lại sau khi tab này ghi thành công. */
 export function notifyLocalMutation(): void {
   localMutationListeners.forEach((listener) => listener());
 }
@@ -64,13 +58,13 @@ export function subscribeLocalMutation(listener: () => void): () => void {
   };
 }
 
-// --- Kết nối lại ---------------------------------------------------------------------------------------------
+// --- Kết nối lại ---
 
 const reconnectListeners = new Set<() => void>();
 let reconnectAttachedTo: Socket | null = null;
 let wasDisconnected = false;
 
-/** Gọi khi socket nối lại sau một lần mất kết nối: các sự kiện trong lúc đứt đã mất, nên màn hình tải lại một lần. */
+/** Tải lại một lần khi socket nối lại. */
 export function subscribeReconnect(listener: () => void): () => void {
   const socket = getSocket();
   if (reconnectAttachedTo !== socket) {
@@ -90,9 +84,9 @@ export function subscribeReconnect(listener: () => void): () => void {
   };
 }
 
-// --- Khớp sự kiện --------------------------------------------------------------------------------------------
+// --- Khớp sự kiện ---
 
-/** Sự kiện có chạm tới một trong các `resources` không; có `ids` thì còn phải trùng ít nhất một id (sự kiện `ids: []` không bao giờ khớp bộ lọc id). */
+/** Sự kiện có chạm tới `resources` (và `ids` nếu có) không. */
 export function eventTouches(
   event: EntityChangedEvent,
   resources: ReadonlySet<string>,
@@ -111,7 +105,7 @@ export function eventIds(event: EntityChangedEvent): string[] {
   return event.changes.flatMap((change) => change.ids);
 }
 
-// --- Hold: hộp thoại / panel đang sửa -------------------------------------------------------------------------
+// --- Hold: hộp thoại đang sửa ---
 
 const holds = new Map<string, ReadonlySet<string>>();
 const holdPendingEvents = new Map<string, EntityChangedEvent>();
@@ -174,13 +168,13 @@ export function subscribeHolds(listener: () => void): () => void {
   };
 }
 
-// --- Cổng toast ------------------------------------------------------------------------------------------------
+// --- Cổng toast ---
 
 const seen = new Map<string, number>();
 const notified = new Map<string, number>();
 let recentToasts: number[] = [];
 
-/** `use-notification-socket` gọi khi nhận một thông báo: người nhận đã có toast của thông báo, không cần thêm toast thay đổi. */
+/** Đánh dấu chứng từ vừa có thông báo. */
 export function rememberNotified(referenceId?: string | null): void {
   if (referenceId) notified.set(referenceId, Date.now());
 }
@@ -190,10 +184,7 @@ function wasNotified(subjectId: string): boolean {
   return at !== undefined && Date.now() - at < NOTIFIED_WINDOW_MS;
 }
 
-/**
- * Hiện MỘT toast cho sự kiện (người gọi đã xác định sự kiện này có trên màn hình). Bỏ qua: sự kiện `quiet`, tab đang ẩn,
- * eventId đã hiện, và chứng từ vừa có thông báo. Từ 3 toast trong 3 giây thì gộp thành "Có N cập nhật mới".
- */
+/** Hiện một toast cho sự kiện; nhiều toast liền nhau thì gộp. */
 export function announceChange(event: EntityChangedEvent): void {
   if (event.quiet) return;
   if (typeof document !== "undefined" && document.hidden) return;

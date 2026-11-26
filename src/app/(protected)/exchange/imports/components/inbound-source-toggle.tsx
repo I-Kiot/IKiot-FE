@@ -16,7 +16,7 @@ type Props = {
   disabled?: boolean;
 };
 
-/** Công tắc Nhà cung cấp / Xưởng, dùng chung cho bảng và dialog tạo mới. Chỉ một lựa chọn thì không có gì để đổi nên không vẽ. */
+/** Công tắc Nhà cung cấp / Xưởng. */
 export function InboundSourceToggle({ value, options, onChange, disabled }: Props) {
   if (options.length < 2) return null;
 

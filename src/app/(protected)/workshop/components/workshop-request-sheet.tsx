@@ -1,7 +1,6 @@
 "use client";
 
-// Chi tiết một YCSX cho nhân viên xưởng: từng dòng đặt / đã nhận / đang chờ nhận / còn giao được,
-// form tạo phiếu giao (giao thiếu được), và các phiếu đã tạo (rút lại phiếu còn chờ nhận).
+// Chi tiết YCSX cho nhân viên xưởng: dòng, form phiếu giao, phiếu đã tạo.
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -93,13 +92,13 @@ export function WorkshopRequestSheet({ requestId, onClose, onChanged }: Props) {
     onChanged();
   }
 
-  // Nhận làm / huỷ yêu cầu không đụng tới số đang gõ cho phiếu giao, nên chỉ thay YCSX, giữ nguyên ô nhập.
+  // Giữ ô nhập khi chỉ thay YCSX.
   function showRequest(updated: ProductionRequest) {
     setState({ status: "ready", request: updated });
     onChanged();
   }
 
-  /** Bên kia đã đổi YCSX trước (shop huỷ, người khác nhận làm): báo lỗi rồi tải lại để thấy trạng thái thật. */
+  /** Bên kia đã đổi YCSX trước: báo lỗi rồi tải lại. */
   async function reportAndReload(error: unknown, fallback: string) {
     const code = getApiErrorBody(error)?.code;
     toast.error(messageForCode(code) ?? fallback);

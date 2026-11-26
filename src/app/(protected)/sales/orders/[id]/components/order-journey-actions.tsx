@@ -1,8 +1,6 @@
 "use client";
 
-// Hàng thao tác hành trình, đặt dưới thanh các bước trên chi tiết đơn: trái là trạng thái đang chờ, phải là nút
-// bước kế tiếp - Đóng đơn, giao cho vận chuyển, xác nhận shipper đã lấy hàng, bắt đầu vận chuyển, giao hàng, mở
-// lại mã QR, xác nhận đã nhận tiền từ shipper. Dùng lại đúng dialog / sheet của /fulfillments, /shipments, /shipper.
+// Hàng thao tác hành trình dưới thanh bước của chi tiết đơn.
 
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -67,13 +65,8 @@ function deliveredShipment(order: OrderDetail): OrderShipment | undefined {
   );
 }
 
-/**
- * Nút hiện theo trạng thái đơn; các cờ này chỉ quyết định bấm được hay báo cần quyền. Luật thật ở BE (`assertOrderStepAccess`, `deliveryActorAccess`), sai thì trả `ORDER_STEP_DENIED`.
- * Người phụ trách làm được mọi bước không cần quyền, trừ "Bắt đầu vận chuyển" (xem `ASSIGNEE_MAY_SHIP`).
- */
-/**
- * Người phụ trách bấm "Đã giao cho ĐVVC" (trừ tồn) không cần `orders:ship` khi cờ này bật. Đang tắt từ 2026-10-16 (chờ khách xác nhận); bật lại thì đổi cùng `ASSIGNEE_MAY_SHIP` ở BE (`order-handler.ts`).
- */
+/** Cờ hiện nút theo trạng thái và quyền; luật thật ở BE. */
+/** Người phụ trách tự bấm "Bắt đầu vận chuyển" được không; đổi cùng `ASSIGNEE_MAY_SHIP` ở BE. */
 const ASSIGNEE_MAY_SHIP = false;
 
 const WHO_STEP = "Chủ shop, người phụ trách đơn, hoặc nhân viên có quyền này tại kho xuất mới làm được.";
@@ -87,7 +80,7 @@ function stepPermissions(order: OrderDetail) {
   const isOwner = role === "TENANT_OWNER" || role === "ADMIN";
   const isAssignee = userId !== undefined && order.assignee?.id === userId;
 
-  // Xác nhận lấy hàng / giao / thu tiền: chỉ shipper của lần giao, người phụ trách, hoặc chủ shop - không có "giữ quyền".
+  // Chỉ shipper, người phụ trách hoặc chủ shop xác nhận lấy hàng / giao / thu tiền.
   const canActOnDelivery = (shipment: OrderShipment | undefined) => {
     if (!shipment) return false;
     const isDriver = userId !== undefined && shipment.driver?.id === userId;
@@ -99,7 +92,7 @@ function stepPermissions(order: OrderDetail) {
     canHandOver: isAssignee || allows(role, "shipments", "create"),
     canShip: (ASSIGNEE_MAY_SHIP && isAssignee) || allows(role, "orders", "ship"),
     canConfirmCash: allows(role, "orders", "confirm_cash"),
-    // Hàng của lần giao thất bại đã về shop: người phụ trách hoặc ai xem được đơn (BE: ORDER_RETURN_DENIED).
+    // Xác nhận hàng giao thất bại đã về.
     canConfirmReturned: isAssignee || allows(role, "orders", "read"),
     canActOnDelivery,
   };
@@ -113,35 +106,30 @@ interface OrderJourneyActionsProps {
   onNeedsReload: () => void;
 }
 
-/**
- * Luôn phải mount component này, kể cả khi không có nút: sheet giao hàng sống ở đây. Giao bằng QR xong đơn chuyển RECEIVED rồi COMPLETED (không còn nút), nhưng sheet vẫn phải ở lại.
- */
+/** Luôn mount vì sheet giao hàng nằm ở đây. */
 export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJourneyActionsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const wantsRemittance = useSearchParams().get("confirmCash") === "1";
   const permissions = stepPermissions(order);
-  // Đơn RETURNED (giao xong rồi khách trả hàng) vẫn nhận tiền shipper nộp: tiền vào quỹ chủ, đơn giữ nguyên trạng thái Hoàn trả.
+  // Đơn RETURNED vẫn nhận tiền shipper nộp.
   const awaitingCash =
     (order.status === "RECEIVED" || order.status === "RETURNED") &&
     (order.collection?.cashRemittanceStatus === "PENDING" || order.paymentSummary.pendingRemittance > 0);
   // Link trong thông báo chỉ tự mở dialog cho người xác nhận được.
   const opensRemittance = wantsRemittance && awaitingCash && permissions.canConfirmCash;
 
-  // Thông báo "Shipper đang giữ tiền mặt" dẫn tới đây kèm ?confirmCash=1: mở dialog ngay, nếu đơn thật sự
-  // đang chờ tiền.
+  // `?confirmCash=1` mở ngay dialog xác nhận tiền.
   const [openStep, setOpenStep] = React.useState<OpenStep>(() =>
     opensRemittance ? "remittance" : null,
   );
-  // Đang ở sẵn đơn này khi bấm thông báo thì không có gì mount lại: bắt cờ vừa xuất hiện ngay trong lúc
-  // render (không dùng effect).
+  // Bắt cờ ngay trong lúc render.
   const [seenFlag, setSeenFlag] = React.useState(wantsRemittance);
   if (wantsRemittance !== seenFlag) {
     setSeenFlag(wantsRemittance);
     if (opensRemittance) setOpenStep("remittance");
   }
-  // Sheet giao hàng mở theo id lưu ở đây, KHÔNG theo điều kiện hiện nút: giao bằng QR xong thì đơn sang
-  // RECEIVED (nút "Giao hàng" biến mất) đúng lúc khách cần quét mã - sheet phải ở lại tới khi người dùng đóng.
+  // Sheet giao hàng mở theo id, không theo điều kiện hiện nút.
   const [sheetShipmentId, setSheetShipmentId] = React.useState<string | null>(null);
 
   // Đơn bán tại quầy không đi theo hành trình.
@@ -152,13 +140,12 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
   const delivered = deliveredShipment(order);
 
   const showPack = order.status === "CONFIRMED";
-  // Đã gán shipper thì không giao lần nữa; chờ shipper (hoặc người bấm hộ) xác nhận đã lấy hàng.
-  // Đơn khách tới lấy không đi qua vận chuyển (xem `pickup` bên dưới).
+  // Đã gán shipper thì chờ shipper xác nhận lấy hàng.
   const pickup = isStorePickup(order);
   const showHandOver = order.status === "PACKED" && !pickup && !awaitingPickUp;
   const showAwaitingPickUp = order.status === "PACKED" && awaitingPickUp !== undefined;
   const showPickUp = showAwaitingPickUp;
-  // Khách tới lấy: đang chờ khách ở quầy. Thu nốt tiền trước, đủ tiền mới giao hàng cho khách. Cùng nhóm quyền với bước trừ tồn.
+  // Khách tới lấy: thu tiền trước rồi giao hàng.
   const pickupWaiting = pickup && order.status === "PACKED";
   const showPickupCollect = pickupWaiting && order.paymentStatus !== "PAID";
   const showPickupHandOver = pickupWaiting && order.paymentStatus === "PAID";
@@ -196,7 +183,7 @@ export function OrderJourneyActions({ order, onChanged, onNeedsReload }: OrderJo
     onNeedsReload();
   };
 
-  /** "Xác nhận đã lấy hàng" (bấm hộ shipper): thành công → báo, đóng, đọc lại; dữ liệu đã cũ → cũng đóng và đọc lại. */
+  /** Xác nhận đã lấy hàng (bấm hộ shipper). */
   const pickUp = (shipmentId: string, note: string | undefined) =>
     shipmentApi.pickUp(shipmentId, note).then(
       () => {

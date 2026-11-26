@@ -77,7 +77,7 @@ type OrdersContextType = {
   updateQuery: (patch: Partial<Omit<OrdersListQuery, "page">>) => void;
   updatePage: (page: number) => void;
   resetFilters: () => void;
-  /** Thay vài trường của một dòng sau khi đổi ngay tại danh sách (người phụ trách, shipper), không tải lại cả trang. */
+  /** Cập nhật vài trường của một dòng. */
   patchOrder: (id: string, patch: Partial<OrderListItem>) => void;
   /** Đơn đang tích (theo id) - bảng tích, nút "Sao chép" ở header đọc. Chỉ trong trang đang xem. */
   rowSelection: Record<string, boolean>;
@@ -85,12 +85,9 @@ type OrdersContextType = {
   selectedOrders: OrderListItem[];
 };
 
-/** Danh sách đơn chỉ tự cập nhật khi bảng `orders` đổi (tồn kho trên dòng đơn: chờ sự kiện đơn kế tiếp, xem kế hoạch live refresh). */
+/** Tải lại khi bảng `orders` đổi. */
 const LIVE_RESOURCES = [CHANGE_RESOURCES.ORDERS] as const;
-/**
- * "Đủ / thiếu hàng" của dòng đơn tính lúc đọc từ tồn kho, nên nhận hàng xưởng, nhập kho, chuyển kho là thay đổi của bảng khác chứ không phải của đơn.
- * Đăng ký riêng, không truyền `ids`/`visibleIds` nên chỉ tải lại im lặng, không bao giờ toast.
- */
+/** Tải lại im lặng khi tồn kho đổi. */
 const STOCK_RESOURCES = [
   CHANGE_RESOURCES.INVENTORIES,
   CHANGE_RESOURCES.PRODUCTION_REQUESTS,
@@ -124,8 +121,7 @@ export function OrdersProvider({
   children,
   enabled = true,
 }: OrdersProviderProps) {
-  // `?status=` mở danh sách đã lọc sẵn (các dòng "Tình trạng đơn" trên dashboard trỏ vào đây).
-  // Chỉ đọc lúc mở trang; sau đó bộ lọc trên màn hình là nguồn duy nhất.
+  // `?status=` mở danh sách đã lọc sẵn.
   const searchParams = useSearchParams();
   const [listQuery, setListQuery] = useState<OrdersListQuery>(() => ({
     ...DEFAULT_LIST_QUERY,
@@ -141,7 +137,7 @@ export function OrdersProvider({
   const stockTick = useLiveTick({ resources: STOCK_RESOURCES, enabled });
   const liveTick = ordersTick + stockTick;
 
-  // Đổi chi nhánh ở header đưa danh sách về trang 1; điều chỉnh ngay lúc render, đúng cách React khuyến nghị cho state theo input đổi.
+  // Đổi chi nhánh thì về trang 1.
   const [listedLocationKey, setListedLocationKey] = useState(locationKey);
   if (listedLocationKey !== locationKey) {
     setListedLocationKey(locationKey);
@@ -161,7 +157,7 @@ export function OrdersProvider({
   }, [keywordInput]);
 
   const params = useMemo<OrderJourneyQuery>(() => {
-    // Bộ chuyển chi nhánh ở header áp dụng cho danh sách. Chọn kho không lọc theo nơi bán, vì kho còn xử lý đơn của các chi nhánh.
+    // Lọc theo chi nhánh ở header.
     const scope = parseLocationKey(locationKey);
     return {
       page: listQuery.page,
@@ -189,7 +185,7 @@ export function OrdersProvider({
 
   useEffect(() => {
     if (!enabled) return;
-    // Bộ lọc đổi nhanh hơn server trả lời: request có bộ lọc cũ sẽ bị bỏ khi về, nên đơn cũ không đè kết quả mới.
+    // Bỏ kết quả của bộ lọc cũ.
     let cancelled = false;
     // Tải lại nền (cùng bộ lọc, do `liveTick`): giữ nguyên dữ liệu đang hiện, lỗi thì im lặng.
     const silent = shownParamsRef.current === params;
@@ -238,7 +234,7 @@ export function OrdersProvider({
     );
   }, []);
 
-  // Lựa chọn gắn với bộ lọc / trang lúc tích: danh sách phân trang ở server, đổi trang hay bộ lọc thì lựa chọn cũ hết hiệu lực.
+  // Lựa chọn gắn với bộ lọc / trang lúc tích.
   const [selection, setSelection] = useState<{
     query: OrdersListQuery;
     ids: Record<string, boolean>;

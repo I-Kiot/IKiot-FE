@@ -19,7 +19,7 @@ export interface ReportColumn<T> {
   footer?: ReactNode
 }
 
-/** Phân trang phía server: dòng cộng (`footer`) vẫn là tổng cả kỳ do server trả, không cộng trên trang đang xem. */
+/** Phân trang phía server; dòng cộng là tổng cả kỳ. */
 export interface ReportPagination {
   page: number
   pageSize: number
@@ -52,16 +52,11 @@ interface ReportTableProps<T> {
   pagination?: ReportPagination
 }
 
-/** Chiều cao cố định của đầu bảng và các dòng dính (h-10), để tính chỗ xếp chồng khi nhiều dòng cùng dính. */
+/** Chiều cao cố định của đầu bảng và dòng dính. */
 const STICKY_ROW_REM = 2.5
 const rem = (n: number) => `${n * STICKY_ROW_REM}rem`
 
-/**
- * Khung chung của mọi bảng báo cáo: tiêu đề, bảng số liệu, dòng cộng, ghi chú, phân trang.
- * Bảng cuộn trong khung riêng (cao tối đa 70vh); đầu bảng dính trên, dòng cộng dính dưới, còn các dòng in đậm
- * dính cả hai phía - cuộn qua thì dính trên (dưới đầu bảng), chưa tới thì dính dưới (trên dòng cộng) - nên dòng tổng nào cũng luôn thấy.
- * Không dùng `<Table>` của ui: khung `overflow-x-auto` của nó thành vùng cuộn không giới hạn chiều cao, làm `sticky` dọc vô hiệu.
- */
+/** Khung chung của bảng báo cáo: tiêu đề, số liệu, dòng cộng, phân trang; đầu bảng và dòng tổng luôn thấy khi cuộn. */
 export function ReportTable<T>({
   title,
   description,
@@ -78,8 +73,7 @@ export function ReportTable<T>({
   const hasFooter = rows.length > 0 && columns.some((column) => column.footer !== undefined)
   const offset = pagination ? (pagination.page - 1) * pagination.pageSize : 0
 
-  // Vị trí của từng dòng in đậm trong chồng dòng dính: dòng thứ i dính trên ở dưới đầu bảng + i dòng trước,
-  // dính dưới ở trên dòng cộng + các dòng in đậm sau nó.
+  // Vị trí dính của từng dòng in đậm.
   const strongIndexes = isStrong ? rows.flatMap((row, index) => (isStrong(row) ? [index] : [])) : []
   const stickyStyleOf = (index: number): CSSProperties | undefined => {
     const position = strongIndexes.indexOf(index)

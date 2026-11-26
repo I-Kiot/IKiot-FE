@@ -1,7 +1,6 @@
 "use client"
 
-// Cơ cấu (tỷ trọng) của một tổng: donut + bảng chú thích có tên, giá trị và % ở cạnh, nên đọc được cả khi không phân biệt màu.
-// Tối đa 5 lát có màu theo thứ tự cố định; phần còn lại gộp vào "Khác". Giá trị không dương không vẽ được thành lát nên bị bỏ.
+// Donut tỷ trọng kèm chú thích; tối đa 5 lát.
 
 import { Cell, Pie, PieChart } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,7 +25,7 @@ function slicesOf(items: ShareItem[]): Slice[] {
   const positive = items.filter((item) => item.value > 0).sort((a, b) => b.value - a.value)
   const total = positive.reduce((sum, item) => sum + item.value, 0)
   if (total <= 0) return []
-  // Quá 5 mục: giữ 4 mục lớn nhất, phần còn lại gộp thành lát "Khác" (xám) - không bao giờ cần màu thứ 6.
+  // Quá 5 mục thì gộp vào "Khác".
   const head = positive.length > MAX_SLICES ? positive.slice(0, MAX_SLICES - 1) : positive
   const rest = positive.slice(head.length)
   const slices: Slice[] = head.map((item, i) => ({ ...item, slot: `s${i}`, share: item.value / total }))

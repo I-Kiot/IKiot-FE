@@ -12,7 +12,7 @@ import type {
 
 type Envelope<T> = { success: boolean; data: T };
 
-/** Màn của nhân viên xưởng: YCSX gửi cho xưởng mình (mọi kho), tạo / rút phiếu giao. Cần `production:deliver` và tài khoản đã gắn xưởng. */
+/** API cho nhân viên xưởng. */
 export const workshopApi = {
   getRequests: async (
     params?: WorkshopProductionRequestQuery,
@@ -48,7 +48,7 @@ export const workshopApi = {
     return res.data.data;
   },
 
-  /** Xưởng huỷ YCSX (bắt buộc lý do). Đã xác nhận đang làm thì chỉ xưởng huỷ được; còn phiếu giao chờ nhận thì không huỷ được. */
+  /** Xưởng huỷ YCSX (bắt buộc lý do). */
   cancelRequest: async (requestId: string, reason: string): Promise<ProductionRequest> => {
     const res = await client.post<Envelope<ProductionRequest>>(
       `/workshop/production-requests/${requestId}/cancel`,

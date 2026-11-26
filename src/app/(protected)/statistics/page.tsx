@@ -1,8 +1,6 @@
 "use client"
 
-// [Page – Thống kê] Biểu đồ tăng trưởng, tách khỏi trang Báo cáo (2026-11-23): KPI so kỳ trước, xu hướng theo ngày/tháng,
-// cột tăng trưởng theo tháng/quý so cùng kỳ, cơ cấu doanh thu (donut), so sánh mốc thời gian và khung giờ bán chạy.
-// Số liệu dạng bảng và file Excel ở menu Báo cáo; trang Tổng quan (/dashboard) giữ nguyên.
+// [Trang – Thống kê] Biểu đồ KPI, xu hướng, tăng trưởng, cơ cấu.
 
 import { Suspense, useState } from "react"
 import { RefreshCw } from "lucide-react"

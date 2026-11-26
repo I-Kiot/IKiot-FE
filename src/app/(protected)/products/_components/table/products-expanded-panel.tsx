@@ -65,7 +65,7 @@ export function ProductsExpandedPanel({
   const [viewOpen, setViewOpen] = useState(false);
   // Phiên bản đang xem ảnh trong lightbox; null = đóng.
   const [galleryItem, setGalleryItem] = useState<ProductItem | null>(null);
-  // Lần nạp chi tiết gần nhất ứng với hàng hoá / địa điểm / phiên bản nào; trùng cả ba thì không nạp lại.
+  // Lần nạp chi tiết gần nhất.
   const fetchedRef = useRef<{
     productId: string;
     locationKey: string | null;
@@ -81,7 +81,7 @@ export function ProductsExpandedPanel({
     if (isSameLocation && previous.version === detailVersion) return;
 
     const isLocationChange = previous !== null && previous.locationKey !== locationKey;
-    // Chỉ đổi phiên bản (vừa sửa hàng hoá): nạp lại ngầm, giữ nguyên nội dung đang hiện, không hiện skeleton.
+    // Nạp lại ngầm khi chỉ đổi phiên bản.
     const isRefreshOnly = isSameLocation;
     fetchedRef.current = { productId: product.id, locationKey, version: detailVersion };
 
@@ -122,7 +122,7 @@ export function ProductsExpandedPanel({
       if (!prev) return prev;
       return {
         ...prev,
-        // PATCH /products/items/:id không populate `suppliers`: giữ danh sách đã có, không ghi đè bằng ObjectId thô.
+        // Giữ danh sách NCC đã có.
         items: prev.items.map((i) =>
           i.id === updated.id ? { ...updated, suppliers: i.suppliers } : i,
         ),
@@ -168,7 +168,7 @@ export function ProductsExpandedPanel({
     }
   }
 
-  /** Sau khi đánh dấu hỏng / sửa xong / huỷ: nạp lại chi tiết (tồn từng nơi) và danh sách (tổng tồn, số hỏng). */
+  /** Nạp lại sau khi xử lý hàng hỏng. */
   async function handleDamagedChanged() {
     try {
       const res = await productApi.getById(product.id);
@@ -279,7 +279,7 @@ export function ProductsExpandedPanel({
                         )}
                       </span>
                     </div>
-                    {/* Combo: số bộ bán được = thành phần khan nhất quyết định (BE tính); chi tiết từng thành phần ở khối dưới. */}
+                    {/* Số bộ combo bán được. */}
                     {item.itemType === "COMBO" && (
                       <div className="flex flex-col gap-0.5">
                         <span className="text-xs text-muted-foreground">
@@ -479,8 +479,7 @@ export function ProductsExpandedPanel({
   );
 }
 
-// Ảnh đại diện (ảnh đầu tiên) của một phiên bản; có nhiều ảnh thì hiện "+N".
-// Bấm vào mở lightbox, chặn lan sự kiện để không kích hoạt click của dòng bảng.
+// Ảnh đại diện của phiên bản, bấm mở lightbox.
 function ItemThumbnailButton({
   item,
   alt,

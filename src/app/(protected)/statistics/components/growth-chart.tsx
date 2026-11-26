@@ -1,8 +1,6 @@
 "use client"
 
-// Tăng trưởng kiểu báo cáo tài chính: cột doanh thu theo tháng (12 tháng) hoặc quý (8 quý) gần nhất, và ngay dưới là
-// % tăng trưởng so với cùng kỳ năm trước. Hai thước đo khác đơn vị nên là hai biểu đồ chung trục thời gian, không gộp hai trục y.
-// Mốc cố định theo lịch, không theo bộ chọn kỳ (như so sánh mốc thời gian); tháng / quý hiện tại tính đến hôm nay.
+// Biểu đồ tăng trưởng theo tháng / quý so cùng kỳ năm trước.
 
 import { useCallback, useState } from "react"
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, XAxis, YAxis } from "recharts"

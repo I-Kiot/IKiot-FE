@@ -1,6 +1,4 @@
-/**
- * Mục menu HR hiện theo quyền mà màn hình đó bị chặn ở backend (`allows()`), không theo tên role. Danh sách role cũ đã làm ẩn cả menu HR.
- */
+/** Menu HR hiện theo quyền. */
 import { allows } from "@/components/sidebar/constants/role-permissions";
 
 const HR_NAV_PERMISSION = {

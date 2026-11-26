@@ -1,8 +1,4 @@
-/**
- * Hợp đồng của feed thay đổi thời gian thực `entity:changed`, phản chiếu thủ công từ BE
- * `src/common/constants/change-feed.ts` + `change-feed.types.ts`. BE chỉ thêm, không đổi tên: thêm giá trị ở BE thì thêm ở đây.
- * Chỉ rẽ nhánh theo `action`, không bao giờ theo chữ của `summary` (câu tiếng Việt do BE dựng, hiện nguyên văn).
- */
+/** Hợp đồng feed `entity:changed`, phản chiếu BE `src/common/constants/change-feed.ts`. */
 export const ENTITY_CHANGED_EVENT = "entity:changed";
 
 /** Header gửi kèm mỗi request để BE không phát lại sự kiện cho chính tab gây ra thay đổi. */

@@ -1,19 +1,13 @@
 import { getCachedUser } from "@/lib/auth";
 
-/**
- * Quyền của tài khoản đang đăng nhập. Các hàm ở đây chỉ quyết định hiển thị, không quyết định cho phép: backend vẫn kiểm tra mọi route.
- * Danh sách quyền lấy từ `GET /auth/me`. Không dùng tên role (BRANCH_MANAGER, ...) nữa vì role do từng shop tự định nghĩa.
- */
+/** Kiểm quyền để hiển thị; backend vẫn kiểm mọi route. */
 
 /** Khớp với `PermissionsGuard`: hai role này có toàn quyền và được bỏ qua mọi kiểm tra. */
 function holdsEverything(role?: string | null): boolean {
   return role === "TENANT_OWNER" || role === "ADMIN";
 }
 
-/**
- * Caller có `resource:action` không. Chủ shop và admin có danh sách quyền rỗng (nghĩa là không áp dụng), nên phải kiểm tra `holdsEverything` trước.
- * Quyền tạm của ca hết hạn theo giờ, nhưng đây chỉ đọc snapshot lúc `/auth/me` nên có thể còn hiện nút một lúc. Backend kiểm tra lại mọi request.
- */
+/** Tài khoản có `resource:action` không; chủ shop và admin luôn có. */
 export function allows(
   role: string | null | undefined,
   resource: string,
@@ -77,7 +71,7 @@ export function canRemoveInventoryLocation(role?: string | null): boolean {
   return allows(role, 'inventory', 'delete');
 }
 
-/** Đánh dấu hỏng / sửa xong / huỷ hàng hỏng (2026-11-26). BE còn chặn nhân viên ở nơi khác (`INVENTORY_LOCATION_DENIED`). */
+/** Xử lý hàng hỏng. */
 export function canManageDamaged(role?: string | null): boolean {
   return allows(role, 'inventory', 'manage_damaged');
 }
@@ -121,17 +115,12 @@ export function canAssignWarehouseOnStaffForm(role?: string | null): boolean {
   return role === "TENANT_OWNER";
 }
 
-/**
- * Quản lý vai trò và phân quyền: chỉ chủ shop và admin nền tảng. Cố ý không đi qua danh mục quyền, vì nếu "sửa phân quyền" là một quyền chọn được thì vai trò tự tạo có thể tự cấp cho mình.
- */
+/** Quản lý vai trò: chỉ chủ shop và admin. */
 export function canManageRoles(role?: string | null): boolean {
   return role === "TENANT_OWNER" || role === "ADMIN";
 }
 
-/**
- * Có được đặt role và chi nhánh/kho của người khác trên form nhân viên không. Tạo cần `users:create`, sửa cần `users:update`.
- * Chỉ kiểm tra `update` thì người được tạo nhân viên nhưng không sửa được sẽ bị khoá dropdown role, trong khi `POST /users` bắt buộc `roleId`.
- */
+/** Được đặt role và nơi làm việc trên form nhân viên không. */
 export function canEditStaffRoleAndWorkplace(
   role: string | undefined | null,
   isEdit = true,
@@ -163,9 +152,7 @@ export function canUseAIChat(role?: string | null): boolean {
   return allows(role, 'ai_chat', 'create');
 }
 
-/**
- * Sửa đầy đủ hồ sơ qua `PATCH /auth/me`. Không phải cặp quyền: `AuthService.updateMe` tự kiểm tra `systemRole`, nên hàm này đối chiếu lại logic đó.
- */
+/** Được sửa đầy đủ hồ sơ qua `PATCH /auth/me` không. */
 export function canEditAccountProfile(role?: string | null): boolean {
   return holdsEverything(role);
 }

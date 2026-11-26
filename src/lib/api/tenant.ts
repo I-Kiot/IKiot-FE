@@ -78,10 +78,7 @@ export interface Tenant {
   hasSepayKey?: boolean;
 }
 
-/**
- * Mọi shop trên nền tảng, **chỉ ADMIN** (`GET /tenants`, `AdminOnlyGuard`).
- * Trước đây gọi `GET /tenant/me` (trả một object là shop của chính người gọi) nên bộ chọn tenant ở ba màn admin luôn rỗng. `/tenant/me` là `getMyTenant()` bên dưới.
- */
+/** Mọi shop trên nền tảng, chỉ ADMIN. */
 export async function listTenants(): Promise<Tenant[]> {
   const response = await client.get<{ data: Tenant[] }>("/tenants");
   return response.data.data ?? [];
@@ -93,7 +90,7 @@ export async function getMyTenant(): Promise<Tenant> {
   return response.data.data;
 }
 
-/** Đặt hoặc gỡ (`null`) logo của shop mình. Chỉ gửi `logoUrl`, nên các trường khác của `PUT /tenant/me` giữ nguyên. */
+/** Đặt hoặc gỡ logo của shop. */
 export async function updateMyTenantLogo(logoUrl: string | null): Promise<void> {
   await client.put("/tenant/me", { logoUrl });
 }
@@ -137,7 +134,7 @@ export interface BankingChange {
   createdAt: string;
 }
 
-/** Lịch sử đổi tài khoản nhận tiền / key / liên kết SePay (`GET /tenant/banking/history`, quyền tenants:update). */
+/** Lịch sử đổi thông tin nhận tiền. */
 export async function getBankingHistory(params?: {
   page?: number;
   limit?: number;

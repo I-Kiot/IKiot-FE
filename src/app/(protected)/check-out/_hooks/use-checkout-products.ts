@@ -7,10 +7,7 @@ import { getCachedUser } from '@/lib/auth'
 
 export type CheckoutLocation = { id: string; type: 'BRANCH' | 'WAREHOUSE' }
 
-/**
- * `location` quyết định kho đọc tồn: undefined = chi nhánh của đơn bán, null = không đọc, giá trị = địa điểm đó
- * (form đơn tay đọc tồn tại nơi xuất hàng của đơn).
- */
+/** Nơi đọc tồn: undefined là chi nhánh bán, null là không đọc. */
 export function useCheckoutProducts(searchQuery: string, location?: CheckoutLocation | null) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)

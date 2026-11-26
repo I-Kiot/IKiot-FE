@@ -1,5 +1,4 @@
-// Hành trình đơn hàng (P0-6, 2026-10-02). Phản chiếu Ikiot_BE/docs/api-contract-order-flow.md
-// và src/common/constants/*-status.ts: đổi hợp đồng trước, rồi mới đổi file này.
+// Kiểu dữ liệu hành trình đơn, phản chiếu `IKiot-BE/docs/api-contract-order-flow.md`.
 
 
 export interface UserRef {
@@ -31,7 +30,7 @@ export interface PageQuery {
 }
 
 
-// Trạng thái đơn theo hợp đồng §2 (sửa 2026-10-04): đã bỏ DRAFT, READY_TO_PACK, DELIVERED; thêm PICKED_UP và RECEIVED. Nhãn là từ ngữ của hành trình.
+// Trạng thái đơn hành trình.
 export const ORDER_STATUSES = [
   "PENDING_CONFIRMATION",
   "CONFIRMED",
@@ -285,7 +284,7 @@ export interface OrderLine {
   stockCheck: StockCheck | null;
   /** Hàng xưởng đang làm cho dòng này (YCSX nháp / đã gửi / nhận một phần). */
   production: LineProduction;
-  /** Sản phẩm đặt xưởng được không (`Product.isManufacturable`); BE từ chối cả YCSX nếu có dòng không làm được. */
+  /** Sản phẩm có đặt xưởng được không. */
   isManufacturable: boolean;
 }
 
@@ -309,11 +308,7 @@ export interface LineProductionProgress {
   closedShort: boolean;
 }
 
-/**
- * Hàng xưởng của một dòng đơn. `openQuantity` / `requests` = YCSX gắn dòng còn mở (Σ đặt − đã nhận).
- * `orderableQuantity` = còn đặt xưởng được bao nhiêu (BE tính, cùng phép tính với guard; null = không biết),
- * `coveringRequests` = YCSX đặt chung đang che số thiếu của (địa điểm, SKU) này, `progress` = tiến độ từng YCSX gắn dòng.
- */
+/** Tiến độ sản xuất của một dòng đơn. */
 export interface LineProduction {
   openQuantity: number;
   requests: {
@@ -439,7 +434,7 @@ export interface OrderDetail
   returns: { id: string; code: string; status: OrderReturnStatus }[];
   /** Lúc đơn hoàn thành (BE đặt một lần). */
   completedAt?: string | null;
-  /** Tiền của đơn do server tính từ các khoản Payment: nguồn duy nhất cho số đã thu / đã hoàn / còn phải thu. */
+  /** Tóm tắt tiền của đơn do server tính. */
   paymentSummary: OrderPaymentSummary;
 }
 
@@ -456,11 +451,11 @@ export interface OrderPaymentSummary {
   overpaidBy: number;
   /** Tiền mặt shipper đã thu mà chủ chưa xác nhận nhận. */
   pendingRemittance: number;
-  /** Đơn đã kết thúc (trả hàng / huỷ) mà shop còn giữ tiền chưa hoàn, chưa ghi thu nhập khác. Quyết định bằng `POST /orders/:id/settle-held`. */
+  /** Tiền treo của đơn đã kết thúc. */
   heldUndecided: number;
 }
 
-/** Hoàn tiền kèm theo thao tác kiểm hàng hoàn / xác nhận hàng giao thất bại đã về shop. `amount` 0 = shop giữ lại tiền. */
+/** Hoàn tiền khi kiểm hàng hoàn; 0 là shop giữ lại. */
 export interface RefundInput {
   amount: number;
   /** Bắt buộc khi `amount` > 0. */
@@ -510,7 +505,7 @@ export interface OrderJourneyQuery extends PageQuery {
   from?: string;
   to?: string;
   sort?: OrderSort;
-  /** Bỏ đơn quầy (`TAKEAWAY`). POS dùng chung `GET /orders` nên BE chỉ bỏ khi được yêu cầu; mọi màn hành trình đều gửi `true`. */
+  /** Bỏ đơn quầy. */
   excludePos?: boolean;
 }
 
@@ -592,12 +587,12 @@ export interface CreateOrderJourneyPayload {
   note?: string;
 }
 
-/** Dòng của `PATCH /orders/:id` (A-8): có `id` = đổi tại chỗ (cùng sản phẩm), không có = dòng mới; dòng vắng mặt bị xoá. Thông số đi qua `setCustomization`. */
+/** Một dòng khi sửa đơn. */
 export interface UpdateOrderLinePayload extends Omit<CreateOrderLinePayload, "customization"> {
   id?: string;
 }
 
-/** `PATCH /orders/:id` (A-8): các trường như create trừ chi nhánh, đều tuỳ chọn. `items` là toàn bộ danh sách mới, chỉ khi CONFIRMED. `discountType: null` xoá chiết khấu nhập tay. */
+/** Body sửa đơn. */
 export interface UpdateOrderPayload
   extends Partial<Omit<CreateOrderJourneyPayload, "branchId" | "items" | "discountType">> {
   items?: UpdateOrderLinePayload[];
@@ -803,13 +798,13 @@ export interface CreateProductionRequestPayload {
   items: ProductionRequestLinePayload[];
 }
 
-/** SENT = đã gọi xưởng; CANCELLED chỉ khi chưa nhận gì; COMPLETED bằng tay = đóng YCSX giao thiếu (bắt buộc `note`). */
+/** Trạng thái YCSX đặt tay. */
 export interface UpdateProductionRequestStatusPayload {
   status: "SENT" | "COMPLETED" | "CANCELLED";
   note?: string;
 }
 
-/** `POST /production-requests/:id/receive` (B-5): số nhận lần này. Hàng tốt mở lot tại địa điểm YCSX; hàng lỗi sang kho hàng hỏng của địa điểm đó. */
+/** Body nhận hàng xưởng. */
 export interface ReceiveProductionPayload {
   items: {
     productionRequestItemId: string;
@@ -949,10 +944,7 @@ export interface AddFulfillmentPackagePayload {
   photoUrls: string[];
 }
 
-/**
- * Đơn chờ đóng gói - đúng phần `GET /orders?status=CONFIRMED` trả về mà màn Đóng hàng đọc.
- * Khai báo hẹp riêng thay vì dùng `OrderListItem`, vì type đó đang lệch response thật của BE.
- */
+/** Đơn chờ đóng gói. */
 export interface PackableOrder {
   id: string;
   code: string;
@@ -1111,14 +1103,14 @@ export interface HandOverReadyOrder {
   requestedDeliveryDate: string | null;
   /** Phí giao hàng đã nhập khi tạo đơn; ghi lại thành `shippingCost` của lần giao. */
   shippingFee: number;
-  /** Shipper của lần giao mới nhất. Đơn còn PACKED mà đã có shipper = đã gán, đang chờ shipper tới lấy hàng. */
+  /** Shipper của lần giao mới nhất. */
   driver: UserRef | null;
 }
 
-/** Cách shipper thu số còn phải thu khi giao: tiền mặt, chuyển khoản QR, hoặc không còn gì phải thu (đã cọc đủ). */
+/** Cách shipper thu tiền khi giao. */
 export type DeliveryCollectionMethod = "CASH" | "BANK_TRANSFER_QR" | "NONE";
 
-/** Body `POST /shipments/:id/deliver` – giao thành công. Chỉ thu đủ 100%: `collectedAmount` phải bằng số còn phải thu. */
+/** Body giao thành công. */
 export interface DeliverShipmentPayload {
   /** Ảnh bằng chứng (URL từ `POST /uploads`), ít nhất 1 ảnh. */
   proofPhotoUrls: string[];

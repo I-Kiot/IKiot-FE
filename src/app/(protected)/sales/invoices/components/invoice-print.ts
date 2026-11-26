@@ -7,10 +7,7 @@ const formatVND = (value: number) =>
 const escapeHtml = (value: string | null | undefined) =>
   (value ?? "").replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
-/**
- * Mở hộp thoại in của trình duyệt cho một hoá đơn đã phát hành, dựng từ dòng đang hiển thị nên không tốn request.
- * Mọi chuỗi đều được escape: tên khách và sản phẩm do người dùng nhập, và nội dung được document.write vào cửa sổ cùng origin.
- */
+/** In hoá đơn đã phát hành từ dòng đang hiển thị; mọi chuỗi đều được escape. */
 export function printInvoice(invoice: Invoice) {
   const win = window.open("", "_blank");
   if (!win) return false;

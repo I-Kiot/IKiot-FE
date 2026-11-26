@@ -52,12 +52,7 @@ function buildProfileBody(
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-/**
- * Body của `POST /users` (thuê người, chưa có tài khoản đăng nhập).
- *
- * `newPassword`/`reEnterPassword` có trong `CreateStaffPayload` nhưng cố tình không gửi ở đây: bật đăng nhập là `POST /users/:id/account`, một lệnh riêng ngay sau đó.
- * `avatarUrl`/`taxNumber`/`dob` chỉ nằm trong `profile`: `CreateUserDto` không nhận chúng ở cấp trên cùng, `whitelist: true` bỏ im lặng.
- */
+/** Body tuyển nhân viên (`POST /users`), chưa có đăng nhập. */
 function buildCreateBody(payload: CreateStaffPayload) {
   const profile = buildProfileBody(
     payload.firstName,
@@ -82,14 +77,7 @@ function buildCreateBody(payload: CreateStaffPayload) {
   };
 }
 
-/**
- * Body của `PATCH /users/:id`. Hai lưu ý:
- *
- * 1. Phải trả các trường phẳng, không `{ data }`: `ValidationPipe({ whitelist: true })` bỏ im lặng key lạ, nên lần sửa thành object rỗng mà vẫn 200.
- * 2. **Tối đa một nơi làm việc.** `UserService.resolvePosting` trả 400 nếu có cả `branchId` và `warehouseId`; `undefined` là "giữ nguyên", đặt một cái đã xoá cái kia phía server.
- *
- * `roleId` cũng được gửi; trước đây hàm này bỏ rơi nó dù form đã gửi.
- */
+/** Body sửa nhân viên (`PATCH /users/:id`): trường phẳng, tối đa một nơi làm việc. */
 function buildUpdateBody(payload: UpdateStaffPayload) {
   const data: Record<string, unknown> = {};
 
@@ -104,13 +92,13 @@ function buildUpdateBody(payload: UpdateStaffPayload) {
   // Khác nơi làm việc: `null` là trạng thái thật (bỏ gắn xưởng), BE nhận `workshopId: null`.
   if (payload.workshopId !== undefined) data.workshopId = payload.workshopId;
 
-  // Chỉ gửi đúng một trong hai, không bao giờ cả hai. Form bỏ gắn gửi null cho cả hai, server không có trạng thái "chưa gắn" nên trường hợp đó không gửi gì.
+  // Chỉ gửi một trong hai.
   if (payload.branchId) {
     data.branchId = payload.branchId;
   } else if (payload.warehouseId) {
     data.warehouseId = payload.warehouseId;
   } else if (payload.clearLocation) {
-    // Chỉ một key, như trên: `branchId: null` là đủ để server xoá nơi làm việc (chi nhánh hay kho đều là `locationId`).
+    // `branchId: null` là xoá nơi làm việc.
     data.branchId = null;
   }
 
@@ -225,10 +213,7 @@ export const staffApi = {
     await client.delete(`/users/${id}`);
   },
 
-  /**
-   * Các vai trò shop đã định nghĩa (`GET /roles`). Danh sách rỗng là trạng thái thật, không phải lỗi:
-   * `POST /users` cần `roleId` nên chưa ai được thuê khi chưa có vai trò nào.
-   */
+  /** Danh sách vai trò của shop. */
   getRoles: async (): Promise<StaffRoleOption[]> => {
     const response = await client.get<{ data: StaffRoleRow[] }>("/roles");
     return (response.data?.data ?? []).map((role) => ({

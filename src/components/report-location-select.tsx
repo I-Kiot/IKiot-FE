@@ -1,7 +1,6 @@
 "use client"
 
-// [Bộ lọc – nơi xem báo cáo] Dropdown Toàn cửa hàng / từng chi nhánh / từng kho, đặt cạnh bộ lọc ngày ở mọi trang báo cáo.
-// Nhân viên chỉ thấy nơi được gán (khoá, không mở được).
+// Dropdown nơi xem báo cáo; nhân viên bị khoá ở nơi được gán.
 
 import { MapPin } from "lucide-react"
 import {

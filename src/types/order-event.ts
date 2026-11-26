@@ -1,5 +1,4 @@
-// Nhật ký thao tác trên đơn: `GET /orders/:id/events`. Phản chiếu hợp đồng order_events của BE (2026-11-10).
-// Backend có thể thêm loại sự kiện / khóa metadata mới: mọi nơi đọc phải chịu được giá trị lạ.
+// Nhật ký thao tác trên đơn; có thể có loại sự kiện mới.
 import type { OrderStatus } from "@/types/order-flow";
 
 export const ORDER_EVENT_TYPES = [

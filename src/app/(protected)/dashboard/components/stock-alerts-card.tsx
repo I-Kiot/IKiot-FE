@@ -1,7 +1,6 @@
 "use client";
 
-// Cảnh báo tồn kho: hết hàng, sắp hết, dưới mức tối thiểu, lâu không bán (30 / 60 / 90 ngày).
-// Mỗi nhóm mở ra 5 dòng nặng nhất; con số bên cạnh là tổng của cả nhóm.
+// Cảnh báo tồn kho theo nhóm, mỗi nhóm 5 dòng.
 
 import { useCallback, type ReactNode } from "react";
 import Link from "next/link";
@@ -19,7 +18,7 @@ import { useOverview } from "./overview-provider";
 import { WidgetCard, WidgetMessage } from "./widget-card";
 import { TONE_TEXT, TONE_TILE, type Tone } from "../shared/tones";
 
-/** Ngưỡng "sắp hết" của dashboard: tồn trên kệ từ 1 đến số này. Trang Báo cáo cho chỉnh bằng thanh trượt. */
+/** Ngưỡng "sắp hết" của dashboard. */
 const LOW_STOCK_THRESHOLD = 10;
 
 type AgingCountKey = keyof StockAlerts["counts"]["aging"];

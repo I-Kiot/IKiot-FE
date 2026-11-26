@@ -36,10 +36,7 @@ interface DeliverDialogProps {
   onNeedsReload: () => void;
 }
 
-/**
- * Chỉ thu đủ 100% (chốt 2026-10-06), số thu không cho sửa; đã cọc đủ thì không còn gì thu. Ảnh tải lên ngay khi chọn, xác nhận khoá tới khi xong.
- * Nơi gọi đặt `key` theo lần mở.
- */
+/** Chỉ thu đủ 100%; ảnh tải lên ngay khi chọn. */
 export function DeliverDialog({ shipment, open, onClose, onDelivered, onNeedsReload }: DeliverDialogProps) {
   const { pending: livePending } = useLiveHold(open, [shipment.id, shipment.order.id]);
   const amountDue = shipment.order.amountDue;

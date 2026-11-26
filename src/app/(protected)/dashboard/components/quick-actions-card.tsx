@@ -1,7 +1,6 @@
 "use client";
 
-// Lối tắt tới các việc làm hằng ngày. Ô nào người xem không có quyền thì mờ đi, bấm vào báo cần quyền gì,
-// không đưa họ tới màn hình từ chối.
+// Lối tắt việc hằng ngày; không có quyền thì mờ.
 
 import Link from "next/link";
 import { BarChart3, Boxes, FilePlus2, PackagePlus, Settings, TicketPercent, Zap } from "lucide-react";

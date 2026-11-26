@@ -40,7 +40,7 @@ export function PricingSection() {
     [plans],
   );
 
-  // Đã đăng nhập: gói trả phí mua ở trang "Gói dịch vụ" trong app, gói dùng thử thì vào thẳng trang quản lý.
+  // Đã đăng nhập thì vào trang gói dịch vụ hoặc trang quản lý.
   const signUpHref = (plan: Plan) => {
     if (user) return plan.price === 0 ? homeHref : "/pricing";
     if (plan.price === 0) return "/sign-up";

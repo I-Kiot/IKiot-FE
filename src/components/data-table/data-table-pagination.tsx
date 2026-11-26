@@ -31,9 +31,7 @@ type Props = {
   pageSizeOptions?: number[];
 };
 
-// Thanh phân trang dùng chung cho mọi bảng (client, server hay bảng thô): chọn số dòng mỗi trang,
-// "Hiển thị a–b / N", "Trang x / y" và hai nút Trước / Tiếp. Luôn nằm ở chân trang (PageFooter), không phụ thuộc
-// số dòng của bảng.
+// Thanh phân trang dùng chung, luôn nằm ở chân trang.
 export function DataTablePagination({
   page,
   pageCount,

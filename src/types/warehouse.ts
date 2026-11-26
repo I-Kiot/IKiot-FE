@@ -34,7 +34,7 @@ export interface WarehouseListResponse {
 
 export interface WarehouseCreatePayload {
   name: string;
-  /** Bắt buộc, không được rỗng (`CreateWarehouseDto`). Type cũ thiếu trường này nên `POST /warehouses` luôn 400. */
+  /** Bắt buộc, không rỗng. */
   phoneNumber: string[];
   address?: string;
   email?: string;

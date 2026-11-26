@@ -35,7 +35,7 @@ export interface LiveRefreshOptions {
   resources: readonly ChangeResource[];
   /** Màn chi tiết: chỉ nhận sự kiện chạm tới các id này, và mọi sự kiện khớp đều đáng toast. */
   ids?: readonly MaybeId[];
-  /** Màn danh sách: id đang hiện (dòng + đơn liên quan), chỉ để quyết định có toast hay không. Không truyền = tải lại im lặng, không toast. */
+  /** Id đang hiện trên màn danh sách, để quyết định có toast không. */
   visibleIds?: readonly string[];
   enabled?: boolean;
   /** Dồn các sự kiện dồn dập thành một lần tải lại (trailing; tối đa `MAX_WAIT_MS`). */
@@ -46,12 +46,7 @@ function compact(ids: readonly MaybeId[]): string[] {
   return ids.filter((id): id is string => Boolean(id));
 }
 
-/**
- * Gọi `onChange` (tải lại dữ liệu NỀN, không skeleton) khi có sự kiện `entity:changed` chạm tới màn hình này.
- * - Tab đang ẩn: đợi tới khi hiện lại. Sự kiện chạm tới hộp thoại đang sửa (`useLiveHold`): hoãn tới khi đóng hộp thoại.
- * - Nối lại socket sau khi đứt: tải lại một lần (không toast).
- * - Toast do `announceChange` quyết định, ở đây chỉ báo "sự kiện này có đáng toast không".
- */
+/** Tải lại dữ liệu nền khi có `entity:changed` chạm tới màn hình; hoãn khi tab ẩn hoặc hộp thoại đang sửa. */
 export function useLiveRefresh({
   resources,
   ids,
@@ -120,7 +115,7 @@ export function useLiveRefresh({
       refreshOrDefer();
     });
 
-    // Ghi do chính tab này: không có bảng/id, không toast, không đụng banner của hold; hoãn khi có hold đang mở.
+    // Ghi do chính tab này: tải lại im lặng, hoãn khi có hold.
     const unsubscribeLocal = subscribeLocalMutation(() => {
       if (anyHoldActive()) {
         deferredLocal = true;
@@ -159,20 +154,14 @@ export function useLiveRefresh({
   }, [enabled, resourceKey, idKey, debounceMs]);
 }
 
-/**
- * Như `useLiveRefresh` nhưng trả về một bộ đếm tăng mỗi lần cần tải lại, để đưa vào deps của effect tải dữ liệu sẵn có.
- * Bộ đếm chỉ đi vào deps của effect, KHÔNG đi vào khoá "đang tải" của màn hình, nên lần tải lại không bật skeleton.
- */
+/** Như `useLiveRefresh` nhưng trả bộ đếm để đưa vào deps của effect tải dữ liệu. */
 export function useLiveTick(options: LiveRefreshOptions): number {
   const [tick, setTick] = useState(0);
   useLiveRefresh({ ...options, onChange: () => setTick((value) => value + 1) });
   return tick;
 }
 
-/**
- * Bảo vệ hộp thoại / panel đang sửa `ids`: trong lúc `active`, tải lại do sự kiện chạm tới các id đó bị hoãn (không ghi đè dữ liệu
- * đang nhập) và `pending` giữ sự kiện mới nhất để hiện `LiveChangeBanner`. Đóng hộp thoại thì tải lại bù.
- */
+/** Hoãn tải lại khi hộp thoại đang sửa `ids`, giữ sự kiện mới nhất để hiện banner; đóng thì tải bù. */
 export function useLiveHold(
   active: boolean,
   ids: readonly MaybeId[],

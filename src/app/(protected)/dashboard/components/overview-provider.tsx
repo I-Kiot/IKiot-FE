@@ -1,7 +1,6 @@
 "use client";
 
-// Trạng thái chung của dashboard tổng quan: kỳ đang xem, địa điểm đang chọn, và hai "phiên bản"
-// để các widget biết lúc nào phải tải lại.
+// State chung của dashboard: kỳ, địa điểm, phiên bản tải lại.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
@@ -17,11 +16,11 @@ interface OverviewContextValue {
   /** Kỳ đã quy ra ngày, tính đúng một lần lúc chọn - không tính lại mỗi lần render. */
   resolved: ResolvedRange;
   setRange: (range: OverviewRange) => void;
-  /** Nơi đang xem, cho số liệu đơn hàng. Kho cũng bán được và id địa điểm dùng chung, nên đang xem kho thì đây là id của kho. */
+  /** Nơi đang xem cho số liệu đơn hàng. */
   branchId?: string;
   /** Chỉ có khi đang xem kho; số liệu tồn kho ưu tiên giá trị này. */
   warehouseId?: string;
-  /** Tăng khi có realtime hoặc bấm "Làm mới": tình trạng đơn, tồn kho, đơn gần đây tải lại; số liệu theo kỳ cũng tải lại vì `resolved` đổi. */
+  /** Tăng khi có realtime hoặc bấm "Làm mới". */
   liveVersion: number;
   refresh: () => void;
 }
@@ -37,8 +36,7 @@ export function OverviewProvider({ children }: { children: React.ReactNode }) {
   const locationKey = useAuthStore((state) => state.locationKey);
   const { branchId, warehouseId } = locationFilter(locationKey);
 
-  // Kỳ và bản quy đổi của nó đi cùng nhau, đặt trong handler. `toParam` mang "bây giờ", nên nếu
-  // tính trong render thì mỗi lần render ra một giá trị mới và widget tải lại không dừng.
+  // Đặt kỳ và bản quy đổi trong handler.
   const [rangeState, setRangeState] = useState<RangeState>(() => {
     const range: OverviewRange = { preset: "today" };
     return { range, resolved: resolveOverviewRange(range) };
@@ -54,8 +52,7 @@ export function OverviewProvider({ children }: { children: React.ReactNode }) {
     setLiveVersion((version) => version + 1);
   }, []);
 
-  // Đơn được thanh toán, hay một thông báo mới (hàng sắp hết, phiếu kho...) đều có thể đổi các
-  // con số "ngay lúc này". Gom các sự kiện đến dồn trong 1,5 giây thành một lần tải.
+  // Gom sự kiện trong 1,5 giây thành một lần tải.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const socket = getSocket();

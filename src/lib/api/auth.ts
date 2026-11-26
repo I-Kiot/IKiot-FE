@@ -65,10 +65,7 @@ function toSession(payload: AuthPayload): SessionResult {
   return { accessToken, refreshToken, user: normalizeSessionUser(payload?.user) };
 }
 
-/**
- * Đăng nhập bằng SĐT hoặc email (`identifier`). Tài khoản chưa xác minh email nhận về thử thách OTP
- * thay vì phiên; hoàn tất bằng `verifyLoginOtp`.
- */
+/** Đăng nhập bằng SĐT hoặc email; chưa xác minh email thì nhận thử thách OTP. */
 export async function loginUser(data: LoginInput): Promise<LoginResult> {
   const response = await client.post("/auth/login", {
     identifier: data.identifier.trim(),
@@ -99,10 +96,7 @@ export async function resendOtp(challengeToken: string) {
   >;
 }
 
-/**
- * Đăng nhập Google qua Firebase, đổi ID token lấy token phiên của backend.
- * Backend yêu cầu email Google đã tồn tại trên hồ sơ người dùng, nếu không sẽ từ chối.
- */
+/** Đăng nhập Google qua Firebase, đổi ID token lấy phiên của backend. */
 export async function loginWithGoogle() {
   const auth = getAuth(firebaseApp);
   const provider = new GoogleAuthProvider();
@@ -123,7 +117,7 @@ export async function loginWithGoogle() {
   return toSession(unwrap(response.data));
 }
 
-/** Kiểm tra SĐT / email / tên cửa hàng đã được dùng chưa, để báo ngay trước khi tạo tài khoản. Chỉ gửi các trường có giá trị. */
+/** Kiểm SĐT / email / tên cửa hàng đã được dùng chưa. */
 export async function checkRegistrationAvailability(fields: {
   phoneNumber?: string;
   email?: string;
@@ -137,10 +131,7 @@ export async function checkRegistrationAvailability(fields: {
   };
 }
 
-/**
- * Đăng ký chủ cửa hàng. Backend tạo tài khoản chưa xác minh, gửi OTP qua email và trả thử thách (không có token);
- * hoàn tất bằng `verifyLoginOtp`.
- */
+/** Đăng ký chủ cửa hàng; hoàn tất bằng `verifyLoginOtp`. */
 export async function registerUser(data: SignupInput): Promise<OtpChallenge> {
   const response = await client.post("/auth/register", {
     phoneNumber: data.phoneNumber,
@@ -204,7 +195,7 @@ export async function logout(): Promise<void> {
   // Luôn xoá thông tin đăng nhập ở local, kể cả khi gọi API lỗi.
   clearTokens();
   clearCachedUser();
-  // Socket đã xác thực theo user này và backend đã join vào room của họ; không ngắt thì người đăng nhập sau sẽ nhận thông báo của user cũ.
+  // Ngắt socket để người đăng nhập sau không nhận thông báo của user cũ.
   resetSocket();
 }
 
@@ -225,11 +216,7 @@ function postingIds(location: LocationRef | null | undefined): Pick<User, "branc
   return { branchId: undefined, warehouseId: undefined };
 }
 
-/**
- * Đổi user row của backend thành session user. Đưa loại tài khoản (`systemRole`) về lại `role`:
- * backend dùng `role` cho quan hệ Role của tenant, để nguyên thì mọi so sánh `user.role === "..."` sai.
- * Cũng suy ra `branchId` / `warehouseId` từ `location` (BUG-01, docs/bug-log-test-hanh-trinh.md).
- */
+/** Đổi user của backend thành session user: `systemRole` về `role`, suy ra `branchId` / `warehouseId` từ `location`. */
 export function normalizeSessionUser(
   user: ApiSessionUser | undefined,
 ): User | undefined {
@@ -252,10 +239,7 @@ export async function getMe() {
   return normalizeSessionUser(response.data.data);
 }
 
-/**
- * `PATCH /auth/me` - tự sửa hồ sơ. **Body phẳng**: `UpdateMeDto` khai báo mọi trường ở cấp trên cùng,
- * `whitelist: true` sẽ bỏ object `profile` lồng nhau. Chỉ `/users/:id` nhận `profile`.
- */
+/** `PATCH /auth/me`: tự sửa hồ sơ, body phẳng. */
 export async function updateMe(payload: {
   firstName?: string;
   lastName?: string;
@@ -274,10 +258,7 @@ export async function updateMe(payload: {
   return response.data.data;
 }
 
-/**
- * Tự đổi mật khẩu của chính mình (`POST /auth/change-password`) - mọi loại tài khoản đều dùng được, cần mật khẩu hiện tại.
- * Khác `staffApi.updatePassword`, là quản lý đặt lại cho một nhân viên khác và cần quyền `users:update`.
- */
+/** Tự đổi mật khẩu của mình (`POST /auth/change-password`). */
 export async function changePassword(payload: {
   currentPassword: string;
   newPassword: string;

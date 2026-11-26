@@ -26,7 +26,7 @@ export const EXPORTABLE_TABS: Record<string, { label: string; slug: string }> = 
   inventory: { label: "Tồn kho", slug: "ton-kho" },
 }
 
-/** Nút xuất Excel của trang Tổng hợp: xuất riêng báo cáo đang xem, hoặc mọi tab trong một file nhiều sheet. */
+/** Nút xuất Excel của trang Tổng hợp. */
 export function ReportExportMenu() {
   const { revenueDateRange, activeTab, lowStockThreshold, location } = useDashboard()
   const { branchId, warehouseId } = location

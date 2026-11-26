@@ -37,10 +37,7 @@ type LoadState =
 
 /** Chi tiết đơn tự tải lại (nền) khi bảng đơn đổi và id này nằm trong sự kiện. */
 const LIVE_RESOURCES = [CHANGE_RESOURCES.ORDERS] as const;
-/**
- * "Đủ / thiếu hàng" của dòng đơn tính lúc đọc từ tồn kho, nên nhận hàng xưởng, nhập kho, chuyển kho là thay đổi của bảng khác chứ không phải của đơn.
- * Đăng ký riêng, không truyền `ids`/`visibleIds` nên chỉ tải lại im lặng, không bao giờ toast.
- */
+/** Tải lại im lặng khi tồn kho đổi. */
 const STOCK_RESOURCES = [
   CHANGE_RESOURCES.INVENTORIES,
   CHANGE_RESOURCES.PRODUCTION_REQUESTS,
@@ -57,7 +54,7 @@ function errorMessage(error: unknown): string {
   return messageForCode(getApiErrorBody(error)?.code) ?? "Không tải được đơn hàng";
 }
 
-/** Chi tiết đơn (`GET /orders/:id`, contract §2). Nút sửa nằm ở header; các bước hành trình nằm dưới thanh bước (`OrderJourneyActions`). */
+/** Chi tiết đơn. */
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -74,7 +71,7 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!canView || !id) return;
-    // Chỉ lần tải do người dùng vừa làm một bước (reloadKey đổi) mới báo lỗi; lần tải do sự kiện thì im lặng.
+    // Chỉ báo lỗi khi người dùng vừa làm một bước.
     const explicitReload = reloadKey > 0 && reloadKey !== handledReloadKeyRef.current;
     handledReloadKeyRef.current = reloadKey;
     // Lần tải mới huỷ lần này, nên kết quả cũ về muộn không đè kết quả mới.
@@ -86,7 +83,7 @@ export default function OrderDetailPage() {
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        // Đọc lại lỗi sau một bước vẫn giữ đơn (và sheet đang mở) trên màn; chỉ lần tải đầu không có gì để hiện mới thành trang lỗi.
+        // Lỗi tải lại vẫn giữ đơn trên màn.
         if (explicitReload) toast.error("Không tải lại được đơn hàng, vui lòng tải lại trang");
         setState((previous) => {
           if (previous?.id === id && previous.kind === "loaded") return previous;

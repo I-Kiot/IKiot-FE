@@ -36,11 +36,7 @@ const PAGE_DESCRIPTION: Record<InboundSource, string> = {
   WORKSHOP: "Đặt xưởng làm hàng, theo dõi, nhận hoặc từ chối hàng xưởng giao về",
 };
 
-/**
- * Màn Nhập hàng gộp hai nguồn. Toggle ở đầu trang chỉ đổi bảng đang xem; nút "Tạo mới" sang trang `/exchange/imports/new`.
- * URL (`?source=`) là nơi duy nhất giữ nguồn đang xem, nên link từ nơi khác và tải lại trang đều mở đúng bảng.
- * `?requestId=` (trang tạo mới chuyển về sau khi tạo YCSX) mở chi tiết YCSX đó một lần rồi bị xoá khỏi URL.
- */
+/** Màn Nhập hàng: hai nguồn NCC và Xưởng, nguồn đọc từ `?source=`. */
 export function ImportsWorkspace() {
   const router = useRouter();
   const pathname = usePathname();
@@ -51,8 +47,7 @@ export function ImportsWorkspace() {
   const creatable = creatableInboundSources(role);
   const source = resolveInboundSource(params.get("source"), viewable);
   const openRequestId = params.get("requestId");
-  // `?productionList=1`: link cũ `/exchange/production-list` (thông báo thiếu hàng) được chuyển về đây để mở popup.
-  // Chỉ khi xem được bảng Xưởng, vì popup gọi API cần cùng quyền.
+  // `?productionList=1` mở popup danh sách cần sản xuất.
   const productionListFromUrl = params.get("productionList") === "1" && viewable.includes("WORKSHOP");
 
   const [refreshSignal, setRefreshSignal] = useState(0);
@@ -61,8 +56,7 @@ export function ImportsWorkspace() {
   const [showingProductionList, setShowingProductionList] = useState(false);
   const productionNeedCount = useProductionListAlertsStore((state) => state.needCount) ?? 0;
 
-  // Mở chi tiết YCSX theo `?requestId=`. Tải lỗi (đã xoá, không có quyền) thì chỉ bỏ qua.
-  // Response muộn của một id cũ (người dùng đã rời đi) bị bỏ nhờ cờ `stale`.
+  // Mở chi tiết YCSX theo `?requestId=`.
   useEffect(() => {
     if (!openRequestId) return;
     let stale = false;
@@ -151,7 +145,7 @@ export function ImportsWorkspace() {
 
       <InboundSourceToggle value={source} options={viewable} onChange={showSource} />
 
-      {/* Mỗi lúc chỉ mount một bảng: bảng kia không gọi API nó có thể không có quyền, và response muộn của nó không còn ai nhận. */}
+      {/* Mỗi lúc chỉ mount một bảng. */}
       {source === "SUPPLIER" ? (
         <ImportsProvider refreshSignal={refreshSignal}>
           <ImportsTable />
@@ -160,7 +154,7 @@ export function ImportsWorkspace() {
         <ProductionRequestsTable refreshSignal={refreshSignal} />
       )}
 
-      {/* Danh sách cần sản xuất chỉ còn dạng popup (trang riêng đã bỏ). Mở bằng nút, hoặc bằng `?productionList=1` trên URL. */}
+      {/* Popup danh sách cần sản xuất. */}
       <Dialog
         open={productionListOpen}
         onOpenChange={(open) => {

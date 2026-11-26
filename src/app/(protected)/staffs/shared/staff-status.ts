@@ -13,7 +13,7 @@ export const STAFF_STATUS_MAP: Record<
   SUSPENDED: { label: "Tạm khóa", variant: "destructive" },
 };
 
-/** Role do shop tự định nghĩa nên không có bảng màu cố định; mọi badge role dùng cùng một variant trung tính. */
+/** Badge role dùng một variant trung tính. */
 export const STAFF_ROLE_BADGE_VARIANT: BadgeVariant = "outline";
 
 export function getStaffStatusDisplay(status: StaffStatus) {

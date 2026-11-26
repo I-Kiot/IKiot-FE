@@ -1,7 +1,4 @@
-/**
- * Manager replacement rules aligned with BE StaffHelperFunctions.
- * Run: node scripts/verify-staff-manager-utils.mjs
- */
+/** Kiểm luật thay quản lý khớp BE. Chạy: node scripts/verify-staff-manager-utils.mjs */
 
 function isActiveBranchManager(staff) {
   return staff.role === "BRANCH_MANAGER" && Boolean(staff.branchId);

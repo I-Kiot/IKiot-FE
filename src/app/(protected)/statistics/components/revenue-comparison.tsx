@@ -34,7 +34,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
   )
 }
 
-/** Doanh thu tại các mốc lịch cố định, mỗi mốc so với cùng khoảng đã trôi của kỳ trước; không phụ thuộc bộ chọn kỳ. */
+/** Doanh thu tại các mốc lịch cố định. */
 export function RevenueComparison({ comparison, isLoading }: { comparison: RevenueComparisonData | null; isLoading: boolean }) {
 
   return (

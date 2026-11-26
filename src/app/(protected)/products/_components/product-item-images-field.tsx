@@ -13,8 +13,7 @@ export const MAX_ITEM_IMAGES = 10;
 
 export type ItemImageValue = { url: string; isThumbnail: boolean };
 
-// Chuẩn hoá danh sách ảnh trước khi gửi lên BE: ảnh đầu tiên luôn là ảnh đại diện,
-// và chỉ gửi url + isThumbnail (bỏ id / position mà BE trả về).
+// Chuẩn hoá danh sách ảnh trước khi gửi.
 export function toItemImagePayload(images: { url: string }[] = []) {
   return images.map((image, index) => ({
     url: image.url,
@@ -25,11 +24,9 @@ export function toItemImagePayload(images: { url: string }[] = []) {
 type Props = {
   value: ItemImageValue[];
   onChange: (images: ItemImageValue[]) => void;
-  // Đọc danh sách ảnh mới nhất trong form ngay lúc upload xong - không dùng `value` đã chụp
-  // lúc bắt đầu upload, nếu không ảnh bị xoá trong lúc chờ sẽ quay lại.
+  // Đọc danh sách ảnh mới nhất khi upload xong.
   getLatest: () => ItemImageValue[];
-  // Báo cho dialog biết còn ảnh đang tải lên, để khoá nút Lưu.
-  // Truyền thẳng setter của useState (tham chiếu ổn định), không truyền arrow function viết inline.
+  // Báo còn ảnh đang tải lên.
   onBusyChange: (busy: boolean) => void;
   hint?: string;
 };
@@ -45,8 +42,7 @@ export function ProductItemImagesField({
   const [pendingCount, setPendingCount] = useState(0);
   // Bản sao số ảnh đang tải để cộng/trừ đúng khi nhiều lượt chọn file chạy chồng nhau.
   const pendingRef = useRef(0);
-  // Dialog đóng (field bị gỡ) trong lúc đang tải thì bỏ kết quả: form có thể đã được reset cho
-  // một phiên bản khác, ghi vào sẽ gắn ảnh nhầm phiên bản.
+  // Bỏ kết quả khi dialog đã đóng.
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;

@@ -8,10 +8,7 @@ import {
   priorityDisplay,
 } from "./order-display";
 
-/**
- * Thứ tự cột khi chép đơn - mỗi đơn một dòng, chỉ giá trị (người dùng dán vào bảng đã có cột của họ).
- * Theo thứ tự cột của bảng đơn hàng; tiền là số để Excel cộng được, ngày là chữ dd/mm/yyyy như trên màn hình.
- */
+/** Thứ tự cột khi chép đơn. */
 export const ORDER_COPY_COLUMNS = [
   "Mã đơn",
   "Nơi bán",

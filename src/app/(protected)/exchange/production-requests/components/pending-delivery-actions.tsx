@@ -18,11 +18,7 @@ type Props = {
   onChanged: () => void;
 };
 
-/**
- * Hai nút "Nhận hàng" / "Từ chối" cho một phiếu xưởng giao đang chờ nhận, kèm dialog của chúng.
- * Thay cho trang Phiếu xưởng giao cũ; nằm trong bảng YCSX ở tab Xưởng của màn Nhập hàng.
- * Nhận hàng tải bản đầy đủ của phiếu bằng `getById` lúc bấm, không dùng bản tóm tắt trong dòng bảng (có thể đã cũ).
- */
+/** Nút "Nhận hàng" / "Từ chối" cho phiếu giao xưởng đang chờ. */
 export function PendingDeliveryActions({ delivery, onChanged }: Props) {
   const canReceive = allows(getSessionRole(), "production", "receive");
   // Nhận hàng đổi tồn kho nên danh sách cần sản xuất (và badge của nó) cũng đổi.

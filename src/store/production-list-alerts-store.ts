@@ -3,7 +3,7 @@ import { productionRequestApi } from "@/lib/api/production-request";
 import type { ProductionListRow } from "@/types/order-flow";
 
 interface ProductionListAlertsState {
-  /** Số mặt hàng đơn đang cần mà kho và xưởng chưa lo đủ, và đặt xưởng làm được. `null` = chưa tải lần nào. */
+  /** Số mặt hàng cần đặt xưởng; null là chưa tải. */
   needCount: number | null;
   /** Không throw: lỗi làm mới badge không được hiện thành lỗi trên mọi trang. */
   fetchNeed: () => Promise<void>;
@@ -12,10 +12,7 @@ interface ProductionListAlertsState {
 // Trần `limit` của mọi danh sách phân trang ở BE.
 const PAGE_LIMIT = 100;
 
-/**
- * Dòng cần đặt xưởng: còn thiếu sau tồn kho, hàng đang đặt và nháp (`shortQuantity`), và làm được ở xưởng.
- * Hàng chỉ nhập từ NCC không đếm: trang hiện "Nhập từ NCC" cho nó, không có nút "Thêm vào yêu cầu".
- */
+/** Dòng cần đặt xưởng: còn thiếu và làm được ở xưởng. */
 function needsWorkshopOrder(row: ProductionListRow): boolean {
   return row.isManufacturable && row.shortQuantity > 0;
 }
@@ -25,8 +22,7 @@ export const useProductionListAlertsStore = create<ProductionListAlertsState>((s
   needCount: null,
   fetchNeed: async () => {
     try {
-      // BE chỉ trả tổng số dòng thiếu (gồm cả hàng nhập từ NCC), nên tải hết các trang rồi lọc (thường chỉ một trang).
-      // Bộ lọc giống mặc định của trang: chỉ hàng còn thiếu, mọi kho.
+      // Tải hết các trang rồi lọc.
       let count = 0;
       let page = 1;
       let totalPages = 1;

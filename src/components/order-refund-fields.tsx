@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatVND } from "@/lib/stats-format";
 import type { RefundInput, RefundMethod } from "@/types/order-flow";
 
-/** Nhập liệu hoàn tiền cho khách: số tiền, hình thức, ghi chú. Dùng ở kiểm hàng hoàn, hàng giao thất bại về shop, hoàn tiền trả dư. */
+/** Nhập hoàn tiền cho khách: số tiền, hình thức, ghi chú. */
 export interface RefundDraft {
   amount: number;
   method: RefundMethod;

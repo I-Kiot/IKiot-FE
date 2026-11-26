@@ -11,10 +11,7 @@ export function parseNumberInput(value: string, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-/**
- * Receive qty: floor at 0. Doc + BE (after remove-cap): IMPORT/EXPORT/RETURN
- * đều cho phép receivedQuantity khác (kể cả >) quantity.
- */
+/** Số nhận không âm. */
 export function clampReceivedQuantity(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.trunc(value));

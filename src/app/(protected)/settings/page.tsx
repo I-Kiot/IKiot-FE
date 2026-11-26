@@ -865,9 +865,9 @@ export default function SettingsPage() {
   const [isSavingStore, setIsSavingStore] = React.useState(false);
   // Tăng sau mỗi lần lưu có gửi ngân hàng, để thẻ lịch sử tải lại thay vì giữ kết quả lúc mở trang.
   const [bankingHistoryVersion, setBankingHistoryVersion] = React.useState(0);
-  // `PUT /tenant/me` cần `tenants:update`. Màn Vai trò không cho giao quyền này, nên thực tế chỉ chủ shop/admin sửa được; người khác chỉ xem.
+  // Cần `tenants:update` để sửa.
   const canEditStore = allows(getSessionRole(), "tenants", "update");
-  // Khác `tenants:update`, quyền chi nhánh/kho giao được trên màn Vai trò ("Quản lý chi nhánh và kho"), nên khoá theo đúng từng quyền BE kiểm tra.
+  // Khoá theo quyền chi nhánh / kho.
   const sessionRole = getSessionRole();
   const canBranch = {
     create: allows(sessionRole, "branches", "create"),
@@ -920,7 +920,7 @@ export default function SettingsPage() {
       if (isInitial) {
         setIsLoading(true);
       }
-      // Shop lấy từ GET /tenant/me, không phải /auth/me (không có object tenant), nên trước đây cả card "Thông tin cửa hàng" luôn trống.
+      // Shop lấy từ GET /tenant/me.
       const [me, tenant] = await Promise.all([getMe(), getMyTenant()]);
       if (me || tenant) {
         setStoreInfo({
@@ -1023,7 +1023,7 @@ export default function SettingsPage() {
       toast.error("Vui lòng điền đầy đủ các thông tin bắt buộc!");
       return;
     }
-    // Tài khoản nhận tiền: để trống cả ba, hoặc điền đủ cả ba (admin cần đủ để duyệt liên kết SePay). BE kiểm tra lại cùng quy tắc.
+    // Tài khoản nhận tiền: trống cả ba hoặc đủ cả ba.
     const bankingFields = [
       { label: "Ngân hàng", value: storeInfo.bankName.trim() },
       { label: "Số tài khoản", value: storeInfo.accountNumber.trim() },

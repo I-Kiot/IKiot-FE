@@ -9,8 +9,7 @@ export const roleFormSchema = z.object({
     .min(1, 'Tên vai trò là bắt buộc')
     .max(60, 'Tên vai trò tối đa 60 ký tự'),
   description: z.string().trim().max(255, 'Mô tả tối đa 255 ký tự').optional(),
-  // Mỗi phần tử là "resource:action" - một chuỗi khoá cho mọi thứ trong bộ chọn, dễ đưa
-  // vào Set hơn hẳn so với mảng object. Chỉ tách lại thành cặp ở đúng lúc gửi API.
+  // Mỗi phần tử là "resource:action".
   permissionKeys: z.array(z.string()).min(1, 'Chọn ít nhất một quyền'),
 })
 
@@ -24,9 +23,7 @@ export function splitPermissionKey(key: string) {
   return { resource: key.slice(0, at), action: key.slice(at + 1) }
 }
 
-/**
- * Nhãn tiếng Việt cho từng mã action (danh mục BE chỉ có nhãn cho tài nguyên). Mã lạ rơi về chính nó, không bị ẩn khỏi màn phân quyền.
- */
+/** Nhãn tiếng Việt cho action. */
 export const ACTION_LABELS: Record<string, string> = {
   create: 'Tạo mới',
   read: 'Xem',

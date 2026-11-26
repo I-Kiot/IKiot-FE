@@ -37,10 +37,7 @@ type ApiMovementDetail = {
   note?: string | null;
 };
 
-/**
- * Một đầu của phiếu kho, dạng API trả về: dòng Location `{ id, type, name }` (`type` là `BRANCH` / `WAREHOUSE`).
- * Request chỉ gửi id (`fromLocationId` / `toLocationId`), vì server tự đọc loại từ dòng.
- */
+/** Một đầu của phiếu kho. */
 type ApiLocationRef = LocationRef;
 
 type ApiMovement = {
@@ -205,11 +202,7 @@ function mapMovement(raw: ApiMovement): StockMovement {
   };
 }
 
-/**
- * Body `POST /stock-movements` thực sự nhận. Màn hình giữ loại mỗi đầu bên cạnh id để hiển thị,
- * nhưng `CreateStockMovementDto` chỉ nhận `fromLocationId` / `toLocationId`; loại được bỏ ở đây một lần duy nhất.
- * Đầu nào thiếu thì bỏ hẳn khỏi body, không gửi `undefined`: IMPORT không có nguồn, ADJUST không có đích.
- */
+/** Body tạo phiếu kho, chỉ gửi id địa điểm. */
 function toCreateBody<
   T extends {
     fromLocationId?: string;
@@ -242,7 +235,7 @@ function isCacheFresh(at: number) {
   return Date.now() - at < LOOKUP_TTL_MS;
 }
 
-/** Toàn bộ NCC (và xưởng) của shop, đọc hết mọi trang - BE giới hạn 100 dòng mỗi trang, nên chỉ lấy trang 1 sẽ thiếu NCC ở shop lớn. */
+/** Toàn bộ NCC (và xưởng), đọc hết mọi trang. */
 async function fetchSupplierOptions(): Promise<StockMovementSupplierOption[]> {
   const all: ApiSupplier[] = [];
   let page = 1;
@@ -400,10 +393,7 @@ async function fetchProductSearch(params: {
   };
 }
 
-/**
- * Catalog với giá: GET /products/search
- * (GET /products thường không gắn items nên không dùng cho giá).
- */
+/** Danh mục kèm giá. */
 async function fetchAllProductItemOptions(): Promise<
   StockMovementProductItemOption[]
 > {
@@ -664,10 +654,7 @@ export const stockMovementApi = {
     return safeEnrichMovement(mapMovement(response.data?.data as ApiMovement));
   },
 
-  /**
-   * Tạo phiếu trả ngược (đổi from/to) từ phiếu đã nhận, rồi open → close → ship
-   * để nơi gửi gốc chỉ cần xác nhận nhận hàng.
-   */
+  /** Tạo phiếu trả ngược từ phiếu đã nhận. */
   createAndShipReverseReturn: async (
     source: StockMovement,
     options?: { reason?: string },
@@ -788,7 +775,7 @@ export const stockMovementApi = {
       getProductLookup(),
       fetchInventoryAtLocation(locationId, locationType),
     ]);
-    // "Có tồn ở đây", không phải "có dòng ở đây": dòng còn lại sau khi từng giao hàng, nên chỉ cho biết kho từng có hàng. Picker điều chỉnh dùng cờ này để giữ quản lý chi nhánh ở đúng hàng đang có.
+    // Địa điểm có tồn không.
     return [...lookup.values()].map((item) => ({
       ...item,
       atLocation: (inventoryMap.get(item.id) ?? 0) > 0,

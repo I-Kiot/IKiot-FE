@@ -39,11 +39,7 @@ type Props = {
 
 const toInt = (value: string) => (value.trim() === "" ? 0 : Math.floor(Number(value)));
 
-/**
- * B-7: ghi hàng xưởng đã giao (`POST /production-requests/:id/receive`, contract §3).
- * Đây là cách duy nhất hàng xưởng vào kho: hàng tốt lên bán tại nơi của yêu cầu, hàng lỗi vào kho hàng hỏng;
- * công nợ xưởng = số hàng tốt × giá.
- */
+/** Ghi hàng xưởng đã giao vào kho. */
 export function ReceiveProductionDialog({ request, open, onOpenChange, onReceived }: Props) {
   const pending = request.items.filter((line) => line.receivedQuantity < line.quantity);
   const [inputs, setInputs] = React.useState<Record<string, LineInput>>(() =>

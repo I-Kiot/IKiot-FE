@@ -19,10 +19,7 @@ export type SwitcherItem = {
   status?: string;
 };
 
-/**
- * Chế độ toàn chuỗi (locationKey "all"): mọi chi nhánh và kho, không lọc.
- * id giữ là "all-branches": check-out đọc lại từ localStorage (`activeSwitcherItemId`) để phân biệt "chưa chọn chi nhánh" với chi nhánh thật.
- */
+/** Mục "toàn chuỗi" (locationKey "all"). */
 export const ALL_LOCATIONS_ITEM: SwitcherItem = {
   id: "all-branches",
   name: "Tổng",

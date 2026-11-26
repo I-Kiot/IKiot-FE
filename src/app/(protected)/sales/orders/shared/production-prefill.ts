@@ -1,15 +1,12 @@
 import type { DraftLine } from "@/app/(protected)/exchange/production-requests/components/production-request-form-dialog";
 import type { OrderDetail, OrderDetailLine, OrderLine, OrderStatus } from "@/types/order-flow";
 
-/** Dòng còn thiếu hàng trên kệ. Dòng COMBO / SERVICE và dòng đã xuất có `stockCheck` null nên không bao giờ thiếu. */
+/** Dòng còn thiếu hàng trên kệ. */
 function isShort(line: OrderLine): boolean {
   return line.stockCheck !== null && line.stockCheck.shortQuantity > 0;
 }
 
-/**
- * Còn đặt xưởng được bao nhiêu cho dòng này: BE tính (`production.orderableQuantity`, cùng phép tính với guard khi tạo YCSX) từ
- * phần dòng còn cần và số thiếu chung của (địa điểm, SKU), nên tính cả YCSX đặt chung không gắn dòng. Không biết (null) coi như 0.
- */
+/** Số còn đặt xưởng được cho dòng. */
 export function orderableQuantity(line: OrderLine): number {
   return line.production?.orderableQuantity ?? 0;
 }
@@ -54,32 +51,25 @@ export function productionCoverageOf(order: { items: OrderDetailLine[] }): Produ
   };
 }
 
-/**
- * Đơn có hiện nút "Tạo YCSX" không: đã xác nhận và có dòng thiếu hàng.
- * Phải là CONFIRMED vì BE chỉ nhận gắn dòng YCSX với đơn từ CONFIRMED trở đi; đơn đã đóng gói thì hàng đã khoá nên không còn thiếu.
- */
+/** Đơn có hiện nút "Tạo YCSX" không. */
 export function canCreateProductionFor(order: { status: OrderStatus; items: OrderLine[] }): boolean {
   return order.status === "CONFIRMED" && order.items.some(isShort);
 }
 
 export interface ProductionPrefill {
-  /** Dòng thiếu mà xưởng làm được, mỗi dòng gắn với dòng đơn của nó, số lượng = số còn đặt xưởng được (`orderableQuantity`). */
+  /** Các dòng thiếu mà xưởng làm được. */
   lines: DraftLine[];
   /** Số dòng thiếu nhưng sản phẩm không sản xuất được - phải nhập từ nhà cung cấp. */
   notManufacturableCount: number;
   /** Dòng thiếu mà xưởng làm được nhưng bị bỏ qua vì đã có YCSX che (một câu cho mỗi dòng). */
   skipped: string[];
-  /** Nơi nhận hàng điền sẵn: kho xuất chung của mọi dòng điền sẵn; khác kho nhau hoặc có dòng chưa chọn kho thì bỏ trống. */
+  /** Nơi nhận hàng điền sẵn. */
   locationId: string | undefined;
 }
 
 let prefillSeq = 0;
 
-/**
- * Điền sẵn form YCSX từ một đơn: chỉ các dòng đang thiếu hàng trên kệ.
- * Số lượng là số còn đặt xưởng được do BE tính (`production.orderableQuantity`); dòng đã được che đủ thì bỏ qua và ghi vào `skipped`. Người dùng vẫn sửa được.
- * Nơi nhận hàng điền sẵn là kho xuất của các dòng đó (hàng xưởng phải về đúng nơi đóng gói đơn), chỉ khi mọi dòng cùng một kho.
- */
+/** Điền sẵn form YCSX từ một đơn. */
 export function productionPrefillOf(order: OrderDetail): ProductionPrefill {
   const lines: DraftLine[] = [];
   const sourceLocationIds = new Set<string | undefined>();

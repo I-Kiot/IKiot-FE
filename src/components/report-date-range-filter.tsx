@@ -1,7 +1,6 @@
 "use client"
 
-// [Bộ lọc – kỳ báo cáo từ ngày → đến ngày] Dùng chung cho các trang Báo cáo và Thống kê: lịch chọn khoảng ngày
-// kèm các lựa chọn nhanh (7 ngày qua, tháng này...). Chọn xong bấm "Áp dụng" mới đổi kỳ, để không tải lại khi mới bấm ngày đầu.
+// Bộ lọc khoảng ngày cho trang báo cáo, bấm "Áp dụng" mới đổi kỳ.
 
 import { useState } from "react"
 import { CalendarDays } from "lucide-react"

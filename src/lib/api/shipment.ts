@@ -19,13 +19,13 @@ type Envelope<T> = { success: boolean; data: T };
 export const SHIPMENT_PAGE_SIZE = 10;
 
 export const shipmentApi = {
-  /** Các lần giao người gọi được xem (BE lọc theo chủ shop / người phụ trách / shipper / quyền tại kho, chi nhánh). */
+  /** Các lần giao người gọi được xem. */
   getList: async (params?: ShipmentQuery): Promise<Paginated<ShipmentSummary>> => {
     const res = await client.get<Paginated<ShipmentSummary>>('/shipments', { params });
     return { data: res.data.data, pagination: res.data.pagination };
   },
 
-  /** Các lần giao chưa kết thúc mà mình là shipper (`/shipper`, C-7) – dạng dòng danh sách, không kèm nhật trình. */
+  /** Các lần giao đang mở mà mình là shipper. */
   getMine: async (): Promise<ShipmentSummary[]> => {
     const res = await client.get<Envelope<ShipmentSummary[]>>('/shipments/mine');
     return res.data.data;
@@ -50,13 +50,13 @@ export const shipmentApi = {
     return res.data.data;
   },
 
-  /** "Giao cho vận chuyển". ĐVVC ngoài: đơn PACKED → PICKED_UP ngay. Shipper của shop: chỉ gán shipper (lần giao CREATED), đơn vẫn PACKED tới khi shipper `pickUp`. */
+  /** Giao cho vận chuyển. */
   create: async (payload: CreateShipmentPayload): Promise<Shipment> => {
     const res = await client.post<Envelope<Shipment>>('/shipments', payload);
     return res.data.data;
   },
 
-  /** Shipper xác nhận đã tới kho lấy hàng: lần giao nội bộ CREATED → PICKED_UP, đơn PACKED → PICKED_UP. Shipper, người phụ trách đơn, chủ shop. */
+  /** Shipper xác nhận đã lấy hàng. */
   pickUp: async (id: string, note?: string): Promise<Shipment> => {
     const res = await client.post<Envelope<Shipment>>(
       `/shipments/${id}/pick-up`,

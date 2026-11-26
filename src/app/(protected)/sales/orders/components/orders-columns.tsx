@@ -154,8 +154,7 @@ export const ordersColumns: ColumnDef<OrderListItem>[] = [
   {
     accessorKey: "requestedDeliveryDate",
     header: ORDERS_COLUMN_LABELS.requestedDeliveryDate,
-    // Trong vòng 10 ngày thì hiện đếm ngược thay cho ngày; xa hơn giữ nguyên ngày.
-    // Đơn đã giao xong, huỷ hoặc hoàn thì không còn gì để đếm ngược, chỉ hiện ngày hẹn.
+    // Trong 10 ngày thì đếm ngược.
     cell: ({ row }) => {
       const value = row.original.requestedDeliveryDate;
       const ended = DELIVERY_ENDED_STATUSES.has(row.original.status);

@@ -11,10 +11,7 @@ type Result<T> = {
   error: boolean;
 };
 
-/**
- * Tải từng trang lịch sử. `fetchPage` phải được memo (đổi khi bộ lọc đổi); `filterKey` là chuỗi nhận diện bộ lọc,
- * đổi thì quay về trang 1. `enabled=false` thì không gọi (vd. hộp thoại đang đóng).
- */
+/** Tải từng trang lịch sử; đổi `filterKey` thì về trang 1. */
 export function useHistoryPage<T>(
   fetchPage: (page: number) => Promise<{ data: T[]; pagination: HistoryPagination }>,
   enabled: boolean,

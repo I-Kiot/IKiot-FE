@@ -9,10 +9,7 @@ import {
   type Invoice,
 } from '@/lib/api/subscription'
 
- /**
- * Dữ liệu màn billing (gói và hoá đơn) cùng hàm `refresh`. Hai phần đổi cùng lúc khi thanh toán xong,
- * nên được fetch chung; payment dialog gọi `refresh` khi nhận sự kiện kích hoạt.
- */
+ /** Dữ liệu màn billing: gói và hoá đơn. */
 export function useBilling() {
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(
     null,
@@ -21,7 +18,7 @@ export function useBilling() {
   const [isLoading, setIsLoading] = useState(true)
 
   const refresh = useCallback(async () => {
-    // Dùng allSettled, không dùng all: staff thiếu quyền subscriptions:read bị 403 ở gói nhưng vẫn xem được hoá đơn.
+    // Dùng allSettled để thiếu quyền một phần vẫn xem được phần kia.
     const [plan, list] = await Promise.allSettled([
       getCurrentSubscription(),
       listInvoices(),

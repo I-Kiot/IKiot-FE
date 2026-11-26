@@ -9,10 +9,7 @@ export interface Countdown {
   label: string;
 }
 
-/**
- * Đếm ngược tới `expiresAt` do server trả (nguồn sự thật, FE không tự cộng TTL).
- * `expiresAt` null hoặc không đọc được thì coi như đã hết hạn.
- */
+/** Đếm ngược tới `expiresAt` của server; null hoặc không đọc được thì coi như hết hạn. */
 export function useCountdown(expiresAt: string | null): Countdown {
   const [now, setNow] = useState(() => Date.now());
 

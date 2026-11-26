@@ -1,7 +1,6 @@
 "use client";
 
-// Khung chung của các widget nhỏ trên dashboard: icon + tiêu đề + link "Xem tất cả", để mọi
-// thẻ có cùng nhịp tiêu đề và khoảng cách.
+// Khung chung của widget dashboard.
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -24,7 +23,7 @@ interface WidgetCardProps {
 
 export function WidgetCard({ title, icon: Icon, tone, viewAll, actions, className, children }: WidgetCardProps) {
   return (
-    // min-h-0 + nội dung tự cuộn: trên màn rộng dashboard vừa một màn hình, thẻ nào dài thì cuộn trong thẻ.
+    // Nội dung tự cuộn trong thẻ.
     <Card className={`min-h-0 gap-3 py-4 ${className ?? ""}`}>
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4">
         <div className="flex min-w-0 items-center gap-2.5">

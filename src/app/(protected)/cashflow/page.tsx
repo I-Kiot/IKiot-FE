@@ -317,7 +317,7 @@ function Cashflow() {
 
       <Card>
         <CardContent className="p-0">
-          {/* Khung cuộn riêng (không dùng <Table>: khung overflow-x của nó làm sticky dọc vô hiệu) để đầu bảng và dòng Tổng luôn thấy khi cuộn. */}
+          {/* Khung cuộn riêng để đầu bảng và dòng Tổng luôn thấy. */}
           <div className="max-h-[70vh] overflow-auto">
           <table className="w-full caption-bottom text-sm [&>thead>tr>th]:sticky [&>thead>tr>th]:top-0 [&>thead>tr>th]:z-20 [&>thead>tr>th]:border-b [&>thead>tr>th]:bg-muted">
             <TableHeader>

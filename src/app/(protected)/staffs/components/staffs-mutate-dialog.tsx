@@ -66,7 +66,7 @@ import {
 import { useStaffs } from "./staffs-provider";
 import { EmptyOptionsNotice, EmptyOptionsLink } from "@/components/empty-options-notice";
 
-/** Một regex cho cả hai schema: bản chép tay từng mất dấu `\` (`[^s@]`), khiến mọi email có chữ "s" bị báo sai. */
+/** Regex email. */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Tránh Zod union hiện "Invalid input" khi email rỗng / sai định dạng. */
@@ -168,7 +168,7 @@ const profileFieldsSchema = {
 const NO_WORKSHOP = "none";
 const workshopIdOf = (value?: string) => (value && value !== NO_WORKSHOP ? value : null);
 
-/** Nhân viên thuộc đúng một nơi: một chi nhánh, một kho, hoặc chỉ một xưởng (nhân viên xưởng không có địa điểm). Backend cũng bắt buộc như vậy. */
+/** Nhân viên thuộc chi nhánh, kho hoặc xưởng. */
 const WORKPLACE_TYPE = {
   BRANCH: "BRANCH",
   WAREHOUSE: "WAREHOUSE",
@@ -361,7 +361,7 @@ export function StaffsMutateDialog({
   const userRole = getSessionRole();
   const lockBranchOnCreate = shouldLockBranchOnCreate(getSessionBranchId());
   const canAssignWarehouse = canAssignWarehouseOnStaffForm(userRole);
-  // Quyền set role và nơi làm việc: users:create khi thêm, users:update khi sửa (khớp hai route backend). Bổ nhiệm quản lý là PATCH /branches/:id/manager, không phải đổi role.
+  // Quyền đặt role và nơi làm việc.
   const canEditRoleWorkplace = canEditStaffRoleAndWorkplace(userRole, isEdit);
 
   const {
@@ -391,12 +391,12 @@ export function StaffsMutateDialog({
   const watchedLastName = form.watch("lastName");
   const avatarFullName = `${watchedLastName} ${watchedFirstName}`.trim();
 
-  // Mọi chi nhánh/kho đều chọn được. Người quản lý là Branch.managerId, bổ nhiệm ở màn chi nhánh, nên thêm nhân viên vào chi nhánh không nói gì về ai quản lý.
+  // Mọi chi nhánh / kho đều chọn được.
   const visibleBranchOptions = branchOptions;
   const visibleWarehouseOptions = warehouseOptions;
 
   const watchedWorkplaceType = form.watch("workplaceType");
-  // Kho chỉ hiện với tài khoản được gán kho; giữ loại hiện tại của nhân viên đang sửa để không mất lựa chọn.
+  // Loại nơi làm việc hiện được.
   const availableWorkplaceTypes: WorkplaceType[] = [
     WORKPLACE_TYPE.BRANCH,
     ...(canAssignWarehouse || watchedWorkplaceType === WORKPLACE_TYPE.WAREHOUSE
@@ -446,7 +446,7 @@ export function StaffsMutateDialog({
 
 
 
-  // Chi nhánh/kho/xưởng có thể vừa được tạo ở màn khác sau khi trang nhân viên đã tải: lấy lại mỗi lần mở form.
+  // Tải lại nơi làm việc mỗi lần mở form.
   useEffect(() => {
     if (open) reloadWorkplaceOptions();
   }, [open, reloadWorkplaceOptions]);
@@ -472,7 +472,7 @@ export function StaffsMutateDialog({
   }, [open, isEdit, currentRow, form, lockBranchOnCreate]);
 
 
-  /** Chỉ gửi nơi làm việc của loại đã chọn. Chuyển sang xưởng thì bỏ chi nhánh/kho (`clearLocation`); chuyển sang chi nhánh/kho thì bỏ gắn xưởng. */
+  /** Chỉ gửi nơi làm việc của loại đã chọn. */
   function workplacePayload(
     values: CreateFormValues | EditFormValues,
     editing: boolean,
@@ -521,7 +521,7 @@ export function StaffsMutateDialog({
           accountNote: editData.accountNote?.trim() || "",
         };
 
-        // Thăng quản lý không làm ở form nhân viên: bổ nhiệm người điều hành chi nhánh/kho là PATCH /branches/:id/manager, làm ở màn chi nhánh/kho.
+        // Bổ nhiệm quản lý làm ở màn chi nhánh / kho.
         if (canEditRoleWorkplace) {
           profilePayload.roleId = editData.roleId;
           Object.assign(profilePayload, workplacePayload(editData, true));
@@ -669,8 +669,7 @@ export function StaffsMutateDialog({
                       Vai trò <span className="text-destructive">*</span>
                     </FormLabel>
                     {roleOptions.length === 0 ? (
-                      // `POST /users` bắt buộc roleId, nên một dropdown rỗng ở đây là ngõ
-                      // cụt: form không gửi được và không nói vì sao. Chỉ đúng chỗ cần đi.
+                      // Dropdown role rỗng thì chỉ chỗ tạo role.
                       <EmptyOptionsNotice>
                         Cửa hàng chưa có vai trò nào. Hãy tạo vai trò ở{' '}
                         <EmptyOptionsLink href="/staffs/roles">

@@ -39,21 +39,14 @@ export function filterLocationsByAuthScope(
       (l) => l.id === scope.locationId && l.type === scope.locationType,
     );
   }
-  // Chính warehouseId / branchId là thứ thu hẹp danh sách. Điều kiện cũ còn đòi role WAREHOUSE_MANAGER /
-  // BRANCH_MANAGER mà không tài khoản nào còn mang, nên rơi xuống nhánh cuối và hiện mọi nơi trong shop cho tất cả.
+  // Thu hẹp danh sách theo nơi làm việc.
   const { warehouseId, branchId } = scope;
   if (warehouseId) return locations.filter((l) => l.id === warehouseId);
   if (branchId) return locations.filter((l) => l.id === branchId);
   return locations;
 }
 
-/**
- * Người gọi là ai và làm ở đâu - đọc từ dòng `/auth/me` đã cache.
- *
- * Trước đây lấy từ access token. Backend viết lại chỉ ký `{ sub }` (xem `jwt.strategy.ts`) nên
- * `branchId` / `warehouseId` / `role` đều `undefined`, và mọi scope dựa trên chúng âm thầm nới thành "không giới hạn".
- * `/auth/me` trả đủ ba trường, `AuthGuard` làm mới khi mount nên cache luôn hiện tại.
- */
+/** Người gọi là ai và làm ở đâu, đọc từ `/auth/me` đã cache. */
 export function getAuthScope(): AuthScope {
   const cached = getCachedUser();
   const asString = (value: unknown) =>
@@ -68,10 +61,7 @@ export function getAuthScope(): AuthScope {
   };
 }
 
-/**
- * Scope location hiệu lực: BM/WM theo JWT; TENANT_OWNER theo locationKey
- * (giống productApi.getList gắn locationId/locationType).
- */
+/** Phạm vi địa điểm hiệu lực. */
 export function getEffectiveLocationScope(
   locationKey?: string,
 ): EffectiveLocationScope {

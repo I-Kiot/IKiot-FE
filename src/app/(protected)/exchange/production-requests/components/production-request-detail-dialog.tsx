@@ -137,7 +137,7 @@ export function ProductionRequestDetailDialog({
     } catch (error) {
       const body = getApiErrorBody(error);
       toast.error(messageForCode(body?.code) ?? body?.message ?? "Không thực hiện được");
-      // Xưởng vừa xác nhận đang làm trong lúc dialog còn mở: tải lại để nút Huỷ khoá và hiện "Xưởng đang làm".
+      // Tải lại khi xưởng vừa xác nhận đang làm.
       if (body?.code === "PRODUCTION_REQUEST_IN_PRODUCTION") {
         setPending(null);
         setReason("");

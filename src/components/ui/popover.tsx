@@ -17,15 +17,7 @@ function PopoverTrigger({
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
 }
 
-/**
- * A modal Dialog locks scrolling with react-remove-scroll, which cancels every wheel /
- * touchmove that reaches `document` from outside the dialog. A popover is portalled to
- * <body>, i.e. outside it, so a scrollable list inside one (CascadeSelect, comboboxes)
- * would not scroll while a dialog is open. Stopping the native event at the popover keeps
- * it from reaching that listener; the popover's own lists still scroll normally.
- * Native listeners on purpose: React's synthetic stopPropagation runs at the React root,
- * which in the App Router is `document` itself - too late to stop a listener there.
- */
+/** Chặn sự kiện cuộn ở popover để danh sách bên trong cuộn được khi dialog đang mở. */
 function stopScrollLock(node: HTMLElement | null) {
   if (!node) return
   const stop = (e: Event) => e.stopPropagation()

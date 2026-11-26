@@ -74,7 +74,7 @@ interface AssigneeOption {
 
 const toNumber = (raw: string) => Math.max(0, Number(raw) || 0);
 
-/** D-2: đơn tạo tay (`POST /orders`, contract §2). Sinh ra đã CONFIRMED, không có nháp; tồn không bao giờ chặn đơn. */
+/** Form tạo đơn tay, sinh ra ở CONFIRMED. */
 function OrderDraftForm({
   sales,
   withReplacement = true,
@@ -97,7 +97,7 @@ function OrderDraftForm({
   } | null>(null);
 
   const [sourceOptions, setSourceOptions] = React.useState<SourceLocation[]>([]);
-  // Nguồn hàng người bán chọn, gắn với chi nhánh lúc chọn: đổi nơi bán thì quay về kho mặc định của nơi đó.
+  // Nguồn hàng người bán chọn.
   const [pickedSource, setPickedSource] = React.useState<{
     branchId: string;
     id: string;
@@ -253,7 +253,7 @@ function OrderDraftForm({
     lines: lines.length > 0 ? undefined : "Đơn hàng cần ít nhất một mặt hàng.",
     deposit: totals.depositError ?? undefined,
     requestedDate: isPastDate(requestedDate) ? PAST_DATE_MESSAGE : undefined,
-    // Giao tận nơi phải đủ người nhận, SĐT, địa chỉ (BE từ chối bằng ORDER_DELIVERY_INFO_REQUIRED); khách tới lấy thì không bắt buộc.
+    // Giao tận nơi phải đủ thông tin người nhận.
     recipientName:
       isHomeDelivery && !recipientName.trim() ? "Nhập tên người nhận." : undefined,
     recipientPhone:
@@ -279,9 +279,7 @@ function OrderDraftForm({
     !errors.recipientPhone &&
     !errors.deliveryAddress;
 
-  // Chọn hoặc đổi khách sẽ điền lại người nhận và địa chỉ giao từ hồ sơ khách, trừ khi người nhận là người khác.
-  // D-11: khi đã có danh sách chọn, sao chép khách, chi nhánh, người phụ trách, giao hàng và các dòng hỏng của đơn trả.
-  // Giá do server đọc lại từ catalogue, trừ khi người dùng giữ giá đã thoả thuận hiển thị ở đây.
+  // Điền người nhận từ hồ sơ khách; sao chép đơn trả nếu có.
   React.useEffect(() => {
     if (!replacementFor || !optionsReady) return;
     let stale = false;
@@ -541,7 +539,7 @@ function OrderDraftForm({
   const sectionLabel = "text-sm font-medium text-muted-foreground";
 
   return (
-    // Bố cục cuộn dọc (2026-10-16): sản phẩm rộng hết trang, thông tin chia thẻ, thanh "Tạo đơn" luôn ở đáy.
+    // Bố cục cuộn dọc, thanh "Tạo đơn" ở đáy.
     <div className="flex w-full flex-col gap-4 pb-24">
       <Card className="gap-3 py-4">
         <CardHeader className="px-4 pb-0">
@@ -1126,9 +1124,7 @@ interface OrderTab {
   tabName: string;
 }
 
-/**
- * Nhiều nháp đơn cạnh nhau, như hoá đơn bán trực tiếp. Mỗi tab giữ một `OrderDraftForm` (ẩn khi không active) nên chuyển tab không mất nội dung đã gõ.
- */
+/** Nhiều nháp đơn ở các tab. */
 export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
   const seq = React.useRef(1);
   const [tabs, setTabs] = React.useState<OrderTab[]>([{ id: "order-1", tabName: "Đơn 1" }]);

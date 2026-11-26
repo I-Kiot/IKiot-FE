@@ -1,10 +1,6 @@
 "use client";
 
-// Tab "Đang giao" của màn Đơn giao của tôi: các lần giao chưa kết thúc, cùng bộ lọc với tab "Lịch sử giao"
-// (thẻ trạng thái bấm để lọc, khoảng ngày, trạng thái, từ khoá). `GET /shipments/mine` trả về toàn bộ lần giao
-// còn mở của mình (không phân trang, vài chục dòng là nhiều), nên lọc ngay trên trình duyệt thay vì gọi lại API.
-// Khác lịch sử ở một chỗ: đơn chưa giao thì chưa có ngày giao, nên khoảng ngày lọc theo **ngày hẹn giao**, và mặc
-// định không giới hạn ngày - đơn cần giao không được bị ẩn chỉ vì hẹn ngoài khoảng mặc định.
+// Tab "Đang giao": lọc trên trình duyệt, khoảng ngày theo ngày hẹn giao.
 
 import { useMemo, useState } from "react";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -16,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { SHIPMENT_STATUS_LABELS, type ShipmentStatus, type ShipmentSummary } from "@/types/order-flow";
 import { amountDueText, formatVND, ShipmentStatusBadge } from "../../shipments/components/shipment-ui";
 
-/** Trạng thái của một lần giao còn mở (BE `listMine`: mọi trạng thái trừ DELIVERED / RETURNED / CANCELLED). */
+/** Trạng thái lần giao còn mở. */
 const OPEN_STATUSES: ShipmentStatus[] = ["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "FAILED"];
 
 const STATUS_TONE: Partial<Record<ShipmentStatus, string>> = {
@@ -38,7 +34,7 @@ function fold(text: string): string {
   return text.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").toLowerCase();
 }
 
-/** Ô tìm kiếm khớp mã đơn, mã vận đơn, tên / SĐT người nhận, địa chỉ - như `shipmentSearchWhere` của BE, thêm địa chỉ. */
+/** Ô tìm kiếm khớp mã, người nhận, địa chỉ. */
 function matchesSearch(shipment: ShipmentSummary, needle: string): boolean {
   return [
     shipment.order.code,
@@ -62,10 +58,7 @@ function amountDueCell(shipment: ShipmentSummary): string {
   return amountDueText(shipment);
 }
 
-/**
- * Bảng các đơn đang giao: mỗi dòng một lần giao, bấm dòng để mở chi tiết.
- * Cùng kiểu với bảng của tab "Lịch sử giao"; màn hẹp thì bảng cuộn ngang trong khung.
- */
+/** Bảng các đơn đang giao. */
 function CurrentTable({ shipments, onOpen }: { shipments: ShipmentSummary[]; onOpen: (id: string) => void }) {
   return (
     <div className="overflow-x-auto rounded-md border bg-card">
@@ -130,7 +123,7 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
   const dateInvalid = !!from && !!to && from > to;
   const shipments = useMemo(() => (state.status === "ready" ? state.shipments : []), [state]);
 
-  // Thẻ số liệu theo khoảng ngày nhưng bỏ qua trạng thái và từ khoá, để bấm thẻ ra đúng số đơn đó (như tab lịch sử).
+  // Số liệu bỏ qua trạng thái và từ khoá.
   const inRange = useMemo(() => {
     if (dateInvalid || (!from && !to)) return shipments;
     return shipments.filter((shipment) => {
@@ -158,8 +151,7 @@ export function CurrentDeliveries({ state, onOpen }: { state: MineState; onOpen:
     return { byStatus, due };
   }, [inRange]);
 
-  // Phân trang ngay trên trình duyệt: danh sách đã tải hết. `currentPage` kẹp lại khi danh sách ngắn đi
-  // (giao xong một đơn ở trang cuối rồi tải lại) - tính lúc render, không sửa `page` trong effect.
+  // Phân trang trên trình duyệt.
   const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pageRows = visible.slice((currentPage - 1) * pageSize, currentPage * pageSize);

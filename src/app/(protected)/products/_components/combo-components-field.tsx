@@ -51,7 +51,7 @@ export function toComboRows(components: ComboComponent[] | undefined): ComboComp
 
 const vnd = (amount: number) => formatPriceAmount(Math.round(amount)) || '0'
 
-/** Giá vốn combo = tổng (số lượng × giá vốn từng món). Khớp `comboCostOf` của BE; BE mới là nơi quyết định số lưu. */
+/** Giá vốn combo = tổng số lượng × giá vốn. */
 export function comboCostOf(rows: ComboComponentRow[]): number {
   const total = rows.reduce((sum, row) => sum + (row.quantity >= 1 ? row.quantity : 0) * row.costPrice, 0)
   return Math.round(total * 100) / 100
@@ -124,7 +124,7 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
   }, [open, search])
 
   const chosen = new Set(value.map((row) => row.componentItemId))
-  // Hàng đã ngừng kinh doanh đã bị lọc ở BE (`excludeDiscontinued`). Dịch vụ (VD: lắp đặt) được làm món combo.
+  // Dịch vụ cũng làm thành phần combo được.
   const selectable = options.filter((option) => option.id !== selfId && !chosen.has(option.id))
 
   function add(option: ProductItemListEntry) {
@@ -224,10 +224,7 @@ export function ComboComponentsField({ value, onChange, selfId }: Props) {
   )
 }
 
-/**
- * Giữ chuỗi đang gõ để xoá rồi gõ lại được (ép về 1 khi rỗng sẽ thành 14). Ô trống đẩy về 0 để form chặn lưu (`hasInvalidQuantity`);
- * rời ô khi còn trống thì trả lại số hợp lệ gần nhất.
- */
+/** Giữ chuỗi đang gõ của ô số lượng. */
 function QuantityInput({ value, onCommit }: { value: number; onCommit: (quantity: number) => void }) {
   const [draft, setDraft] = useState(value >= 1 ? String(value) : '')
   const [lastValue, setLastValue] = useState(value)

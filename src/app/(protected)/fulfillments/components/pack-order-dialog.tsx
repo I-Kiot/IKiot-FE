@@ -34,9 +34,7 @@ interface PackOrderDialogProps {
   onNeedsReload: () => void;
 }
 
-/**
- * Xác nhận đã đóng gói một đơn (`POST /orders/:id/pack`). Trang cha đặt `key={order.id}`, nên mỗi đơn mở ra là một dialog mới.
- */
+/** Xác nhận đóng gói đơn. */
 export function PackOrderDialog({ order, onClose, onNeedsReload }: PackOrderDialogProps) {
   const { pending: livePending } = useLiveHold(order !== null, [order?.id]);
   const [note, setNote] = useState("");

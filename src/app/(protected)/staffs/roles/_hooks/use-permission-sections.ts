@@ -29,9 +29,7 @@ export function itemState(keys: string[], selected: Set<string>): CheckState {
   return chosen === keys.length ? true : 'indeterminate'
 }
 
-/**
- * Ghép cấu hình nhóm với danh mục BE trả về: bỏ mã không còn trong danh mục hoặc thuộc quyền nền BE đã lọc, lấy mô tả BE làm `hint`, gom mã chưa xếp nhóm vào "Khác", tách `ALWAYS_ON_PERMISSIONS`.
- */
+/** Ghép cấu hình nhóm với danh mục quyền của BE. */
 export function usePermissionSections(groups: PermissionResourceGroup[]) {
   return useMemo(() => {
     const available = new Map<string, { group: PermissionResourceGroup; action: string }>()
@@ -74,7 +72,7 @@ export function usePermissionSections(groups: PermissionResourceGroup[]) {
       })
     }
 
-    // Phần còn lại của các tài nguyên được giữ (`OTHER_SECTION_RESOURCES`), gom theo tài nguyên, mỗi mã một ô.
+    // Gom phần còn lại vào "Khác".
     const otherBlocks = groups
       .filter((group) => OTHER_SECTION_RESOURCES.includes(group.resource))
       .map((group) => ({
@@ -112,9 +110,7 @@ export function usePermissionSections(groups: PermissionResourceGroup[]) {
   }, [groups])
 }
 
-/**
- * Bật/tắt một loạt ô. Bật: thêm mã của ô và `requires`. Tắt: chỉ gỡ mã không còn ô bật nào cần đến, vì một mã có thể thuộc nhiều ô (ví dụ `orders:read`).
- */
+/** Bật/tắt một loạt ô quyền. */
 export function toggleItems(
   selected: Set<string>,
   targets: ResolvedItem[],

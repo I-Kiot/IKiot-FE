@@ -1,7 +1,4 @@
-/**
- * Static permission matrix check for staff module.
- * Run: node scripts/verify-staff-permissions.mjs
- */
+/** Kiểm ma trận quyền của module nhân viên. Chạy: node scripts/verify-staff-permissions.mjs */
 
 const roles = [
   "TENANT_OWNER",

@@ -17,7 +17,7 @@ import type { ProductScreen } from '../_constants/product-screen'
 import { useLiveRefresh } from '@/hooks/use-live-refresh'
 import { CHANGE_RESOURCES } from '@/types/change-feed'
 
-// Tồn kho đổi ở nơi khác (bán, nhập, chuyển kho, đánh dấu hỏng / sửa / huỷ): tải lại số tồn và số hỏng.
+// Tải lại tồn khi có thay đổi.
 const LIVE_RESOURCES = [CHANGE_RESOURCES.INVENTORIES] as const
 
 type LocationOption = { value: string; label: string }
@@ -50,7 +50,7 @@ type ProductsContextType = {
   categories: Category[]
   suppliers: Supplier[]
   ensureSuppliersLoaded: () => void
-  // Chuỗi sku + productCode (viết thường) theo productId cho ô tìm kiếm; GET /products không kèm trường cấp item (xem products-table.tsx).
+  // Index SKU + mã hàng theo productId.
   skuSearchIndex: Map<string, string>
   /** Số lần hàng hoá này được sửa thành công; panel mở rộng nạp lại chi tiết khi số này đổi. */
   detailVersionOf: (productId: string) => number
@@ -94,7 +94,7 @@ export function ProductsProvider({
     })
   }, [])
 
-  // Phục vụ tìm theo SKU/mã hàng ở ô tìm kiếm (xem products-table.tsx). GET /products không gắn trường cấp item, nên dựng index từ danh sách item phẳng.
+  // Dựng index tìm theo SKU / mã hàng.
   useEffect(() => {
     productApi
       .listItems({ limit: 500, productType: screen.listTypes })
@@ -110,7 +110,7 @@ export function ProductsProvider({
       .catch(() => setSkuSearchIndex(new Map()))
   }, [screen.listTypes])
 
-  // Chỉ cần trong picker/nhãn kho (dialog sửa, dialog phiên bản, detail sheet): tải khi mở lần đầu, không tải mỗi lần vào trang.
+  // Tải địa điểm khi mở lần đầu.
   function ensureLocationOptionsLoaded() {
     if (locationOptionsLoadedRef.current) return
     locationOptionsLoadedRef.current = true
@@ -134,8 +134,7 @@ export function ProductsProvider({
       .catch(() => setSuppliers([]))
   }
 
-  // Sửa hàng hoá có thể đổi tên / thêm / xoá thuộc tính, mà PATCH /products/:id không trả items:
-  // tăng phiên bản để panel mở rộng gọi lại GET /products/:id thay vì giữ chi tiết cũ.
+  // Tăng phiên bản để panel nạp lại chi tiết.
   async function handleEditWrapper(
     id: string,
     data: ProductFormValues,

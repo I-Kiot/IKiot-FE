@@ -62,7 +62,7 @@ export function PaymentDialog({
     const handleActivated = async () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
       setPaymentState("paid")
-      // Trước đây gọi fetchMe() (profile không có subscription), nên card gói cũ không đổi tới khi reload tay.
+      // Tải lại gói sau khi thanh toán.
       await onActivated()
       toast.success(`Nâng cấp lên gói ${invoice.plan.planName} thành công!`)
     }

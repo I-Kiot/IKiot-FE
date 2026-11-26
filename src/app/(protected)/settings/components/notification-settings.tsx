@@ -23,10 +23,7 @@ import {
   setNotificationSoundMuted,
 } from "@/lib/notification-sound";
 
-/**
- * Hai thứ duy nhất đang có tác dụng thật: đăng ký thiết bị nhận push (FCM) và âm báo
- * khi có thông báo mới. Các tuỳ chọn theo loại thông báo chưa có phía BE nên không hiện ở đây.
- */
+/** Cài đặt push và âm báo. */
 export function NotificationSettings() {
   // Tab này chỉ render sau khi trang cài đặt đã tải xong ở client, nên đọc localStorage được ngay.
   const [soundOn, setSoundOn] = React.useState(() => !isNotificationSoundMuted());

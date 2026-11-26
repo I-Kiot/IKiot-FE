@@ -39,9 +39,7 @@ function groupState(items: ResolvedItem[], selected: Set<string>) {
   return on > 0 || items.some((item) => itemState(item.keys, selected) !== false) ? 'indeterminate' : false
 }
 
-/**
- * Chọn quyền cho vai trò, theo nhóm công việc (`_constants/permission-sections.ts`). Ô "chọn cả khối" có trạng thái một phần để một cú bấm nhầm không xoá mất quyền đã chọn lẻ.
- */
+/** Chọn quyền cho vai trò theo nhóm công việc. */
 export function PermissionPicker({ groups, value, onChange, disabled }: PermissionPickerProps) {
   const { sections, allItems, alwaysOn } = usePermissionSections(groups)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -80,7 +78,7 @@ export function PermissionPicker({ groups, value, onChange, disabled }: Permissi
 
   const ActiveIcon = active.icon
 
-  // Màn hẹp: nhóm thành hàng chip cuộn ngang, danh sách quyền trải dọc và cả hộp thoại cuộn chung. Từ md: hai cột, mỗi cột tự cuộn.
+  // Bố cục theo bề rộng màn hình.
   return (
     <div className="flex flex-col gap-4 md:grid md:h-full md:min-h-0 md:grid-cols-[300px_1fr]">
       {/* Trái: các nhóm quyền chính */}

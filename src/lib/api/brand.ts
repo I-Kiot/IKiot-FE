@@ -8,7 +8,7 @@ import type {
   BrandUpdatePayload,
 } from '@/types/brand'
 
-// Bản Express cũ trả `_id`, bản NestJS trả `id` nên ánh xạ này giờ đồng nhất; giữ làm chỗ duy nhất phải sửa nếu hình dạng phản hồi đổi.
+// Ánh xạ thương hiệu từ response.
 type BrandDoc = Omit<Brand, 'id'> & { id: string }
 
 function mapBrand(doc: BrandDoc): Brand {

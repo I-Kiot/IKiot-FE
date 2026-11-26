@@ -21,10 +21,7 @@ interface UseImageCropOptions {
   background?: string | null;
 }
 
-/**
- * State và thao tác của dialog cắt ảnh vuông (kéo, phóng to, xoay), dùng chung cho avatar và logo cửa hàng.
- * `open(file)` đọc ảnh và mở dialog; `crop()` vẽ đúng phần trong khung ra PNG vuông.
- */
+/** State và thao tác của dialog cắt ảnh vuông. */
 export function useImageCrop({ background = "#ffffff" }: UseImageCropOptions = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [src, setSrc] = useState<string | null>(null);

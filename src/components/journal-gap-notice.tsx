@@ -1,10 +1,7 @@
 import { Info } from 'lucide-react'
 import { formatNumber } from '@/lib/stats-format'
 
-/**
- * Nhắc khi có đơn hoàn tất mà sổ doanh thu không có (đơn cũ, trước khi có sổ): các số doanh thu chỉ tính từ sổ nên chưa gồm các đơn này.
- * Không hiện gì khi không thiếu đơn nào.
- */
+/** Nhắc khi có đơn hoàn tất chưa có trong sổ doanh thu. */
 export function JournalGapNotice({
   ordersWithoutJournal,
   firstJournalAt,

@@ -1,7 +1,7 @@
 export type OrderStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'RETURNED';
 export type OrderPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOMO' | 'VNPAY' | 'SEPAY';
 
-/** Một dòng của đơn mới. **Không có giá:** server lấy `retailPrice` từ biến thể; `unitPrice` gửi từ quầy bị `whitelist` bỏ im lặng. `productName` cũng do server điền. */
+/** Một dòng đơn quầy, giá do server lấy. */
 export interface OrderItemPayload {
   productItemId: string;
   quantity: number;
@@ -9,10 +9,7 @@ export interface OrderItemPayload {
   discountAmount?: number;
 }
 
-/**
- * Body của `POST /orders` (hẹp hơn vẻ ngoài). `grandTotal` do server tính, không gửi.
- * `discountType` chỉ nhận `"ORDER"` (chiết khấu cả đơn của thu ngân); khuyến mãi đi qua `appliedPromotions`, gửi `"PROMOTION"` là 400. Hai cách loại trừ nhau nên là union.
- */
+/** Body tạo đơn quầy. */
 export type OrderCreatePayload = {
   customerId?: string;
   branchId: string;
@@ -55,7 +52,7 @@ export interface OrderPayment {
   createdAt?: string;
 }
 
-/** Số đã thu / còn phải thu của đơn quầy, tính từ `payments[]` (cùng quy tắc với BE: thu trừ hoàn trừ thối). */
+/** Số đã thu / còn phải thu của đơn quầy. */
 export function posPaymentTotals(order: { grandTotal: number; payments?: OrderPayment[] }): {
   paid: number;
   due: number;

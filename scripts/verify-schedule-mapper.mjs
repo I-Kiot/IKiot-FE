@@ -1,7 +1,4 @@
-/**
- * Schedule mapper / calendar expansion / workplace scope checks.
- * Run: node scripts/verify-schedule-mapper.mjs
- */
+/** Kiểm mapper lịch, mở rộng lịch và phạm vi nơi làm việc. Chạy: node scripts/verify-schedule-mapper.mjs */
 
 function buildStaffLabel(assignees) {
   if (assignees.length === 0) return "-";

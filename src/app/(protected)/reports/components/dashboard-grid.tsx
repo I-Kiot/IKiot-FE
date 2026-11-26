@@ -15,11 +15,7 @@ import {
 } from './sales-reports'
 import { CashflowReport, InventoryReport, PaymentMethodReport } from './finance-reports'
 
-/**
- * Trang báo cáo là số liệu để đọc và đối chiếu: mỗi tab một bảng có dòng cộng, khớp với một sheet của file xuất Excel.
- * Mọi tab theo nơi chọn ở dropdown trên trang; tab "Theo điểm bán" chỉ có khi xem toàn cửa hàng.
- * Báo cáo nhân viên có trang riêng (/reports/staff); biểu đồ nằm ở trang Thống kê (/statistics).
- */
+/** Trang báo cáo: mỗi tab một bảng có dòng cộng. */
 export function DashboardGrid() {
   const { overview, activeTab, setActiveTab, location } = useDashboard()
 
@@ -59,7 +55,7 @@ export function DashboardGrid() {
       <Tabs value={currentTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="h-auto flex-wrap justify-start">
           {tabs.map((tab) => (
-            // Giữ một độ đậm cho cả tab đang chọn: mặc định tab chọn đậm hơn nên rộng ra, làm chữ của cả hàng tab nhảy mỗi lần đổi tab.
+            // Giữ cùng độ đậm chữ cho tab.
             <TabsTrigger
               key={tab.value}
               value={tab.value}

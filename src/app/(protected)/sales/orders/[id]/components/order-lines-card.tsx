@@ -19,7 +19,7 @@ import { canCreateProductionFor } from "../../shared/production-prefill";
 import { ProductionProgressList } from "../../shared/production-progress-list";
 import { CreateProductionRequestButton } from "../../shared/create-production-request-button";
 
-/** Thứ khách đặt riêng: mỗi thay đổi một chip (giá trị gốc gạch ngang), ghi chú và ảnh - cùng cách màn tạo đơn và YCSX hiện. */
+/** Yêu cầu riêng của khách: chip thay đổi, ghi chú, ảnh. */
 function CustomizationDetails({
   customization,
 }: {
@@ -53,7 +53,7 @@ function ManufacturableCell({ line }: { line: OrderLine }) {
   return <span className="text-xs text-muted-foreground">Nhập từ NCC</span>;
 }
 
-/** Mọi dòng của đơn, kèm kho xuất và việc tồn trên kệ hiện tại có đủ hay không; có nút "Tạo YCSX" điền sẵn hàng thiếu. */
+/** Các dòng của đơn kèm kho xuất và tình trạng hàng. */
 export function OrderLinesCard({ order }: { order: OrderDetail }) {
   const items: OrderDetailLine[] = order.items;
   const lines = orderedLines(items);

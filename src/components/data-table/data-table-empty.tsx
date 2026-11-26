@@ -28,8 +28,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 
 type EmptyMessage = { icon: LucideIcon; title: string; description: string };
 
-// Thông báo khi bảng rỗng, theo route của trang. Route con (vd. /staffs/holidays) phải nằm trong
-// danh sách riêng vì tra theo tiền tố dài nhất. Không có trang admin nào ở đây.
+// Thông báo khi bảng rỗng, theo route của trang.
 const EMPTY_MESSAGES: Record<string, EmptyMessage> = {
   "/products": {
     icon: Package,

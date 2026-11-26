@@ -12,10 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import type { SalesBranch } from "../_hooks/use-sales-branch";
 
-/**
- * Bắt buộc chọn chi nhánh khi vào /check-out từ chế độ xem toàn chuỗi hoặc một kho: bán tại quầy luôn ghi nhận
- * và đọc tồn tại một chi nhánh cụ thể. Không đóng được - lối ra duy nhất là chọn hoặc quay lại.
- */
+/** Bắt buộc chọn chi nhánh khi vào /check-out từ chế độ toàn chuỗi hoặc kho. */
 export function PickSalesBranchDialog({
   sales,
   backHref,

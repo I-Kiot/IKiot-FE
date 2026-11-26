@@ -10,17 +10,13 @@ import { getCachedUser } from "@/lib/auth";
 import { canFinalizeCashDrawer } from "@/components/sidebar/constants/role-permissions";
 import type { OverdueCashDrawer } from "@/types/cash-drawer";
 
-/** `2026-11-10` hoặc `2026-11-10T00:00:00.000Z` (cột date) -> `10/11`. Cắt chuỗi, không qua `Date`, để múi giờ máy không đẩy lệch một ngày. */
+/** Đổi ngày `2026-11-10` thành `10/11` bằng cắt chuỗi. */
 export function shortBusinessDate(businessDate: string): string {
   const [, month, day] = businessDate.slice(0, 10).split("-");
   return `${day}/${month}`;
 }
 
-/**
- * Cảnh báo két quên chốt từ ngày trước, ở màn két và màn bán tại quầy. Người có quyền chốt thấy nút vào chốt; người
- * khác được nhắc báo quản lý. Lỗi tải (ví dụ tài khoản không có quyền đọc két) thì không hiện gì - cảnh báo không được
- * chặn màn đang dùng.
- */
+/** Cảnh báo két quên chốt từ ngày trước; lỗi tải thì không hiện gì. */
 export function OverdueDrawerBanner({
   branchId,
   className,

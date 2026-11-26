@@ -53,7 +53,7 @@ type Props = {
   refreshSignal: number;
 };
 
-/** B-6: danh sách yêu cầu sản xuất (`GET /production-requests`, contract §3), tab Xưởng của màn Nhập hàng. */
+/** Danh sách YCSX, tab Xưởng. */
 export function ProductionRequestsTable({ refreshSignal }: Props) {
   const [page, setPage] = React.useState(1);
 
@@ -77,7 +77,7 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
   const loading = loaded?.query !== query;
   const rows = loaded?.rows ?? [];
   const total = loaded?.total ?? 0;
-  // Người khác đổi dữ liệu: tải lại nền. Tick chỉ vào deps của effect tải, KHÔNG vào `query`, nên bảng không nháy "đang tải".
+  // Tải lại nền khi người khác đổi dữ liệu.
   const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds: rows.map((row) => row.id) });
   const shownQueryRef = React.useRef<string | null>(null);
 
@@ -195,7 +195,7 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
               const display = requestStatusDisplay(row.status, row.closedShort);
               const acceptance = workshopAcceptanceDisplay(row);
               const progress = requestProgress(row);
-              // Chỉ YCSX còn nhận hàng được mới có nút: đã hoàn tất / đã huỷ thì phiếu còn treo cũng không nhận được nữa (BE từ chối).
+              // Chỉ YCSX còn nhận hàng mới có nút.
               const canStillReceive = row.status === "SENT" || row.status === "PARTIALLY_RECEIVED";
               const pendingDeliveries = canStillReceive
                 ? (row.deliveries ?? []).filter((d) => d.status === "PENDING")
@@ -224,7 +224,7 @@ export function ProductionRequestsTable({ refreshSignal }: Props) {
                   </TableCell>
                   <TableCell>{formatDate(row.expectedReadyDate)}</TableCell>
                   <TableCell>{formatDateTime(row.createdAt)}</TableCell>
-                  {/* Bấm nút trong ô này không mở chi tiết YCSX; dialog của nút cũng render trong ô nên chặn cả click bubble từ đó. */}
+                  {/* Chặn click trong ô mở chi tiết. */}
                   <TableCell
                     onClick={(event) => event.stopPropagation()}
                     className="cursor-default"

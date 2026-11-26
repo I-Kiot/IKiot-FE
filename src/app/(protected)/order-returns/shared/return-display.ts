@@ -1,4 +1,4 @@
-// Badge dùng chung cho danh sách và dialog đơn trả (D-6). Nhãn lấy từ `@/types/order-flow`; file này chỉ quyết định màu sắc.
+// Màu badge cho đơn trả.
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {

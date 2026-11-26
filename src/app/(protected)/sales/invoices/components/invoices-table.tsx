@@ -65,8 +65,7 @@ function mapInvoice(dto: InvoiceDto): Invoice {
       productName: line.description,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
-      // Hoá đơn lưu thành tiền dòng đã trừ giảm giá; phần giảm của cả dòng là chênh lệch so với giá gốc × số lượng.
-      // Trước đây chia cho số lượng (giảm mỗi cái) trong khi bảng hiển thị coi là giảm cả dòng: mua 2 chỉ trừ 1 lần.
+      // Phần giảm của cả dòng = giá gốc × số lượng - thành tiền.
       discountAmount: Math.max(0, gross - lineTotal),
       lineTotal,
     };
@@ -195,7 +194,7 @@ export function InvoicesTable() {
     },
   });
 
-  // Mở theo `?id=` hoặc sự kiện tìm kiếm toàn cục: bỏ bộ lọc fulfilment đang che hoá đơn, rồi mở dòng sau khi đã tải.
+  // Mở hoá đơn theo `?id=` hoặc tìm kiếm toàn cục.
   const [openId, setOpenId] = useState<string | null>(null);
 
   const requestOpen = (invoiceId: string) => {

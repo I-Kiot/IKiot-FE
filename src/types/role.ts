@@ -1,12 +1,10 @@
-/**
- * `UserRole` là loại tài khoản cố định ở BE (`User.systemRole`), dùng cho hiển thị và gate FE. `Role` là vai trò do chủ cửa hàng tạo và gắn quyền; `User.roleId` trỏ tới nó.
- */
+/** `UserRole` là loại tài khoản, `Role` là vai trò do chủ shop tạo. */
 export type UserRole =
   | "ADMIN"
   | "TENANT_OWNER"
   | "STAFF"
   | "CUSTOMER"
-  // Hai giá trị của backend cũ: tài khoản mới không còn mang, nhưng user cũ trong localStorage có thể vẫn có - giữ để hiển thị đúng.
+  // Giá trị cũ, giữ để hiển thị user cũ.
   | "BRANCH_MANAGER"
   | "WAREHOUSE_MANAGER";
 

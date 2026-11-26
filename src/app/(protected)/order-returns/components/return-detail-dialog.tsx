@@ -60,11 +60,7 @@ interface ReturnDetailDialogProps {
   canCancel: boolean;
 }
 
-/**
- * Một đơn trả: các dòng và bước kế tiếp. REQUESTED → "Đã nhận hàng" (receive); INSPECTING → chọn kết quả từng dòng
- * (GOOD về kệ, DAMAGED về kho hàng hỏng) rồi "Xác nhận kiểm hàng" (inspect). Tồn chỉ đổi khi kiểm hàng (contract §5).
- * Cha đặt key theo id và trạng thái đơn trả nên kết quả luôn bắt đầu trống cho mỗi đơn và mỗi bước.
- */
+/** Chi tiết đơn trả: nhận hàng rồi kiểm từng dòng. */
 export function ReturnDetailDialog({
   orderReturn,
   onOpenChange,
@@ -75,7 +71,7 @@ export function ReturnDetailDialog({
   const { pending: livePending } = useLiveHold(orderReturn !== null, [orderReturn?.id]);
   const [verdicts, setVerdicts] = React.useState<Record<string, ReturnCondition>>({});
   const [busy, setBusy] = React.useState(false);
-  // Gợi ý hoàn tiền chỉ có ở GET /order-returns/:id; dòng của danh sách (và kết quả của "đã nhận hàng") không kèm theo.
+  // Gợi ý hoàn tiền chỉ có ở chi tiết.
   const [fetchedSuggestion, setFetchedSuggestion] = React.useState<RefundSuggestion | null | undefined>(undefined);
   const [refundEdit, setRefundEdit] = React.useState<RefundDraft | null>(null);
   const needsSuggestion =

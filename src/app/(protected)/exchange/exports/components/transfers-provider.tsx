@@ -22,7 +22,7 @@ interface TransfersContextType {
   setOpen: (v: TransfersDialogType | null) => void
   statusFilter: MovementStatus | 'ALL'
   setStatusFilter: (v: MovementStatus | 'ALL') => void
-  /** `silent`: tải nền do sự kiện thời gian thực - không bật `isLoading` (bảng không nháy), lỗi thì giữ dòng đang hiện. */
+  /** `silent`: tải nền không bật loading. */
   fetchTransfers: (opts?: { silent?: boolean }) => Promise<void>
   handleOpen: (id: string) => Promise<void>
   handleUpdateDetails: (

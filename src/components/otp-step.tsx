@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { getApiErrorBody } from "@/lib/api/error-codes";
 import type { OtpChallenge } from "@/lib/api/auth";
 
-// Khi bật, bước OTP tự gửi `DEV_BYPASS` (backend chỉ nhận ngoài production), nên site dev không cần email thật.
+// Tự gửi `DEV_BYPASS` ở môi trường dev.
 const OTP_BYPASS = process.env.NEXT_PUBLIC_OTP_BYPASS === "true";
 const OTP_LENGTH = 6;
 
@@ -49,10 +49,7 @@ function useSecondsLeft(deadline: number) {
   return Math.max(0, Math.ceil((deadline - now) / 1000));
 }
 
-/**
- * Bước nhập mã OTP gửi qua email, dùng chung cho đăng ký, đăng nhập lần đầu và quên mật khẩu.
- * Hiện email đã che, đếm ngược hạn mã, nút "Gửi lại mã" khoá theo `resendAfterSeconds`.
- */
+/** Bước nhập mã OTP qua email, dùng chung cho đăng ký, đăng nhập, quên mật khẩu. */
 export function OtpStep({
   title,
   submitLabel,

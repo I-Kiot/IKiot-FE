@@ -1,6 +1,6 @@
 "use client"
 
-// Xu hướng của kỳ đang chọn theo ngày (hoặc tháng với kỳ dài): một chỉ tiêu một lúc, một trục - đổi giữa doanh thu và số đơn.
+// Xu hướng theo ngày / tháng của kỳ đang chọn.
 
 import { useState } from "react"
 import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from "recharts"

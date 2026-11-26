@@ -1,6 +1,4 @@
-/**
- * Helper xác thực: quản lý token và trạng thái đăng nhập.
- */
+/** Helper xác thực: token và trạng thái đăng nhập. */
 
 import axios from "axios";
 import type { LocationRef } from "@/types/location";
@@ -25,24 +23,15 @@ export interface User {
   bio?: string;
   created_at?: string;
   updated_at?: string;
-  /**
-   * **Loại tài khoản** (`ADMIN | TENANT_OWNER | STAFF | CUSTOMER`), lấy từ `systemRole`.
-   * `normalizeSessionUser` map lại vì backend dùng `role` cho relation Role.
-   */
+  /** Loại tài khoản, lấy từ `systemRole`. */
   role?: string;
-  /**
-   * Quyền `"resource:action"` tài khoản có, theo `GET /auth/me`. **Rỗng với ADMIN và TENANT_OWNER**:
-   * nghĩa là không áp dụng, không phải không có quyền. Đọc qua `allows()` trong `role-permissions.ts`.
-   */
+  /** Quyền `resource:action` của tài khoản; rỗng với ADMIN và TENANT_OWNER (mọi quyền). */
   permissions?: string[];
   /** Tên loại tài khoản do backend trả, giữ cạnh `role` đã normalise. */
   systemRole?: string;
   /** Tên hiển thị của role do tenant định nghĩa, nếu tài khoản có role. */
   roleName?: string;
-  /**
-   * Cửa hàng của tài khoản. **Không bao giờ có giá trị**: `/auth/me` không trả tenant.
-   * Lấy từ `getMyTenant()` (`lib/api/tenant.ts`).
-   */
+  /** Không dùng: `/auth/me` không trả tenant, lấy qua `getMyTenant()`. */
   tenant?: {
     id?: string;
     name?: string;
@@ -59,10 +48,10 @@ export interface User {
   phoneNumber?: string;
   status?: string;
   tenantId?: string;
-  /** Vị trí làm việc backend trả (`User.locationId` + relation `location`); null với owner và admin vì họ không gắn vị trí nào. */
+  /** Nơi làm việc của user, null với chủ shop và admin. */
   locationId?: string | null;
   location?: LocationRef | null;
-  /** `location` tách theo loại, do `normalizeSessionUser` tính (backend không gửi), vì ~40 màn đọc qua hai tên này. */
+  /** Chi nhánh / kho tách từ `location`. */
   branchId?: string;
   warehouseId?: string;
   /** Nhân viên xưởng (2026-10-09): xưởng (NCC loại WORKSHOP) tài khoản này thuộc về; null với người khác. */
@@ -78,57 +67,43 @@ export interface User {
     address?: string;
     gender?: "MALE" | "FEMALE" | "OTHER";
   };
-  /**
-   * **Đã bỏ**: `/auth/me` không bao giờ trả field này. Gói hiện tại lấy từ `getCurrentSubscription()` (`lib/api/subscription.ts`).
-   */
+  /** Không dùng: lấy gói qua `getCurrentSubscription()`. */
 }
 
-/**
- * Kiểm tra đã có access token trong localStorage.
- */
+/** Đã có access token chưa. */
 export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
   return !!token;
 }
 
-/**
- * Lấy access token từ localStorage.
- */
+/** Lấy access token. */
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(AUTH_TOKEN_KEY);
 }
 
-/**
- * Lấy refresh token từ localStorage.
- */
+/** Lấy refresh token. */
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
-/**
- * Lưu token vào localStorage.
- */
+/** Lưu token. */
 export function setTokens(tokens: AuthTokens): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(AUTH_TOKEN_KEY, tokens.accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
 }
 
-/**
- * Xoá token khỏi localStorage.
- */
+/** Xoá token. */
 export function clearTokens(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-/**
- * Decode JWT payload (không verify - chỉ đọc role/branch từ access token).
- */
+/** Đọc payload JWT (không verify). */
 export function getJwtPayload(): Record<string, unknown> | null {
   const token = getAccessToken();
   if (!token) return null;
@@ -188,9 +163,7 @@ export function mergeUserWithJwtPayload(user: User): User {
   };
 }
 
-/**
- * Lấy user đã cache trong localStorage (nếu có).
- */
+/** Lấy user đã cache. */
 export function getCachedUser(): User | null {
   if (typeof window === "undefined") return null;
   const userStr = localStorage.getItem("user");
@@ -202,17 +175,13 @@ export function getCachedUser(): User | null {
   }
 }
 
-/**
- * Cache user vào localStorage.
- */
+/** Cache user. */
 export function setCachedUser(user: User): void {
   if (typeof window === "undefined") return;
   localStorage.setItem("user", JSON.stringify(user));
 }
 
-/**
- * Xoá user đã cache khỏi localStorage.
- */
+/** Xoá user đã cache. */
 export function clearCachedUser(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem("user");

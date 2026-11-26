@@ -68,8 +68,7 @@ export function ProductsTable() {
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     onExpandedChange: setExpanded,
-    // Bộ lọc toàn cục mặc định chỉ thấy giá trị cột của dòng `Product`, không có sku/productCode -
-    // nên khớp các trường đó qua skuSearchIndex đã dựng sẵn.
+    // Khớp SKU và mã hàng qua skuSearchIndex.
     globalFilterFn: (row, _columnId, filterValue) => {
       const term = String(filterValue ?? '').trim().toLowerCase()
       if (!term) return true

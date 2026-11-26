@@ -3,9 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { DashboardProvider } from "./components/dashboard-provider";
 import { DashboardGrid } from "./components/dashboard-grid";
 
-// Trang Báo cáo tổng hợp: số liệu của kỳ dưới dạng bảng, mỗi tab một báo cáo (kết quả bán hàng, theo thời gian, hàng hóa,
-// khách hàng, đơn hàng, thu chi, tồn kho). Nhân viên, điểm bán, sổ doanh thu, đối soát tiền là các mục riêng trong menu Báo cáo;
-// biểu đồ ở trang Thống kê. Bọc Suspense vì kỳ đọc từ URL (`useSearchParams`).
+// Trang Báo cáo tổng hợp: mỗi tab một báo cáo dạng bảng. Cần Suspense.
 export default function ReportsPage() {
   return (
     <Suspense fallback={null}>

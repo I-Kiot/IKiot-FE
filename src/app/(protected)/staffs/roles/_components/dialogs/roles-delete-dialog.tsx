@@ -28,7 +28,7 @@ export function RolesDeleteDialog({
   const { handleDelete } = useRoles()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Backend từ chối xóa vai trò còn người giữ (409). Nút chặn sẵn để khỏi bấm vô ích, nhưng backend vẫn quyết định vì con số này có thể đã cũ.
+  // Chặn xoá vai trò còn người giữ.
   const inUse = (currentRow?.userCount ?? 0) > 0
 
   async function onConfirm() {

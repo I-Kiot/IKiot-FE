@@ -1,7 +1,4 @@
-// Màu của các biểu đồ trang Thống kê. Bảng phân loại 5 màu theo thứ tự cố định (không xoay vòng), mỗi chế độ
-// sáng/tối một bộ bước riêng, đã chạy validator CVD của skill dataviz (2026-11-23): qua mọi kiểm tra ở cả hai chế độ.
-// Ở nền sáng 3 màu (xanh ngọc, vàng, hồng) dưới 3:1 so với nền nên donut luôn kèm chú thích có tên + giá trị bên cạnh.
-// Lát thứ 6 trở đi gộp vào "Khác" (xám), không sinh thêm màu.
+// Bảng màu biểu đồ trang Thống kê.
 
 export const SERIES_THEMES = [
   { light: "#2a78d6", dark: "#3987e5" }, // xanh dương

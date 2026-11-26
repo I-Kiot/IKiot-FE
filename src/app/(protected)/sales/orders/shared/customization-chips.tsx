@@ -34,9 +34,7 @@ type Props = {
   className?: string;
 };
 
-/**
- * Thay đổi khách đặt riêng: mỗi thay đổi một chip tự xuống hàng ("Màu: ~~Óc chó~~ Trắng"), thay vì nối cả chuỗi dài bằng dấu chấm (sẽ kéo giãn ô sản phẩm).
- */
+/** Mỗi thay đổi khách đặt một chip. */
 export function CustomizationChips({ customization, max, compact, className }: Props) {
   const chips = chipsOf(customization);
   if (chips.length === 0) return null;

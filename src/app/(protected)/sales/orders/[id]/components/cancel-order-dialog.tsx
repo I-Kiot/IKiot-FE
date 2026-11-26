@@ -29,10 +29,7 @@ type Props = {
   onCancelled: (order: OrderDetail) => void;
 };
 
-/**
- * Huỷ đơn trước khi hàng rời kho (`POST /orders/:id/cancel`). Người huỷ tự nhập số tiền hoàn, để 0 thì shop giữ lại tiền đã thu
- * (khách chủ động huỷ). Tiền hoàn ghi một dòng chi vào sổ thu chi; phần giữ lại đã có dòng thu từ lúc nhận tiền.
- */
+/** Huỷ đơn trước khi hàng rời kho, người huỷ nhập số hoàn. */
 export function CancelOrderDialog({ order, open, onOpenChange, onCancelled }: Props) {
   const { pending: livePending } = useLiveHold(open, [order.id]);
   const held = order.paymentSummary.net;

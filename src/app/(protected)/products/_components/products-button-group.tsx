@@ -20,10 +20,7 @@ export function ProductsButtonGroup() {
 
   const [copying, setCopying] = useState(false)
 
-  /**
-   * Chép các hàng hoá đã tích theo đúng cột của file mẫu "Nhập file" - mỗi phiên bản (SKU) một dòng, không tiêu đề -
-   * để dán thẳng vào template. Danh sách không kèm phiên bản nên nạp chi tiết từng hàng hoá đã chọn.
-   */
+  /** Chép hàng hoá đã chọn theo cột file mẫu. */
   async function copySelected() {
     const selected = new Set(selectedIds)
     const chosen = products.filter((p) => selected.has(p.id))

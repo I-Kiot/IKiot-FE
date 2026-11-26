@@ -1,7 +1,6 @@
 "use client"
 
-// [Hook – kỳ báo cáo trên URL] Kỳ đang xem nằm ở `?from=YYYY-MM-DD&to=YYYY-MM-DD`, để F5 hay gửi link vẫn đúng kỳ.
-// Không có (hoặc sai) thì mặc định 30 ngày gần nhất. Trang dùng hook này phải bọc Suspense vì đọc `useSearchParams`.
+// Kỳ báo cáo trên URL (`?from=&to=`), mặc định 30 ngày gần nhất. Cần bọc Suspense.
 
 import { useCallback, useMemo } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"

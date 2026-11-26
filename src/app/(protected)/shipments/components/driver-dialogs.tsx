@@ -1,7 +1,6 @@
 "use client";
 
-// Chọn shipper: ô chọn dùng chung (`DriverSelect`, cũng dùng ở dialog "Giao cho vận chuyển") và dialog
-// "Đổi shipper" của một lần giao nội bộ chưa kết thúc (PATCH /shipments/:id/driver).
+// Ô chọn shipper và dialog đổi shipper.
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -24,7 +23,7 @@ import { LiveChangeBanner } from "@/components/live-change-banner";
 
 type DriversState = { status: "loading" } | { status: "error" } | { status: "ready"; drivers: DriverOption[] };
 
-/** Nhãn một lựa chọn: tên, kèm "chủ shop" / "người phụ trách đơn" để người chọn biết vì sao người đó có mặt. */
+/** Nhãn một lựa chọn shipper. */
 function optionLabel(driver: DriverOption): string {
   const tags = [
     driver.systemRole === "TENANT_OWNER" ? "chủ shop" : null,
@@ -47,10 +46,7 @@ interface DriverSelectProps {
   disabled?: boolean;
 }
 
-/**
- * Danh sách lấy từ BE (`GET /shipments/drivers`), đúng những người BE chấp nhận. Tải lại mỗi lần mở,
- * nên người vừa bị khoá tài khoản không còn trong danh sách.
- */
+/** Danh sách shipper từ BE, tải lại mỗi lần mở. */
 export function DriverSelect({ orderId, value, onChange, disabled }: DriverSelectProps) {
   const [state, setState] = useState<DriversState>({ status: "loading" });
 

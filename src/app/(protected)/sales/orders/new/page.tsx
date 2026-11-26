@@ -9,10 +9,7 @@ import { getSessionRole } from "@/lib/auth";
 import { useOrderSalesPlace } from "../shared/use-order-sales-place";
 import { CreateOrderForm } from "./components/create-order-form";
 
-/**
- * Tạo đơn tay (đặt trước, giao tận nơi hoặc hẹn lấy). Từ 2026-10-16 có màn riêng trong menu Đơn hàng; trước đó là tab của /check-out.
- * Link cũ `/check-out?mode=order` được chuyển về đây.
- */
+/** Trang tạo đơn tay. */
 function CreateOrderContent() {
   const sales = useOrderSalesPlace();
   const canCreate = allows(getSessionRole(), "orders", "create");

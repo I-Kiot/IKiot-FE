@@ -13,7 +13,7 @@ import type { StockMovementProductItemOption } from "@/types/stock-movement";
 
 export type MovementProductSearchScope = "catalog" | "list";
 
-/** Giá trị mặc định ổn định: `[]` mới mỗi lần render sẽ kích hoạt lại effect tìm kiếm, làm render thêm vòng nữa. */
+/** Mảng mặc định ổn định. */
 const NO_POOL: StockMovementProductItemOption[] = [];
 
 type MovementProductSearchProps = {
@@ -27,14 +27,11 @@ type MovementProductSearchProps = {
   className?: string;
   /** stock = hiện tồn; price = hiện giá bán. */
   metaMode?: "price" | "stock" | "skuOnly";
-  /** Chỉ tìm hàng đặt xưởng được (isManufacturable) - dùng cho form yêu cầu sản xuất. Chỉ áp cho searchScope=catalog. */
+  /** Chỉ tìm hàng đặt xưởng được. */
   onlyManufacturable?: boolean;
 };
 
-/**
- * Ô tìm hàng dùng chung stock movement.
- * BR/WH: searchScope=list + pool = SP tại nơi gửi / NCC.
- */
+/** Ô tìm hàng dùng chung cho phiếu kho. */
 export function MovementProductSearch({
   usedIds,
   onPick,

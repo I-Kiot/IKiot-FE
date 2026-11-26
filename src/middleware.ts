@@ -12,13 +12,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/sign-up', request.url))
   }
 
-  // Yêu cầu sản xuất đã gộp vào màn Nhập hàng. Phải chuyển ở đây: guard của layout chỉ cho vào URL có trên sidebar nên page không được render.
+  // Chuyển trang YCSX cũ sang màn Nhập hàng.
   if (request.nextUrl.pathname === '/exchange/production-requests') {
     return NextResponse.redirect(new URL('/exchange/imports?source=WORKSHOP', request.url))
   }
 
-  // Trang Danh sách cần sản xuất đã bỏ: nay là popup trong màn Nhập hàng (nguồn Xưởng), mở bằng `?productionList=1`.
-  // Thông báo thiếu hàng của BE vẫn dẫn tới đường dẫn cũ kèm `locationId` / `productItemId`: giữ nguyên các tham số đó.
+  // Chuyển trang Danh sách cần sản xuất cũ sang popup, giữ tham số.
   if (request.nextUrl.pathname === '/exchange/production-list') {
     const target = new URL('/exchange/imports', request.url)
     request.nextUrl.searchParams.forEach((value, key) => target.searchParams.set(key, value))
@@ -27,8 +26,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(target)
   }
 
-  // Trang Phiếu xưởng giao đã bỏ: nhận / từ chối phiếu nằm trong chi tiết yêu cầu sản xuất ở màn Nhập hàng (nguồn Xưởng).
-  // Thông báo cũ của BE vẫn dẫn tới đường dẫn này.
+  // Chuyển trang Phiếu xưởng giao cũ sang màn Nhập hàng.
   if (request.nextUrl.pathname === '/exchange/production-deliveries') {
     return NextResponse.redirect(new URL('/exchange/imports?source=WORKSHOP', request.url))
   }

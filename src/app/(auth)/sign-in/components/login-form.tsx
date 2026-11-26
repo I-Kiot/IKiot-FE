@@ -35,8 +35,7 @@ export function LoginForm2({
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const router = useRouter();
 
-  // Sau khi đăng nhập, đưa mỗi tài khoản về trang chủ theo quyền role được mở,
-  // (xem `getHomeRoute`), không theo loại tài khoản.
+  // Đưa về trang chủ theo quyền (`getHomeRoute`).
   const routeByRole = (role?: string) => {
     router.push(getHomeRoute(role));
     router.refresh();
@@ -54,7 +53,7 @@ export function LoginForm2({
     },
   });
 
-  // Lưu token, nạp hồ sơ rồi chuyển về trang chủ theo quyền. Dùng chung cho đăng nhập thường và sau bước OTP.
+  // Lưu token, nạp hồ sơ rồi chuyển về trang chủ.
   const startSession = async ({ accessToken, refreshToken }: SessionResult) => {
     if (!accessToken) {
       throw new Error("Không nhận được mã xác thực từ hệ thống.");

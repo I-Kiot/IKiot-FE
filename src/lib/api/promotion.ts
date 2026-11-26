@@ -14,7 +14,7 @@ import type {
   PromotionCandidatesResponse,
 } from '@/types/promotion'
 
-// Bản Express cũ trả `_id`, bản NestJS trả `id` nên ánh xạ này giờ đồng nhất; giữ làm chỗ duy nhất phải sửa nếu hình dạng phản hồi đổi.
+// Ánh xạ khuyến mãi từ response.
 type PromotionDoc = Omit<Promotion, 'id'> & { id: string }
 type PromotionLogDoc = Omit<PromotionLog, 'id'> & { id: string }
 

@@ -195,11 +195,10 @@ export function PromotionsMutateDialog({
   const [branchOptions, setBranchOptions] = useState<Option[]>([])
   const [categoryOptions, setCategoryOptions] = useState<Option[]>([])
   const [productItemOptions, setProductItemOptions] = useState<Option[]>([])
-  // Tách khỏi `branchIds`: tắt công tắc khi chưa chọn chi nhánh nào vẫn phải hiện multi-select, không ngầm hiểu là toàn hệ thống.
+  // Công tắc áp dụng toàn hệ thống.
   const [applyToAllBranches, setApplyToAllBranches] = useState(true)
 
-  // Người đăng khuyến mãi tại một chi nhánh thì phạm vi bị giới hạn vào chi nhánh đó. BE không ghi đè `branchIds` khi tạo/sửa,
-  // nên đây là thứ duy nhất thu hẹp phạm vi (đang dựa vào role không còn ai giữ).
+  // Giới hạn phạm vi vào chi nhánh của người đăng.
   const ownBranchId = getSessionBranchId()
   const isBranchScoped = Boolean(ownBranchId)
   const ownBranchLabel = branchOptions.find((b) => b.value === ownBranchId)?.label
@@ -258,7 +257,7 @@ export function PromotionsMutateDialog({
   const branchIds = form.watch('branchIds')
   const branchIdsKey = branchIds.join(',')
 
-  // Luôn liệt kê toàn bộ hàng hoá của cửa hàng. Chọn chi nhánh chỉ gắn thêm tồn của chi nhánh đó vào nhãn, KHÔNG lọc: hàng chưa nhập về vẫn chọn được (khuyến mãi cho lô tuần sau). Hàng còn tồn xếp lên trước.
+  // Liệt kê toàn bộ hàng hoá, hàng còn tồn lên trước.
   useEffect(() => {
     if (!open) return
     if (!applyToAllBranches && branchIds.length === 0) {

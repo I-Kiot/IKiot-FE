@@ -6,13 +6,7 @@ import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-/**
- * A dialog whose className leaves the padding and layout alone is "scroll layout": the
- * content box itself scrolls (capped at the viewport) and DialogHeader / DialogFooter stick
- * to its top and bottom, so the title, the close button and the action buttons stay on
- * screen however long the form is. Dialogs that set their own padding, flex layout or
- * overflow already manage scrolling themselves and are left exactly as they were.
- */
+/** Dialog không tự đặt padding/layout thì nội dung tự cuộn, header và footer dính trên/dưới. */
 const CUSTOM_LAYOUT = /(^|\s)(p|px|py|pt|pb|pl|pr)-|(^|\s)(flex|overflow-hidden)(\s|$)/
 
 const DialogLayoutContext = React.createContext<{
@@ -100,7 +94,7 @@ function DialogContent({
           {children}
         </DialogLayoutContext.Provider>
         {showCloseButton && (
-          // Hidden when a sticky DialogHeader carries its own copy, so it doesn't scroll away.
+          // Ẩn khi header dính đã có nút đóng riêng.
           <DialogCloseButton className="group-has-data-[slot=dialog-header-close]/dialog:hidden" />
         )}
       </DialogPrimitive.Content>
@@ -108,10 +102,7 @@ function DialogContent({
   )
 }
 
-// Sticky bleed: the negative margins equal the content box's p-6 and the padding puts the
-// same space back. The sticky offset is -6 too, because a sticky box sticks at the scroll
-// container's padding edge, so top-0 would leave a 24px strip of content showing above it.
-// Layout is unchanged until it sticks; the fade covers the gap below the header.
+// Header dính: margin âm và padding bằng p-6 của khung.
 const STICKY_HEADER =
   "sticky -top-6 z-10 -mx-6 -mt-6 bg-background px-6 pt-6 after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-3 after:bg-gradient-to-b after:from-background after:to-transparent"
 const STICKY_FOOTER =

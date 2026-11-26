@@ -1,8 +1,6 @@
 "use client";
 
-// Màn "Đơn giao của tôi" (C-7): các lần giao chưa kết thúc mà mình là shipper, kèm số tiền còn phải thu.
-// Tab "Đang giao" lọc được như tab "Lịch sử giao" (`CurrentDeliveries`).
-// Bấm một đơn để mở chi tiết: đang đi giao, đã giao (ảnh + thu tiền), giao không thành. Dùng được trên điện thoại.
+// Màn "Đơn giao của tôi".
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -33,7 +31,7 @@ function ShipperScreen() {
   const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds });
 
   useEffect(() => {
-    // Response cũ về sau (bấm "Tải lại" liên tiếp) thì bỏ. Mỗi nhánh chỉ một setter (lint cấm setState trong useEffect).
+    // Bỏ response cũ.
     let cancelled = false;
     shipmentApi.getMine().then(
       (shipments) => {

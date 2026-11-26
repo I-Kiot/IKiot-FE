@@ -5,11 +5,11 @@ export type ProductsDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'cro
 const productDetailEntrySchema = z.object({
   name: z.string(),
   value: z.string(),
-  // Đơn vị của thuộc tính (cm, kg...) - chỉ dùng ở form tạo hàng hoá, nơi dòng này định nghĩa luôn thuộc tính.
+  // Đơn vị của thuộc tính.
   unit: z.string().optional(),
 })
 
-// Thuộc tính của sản phẩm khi sửa hàng hoá: tên + đơn vị; `id` giữ dòng cũ (đổi tên không mất giá trị trên SKU).
+// Thuộc tính khi sửa hàng hoá.
 const productAttributeEntrySchema = z.object({
   id: z.string().optional(),
   name: z.string(),
@@ -46,8 +46,7 @@ export const productFormSchema = z.object({
   itemImages: z
     .array(z.object({ url: z.string(), isThumbnail: z.boolean() }))
     .optional(),
-  // Tên phiên bản: mặc định dùng tên hàng hóa (name) ở trên; nếu false thì
-  // dùng itemProductName riêng (bắt buộc, validate thủ công khi tạo).
+  // Dùng tên hàng hoá làm tên phiên bản.
   useParentNameForItem: z.boolean(),
   itemProductName: z.string().optional(),
   productCode: z.string().optional(),
@@ -60,7 +59,7 @@ export const productFormSchema = z.object({
   description: z.string().optional(),
   productDetails: z.array(productDetailEntrySchema).optional(),
   attributes: z.array(productAttributeEntrySchema).optional(),
-  // Loại sản phẩm, chỉ chọn lúc tạo; mọi phiên bản theo loại này. COMBO thì comboComponents bắt buộc (kiểm thủ công khi tạo).
+  // Loại sản phẩm, chỉ chọn lúc tạo.
   productType: z.enum(['PRODUCT', 'COMBO', 'SERVICE']).optional(),
   comboComponents: z.array(comboComponentRowSchema).optional(),
 })

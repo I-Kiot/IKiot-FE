@@ -1,4 +1,4 @@
-// Hoá đơn (BE `invoices/`): mỗi đơn có một hoá đơn SALE - PENDING tới khi đơn COMPLETED, rồi ISSUED - và một ADJUSTMENT (tổng âm) cho hàng trả về sau đó.
+// Hoá đơn: SALE theo đơn, ADJUSTMENT âm khi trả hàng.
 import type { FulfillmentType } from "@/types/order-flow";
 
 export const INVOICE_STATUSES = ["PENDING", "ISSUED", "CANCELLED"] as const;

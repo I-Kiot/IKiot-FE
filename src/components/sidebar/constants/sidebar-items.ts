@@ -27,8 +27,7 @@ export const sidebarItems = {
     url: "/dashboard",
     icon: LayoutDashboard,
   },
-  // Phân tích sâu tách khỏi dashboard tổng quan (2026-10-20). Từ 2026-11-23 là nhóm: Tổng hợp giữ các tab cũ,
-  // nhân viên / sổ doanh thu / sổ thu chi (trước là mục riêng ngoài nhóm) / đối soát tiền là mục riêng; doanh số từng điểm bán xem bằng dropdown nơi + tab "Theo điểm bán" trong Tổng hợp (trước là nút trên đầu trang Báo cáo). Mọi mục cần `reports:read` (nav-leaf-permissions.ts).
+  // Nhóm Báo cáo, mọi mục cần `reports:read`.
   baoCao: {
     title: "Báo cáo",
     url: "#",
@@ -37,7 +36,7 @@ export const sidebarItems = {
       { title: "Tổng hợp", url: "/reports" },
       { title: "Nhân viên", url: "/reports/staff" },
       { title: "Sổ doanh thu", url: "/reports/sales-journal" },
-      // URL giữ nguyên `/cashflow` (công nợ NCC, đối soát tiền đang link tới); quyền `reports:read` như trước.
+      // URL `/cashflow`, cần `reports:read`.
       { title: "Sổ thu chi", url: "/cashflow" },
       { title: "Đối soát tiền", url: "/reports/unreconciled" },
     ],
@@ -58,9 +57,7 @@ export const sidebarItems = {
       { title: "Ngày lễ", url: "/staffs/holidays" },
     ],
   },
-  /**
-   * Bản cho chủ shop: giống `nhanVien` và thêm "Phân quyền" (gác bằng `canManageRoles`). `nhanVien` dùng chung cho cả nhân viên, nên hiện link với họ chỉ để họ gặp màn từ chối.
-   */
+  /** Menu nhân viên cho chủ shop, thêm "Phân quyền". */
   nhanVienChuCuaHang: {
     title: "Nhân viên",
     url: "#",
@@ -97,7 +94,7 @@ export const sidebarItems = {
       { title: "Điều chỉnh tồn kho", url: "/exchange/adjustments" },
     ],
   },
-  // `giaoDichBranch` (biến thể BRANCH_MANAGER, đã bỏ 2026-09-09) không còn. Thu gọn menu theo quyền do bộ lọc quyền xử lý, không do cấu hình này.
+  // Menu thu gọn theo quyền.
   donHang: {
     title: "Đơn hàng",
     url: "/#",
@@ -119,7 +116,7 @@ export const sidebarItems = {
       { title: "Giao hàng", url: "/shipments" },
     ],
   },
-  /** Đơn giao của chính mình (C-7). Chủ shop và người phụ trách đơn cũng có thể là shipper (chốt 2026-10-06). */
+  /** Đơn giao của tôi. */
   donGiaoCuaToi: {
     title: "Đơn giao của tôi",
     url: "/shipper",

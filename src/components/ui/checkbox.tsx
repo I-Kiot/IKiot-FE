@@ -23,7 +23,7 @@ function Checkbox({
         data-slot="checkbox-indicator"
         className="flex items-center justify-center text-current transition-none"
       >
-        {/* "Chọn một phần" (indeterminate) là gạch ngang, không phải dấu tick - nhìn giống "đã chọn hết" là bấm nhầm. */}
+        {/* Trạng thái chọn một phần là gạch ngang. */}
         <CheckIcon className="size-3.5 group-data-[state=indeterminate]:hidden" />
         <MinusIcon className="hidden size-3.5 group-data-[state=indeterminate]:block" />
       </CheckboxPrimitive.Indicator>

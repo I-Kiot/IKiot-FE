@@ -1,6 +1,6 @@
 "use client";
 
-// Đầu trang dashboard: lời chào theo buổi, ngày hôm nay, bộ chọn kỳ (có lịch tuỳ chỉnh) và nút làm mới.
+// Đầu trang dashboard: lời chào, ngày, bộ chọn kỳ, nút làm mới.
 
 import { useState } from "react";
 import { CalendarDays, RefreshCw } from "lucide-react";

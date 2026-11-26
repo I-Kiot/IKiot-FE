@@ -1,8 +1,6 @@
 "use client";
 
-// Màn của nhân viên xưởng (2026-10-09): các YCSX đã gửi cho xưởng mình ở mọi kho / chi nhánh.
-// Dạng bảng như các trang khác (2026-11-16, trước là thẻ); trên điện thoại bảng cuộn ngang.
-// Bấm một YCSX để xác nhận đang làm, tạo phiếu giao (giao thiếu được), rút phiếu đang chờ nhận hoặc huỷ yêu cầu.
+// Màn của nhân viên xưởng: YCSX gửi cho xưởng mình ở mọi kho.
 
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";

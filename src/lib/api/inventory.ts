@@ -1,6 +1,6 @@
 import client from "@/lib/api/client";
 
-/** Body chung của ba route hàng hỏng (`DamagedStockDto`). `orderItemId` chỉ dùng khi đánh dấu hỏng một chiếc may riêng. */
+/** Body chung của ba route hàng hỏng. */
 export interface DamagedStockPayload {
   quantity: number;
   orderItemId?: string;
@@ -21,7 +21,7 @@ export const inventoryApi = {
     await client.delete(`/inventory/${inventoryId}`);
   },
 
-  /** Đánh dấu hỏng / sửa xong / huỷ hàng hỏng trên một dòng tồn (2026-11-26). Hàng hỏng nằm ngoài tồn bán được. */
+  /** Đánh dấu hỏng / sửa xong / huỷ hàng hỏng trên một dòng tồn. */
   changeDamaged: async (
     inventoryId: string,
     action: DamagedAction,

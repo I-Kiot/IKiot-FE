@@ -1,4 +1,4 @@
-/** Hôm nay dạng `YYYY-MM-DD` theo lịch trình duyệt, đúng giá trị mà `<input type="date">` giữ và so sánh. */
+/** Hôm nay dạng `YYYY-MM-DD` theo lịch trình duyệt. */
 export function todayIso(): string {
   return addDaysIso(0);
 }
@@ -11,10 +11,7 @@ export function addDaysIso(days: number): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-/**
- * True khi giá trị `YYYY-MM-DD` trước hôm nay. `min` của input date chỉ làm mờ picker, ngày gõ tay
- * hoặc dán vẫn lọt, nên mọi field ngày hứa hẹn đều phải kiểm tra thêm. ISO so sánh đúng theo chuỗi.
- */
+/** Ngày `YYYY-MM-DD` có trước hôm nay không. */
 export function isPastDate(value: string): boolean {
   return value.length >= 10 && value.slice(0, 10) < todayIso();
 }

@@ -25,10 +25,7 @@ interface BillingHistoryCardProps {
   isLoading: boolean
 }
 
-/**
- * Lấy từ `useBilling` chứ không tự fetch: hoá đơn vừa thanh toán chuyển PENDING -> PAID cùng lúc gói được
- * kích hoạt, nên cả hai phải reload được từ cùng một lần gọi.
- */
+/** Hoá đơn lấy từ `useBilling`. */
 export function BillingHistoryCard({
   invoices,
   isLoading,

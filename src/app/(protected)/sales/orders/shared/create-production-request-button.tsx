@@ -17,18 +17,12 @@ import { coveredMessage, productionCoverageOf, productionPrefillOf } from "./pro
 
 type Props = {
   orderId: string;
-  /**
-   * Chi tiết đơn đang có sẵn (màn chi tiết). Bỏ trống thì tải `GET /orders/:id` lúc bấm (danh sách đơn):
-   * dòng của danh sách không có customization / isManufacturable, và số thiếu lúc tải danh sách có thể đã cũ.
-   */
+  /** Chi tiết đơn có sẵn, bỏ trống thì tải lúc bấm. */
   order?: OrderDetail;
   locationId?: string;
 };
 
-/**
- * Nút "Tạo YCSX" trên một đơn: mở popup "Tạo mới" của màn Nhập hàng ở nguồn Xưởng,
- * điền sẵn các dòng đang thiếu hàng của đơn (người dùng vẫn sửa được). Vẫn đổi qua Nhà cung cấp được.
- */
+/** Nút "Tạo YCSX" trên đơn, điền sẵn các dòng thiếu. */
 export function CreateProductionRequestButton({ orderId, order }: Props) {
   // Dòng và nơi nhận điền sẵn cho popup; null = popup đóng.
   const [prefill, setPrefill] = React.useState<{ lines: DraftLine[]; locationId: string | undefined } | null>(null);
@@ -47,7 +41,7 @@ export function CreateProductionRequestButton({ orderId, order }: Props) {
   const creatable = creatableInboundSources(getSessionRole());
   const canCreateRequest = creatable.includes("WORKSHOP");
 
-  // Mọi dòng thiếu đã có YCSX che đủ (gắn dòng hoặc đặt chung cùng địa điểm + SKU): nút khoá, đặt thêm sẽ bị BE từ chối (PRODUCTION_EXCEEDS_ORDER_SHORTAGE).
+  // Mọi dòng thiếu đã có YCSX che đủ thì khoá nút.
   const coverage = order ? productionCoverageOf(order) : null;
 
   function openWith(detail: OrderDetail) {

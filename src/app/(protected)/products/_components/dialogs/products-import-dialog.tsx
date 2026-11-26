@@ -1,4 +1,4 @@
-// [Dialog – Import Products from Excel]
+// [Dialog – Nhập hàng hoá từ Excel]
 'use client'
 
 import { useRef, useState } from 'react'
@@ -19,8 +19,7 @@ import { getApiErrorBody, importErrorsOf, messageForCode } from '@/lib/api/error
 import type { ImportRowError } from '@/lib/api/error-codes'
 import { useProducts } from '../../_context/products-provider'
 
-// Khớp MAX_IMPORT_BYTES / MAX_IMPORT_ROWS của BE (product-import.columns.ts). BE vẫn kiểm lại -
-// kiểm ở đây chỉ để không phải đợi upload xong mới biết chọn nhầm file.
+// Giới hạn file khớp BE.
 const MAX_BYTES = 5 * 1024 * 1024
 const MAX_ROWS = 1000
 const TEMPLATE_FILE_NAME = 'mau-nhap-hang-hoa.xlsx'

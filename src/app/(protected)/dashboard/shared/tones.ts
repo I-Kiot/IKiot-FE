@@ -1,5 +1,4 @@
-// Bảng màu nhấn của dashboard: một chỗ duy nhất giữ cặp màu sáng/tối cho ô icon và chữ trạng thái,
-// để các widget không tự rải class màu và lệch nhau ở chế độ tối.
+// Bảng màu nhấn của dashboard (sáng/tối).
 
 export type Tone = "orange" | "blue" | "violet" | "emerald" | "amber" | "red" | "sky" | "slate";
 

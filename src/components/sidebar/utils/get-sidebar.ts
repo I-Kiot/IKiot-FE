@@ -11,10 +11,7 @@ export function getSidebar(role?: string): NavGroup[] {
   return sidebarRoleConfig[role as UserRole] ?? [];
 }
 
-/**
- * `sidebarRoleConfig` quy định loại tài khoản tới được đâu; bộ lọc quyền quyết định role này được thấy gì. Cha có mọi con bị lọc thì bị ẩn; leaf và mục con có URL trong `nav-leaf-permissions.ts` đi qua `filterLeafNavItems`.
- * Sidebar và `RoutePermissionGuard` cùng dùng hàm này, nên màn ẩn khỏi menu cũng bị chặn khi gõ URL tay.
- */
+/** Lọc sidebar theo loại tài khoản và quyền; dùng chung cho sidebar và RoutePermissionGuard. */
 export function getFilteredSidebar(role?: string | null): NavGroup[] {
   return getSidebar(role ?? undefined)
     .map((group) => ({

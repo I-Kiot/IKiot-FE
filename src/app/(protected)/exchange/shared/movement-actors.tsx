@@ -12,7 +12,7 @@ function stamp(at?: string): string {
     : format(date, "dd/MM/yyyy HH:mm", { locale: vi });
 }
 
-/** Ai đã giao / nhận / duyệt / huỷ phiếu và lúc nào. Chỉ hiện bước đã xảy ra; phiếu cũ không có thì không hiện gì. */
+/** Ai đã giao / nhận / duyệt / huỷ phiếu và lúc nào. */
 export function MovementActors({ detail }: { detail: StockMovement }) {
   const steps = [
     { label: "Giao hàng", name: detail.shippedByName, at: detail.shippedAt },

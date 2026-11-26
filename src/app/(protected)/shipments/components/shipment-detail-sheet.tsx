@@ -1,7 +1,6 @@
 "use client";
 
-// Chi tiết một lần giao: người nhận, trạng thái, và các nút theo trạng thái (chuyển Đang vận chuyển, đổi
-// shipper, đang đi giao, giao không thành) cùng dialog ghi chú của các nút đó.
+// Chi tiết một lần giao và các nút theo trạng thái.
 
 import { useEffect, useState } from "react";
 import { useLiveHold, useLiveTick } from "@/hooks/use-live-refresh";
@@ -63,14 +62,14 @@ interface ShipmentNoteDialogProps {
   placeholder?: string;
   /** Nút xác nhận màu đỏ cho thao tác không quay lại được. */
   destructive?: boolean;
-  /** Id chứng từ dialog đang sửa (lần giao, đơn): người khác đổi chúng lúc đang mở thì hiện báo thay vì lặng lẽ ghi đè. */
+  /** Id chứng từ dialog đang sửa. */
   holdIds?: string[];
   onClose: () => void;
   /** Gọi BE; dialog khoá nút cho tới khi promise xong. Nơi gọi tự báo lỗi / tải lại. */
   onConfirm: (note: string | undefined) => Promise<void>;
 }
 
-/** Xác nhận một thao tác kèm ghi chú. Nơi gọi đặt `key` theo thao tác nên mỗi lần mở là ghi chú trống. Màn shipper (C-7) dùng lại. */
+/** Dialog xác nhận kèm ghi chú. */
 export function ShipmentNoteDialog({
   open,
   title,
@@ -162,7 +161,7 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
     };
   }, [shipmentId, reloadKey, liveTick]);
 
-  /** Chạy một thao tác: thành công → báo, đóng dialog, tải lại; dữ liệu cũ → cũng đóng và tải lại; lỗi khác → giữ dialog. */
+  /** Chạy thao tác; thành công thì đóng và tải lại. */
   const run = (call: () => Promise<unknown>, success: string, fallback: string) =>
     call().then(
       () => {
@@ -244,7 +243,7 @@ export function ShipmentDetailSheet({ shipmentId, reloadKey, onClose, onChanged 
                     )}
                   </>
                 )}
-                {/* Shipper đã xác nhận lấy hàng thì hàng đã ở trong tay họ: BE từ chối đổi (`DRIVER_CHANGEABLE_STATUSES`), nên ẩn nút. */}
+                {/* Ẩn nút đổi shipper khi đã lấy hàng. */}
                 {shipment.carrierType === "INTERNAL" && shipment.status === "CREATED" && (
                   <PermissionButton
                     allowed={allowed.canChangeDriver}
