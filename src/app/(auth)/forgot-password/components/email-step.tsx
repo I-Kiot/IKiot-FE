@@ -40,8 +40,7 @@ export function EmailStep({ defaultEmail, notice, onSent, className }: EmailStep
     try {
       onSent(email, await sendForgotPasswordOtp(email));
     } catch (error) {
-      // Backend không cho biết email có tài khoản hay không: email lạ vẫn sang bước OTP.
-      // Lỗi tới đây chỉ là lỗi hệ thống (chưa cấu hình email, gửi mail lỗi, mạng...).
+      // BE không lộ email có tài khoản nên email lạ vẫn sang bước OTP; lỗi tới đây chỉ là lỗi hệ thống (chưa cấu hình mail, mạng...).
       const body = getApiErrorBody(error);
       toast.error(body?.message || "Không gửi được mã OTP. Vui lòng thử lại.");
     }

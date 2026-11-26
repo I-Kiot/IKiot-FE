@@ -54,8 +54,7 @@ export function LoginForm2({
     },
   });
 
-  // Điền sẵn tài khoản khi quay về từ "Quên mật khẩu" (`/sign-in?identifier=`).
-  // Đọc `window.location` thay vì `useSearchParams` để trang không cần bọc Suspense.
+  // Điền sẵn email khi quay về từ Quên mật khẩu; đọc `window.location` thay vì `useSearchParams` để trang không phải bọc Suspense.
   useEffect(() => {
     const identifier = new URLSearchParams(window.location.search).get("identifier");
     if (identifier) setValue("identifier", identifier);

@@ -14,10 +14,7 @@ import { getApiErrorBody } from "@/lib/api/error-codes";
 import { EmailStep } from "./email-step";
 import { NewPasswordStep } from "./new-password-step";
 
-/**
- * Lỗi đặt lại mật khẩu mà không thể thử lại bằng chính reset token đó: token hết hạn (15 phút),
- * đã dùng, sai loại, hoặc tài khoản bị khoá giữa chừng. Phải xin mã OTP mới từ bước 1.
- */
+/** Lỗi khiến reset token không dùng lại được (hết hạn, đã dùng, sai loại, tài khoản bị khoá), nên phải xin OTP mới từ bước 1. */
 const RESTART_CODES = new Set([
   "RESET_TOKEN_INVALID",
   "RESET_TOKEN_USED",
