@@ -1,5 +1,4 @@
-// Bản sao của src/constants/planFeatures.js bên backend (PLAN_FEATURES).
-// Đây là feature-flag key dùng cho checkPlanFeature, khác danh sách bullet marketing (displayFeatures).
+// Các cờ tính năng của gói, khớp PLAN_FEATURES của backend.
 export const PLAN_FEATURE_OPTIONS: { key: string; label: string }[] = [
   { key: "stock_movement", label: "Quản lý nhập/xuất hàng" },
   { key: "sales", label: "Bán hàng" },

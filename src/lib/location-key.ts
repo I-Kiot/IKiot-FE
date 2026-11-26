@@ -1,10 +1,6 @@
 import type { LocationType } from "@/types/location"
 
-/**
- * Parse key switcher `"all" | "branch-{id}" | "warehouse-{id}"`.
- *
- * Key giữ tiền tố chữ thường vì được lưu trong localStorage (`activeLocationKey`); đổi sẽ làm mất mọi lựa chọn đã lưu. `locationType` là `BRANCH` / `WAREHOUSE` của API, dùng thẳng được trong request.
- */
+/** Parse key địa điểm `"all" | "branch-{id}" | "warehouse-{id}"`. */
 export type ParsedLocationKey = {
   locationId: string
   locationType: LocationType
@@ -28,10 +24,7 @@ export function parseLocationKey(
   return null
 }
 
-/**
- * Cặp filter `{ branchId?, warehouseId? }` cho endpoint list. Đừng tự `split("-")`: UUID chứa dấu gạch,
- * cắt sai id làm màn hình hiện danh sách rỗng mà không báo lỗi.
- */
+/** Đổi key địa điểm thành filter `{ branchId?, warehouseId? }`. */
 export function locationFilter(key: string | null | undefined): {
   branchId?: string
   warehouseId?: string

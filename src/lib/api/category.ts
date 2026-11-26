@@ -8,7 +8,7 @@ import type {
   CategoryUpdatePayload,
 } from '@/types/category'
 
-// Bản Express cũ trả `_id`, bản NestJS trả `id` nên ánh xạ này giờ đồng nhất; giữ làm chỗ duy nhất phải sửa nếu hình dạng phản hồi đổi.
+// Ánh xạ danh mục từ response.
 type CategoryDoc = Omit<Category, 'id'> & { id: string }
 
 function mapCategory(doc: CategoryDoc): Category {

@@ -1,8 +1,6 @@
 "use client";
 
-// Dashboard tổng quan (thiết kế lại 2026-10-20): KPI, biểu đồ doanh thu, tình trạng đơn, cảnh báo
-// tồn kho, sản phẩm bán chạy / chậm, đơn gần đây, thao tác nhanh, thông báo, hiệu suất cửa hàng.
-// Các phân tích sâu hơn nằm ở /reports.
+// Dashboard tổng quan.
 
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
@@ -17,7 +15,7 @@ import { QuickActionsCard } from "./components/quick-actions-card";
 import { NotificationsCard } from "./components/notifications-card";
 import { StorePerformanceCard } from "./components/store-performance-card";
 
-/** Từ xl trở lên cả dashboard vừa một màn hình: các thẻ chia nhau chiều cao, tự cuộn bên trong. Màn hẹp hơn thì xếp chồng và cuộn trang. */
+/** Từ xl trở lên vừa một màn hình. */
 function SalesLayout() {
   const canSeeOrders = allows(getSessionRole(), "orders", "read");
 

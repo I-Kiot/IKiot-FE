@@ -4,12 +4,7 @@ import { getAccessToken } from '@/lib/auth';
 
 let socket: Socket | null = null;
 
-/**
- * Kết nối Socket.IO duy nhất. Handshake **phải** mang access token: backend verify JWT và disconnect nếu thiếu,
- * khi đó realtime (thông báo, xác nhận thanh toán) ngừng âm thầm.
- *
- * `auth` là hàm để socket.io gọi lại mỗi lần reconnect, lấy đúng token mới sau khi token đã xoay vòng.
- */
+/** Kết nối Socket.IO duy nhất, gửi access token mỗi lần kết nối. */
 export function getSocket(): Socket {
   if (!socket) {
     socket = io(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3003', {
@@ -21,15 +16,12 @@ export function getSocket(): Socket {
   return socket;
 }
 
-/** Id của socket đang kết nối, gửi kèm mỗi request (`X-Socket-Id`) để BE không phát lại sự kiện thay đổi cho chính tab này. Không tạo socket mới. */
+/** Id socket hiện tại, gửi kèm mỗi request. */
 export function currentSocketId(): string | undefined {
   return socket?.connected ? socket.id : undefined;
 }
 
-/**
- * Ngắt kết nối để `getSocket()` kế tiếp xác thực lại. Room được join phía server theo token đã verify,
- * nên socket sống lâu hơn session mở nó; không ngắt thì đăng nhập user khác vẫn nhận thông báo của user trước.
- */
+/** Ngắt socket để lần sau xác thực lại. */
 export function resetSocket(): void {
   socket?.disconnect();
   socket = null;

@@ -17,10 +17,7 @@ function pinnedPlaceId(): string {
   return id && !id.startsWith("all-") ? id : "";
 }
 
-/**
- * "Nơi bán" của màn tạo đơn: chi nhánh và kho đều tạo được đơn, trừ kho hàng hỏng. Bán tại quầy vẫn dùng `useSalesBranch`, chỉ có chi nhánh.
- * Đang ghim vào nơi không bán được (kho hàng hỏng) thì để người dùng tự chọn, không khoá ô vào một giá trị không gửi được.
- */
+/** Nơi bán của màn tạo đơn. */
 export function useOrderSalesPlace(): SalesBranch {
   const locationKey = useAuthStore((state) => state.locationKey);
   const [places, setPlaces] = useState<SalesPlace[]>([]);

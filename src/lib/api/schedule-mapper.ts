@@ -26,11 +26,7 @@ function resolveStaffName(user: ApiScheduleUser): string {
   return name || user.phoneNumber || user.id;
 }
 
-/**
- * Mọi người được xếp vào một ca. Key phản hồi là **`assignedUsers`** (ca có bảng nối nhiều người).
- * Code cũ đọc `raw.userId`, API chưa từng gửi nên mọi ca hiện danh sách và tên trống.
- * Nhánh chuỗi / object đơn được giữ vì cùng mapper chạy với `GET /working-schedules/:id/users/:userId` (trả một `user`).
- */
+/** Danh sách người trong một ca. */
 function normalizeApiUsers(
   assigned: ApiWorkingSchedule["assignedUsers"],
 ): ApiScheduleUser[] {
@@ -193,10 +189,7 @@ export type ScheduleWorkplaceScope =
   | { type: "branch"; branchId: string }
   | { type: "warehouse"; warehouseId: string };
 
-/**
- * Nơi làm việc để thu hẹp danh sách ca, hoặc `null` nghĩa là hiện tất cả.
- * Quyết định theo posting của tài khoản; trước đây còn đòi role BRANCH_MANAGER / WAREHOUSE_MANAGER mà không tài khoản nào có nên luôn trả `null`.
- */
+/** Nơi làm việc để lọc danh sách ca, null là tất cả. */
 export function resolveScheduleWorkplaceScope(
   _role?: string | null,
   branchId?: string | null,

@@ -76,7 +76,7 @@ export function CustomersTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
-    // SĐT hiện dưới tên chứ không có cột riêng, nên bộ lọc toàn cục (chỉ đọc giá trị cột) không bao giờ khớp được.
+    // Bộ lọc toàn cục không khớp SĐT.
     globalFilterFn: (row, _columnId, filterValue: string) => {
       const needle = String(filterValue ?? '').trim().toLowerCase()
       if (!needle) return true

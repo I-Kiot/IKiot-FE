@@ -15,10 +15,7 @@ type Props = {
   disabled?: boolean;
 };
 
-/**
- * Ảnh đính kèm gửi xưởng (bản thiết kế, ảnh mẫu): tải lên qua `POST /uploads`, giữ URL. Dùng ở thông số làm riêng
- * của dòng đơn và ở dòng YCSX (2026-10-16).
- */
+/** Ảnh đính kèm gửi xưởng, tải lên qua `POST /uploads`. */
 export function ImageAttachments({ value, onChange, label = "Thêm ảnh", max = 20, disabled }: Props) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = React.useState(false);

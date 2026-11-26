@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { HistoryPagination } from "@/types/history";
 
-/** Thanh chuyển trang gọn cho các màn lịch sử (trong hộp thoại / thẻ), không dùng PageFooter cố định đáy. */
+/** Thanh chuyển trang gọn cho màn lịch sử. */
 export function HistoryPager({
   pagination,
   disabled,

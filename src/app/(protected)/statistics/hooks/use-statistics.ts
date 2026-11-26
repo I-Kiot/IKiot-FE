@@ -1,4 +1,4 @@
-// [Query – số liệu trang Thống kê] Mọi số liệu theo kỳ đang chọn và địa điểm đang xem, tải một lần cùng nhau.
+// [Query – trang Thống kê] Số liệu theo kỳ và địa điểm.
 'use client'
 
 import { useCallback } from 'react'
@@ -14,7 +14,7 @@ function optional<T>(request: Promise<T>): Promise<T | null> {
   })
 }
 
-/** `place`: id chi nhánh hoặc kho đang xem (dropdown trên trang; id dùng chung nên báo cáo bán hàng lọc thẳng theo id). */
+/** Id chi nhánh hoặc kho đang xem. */
 export function useStatistics(period: ReportPeriod, place: string | undefined, reloadKey: number) {
 
   const load = useCallback(async () => {

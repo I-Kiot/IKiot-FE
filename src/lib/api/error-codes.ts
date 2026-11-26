@@ -1,13 +1,6 @@
 import { AxiosError } from "axios";
 
-/**
- * Mã lỗi của backend → câu tiếng Việt hiển thị cho người dùng.
- *
- * Backend trả `{ success: false, statusCode, code, message, ... }`. `message` chỉ là câu chữ
- * cho người đọc, có thể đổi; frontend rẽ nhánh theo `code` (ổn định), không so khớp `message`.
- * Bảng này phải khớp `Ikiot_BE/src/common/errors/error-codes.ts`, mã ở đó chỉ thêm, không đổi khoá.
- * Một số câu cố tình chung chung hơn `message` gốc vì message có số liệu động; cần đúng con số thì backend phải trả thêm trong `errors`.
- */
+/** Mã lỗi backend → câu tiếng Việt; phải khớp `IKiot-BE/src/common/errors/error-codes.ts`. */
 export const ERROR_MESSAGES = {
   ACCOUNT_HAS_NO_BRANCH: "Tài khoản chưa được phân về chi nhánh nào",
   ACCOUNT_HAS_NO_LOCATION: "Tài khoản chưa được phân về chi nhánh hoặc kho nào",
@@ -314,7 +307,7 @@ export const ERROR_MESSAGES = {
   PRODUCT_COMBO_INVALID:
     "Thành phần combo không hợp lệ: cần ít nhất một món, không trùng món, không chứa chính nó (kể cả qua combo khác), không lồng quá 5 tầng và không dùng hàng đã ngừng kinh doanh",
   PRODUCT_ITEM_IN_COMBO: "Mặt hàng đang là thành phần của một combo còn bán - gỡ khỏi combo trước",
-  // Nhập hàng hóa từ Excel (2026-10-20) - chi tiết từng dòng nằm trong `errors`, đọc qua `importErrorsOf`.
+  // Nhập hàng hoá từ Excel; chi tiết từng dòng đọc qua `importErrorsOf`.
   PRODUCT_IMPORT_FILE_INVALID: "File không đúng mẫu nhập hàng hóa",
   PRODUCT_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có hàng hóa nào được tạo",
   PRODUCT_COMBO_COMPONENT_DISCONTINUED:
@@ -406,10 +399,7 @@ export const ERROR_MESSAGES = {
 
 export type ApiErrorCode = keyof typeof ERROR_MESSAGES;
 
-/**
- * Mã nghĩa là phiên không dùng được nữa; interceptor dựa vào đây để quyết định có refresh token không.
- * Không so khớp chuỗi `message`, vì đổi câu chữ sẽ làm vòng refresh chết.
- */
+/** Các mã báo phiên không dùng được nữa. */
 export const TOKEN_EXPIRED_CODES: ReadonlySet<string> = new Set<ApiErrorCode>([
   "SESSION_EXPIRED",
   "REFRESH_TOKEN_INVALID",
@@ -443,7 +433,7 @@ export function messageForCode(code: string | undefined): string | undefined {
   return ERROR_MESSAGES[code as ApiErrorCode];
 }
 
-/** Một mặt hàng thiếu khi đóng gói. Khớp `ShortStockLine` của BE (`inventories.service.ts`, `lockStock`). */
+/** Một mặt hàng thiếu khi đóng gói. */
 export interface ShortStockLine {
   label: string;
   needed: number;
@@ -457,10 +447,7 @@ function isShortStockLine(value: unknown): value is ShortStockLine {
   return typeof v.label === "string" && typeof v.needed === "number" && typeof v.onShelf === "number";
 }
 
-/**
- * Danh sách hàng thiếu trong lỗi `INSUFFICIENT_STOCK` của `POST /orders/:id/pack`.
- * Lỗi khác, hoặc `INSUFFICIENT_STOCK` không kèm chi tiết (vd. từ `deductStock`) → `[]`.
- */
+/** Danh sách hàng thiếu trong lỗi `INSUFFICIENT_STOCK` khi đóng gói. */
 export function shortStockLinesOf(error: unknown): ShortStockLine[] {
   const body = getApiErrorBody(error);
   if (body?.code !== "INSUFFICIENT_STOCK" || !Array.isArray(body.errors)) return [];
@@ -472,7 +459,7 @@ export function isStockMovementConflict(error: unknown): boolean {
   return getApiErrorBody(error)?.code === "STOCK_MOVEMENT_CONFLICT";
 }
 
-/** `ORDER_TOTAL_BELOW_PAID`: tổng mới thấp hơn số đã trả; BE trả kèm `paid` và `grandTotal` ở cấp trên cùng. */
+/** Đọc `paid` và `grandTotal` từ lỗi `ORDER_TOTAL_BELOW_PAID`. */
 export function totalBelowPaidOf(error: unknown): { paid: number; grandTotal: number } | null {
   const body = getApiErrorBody(error) as (ApiErrorBody & Record<string, unknown>) | undefined;
   if (body?.code !== "ORDER_TOTAL_BELOW_PAID") return null;
@@ -506,7 +493,7 @@ export function remittanceGapOf(error: unknown): MoneyGap | null {
   return moneyGapAt(error, "ORDER_REMITTANCE_AMOUNT_MISMATCH", "remittance");
 }
 
-/** Một lỗi của file nhập hàng hóa. Khớp `ImportError` của BE (`product-import.parser.ts`); `row` null = lỗi của cả file. */
+/** Một lỗi của file nhập hàng hoá; `row` null là lỗi của cả file. */
 export interface ImportRowError {
   row: number | null;
   column: string | null;

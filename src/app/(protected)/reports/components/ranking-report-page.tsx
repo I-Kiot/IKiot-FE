@@ -1,7 +1,6 @@
 "use client"
 
-// [Khung trang báo cáo xếp hạng] Dùng cho Báo cáo nhân viên: lọc nơi và kỳ (URL), phân trang phía server,
-// dòng Cộng là tổng cả kỳ do server trả nên không đổi khi chuyển trang, xuất Excel đúng bảng đang xem (cả kỳ, mọi trang).
+// Khung trang báo cáo xếp hạng.
 
 import { useCallback, useState, type ReactNode } from "react"
 import { RefreshCw } from "lucide-react"

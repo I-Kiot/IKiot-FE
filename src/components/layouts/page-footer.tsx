@@ -4,12 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
-// Chân trang cố định cho thanh phân trang.
-//
-// Thanh phân trang luôn nằm sát đáy khung nội dung, dù bảng có 0 hay 100 dòng: trang ngắn thì dính đáy
-// màn hình, trang dài thì dính đáy khung nhìn (sticky) khi cuộn. Mọi bảng giữ nguyên cách gọi cũ - chỉ cần
-// bọc thanh phân trang trong <PageFooter>; nó được đưa (portal) vào ô PageFooterSlot ở cuối layout, thay vì
-// nằm ngay dưới bảng. Bên ngoài layout có ô này (hộp thoại, trang không có sidebar) thì hiển thị tại chỗ.
+// Chân trang cố định cho thanh phân trang, render qua portal vào PageFooterSlot.
 
 type PageFooterContextValue = { slot: HTMLElement | null; setSlot: (el: HTMLElement | null) => void };
 
@@ -21,7 +16,7 @@ export function PageFooterProvider({ children }: { children: React.ReactNode }) 
   return <PageFooterContext.Provider value={value}>{children}</PageFooterContext.Provider>;
 }
 
-/** Ô chứa chân trang, đặt là phần tử cuối cùng của khung nội dung (flex-col, cao tối thiểu bằng màn hình). */
+/** Ô chứa chân trang, cuối khung nội dung. */
 export function PageFooterSlot({ className }: { className?: string }) {
   const ctx = React.useContext(PageFooterContext);
   return (
@@ -29,8 +24,7 @@ export function PageFooterSlot({ className }: { className?: string }) {
       ref={ctx?.setSlot}
       data-slot="page-footer"
       className={cn(
-        // Nằm dưới vùng cuộn của khung nội dung (cao bằng màn hình) nên luôn dính đáy, trang ngắn hay dài.
-        // empty:hidden: trang không có phân trang thì không hiện đường kẻ.
+        // Luôn dính đáy; ẩn khi không có phân trang.
         "bg-background shrink-0 border-t px-4 empty:hidden lg:px-6",
         className,
       )}
@@ -42,7 +36,7 @@ export function PageFooterSlot({ className }: { className?: string }) {
 export function PageFooter({ children }: { children: React.ReactNode }) {
   const ctx = React.useContext(PageFooterContext);
   if (!ctx) return <>{children}</>;
-  // Có layout nhưng ô chưa gắn xong (lần render đầu): chưa vẽ gì để thanh khỏi nhảy từ dưới bảng xuống đáy.
+  // Chưa vẽ khi ô chưa gắn xong.
   if (!ctx.slot) return null;
   return createPortal(children, ctx.slot);
 }

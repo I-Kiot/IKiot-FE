@@ -7,11 +7,7 @@ type Props = {
   className?: string;
 };
 
-/**
- * Badge tròn nền đỏ, số trắng: dùng cho số cảnh báo trên sidebar và trên nút. Số 0 thì không vẽ gì.
- * `min-w` + `px` để 1 chữ số ra hình tròn, 2 chữ số / "99+" giãn thành viên thuốc.
- * Là `span` chứ không phải svg, nên các nút sidebar (vốn ép màu mọi svg con) không đè mất màu đỏ.
- */
+/** Badge số đỏ tròn; số 0 thì không vẽ. */
 export function CountBadge({ count, label, className }: Props) {
   if (count <= 0) return null;
 

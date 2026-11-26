@@ -44,7 +44,7 @@ export function FulfillmentsTable({ state, query, onQueryChange, canPack, onPack
     state: { pagination },
     onPaginationChange: (updater) => {
       const next = typeof updater === "function" ? updater(pagination) : updater;
-      // Đổi số đơn mỗi trang → về trang 1, đặt cả hai trong MỘT lần để không gọi BE cho một trang không còn tồn tại.
+      // Đổi số dòng mỗi trang thì về trang 1.
       onQueryChange(
         next.pageSize !== query.limit
           ? { page: 1, limit: next.pageSize }

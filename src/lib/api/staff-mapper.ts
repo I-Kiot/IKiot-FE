@@ -43,9 +43,7 @@ const GENDER_LABELS: Record<StaffGender, string> = {
   OTHER: "Khác",
 };
 
-/**
- * Tên hiển thị của vai trò. Vai trò do chủ shop tạo nên tên đi kèm dữ liệu; chỉ cần quyết định hiển thị gì khi nhân viên chưa có vai trò.
- */
+/** Tên hiển thị của vai trò. */
 export function getStaffRoleLabel(roleName?: string | null): string {
   return roleName?.trim() || "Chưa phân quyền";
 }
@@ -176,7 +174,7 @@ export function getApiFieldErrors(
 }
 
 export function getApiErrorMessage(error: unknown): string {
-  // `code` trước: không đổi khi backend sửa câu chữ. Phần dưới là đường lùi cho backend cũ chỉ trả `message`.
+  // Đọc `code` trước, `message` là dự phòng.
   const mapped = messageForCode(getApiErrorBody(error)?.code);
   if (mapped) return mapped;
 

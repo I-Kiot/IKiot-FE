@@ -26,10 +26,7 @@ type Props = {
   onHandedOver: () => void;
 };
 
-/**
- * Giao hàng cho khách tại quầy (`POST /orders/:id/pickup/hand-over`): trừ tồn kho đúng số hàng đã khoá lúc đóng đơn,
- * đơn hoàn thành và xuất hoá đơn. Không quay lại được.
- */
+/** Giao hàng cho khách tại quầy: trừ tồn, hoàn tất đơn, xuất hoá đơn. */
 export function PickupHandOverDialog({ order, onClose, onHandedOver }: Props) {
   const { pending: livePending } = useLiveHold(true, [order.id]);
   const [receiverName, setReceiverName] = React.useState(order.recipientName ?? "");

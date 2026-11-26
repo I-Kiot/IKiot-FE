@@ -1,7 +1,6 @@
 "use client";
 
-// Bảng phân trang ở server dùng chung cho hai tab của màn Giao hàng: hook tải dữ liệu (`usePagedList`),
-// bảng TanStack `manualPagination` (`PagedTable`) và thanh phân trang dùng chung.
+// Bảng phân trang ở server dùng chung cho màn Giao hàng.
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -30,13 +29,7 @@ export type PagedState<T> =
 /** Trang và số dòng mỗi trang đang xem; mỗi bảng cộng thêm bộ lọc riêng. */
 export type PageParams = { page: number; limit: number };
 
-/**
- * Tải trang `query` khi query hoặc `reloadKey` đổi. `load` phải ổn định (khai báo ngoài component).
- * Response cũ về sau thì bỏ. Trang rỗng mà không phải trang 1 thì lùi về trang cuối còn dữ liệu; effect tự chạy lại.
- * Mỗi nhánh `.then()` chỉ gọi một setter (lint cấm setState trong useEffect).
- * `live`: tự tải lại NỀN khi người khác đổi dữ liệu (`resources` khai báo ngoài component; `idsOf` trả id của dòng + chứng từ liên quan, để biết sự kiện có đang hiện trên bảng không).
- * Tải nền giữ nguyên trang đang xem, không đổi sang "loading", lỗi thì im lặng.
- */
+/** Tải trang theo `query`, bỏ response cũ; `live` thì tải lại nền. */
 export interface PagedLive<T> {
   resources: readonly ChangeResource[];
   idsOf: (row: T) => string[];
@@ -120,7 +113,7 @@ export function PagedTable<T extends { id: string }, Q extends PageParams>({
     state: { pagination },
     onPaginationChange: (updater) => {
       const next = typeof updater === "function" ? updater(pagination) : updater;
-      // Đổi số dòng mỗi trang → về trang 1, đặt cả hai trong MỘT lần để không gọi BE cho một trang không còn tồn tại.
+      // Đổi số dòng mỗi trang thì về trang 1.
       onQueryChange(
         next.pageSize !== query.limit
           ? { ...query, page: 1, limit: next.pageSize }

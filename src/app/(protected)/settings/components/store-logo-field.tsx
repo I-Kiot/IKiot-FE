@@ -23,11 +23,7 @@ interface StoreLogoFieldProps {
   onChange: (logoUrl: string | null) => void;
 }
 
-/**
- * Logo cửa hàng. Chọn ảnh mở dialog cắt (như avatar); chỉ khi bấm "Xác nhận" ảnh mới được cắt, tải lên và lưu
- * (`PUT /tenant/me` chỉ với `logoUrl`), không chờ nút "Lưu thay đổi" của form. Huỷ dialog thì không có gì thay đổi.
- * Nền giữ trong suốt, để logo PNG không bị phủ nền trắng.
- */
+/** Logo cửa hàng: cắt, tải lên và lưu ngay. */
 export function StoreLogoField({ logoUrl, canEdit, onChange }: StoreLogoFieldProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [isBusy, setIsBusy] = React.useState(false);

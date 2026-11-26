@@ -134,7 +134,7 @@ export function ProductionRequestFormDialog({
   );
 }
 
-/** B-6: thân form tạo yêu cầu sản xuất, hoặc sửa yêu cầu còn NHÁP (contract §3). Chỉ mount khi mở nên mỗi lần mở bắt đầu từ state riêng. */
+/** Form tạo / sửa YCSX nháp. */
 export function ProductionRequestForm({
   request,
   initialLocationId,
@@ -151,8 +151,7 @@ export function ProductionRequestForm({
   const [pickedLocationId, setLocationId] = React.useState(
     request?.location.id ?? initialLocationId ?? "",
   );
-  // Nơi nhận điền sẵn khi tạo mới (nút "Tạo YCSX" trên đơn) mà không có trong danh sách chọn được
-  // (đã xoá, ngoài phạm vi tài khoản) thì coi như chưa chọn: Select trống thì form cũng không được gửi id đó.
+  // Nơi nhận điền sẵn mà không chọn được thì coi như chưa chọn.
   const prefilledLocationMissing =
     !request &&
     !loading &&
@@ -170,8 +169,7 @@ export function ProductionRequestForm({
   );
   const [saving, setSaving] = React.useState(false);
 
-  // Một SKU chỉ được lặp khi khác dòng đơn hàng (nếu không BE trả PRODUCTION_REQUEST_DUPLICATE_ITEM);
-  // ô tìm kiếm ẩn các SKU đã có trong yêu cầu mà không gắn dòng đơn hàng.
+  // SKU chỉ lặp khi khác dòng đơn.
   const usedIds = React.useMemo(
     () =>
       new Set(lines.filter((l) => !l.orderItemId).map((l) => l.productItemId)),

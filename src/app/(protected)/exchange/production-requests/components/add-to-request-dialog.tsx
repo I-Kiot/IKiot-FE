@@ -38,10 +38,7 @@ type Props = {
   onAdded: (request: ProductionRequest) => void;
 };
 
-/**
- * B-6 "Thêm vào yêu cầu": đưa một dòng danh sách vào YCSX nháp của xưởng giao về đúng nơi đó
- * (`POST /production-requests/:id/items`), hoặc tạo YCSX mới. Dòng đặt riêng mang theo dòng đơn hàng của nó.
- */
+/** Thêm dòng danh sách vào YCSX nháp hoặc tạo YCSX mới. */
 export function AddToRequestDialog({ row, open, onOpenChange, onAdded }: Props) {
   const { workshops, locations, loading } = useProductionOptions();
   const [supplierId, setSupplierId] = React.useState("");

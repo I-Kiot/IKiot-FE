@@ -41,11 +41,7 @@ type Props = {
 
 const toInt = (value: string) => (value.trim() === "" ? 0 : Math.floor(Number(value)));
 
-/**
- * Nơi nhận kiểm hàng của phiếu giao xưởng và xác nhận (`POST /production-deliveries/:id/receive`).
- * Đây là lúc tồn kho tăng: hàng đạt vào tồn bán được, hàng lỗi vào kho hàng hỏng, ghi công nợ xưởng.
- * Số nhận không được vượt số xưởng ghi (điền sẵn bằng số đó).
- */
+/** Nơi nhận kiểm và xác nhận phiếu giao xưởng; lúc này tồn mới tăng. */
 export function ReceiveDeliveryDialog({ delivery, open, onOpenChange, onReceived }: Props) {
   const { pending: livePending } = useLiveHold(open, [delivery.id, delivery.productionRequest.id]);
   const [inputs, setInputs] = React.useState<Record<string, LineInput>>(() =>

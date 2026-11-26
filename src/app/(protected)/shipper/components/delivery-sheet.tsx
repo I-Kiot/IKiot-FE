@@ -1,7 +1,6 @@
 "use client";
 
-// Chi tiết một lần giao của shipper: người nhận, số tiền phải thu, nhật trình, và các nút theo trạng thái
-// (đã lấy hàng, đang đi giao, đã giao, giao không thành; sau khi giao bằng QR: mã QR, kiểm tra tiền về, đổi sang tiền mặt).
+// Chi tiết lần giao của shipper và các nút theo trạng thái.
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -73,10 +72,7 @@ function Field({
   );
 }
 
-/**
- * Khung thu tiền QR: chờ tiền về thì hiện mã + đồng hồ cho khách quét; hết hạn thì ẩn mã, cho tạo lại hoặc thu tiền mặt;
- * đã về thì báo đã nhận. Hạn do server trả (`expiresAt`); ảnh QR chỉ vẽ khi có `qrUrl` và chưa hết hạn.
- */
+/** Khung thu tiền QR: mã, đồng hồ, hết hạn, đã nhận. */
 function QrPaymentPanel({
   payment,
   due,
@@ -190,7 +186,7 @@ export function DeliverySheet({
   const [reloadKey, setReloadKey] = useState(0);
   const [checking, setChecking] = useState(false);
   const [reissuing, setReissuing] = useState(false);
-  // Tiền QR về (webhook) hay người khác đổi lần giao: tải lại nền, màn QR tự chuyển sang đã thu không cần bấm "Kiểm tra tiền về".
+  // Tải lại nền khi tiền QR về.
   const liveTick = useLiveTick({
     resources: LIVE_RESOURCES,
     ids: [shipmentId, state.status === "ready" ? state.shipment.order.id : null],
@@ -215,7 +211,7 @@ export function DeliverySheet({
 
   const reloadSheet = () => setReloadKey((key) => key + 1);
 
-  /** "Kiểm tra tiền về": đọc lại lần giao; tiền vẫn chưa về thì nói rõ để shipper chờ hoặc đổi sang tiền mặt. */
+  /** "Kiểm tra tiền về". */
   const checkPayment = () => {
     if (!shipmentId || checking) return;
     setChecking(true);
@@ -233,7 +229,7 @@ export function DeliverySheet({
       .finally(() => setChecking(false));
   };
 
-  /** "Tạo lại mã QR" khi mã hết hạn: hiện ngay lần giao server trả về (mã mới, hoặc mã cũ nếu vẫn còn hạn). */
+  /** "Tạo lại mã QR". */
   const reissueQr = () => {
     if (!shipmentId || reissuing) return;
     setReissuing(true);
@@ -257,7 +253,7 @@ export function DeliverySheet({
     onChanged();
   };
 
-  /** Chạy một thao tác ghi: thành công → báo; dữ liệu cũ → cũng tải lại; lỗi khác → giữ dialog để thử lại. */
+  /** Chạy thao tác ghi. */
   const run = (
     call: () => Promise<unknown>,
     success: string,

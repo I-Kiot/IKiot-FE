@@ -6,7 +6,7 @@ import type { OrderLineDraft } from "../new/components/order-lines-editor";
 
 type StockLocation = { id: string; type: "BRANCH" | "WAREHOUSE" } | null;
 
-/** Đổi nguồn hàng thì đọc lại tồn của các dòng đã có, nếu không badge "Đủ hàng" nói về nơi khác. Lần đầu không đọc: dòng đã có tồn đúng lúc được thêm. */
+/** Đọc lại tồn khi đổi nguồn hàng. */
 export function useLineStockAt(
   location: StockLocation,
   lines: readonly OrderLineDraft[],

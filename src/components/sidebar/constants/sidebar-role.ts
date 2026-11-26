@@ -19,7 +19,7 @@ const cskhGroup = {
 };
 
 
-// BRANCH_MANAGER và WAREHOUSE_MANAGER từng có cấu hình menu riêng đến 2026-09-07. Nay không còn là loại tài khoản (shop tự định nghĩa role), nên hai khối đó đã bị xoá.
+// Cấu hình menu theo loại tài khoản.
 export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
   ADMIN: [
     {
@@ -66,8 +66,7 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
 
 
 
-  // Mọi role tự tạo của shop đều là STAFF, nên đây là nguồn chung: liệt kê mọi nhóm shop có thể cấp, còn `AppSidebar` lọc theo quyền của từng role.
-  // Thiếu một nhóm ở đây không phải hạn chế mà là mục không ai tới được (giaoDich, tongQuan, soThuChi từng bị vậy đến 2026-09-09). Hai leaf được gác bởi nav-leaf-permissions.ts.
+  // Menu cho mọi STAFF; lọc theo quyền của role.
   STAFF: [
     {
       label: "Quản lý",

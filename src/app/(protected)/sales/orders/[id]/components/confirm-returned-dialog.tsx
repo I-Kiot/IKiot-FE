@@ -35,10 +35,7 @@ type Props = {
   onConfirm: (note: string | undefined, refund: RefundInput | undefined) => Promise<void>;
 };
 
-/**
- * Xác nhận hàng của lần giao thất bại đã về shop (`POST /order-returns/confirm-failed-delivery`). Đơn đang giữ tiền thì
- * có thể hoàn luôn (không bắt buộc): chọn "Chưa hoàn" thì tiền vẫn do shop giữ và hoàn sau ở bước khác.
- */
+/** Xác nhận hàng giao thất bại đã về shop, có thể hoàn tiền luôn. */
 export function ConfirmReturnedDialog({ held, orderId, onClose, onConfirm }: Props) {
   const { pending: livePending } = useLiveHold(true, [orderId]);
   const [note, setNote] = React.useState("");

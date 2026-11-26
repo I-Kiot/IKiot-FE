@@ -18,10 +18,7 @@ interface OrderCartLinesProps {
   error?: string;
 }
 
-/**
- * Dòng hàng của đơn tạo tay, mỗi dòng một thẻ. Giống `OrderLinesEditor` nhưng bỏ ô tìm kiếm (form đặt `ProductSearch` phía trên),
- * và giữ "Thông số riêng" cho từng dòng.
- */
+/** Dòng hàng của đơn tay. */
 export function OrderCartLines({
   lines,
   onChange,

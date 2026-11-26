@@ -30,7 +30,7 @@ function StockCell({ line }: { line: OrderLine }) {
     </div>
   );
 }
-/** Ô "Nguồn hàng": mặt hàng đặt xưởng được hay chỉ nhập từ NCC. Combo và dịch vụ không đặt xưởng nên để trống. */
+/** Ô "Nguồn hàng": đặt xưởng hay nhập NCC. */
 function ManufacturableCell({ line }: { line: OrderLine }) {
   const hasNoGoods = line.lineType === "COMBO" || line.lineType === "SERVICE";
   if (hasNoGoods) return <span className="text-muted-foreground">-</span>;

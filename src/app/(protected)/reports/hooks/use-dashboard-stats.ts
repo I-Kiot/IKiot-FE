@@ -109,7 +109,7 @@ export interface ReportPeriod {
   toDate: string
 }
 
-/** Kỳ dài nhất được chọn: một năm (năm nhuận). Dài hơn thì query sổ doanh thu nặng mà bảng theo ngày cũng không đọc nổi. */
+/** Kỳ dài nhất: một năm. */
 export const MAX_PERIOD_DAYS = 366
 
 /** Kỳ dài hơn ngưỡng này thì bảng/biểu đồ theo thời gian gom theo tháng thay vì theo ngày. */
@@ -195,7 +195,7 @@ const EMPTY_REPORT: Omit<ReportData, 'key'> = {
   topProducts: null,
 }
 
-/** Tải tất cả số liệu cho kỳ và địa điểm đang chọn. Kho không có doanh thu bán hàng, nên chỉ lấy dòng tiền và tồn kho. */
+/** Tải số liệu cho kỳ và địa điểm đang chọn. */
 async function loadReport(
   key: string,
   period: ReportPeriod,
@@ -206,7 +206,7 @@ async function loadReport(
   const resolved = resolvePeriod(period)
   const { fromDate, toDate } = resolved
 
-  // Kho cũng bán được, và id địa điểm dùng chung, nên báo cáo đơn hàng lọc theo đúng nơi đang xem. Sổ thu chi và tồn thì phân biệt kho với chi nhánh.
+  // Lọc đơn theo nơi đang xem.
   const place = branchId ?? warehouseId
   const dateParams = { fromDate, toDate, branchId: place }
   const [
@@ -256,7 +256,7 @@ async function loadReport(
   }
 }
 
-/** `locationKey`: nơi chọn trên trang (`all` | `branch-<id>` | `warehouse-<id>`), không phải bộ chọn trên header. */
+/** Nơi chọn trên trang. */
 export function useDashboardStats(period: ReportPeriod, locationKey: string) {
   const { branchId, warehouseId } = locationFilter(locationKey)
   const isWarehouse = Boolean(warehouseId)
@@ -272,8 +272,7 @@ export function useDashboardStats(period: ReportPeriod, locationKey: string) {
   )
 
   useEffect(() => {
-    // Đổi kỳ / địa điểm nhanh hơn server trả lời: câu trả lời đến muộn của bộ lọc cũ bị bỏ,
-    // không được ghi đè số liệu của bộ lọc mới.
+    // Bỏ kết quả của bộ lọc cũ.
     let cancelled = false
     loadReport(key, period, branchId, warehouseId, lowStockThreshold)
       .then((result) => {

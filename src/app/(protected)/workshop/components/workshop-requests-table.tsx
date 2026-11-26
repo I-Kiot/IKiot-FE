@@ -57,7 +57,7 @@ type Props = {
   refreshSignal: number;
 };
 
-/** Bảng YCSX gửi cho xưởng của tài khoản (`GET /workshop/production-requests`): tìm theo mã, lọc trạng thái, phân trang ở server. Bấm một dòng mở chi tiết. */
+/** Bảng YCSX gửi cho xưởng của tài khoản. */
 export function WorkshopRequestsTable({ refreshSignal }: Props) {
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
@@ -77,7 +77,7 @@ export function WorkshopRequestsTable({ refreshSignal }: Props) {
   const loading = loaded?.query !== query;
   const rows = loaded?.rows ?? [];
   const total = loaded?.total ?? 0;
-  // Người khác đổi dữ liệu: tải lại nền. Tick chỉ vào deps của effect tải, KHÔNG vào `query`, nên bảng không nháy "đang tải".
+  // Tải lại nền khi người khác đổi dữ liệu.
   const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds: rows.map((row) => row.id) });
   const shownQueryRef = React.useRef<string | null>(null);
 

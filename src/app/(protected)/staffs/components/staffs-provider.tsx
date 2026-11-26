@@ -55,11 +55,11 @@ type StaffsContextType = {
   branchOptions: { value: string; label: string }[];
   warehouseOptions: { value: string; label: string }[];
   warehouseOptionsFailed: boolean;
-  /** Xưởng (NCC loại WORKSHOP) để gắn nhân viên xưởng; rỗng nếu shop chưa có xưởng hoặc tài khoản không xem được NCC. */
+  /** Danh sách xưởng để gắn nhân viên xưởng. */
   workshopOptions: { value: string; label: string }[];
-  /** Tải lại danh sách chi nhánh / kho / xưởng. Form nhân viên gọi mỗi lần mở, vì chi nhánh/kho/xưởng có thể vừa được tạo ở màn khác sau khi trang này đã tải. */
+  /** Tải lại chi nhánh / kho / xưởng. */
   reloadWorkplaceOptions: () => Promise<void>;
-  /** Key switcher chi nhánh/kho toàn cục ("all" | "branch-<id>" | "warehouse-<id>"), ưu tiên hơn bộ lọc thủ công bên dưới. */
+  /** Key địa điểm toàn cục. */
   locationKey: string;
   open: StaffsDialogType | null;
   setOpen: (value: StaffsDialogType | null) => void;
@@ -104,7 +104,7 @@ type StaffsContextType = {
 
 const StaffsContext = React.createContext<StaffsContextType | null>(null);
 
-/** Rỗng là đúng: role do shop tự tạo. Không dùng danh sách giả, vì sẽ thành lỗi 400 ở cuối form tạo nhân viên. */
+/** Danh sách role của shop. */
 const DEFAULT_ROLE_OPTIONS: StaffRoleOption[] = [];
 
 type StaffsProviderProps = {
@@ -221,7 +221,7 @@ export function StaffsProvider({
 
     setIsFetching(true);
     try {
-      // Switcher chi nhánh/kho toàn cục ưu tiên hơn bộ lọc của trang (cùng cơ chế locationKey như sản phẩm/checkout), nên đổi chi nhánh là danh sách nhân viên đổi theo ngay.
+      // Lọc theo địa điểm toàn cục.
       const scope = parseLocationKey(locationKey);
       const branchId =
         scope?.locationType === "BRANCH"

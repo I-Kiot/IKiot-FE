@@ -20,9 +20,7 @@ type StaffsDeleteDialogProps = {
   currentRow: Staff | null;
 };
 
-/**
- * Xóa nhân viên. Route `DELETE /users/:id` không nhận body. Backend từ chối khi tài khoản còn điều hành chi nhánh/kho và nêu lý do; toast hiển thị lý do đó.
- */
+/** Xoá nhân viên. */
 export function StaffsDeleteDialog({
   open,
   onOpenChange,

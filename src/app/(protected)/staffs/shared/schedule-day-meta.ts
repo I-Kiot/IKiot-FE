@@ -17,10 +17,7 @@ type ScheduleHolidaySource = {
   dayInfo?: ScheduleDayInfo | null;
 };
 
-/**
- * YYYY-MM-DD → tên lễ.
- * Ưu tiên /holidays; khi trống mới lấy dayInfo từ schedule.
- */
+/** YYYY-MM-DD → tên lễ. */
 export function buildHolidayNamesByDate(
   holidays: HolidayNameSource[],
   schedules: ScheduleHolidaySource[] = [],

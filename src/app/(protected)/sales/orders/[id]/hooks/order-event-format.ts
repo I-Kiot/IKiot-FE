@@ -44,7 +44,7 @@ export function statusLabel(status: string): string {
   return lookup(ORDER_STATUS_LABELS, status);
 }
 
-/** Giá trị một dòng `changes`: tiền thành VND, ngày thành dd/MM/yyyy, mã thành nhãn; còn lại giữ nguyên. */
+/** Định dạng giá trị một dòng `changes`. */
 export function formatChangeValue(field: string, value: OrderEventScalar | undefined): string {
   if (value === null || value === undefined || value === "") return EMPTY;
   if (typeof value === "boolean") return value ? "Có" : "Không";

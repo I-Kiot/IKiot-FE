@@ -102,7 +102,7 @@ export function OrderQrDialog({
     reference: paymentReference,
     amount: grandTotal,
   });
-  // Khách chuyển thiếu: đơn vẫn chờ, thu ngân chọn QR cho phần còn lại hay tiền mặt. Null = chưa nhận đồng nào.
+  // Số còn thiếu khi khách chuyển thiếu, null là chưa nhận.
   const [partial, setPartial] = useState<PartialInfo | null>(null);
   // Đang ở màn "khách chuyển thiếu" (chưa chọn cách thu nốt).
   const [awaitingChoice, setAwaitingChoice] = useState(false);
@@ -124,8 +124,7 @@ export function OrderQrDialog({
       ? "expired"
       : rawStatus;
 
-  // Đơn đã chốt bằng tiền mặt: bỏ qua sự kiện order:paid dội về từ chính request này,
-  // nếu không receipt sẽ hiện sai phương thức thanh toán.
+  // Bỏ qua sự kiện order:paid khi đơn đã chốt bằng tiền mặt.
   const paidOfflineRef = useRef(false);
 
   useEffect(() => {
@@ -146,8 +145,7 @@ export function OrderQrDialog({
 
     const socket = getSocket();
 
-    // Event order:paid đi tới room tenant:<id> kèm orderId trong payload. BẮT BUỘC lọc theo orderId: mọi máy POS trong shop đều nhận,
-    // không lọc thì báo đã thu tiền khi khách khác vừa trả. Vẫn lắng nghe cả khi mã đã hết hạn (tiền về muộn vẫn được ghi nhận).
+    // Lọc sự kiện order:paid theo orderId.
     const handlePaid = (payload?: OrderPaidEvent) => {
       if (payload?.orderId && payload.orderId !== orderId) return;
       if (paidOfflineRef.current) return;
@@ -283,7 +281,7 @@ export function OrderQrDialog({
     }
   };
 
-  /** "Tạo QR phần còn lại": mã mới cho đúng số còn phải thu (mã còn hạn đúng số tiền thì server trả lại nguyên mã). */
+  /** Tạo QR cho phần còn lại. */
   const handleCreateRemainderQr = async () => {
     setIsSubmitting(true);
     try {
@@ -372,7 +370,7 @@ export function OrderQrDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v && status === "cancelled") onOpenChange(false); }}>
-      {/* Chờ QR / hết hạn mà chưa xử lý: không cho đóng bằng Esc hay bấm ra ngoài, để đơn không treo giữ hàng. */}
+      {/* Đang chờ QR thì không cho đóng bằng Esc hay bấm ra ngoài. */}
       <DialogContent
         className="sm:max-w-[420px]"
         showCloseButton={status === "cancelled"}

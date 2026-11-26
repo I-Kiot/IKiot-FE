@@ -1,7 +1,6 @@
 "use client";
 
-// Dialog "Giao cho vận chuyển" cho một đơn đã đóng gói (POST /shipments): gán người giao, người đó còn phải
-// tự xác nhận đã lấy hàng.
+// Dialog giao cho vận chuyển.
 
 import { useState } from "react";
 import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";

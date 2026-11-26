@@ -1,10 +1,4 @@
-//
-// Màn Vai trò bày quyền theo công việc người giữ vai trò (bán hàng, quản lý, vận chuyển & kho, xưởng), không theo bảng tài nguyên × hành động của BE. Chỉ là cách sắp xếp; chủ shop vẫn tick từng mã.
-//
-// Một ô có thể bật nhiều mã (`keys`), ví dụ "Quản lý sản phẩm" = tạo + sửa + xoá. Mã BE giữ nguyên; khi BE gộp mã thật thì chỉ sửa file này.
-// `requires`: tick ô kéo theo quyền xem cần để mở màn hình (bỏ tick không gỡ chúng).
-//
-// Quyền có trong danh mục mà không có ở đây vẫn hiện ở nhóm "Khác" (`OTHER_SECTION_ID`), nên quyền mới của BE không biến mất.
+// Nhóm quyền theo công việc; một ô có thể bật nhiều mã, quyền chưa xếp nhóm nằm ở "Khác".
 import type { LucideIcon } from 'lucide-react'
 import { Factory, ShieldCheck, ShoppingBag, Truck } from 'lucide-react'
 
@@ -12,7 +6,7 @@ export type PermissionItem = {
   /** Các mã `resource:action` ô này bật/tắt cùng lúc. */
   keys: string[]
   label: string
-  /** Một dòng nói rõ hơn khi tên chưa đủ. Mô tả từ BE (`description`) của mã đầu tiên được ưu tiên nếu có. */
+  /** Gợi ý dưới tên quyền. */
   hint?: string
   /** Bật kèm khi tick ô (quyền xem để vào được màn hình), không gỡ khi bỏ tick. */
   requires?: string[]
@@ -33,14 +27,10 @@ export type PermissionSection = {
 
 export const OTHER_SECTION_ID = 'other'
 
-/**
- * Tài nguyên hiện ở nhóm "Khác" (chốt 2026-10-16). Mã chưa xếp nhóm là quyền BE không kiểm tra hoặc chỉ admin nền tảng dùng, nên ẩn; mã ẩn vẫn giữ khi lưu. Tài nguyên mới: xếp nhóm hoặc thêm vào đây.
- */
+/** Tài nguyên hiện ở nhóm "Khác". */
 export const OTHER_SECTION_RESOURCES = ['sales_channels', 'fulfillments', 'users']
 
-/**
- * Quyền nền mọi vai trò đều có: thiếu thì việc chính của nhân viên hỏng, thêm vào không lộ gì quan trọng. Không hiện thành ô, tự thêm khi lưu. Khi BE có `STAFF_BASE_PERMISSIONS` thì bỏ khỏi đây.
- */
+/** Quyền nền tự thêm khi lưu. */
 export const ALWAYS_ON_PERMISSIONS: { key: string; label: string }[] = [
   { key: 'inventory:read', label: 'xem tồn kho' },
   { key: 'holidays:read', label: 'xem ngày lễ' },
@@ -90,9 +80,7 @@ export const PERMISSION_SECTIONS: PermissionSection[] = [
       },
       {
         title: 'Ca thu ngân',
-        // Hai cụm theo người làm: mở / chốt két là việc của người chịu trách nhiệm tiền cả ngày, nhận / bàn giao ca là
-        // việc của người đứng quầy. Chủ shop tự quyết ai giữ cụm nào - tách ra để người cầm tiền trong ca không nhất
-        // thiết là người xác nhận số tiền cuối ngày.
+        // Tách cụm mở/chốt két và nhận/bàn giao ca.
         items: [
           {
             keys: ['cash_drawers:open', 'cash_drawers:finalize'],

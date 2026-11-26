@@ -212,8 +212,7 @@ export function MovementExpandedPanel({
       : isOpening && (isSender || isReceiver);
   const canShipClosed = mode === "transfer" && isClosed && isSender;
 
-  // IMPORT: Giao hàng khi PENDING (cần fromLocation). Nhận hàng sau IN_TRANSIT;
-  // phiếu cũ không ship được → vẫn nhận từ PENDING (doc cho phép).
+  // Thao tác của phiếu nhập theo trạng thái.
   const canShipImportPending =
     mode === "import" &&
     detail.movementType === "IMPORT" &&
@@ -235,8 +234,7 @@ export function MovementExpandedPanel({
     !!transferActions?.handleReturnGoods &&
     (isReceived || isInTransit);
 
-  // Huỷ được từ cả hai đầu, đúng như backend (`cancel` kiểm tra source HOẶC destination): bên nhận cũng tạo được
-  // phiếu chuyển nên phải rút lại được phiếu của mình. Phiếu nhập từ NCC không có nơi gửi. Không huỷ RECEIVED / COMPLETED / CANCELLED.
+  // Huỷ được từ cả hai đầu.
   const canCancel =
     (canActAsFromLocation || canActAsToLocation) &&
     !isReceived &&

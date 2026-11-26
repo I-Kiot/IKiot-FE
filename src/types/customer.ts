@@ -32,7 +32,7 @@ export interface Customer {
   orders: CustomerOrder[]
 }
 
-/** Tham số `GET /customers` thực sự nhận (`QueryCustomerDto`). Gender và khoảng ngày được lọc ở trình duyệt (`customers-table.tsx`), không gửi lên server. */
+/** Tham số `GET /customers`. */
 export interface CustomerQueryParams {
   page?: number
   limit?: number

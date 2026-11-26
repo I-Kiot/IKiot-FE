@@ -255,7 +255,7 @@ type ImportCreateFormProps = {
   onSubmittingChange: (submitting: boolean) => void;
 };
 
-/** Form tạo đơn nhập từ nhà cung cấp, nằm trong dialog "Tạo mới". Chỉ mount khi dialog mở nên mỗi lần mở là form trống. */
+/** Form tạo đơn nhập từ NCC. */
 export function ImportCreateForm({
   onCreated,
   onCancel,
@@ -408,8 +408,7 @@ export function ImportCreateForm({
   }, []);
 
   async function onSubmit(data: ImportFormValues) {
-    // Nhập hàng về kho. Backend cũng đã chặn từ 2026-09-07 (`assertCanActAt` cho đích của
-    // phiếu IMPORT); trước đó luật này chỉ tồn tại ở đúng dòng JavaScript này.
+    // Chỉ nhập về nơi được thao tác.
     if (getSessionBranchId()) {
       toast.error("Chi nhánh không được tạo đơn nhập hàng");
       return;
@@ -519,8 +518,7 @@ export function ImportCreateForm({
                     Kho nhận <span className="text-destructive">*</span>
                   </FormLabel>
                   {!isOptionsLoading && visibleLocations.length === 0 ? (
-                    // Rỗng vì hai lý do khác hẳn nhau: cửa hàng chưa tạo kho/chi nhánh
-                    // nào, hay có nhưng người này không được phân công chỗ nào.
+                    // Phân biệt chưa có địa điểm và chưa được phân công.
                     <EmptyOptionsNotice>
                       {locations.length === 0 ? (
                         <>

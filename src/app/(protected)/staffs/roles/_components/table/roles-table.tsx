@@ -78,8 +78,7 @@ export function RolesTable() {
             {!isLoading && visible.length === 0 && <DataTableEmpty columnCount={COLUMN_COUNT} />}
 
             {visible.map((role) => {
-              // Gom theo các nhóm của màn chọn quyền (Nhân viên bán hàng, Quản lý, ...): đọc bảng là biết vai
-              // trò thiên về việc gì, cùng cách người dùng đã tick lúc tạo.
+              // Gom quyền theo nhóm của màn chọn quyền.
               const granted = new Set(role.permissions.map((grant) => permissionKey(grant.resource, grant.action)))
               const chips = sections
                 .map((section) => ({

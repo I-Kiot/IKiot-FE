@@ -1,12 +1,7 @@
-/**
- * Chép các dòng giá trị vào clipboard sao cho dán vào Excel / Google Sheets ra đúng từng ô. Không có dòng tiêu đề:
- * người dùng dán vào bảng đã có sẵn cột của họ, nên chỉ chép giá trị.
- * Ghi hai định dạng cùng lúc: `text/html` (Excel giữ ô, số vẫn là số) và `text/plain` cách nhau bằng tab
- * (ứng dụng không đọc HTML vẫn tách được cột). Phải gọi trong handler của click: trình duyệt chỉ cho ghi clipboard khi đó.
- */
+/** Chép các dòng vào clipboard để dán vào Excel / Sheets đúng từng ô; gọi trong handler click. */
 export type TableCell = string | number | null | undefined;
 
-/** Nội dung ô: tab thành khoảng trắng (tab tách cột), xuống dòng giữ lại dạng `\n` để thành nhiều dòng trong cùng một ô. */
+/** Chuẩn hoá nội dung ô. */
 function plain(cell: TableCell): string {
   if (cell === null || cell === undefined) return "";
   return String(cell)
@@ -15,7 +10,7 @@ function plain(cell: TableCell): string {
     .trim();
 }
 
-/** Bản text: ô có xuống dòng hoặc dấu `"` được bọc trong `"..."` (nhân đôi `"` bên trong), như Excel / Sheets đọc TSV. */
+/** Bản TSV, bọc ô có xuống dòng hoặc dấu `"`. */
 function tsvCell(cell: TableCell): string {
   const text = plain(cell);
   return /["\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -34,13 +29,13 @@ export function toTsv(rows: readonly (readonly TableCell[])[]): string {
   return rows.map((row) => row.map(tsvCell).join("\t")).join("\n");
 }
 
-/** Bản HTML: số giữ kiểu số (`mso-number-format`) để Excel cộng được, chữ giữ dạng chữ (mã "001" không mất số 0). */
+/** Bản HTML, giữ kiểu số và chữ. */
 export function toHtmlTable(rows: readonly (readonly TableCell[])[]): string {
   const cell = (value: TableCell) => {
     if (typeof value === "number") {
       return `<td style="mso-number-format:'0'">${value}</td>`;
     }
-    // `<br>` kèm `mso-data-placement:same-cell`: Excel xuống dòng trong ô thay vì sang dòng mới (như Alt+Enter).
+    // Xuống dòng trong cùng ô Excel.
     const lines = plain(value).split("\n").map(escapeHtml);
     return `<td style="mso-number-format:'\\@'">${lines.join('<br style="mso-data-placement:same-cell">')}</td>`;
   };
@@ -50,11 +45,7 @@ export function toHtmlTable(rows: readonly (readonly TableCell[])[]): string {
 
 type Rows = readonly (readonly TableCell[])[];
 
-/**
- * `true` nếu đã chép. Nhận cả Promise để dữ liệu nạp sau (gọi API) vẫn ghi được: ClipboardItem được tạo ngay trong
- * click (Safari đòi vậy), nội dung đến sau. Trình duyệt không có ClipboardItem (hoặc từ chối HTML) thì chép bản TSV.
- * Promise dữ liệu bị lỗi thì lỗi đó được ném ra cho nơi gọi.
- */
+/** Chép vào clipboard, nhận cả Promise; trả true nếu đã chép. */
 export async function copyRows(rows: Rows | Promise<Rows>): Promise<boolean> {
   const ready = Promise.resolve(rows);
   try {

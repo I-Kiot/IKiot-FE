@@ -9,7 +9,7 @@ interface Step {
   label: string;
 }
 
-// Bước GĐ1 (docs/hanh-trinh-don-hang.md, "Tóm tắt trạng thái chính"). PENDING_CONFIRMATION chỉ có ở đơn sàn; đơn tạo tay sinh ra đã CONFIRMED.
+// Các bước hành trình; PENDING_CONFIRMATION chỉ có ở đơn sàn.
 const STEPS: Step[] = [
   { status: "PENDING_CONFIRMATION", label: "Chờ xác nhận" },
   { status: "CONFIRMED", label: "Xác nhận" },
@@ -20,8 +20,7 @@ const STEPS: Step[] = [
   { status: "COMPLETED", label: "Hoàn thành" },
 ];
 
-// Khách tới lấy: không có shipper, cũng không có bước nhận tiền từ shipper. Bước "Chờ khách lấy" mượn khoá PICKED_UP
-// (đơn không bao giờ ở trạng thái đó) để vị trí tính từ trạng thái đạt tới vẫn đúng: PACKED xong thì bước kế là chờ khách.
+// Bước của đơn khách tới lấy.
 const PICKUP_STEPS: Step[] = [
   { status: "CONFIRMED", label: "Xác nhận" },
   { status: "PACKED", label: "Đóng đơn" },
@@ -64,8 +63,7 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
     );
   }
 
-  // Giao thất bại: đơn vẫn SHIPPING khi hàng còn ngoài (shipper có thể giao lại), chuyển RETURNED khi shop xác nhận đã nhận hàng về.
-  // Hai bước cuối nhường chỗ cho failed → returned.
+  // Bước của đơn giao thất bại.
   const failed = isDeliveryFailed(order);
   // Cả đơn đã về sau giao thất bại: cùng track, nay đã hoàn tất.
   const returnedAfterFailure =
@@ -93,9 +91,7 @@ export function OrderJourneySteps({ order }: { order: OrderDetail }) {
     return true;
   });
 
-  // Mỗi bước đặt tên theo trạng thái đơn *đạt tới*: trạng thái X nghĩa là bước X đã xong, bước sau là bước đang làm (đơn tạo tay CONFIRMED đang chờ đóng gói).
-  // Đơn RETURNED đã đi hết track; các đơn trả hiện ở phía dưới. Đơn COMPLETED/RETURNED có mọi bước đã xong.
-  // PENDING không có bước riêng nên không tô bước nào.
+  // Mỗi bước đặt tên theo trạng thái đạt tới.
   const finished = order.status === "COMPLETED" || order.status === "RETURNED";
   const reachedIndex = steps.findIndex((step) => step.status === order.status);
   let currentIndex: number;

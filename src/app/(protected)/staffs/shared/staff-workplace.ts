@@ -1,6 +1,4 @@
-/**
- * Nhân viên chỉ thuộc đúng một nơi làm việc, áp dụng cho mọi tài khoản. Backend từ chối body chọn cả chi nhánh lẫn kho.
- */
+/** Nhân viên thuộc đúng một nơi làm việc. */
 export function validateStaffWorkplace(
   branchId?: string,
   warehouseId?: string,

@@ -33,7 +33,7 @@ import {
 
 const ORDERS_URL = "/sales/orders";
 const IMPORTS_URL = "/exchange/imports";
-// Bảng làm đổi số badge: đơn, tồn kho (thiếu/đủ hàng), YCSX + phiếu nhận xưởng, phiếu chuyển kho, vận đơn. Không truyền `ids` nên không toast.
+// Các bảng làm đổi số badge.
 const ALERT_RESOURCES: readonly ChangeResource[] = [
   "orders",
   "inventories",
@@ -66,7 +66,7 @@ export function NavMain({
   const hasSubItem = (url: string) =>
     items.some((item) => item.items?.some((subItem) => subItem.url === url));
   const hasOrdersEntry = hasSubItem(ORDERS_URL);
-  // Số mặt hàng cần đặt xưởng hiện ở mục danh sách nhập hàng (popup "Danh sách cần sản xuất" nằm trong màn đó).
+  // Số mặt hàng cần đặt xưởng.
   const hasProductionNeedEntry = hasSubItem(IMPORTS_URL);
 
   const orderAlerts = useOrderAlertsStore((state) => state.alerts);
@@ -77,8 +77,7 @@ export function NavMain({
   // Số đơn cần chú ý (thiếu hàng + sắp đến hạn + quá hạn lấy hàng).
   const orderAlertCount = orderAlerts ? orderAlerts.short + orderAlerts.dueSoon + orderAlerts.pickupOverdue : 0;
 
-  // Số cảnh báo theo mục con: badge đỏ hiện ở mục con đó và ở menu cha chứa nó.
-  // `key` là loại cảnh báo: nếu một loại hiện ở nhiều mục con thì menu cha chỉ cộng một lần.
+  // Số cảnh báo theo mục con, menu cha cộng mỗi loại một lần.
   const orderAlert = { key: "orders", count: orderAlertCount, label: `${orderAlertCount} đơn cần chú ý` };
   const productionNeedAlert = {
     key: "production-need",
@@ -115,7 +114,7 @@ export function NavMain({
     void fetchProductionNeed();
   }, [hasProductionNeedEntry, fetchProductionNeed]);
 
-  // Realtime: sự kiện của người khác + tín hiệu ghi của chính tab này (xem `notifyLocalMutation`). Poll bên dưới là dự phòng.
+  // Tải lại badge khi có thay đổi.
   useLiveRefresh({
     resources: ALERT_RESOURCES,
     enabled: hasOrdersEntry || hasProductionNeedEntry,
@@ -125,7 +124,7 @@ export function NavMain({
     },
   });
 
-  // Làm mới khi poll mỗi phút và khi đổi trang, để badge theo kịp đơn bán và phiếu nhập kho mà không cần socket riêng.
+  // Poll mỗi phút và khi đổi trang.
   useEffect(() => {
     if (!hasOrdersEntry || !allows(getSessionRole(), "orders", "read")) return;
     const scope = parseLocationKey(locationKey);

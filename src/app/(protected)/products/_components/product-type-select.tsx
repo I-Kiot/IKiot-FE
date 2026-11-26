@@ -15,9 +15,7 @@ const TYPE_HINTS: Partial<Record<ProductType, string>> = {
   SERVICE: 'Dịch vụ (lắp đặt, vận chuyển...) không có tồn kho. Không đổi được loại sau khi tạo.',
 }
 
-/**
- * Loại sản phẩm: chỉ chọn lúc tạo, BE không cho đổi sau (hàng đã có tồn không thể thành combo). Chỉ một lựa chọn thì không hiện ô chọn.
- */
+/** Loại sản phẩm, chỉ chọn lúc tạo. */
 export function ProductTypeSelect({
   value,
   options,

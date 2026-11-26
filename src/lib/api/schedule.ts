@@ -178,7 +178,7 @@ export const workingScheduleApi = {
     scheduleId: string,
     userId: string,
   ): Promise<WorkingSchedule> => {
-    // Endpoint này trả phần ca của một người: `user` thay vì `assignedUsers`. Mapper đọc được cả hai nên không cần biến đổi ở đây.
+    // Ca của một người.
     const response = await client.get<ApiWorkingSchedule>(
       `/working-schedules/${scheduleId}/users/${userId}`,
     );

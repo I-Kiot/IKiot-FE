@@ -21,10 +21,7 @@ const TYPE_ICON: Record<string, { icon: typeof Bell; className: string }> = {
 };
 const DEFAULT_ICON = { icon: Bell, className: "bg-zinc-500/10 text-zinc-500" };
 
-/**
- * Chuông thông báo hệ thống của ADMIN, cùng dáng với `NotificationBell` của shop. Thay cho màn
- * `/admin/system-notifications` cũ; dữ liệu nằm ở `useNotificationStore` (auth-guard tải lần đầu và nghe socket).
- */
+/** Chuông thông báo hệ thống của ADMIN. */
 export function AdminNotificationBell() {
   const router = useRouter();
   const pathname = usePathname();

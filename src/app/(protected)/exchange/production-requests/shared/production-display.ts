@@ -1,5 +1,4 @@
-// Badge và định dạng dùng chung cho danh sách cần sản xuất (B-4, B-6) và màn yêu cầu sản xuất (B-6, B-7).
-// Nhãn lấy từ `@/types/order-flow`.
+// Badge và định dạng dùng chung cho YCSX.
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
@@ -35,11 +34,7 @@ export function requestStatusDisplay(
   };
 }
 
-/**
- * Xưởng đang ở bước nào (2026-11-16), chỉ có ý nghĩa khi YCSX đã gửi mà chưa về đủ.
- * Có phiếu giao chờ nhận thì là "đã giao hàng" (kho cần kiểm và nhận); nhận / từ chối / rút phiếu xong mà còn phần chưa giao thì về lại "đang làm".
- * null = không hiện gì (nháp, đã xong, đã huỷ). Màn xưởng và màn shop dùng chung để hai bên đọc cùng một chữ.
- */
+/** Bước của xưởng: chờ xác nhận, đang làm, đã giao hàng. */
 export function workshopAcceptanceDisplay(
   request: Pick<ProductionRequest, "status" | "acceptedAt" | "deliveries">,
 ): { label: string; variant: BadgeVariant } | null {
@@ -47,7 +42,7 @@ export function workshopAcceptanceDisplay(
   return workshopStageDisplay(request.status, request.acceptedAt, hasPendingDelivery);
 }
 
-/** Cùng luật với `workshopAcceptanceDisplay` nhưng nhận dữ liệu rời, cho nơi chỉ có tóm tắt (tiến độ trên dòng đơn). */
+/** Như `workshopAcceptanceDisplay` nhưng nhận dữ liệu rời. */
 export function workshopStageDisplay(
   status: ProductionRequestStatus,
   acceptedAt: string | null | undefined,
@@ -61,7 +56,7 @@ export function workshopStageDisplay(
   return null;
 }
 
-/** Nhãn tiến độ của một YCSX trên dòng đơn: bước của xưởng khi đang làm, còn lại là trạng thái YCSX ("Nháp", "Nhận một phần", "Hoàn tất", "Đóng (nhận thiếu)"). */
+/** Nhãn tiến độ YCSX trên dòng đơn. */
 export function lineProgressDisplay(
   progress: Pick<LineProductionProgress, "status" | "acceptedAt" | "deliveringQuantity" | "closedShort">,
 ): { label: string; variant: BadgeVariant } {

@@ -32,8 +32,7 @@ export function useRolesMutations() {
   const fetchRoles = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Danh mục quyền là hằng số của hệ thống, nhưng tải cùng lượt đầu để màn hình không
-      // mở ra với một bộ chọn rỗng.
+      // Tải danh mục quyền cùng lượt đầu.
       const [list, entries] = await Promise.all([
         roleApi.getList(),
         roleApi.getPermissionCatalog(),
@@ -71,8 +70,7 @@ export function useRolesMutations() {
       const updated = await roleApi.update(id, toPayload(data))
       setRoles((prev) =>
         prev
-          // `userCount` không có trong phản hồi PATCH, nên giữ lại con số đang có thay vì
-          // để nó rơi về 0 và làm nút xóa trông như đang an toàn.
+          // Giữ `userCount` hiện có.
           .map((role) =>
             role.id === id ? { ...updated, userCount: role.userCount } : role,
           )

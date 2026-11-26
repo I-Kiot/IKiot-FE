@@ -45,11 +45,7 @@ const LIVE_RESOURCES = [CHANGE_RESOURCES.ORDER_RETURNS] as const;
 const DEFAULT_PAGE_SIZE = 10;
 const ALL = "ALL";
 
-/**
- * Quyền còn thiếu để dùng hộp thoại "Tạo đơn hoàn", hoặc `null` khi đủ.
- * Hộp thoại cần cả hai: `returns:create` để tạo phiếu, `orders:read` để tìm và mở đơn (`GET /orders`, `GET /orders/:id`).
- * Chỉ có `returns:create` thì mở được hộp thoại nhưng không tìm ra đơn nào (bug 43).
- */
+/** Quyền còn thiếu để tạo đơn hoàn, null khi đủ. */
 function missingCreateReturnPermission(role: string | null | undefined): string | null {
   if (!allows(role, "returns", "create")) return "returns:create";
   if (!allows(role, "orders", "read")) return "orders:read";
@@ -60,7 +56,7 @@ function missingCreateReturnPermission(role: string | null | undefined): string 
 export function ReturnsTable() {
   const role = getSessionRole();
   const missingCreatePermission = missingCreateReturnPermission(role);
-  // Người phụ trách đơn cũng được mở đơn trả nên nút không ẩn theo quyền; BE trả ORDER_RETURN_DENIED cho người khác.
+  // Không ẩn nút theo quyền, BE tự kiểm.
   const canInspect = allows(role, "returns", "inspect");
   const canCancel = allows(role, "returns", "cancel");
 
@@ -76,7 +72,7 @@ export function ReturnsTable() {
   const [reloads, setReloads] = React.useState(0);
   const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<OrderReturn | null>(null);
-  // Kết quả gắn với query nó trả lời; khi khác query hiện tại nghĩa là request mới đang chạy, nên `loading` không cần state riêng.
+  // `loading` suy ra từ query.
   const query = `${page}|${pageSize}|${status}|${term}|${reloads}`;
   const [loaded, setLoaded] = React.useState<{
     query: string;
@@ -86,7 +82,7 @@ export function ReturnsTable() {
   const loading = loaded?.query !== query;
   const rows = loaded?.rows ?? [];
   const total = loaded?.total ?? 0;
-  // Người khác tạo / kiểm / huỷ đơn hoàn: tải lại nền. Tick chỉ vào deps của effect tải, KHÔNG vào `query`, nên bảng không nháy "đang tải".
+  // Tải lại nền khi có thay đổi.
   const liveTick = useLiveTick({
     resources: LIVE_RESOURCES,
     visibleIds: rows.flatMap((row) => [row.id, row.order.id]),

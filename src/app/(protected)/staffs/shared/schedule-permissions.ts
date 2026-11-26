@@ -1,6 +1,4 @@
-/**
- * Ai được làm gì với lịch làm. Mỗi cổng hỏi quyền qua `allows()`, không theo tên role. Phạm vi xem lịch theo nơi làm việc (chi nhánh/kho) của tài khoản.
- */
+/** Quyền thao tác lịch làm. */
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionBranchId, getSessionWarehouseId } from "@/lib/auth";
 

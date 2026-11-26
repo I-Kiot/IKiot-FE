@@ -11,7 +11,7 @@ import { listAllTickets } from "@/lib/api/ticket";
 
 const unreadOf = (items: SystemNotification[]) => items.filter((n) => !n.isRead).length;
 
-/** Thông báo hệ thống của ADMIN (chuông trên header). Socket `system-notification` đẩy thêm qua `prepend`. */
+/** Thông báo hệ thống của ADMIN. */
 interface NotificationState {
   items: SystemNotification[];
   unreadCount: number;

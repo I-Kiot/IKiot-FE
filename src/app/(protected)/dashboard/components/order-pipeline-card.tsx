@@ -1,7 +1,6 @@
 "use client";
 
-// Tình trạng đơn đang chạy (đếm tại thời điểm xem, không theo kỳ). Mỗi dòng mở thẳng danh sách
-// đã lọc tương ứng.
+// Tình trạng đơn đang chạy, mỗi dòng mở danh sách đã lọc.
 
 import { useCallback, type ReactNode } from "react";
 import Link from "next/link";
@@ -23,9 +22,7 @@ interface StageDisplay {
   href: string;
 }
 
-/**
- * "Đang giao" gom PICKED_UP + SHIPPING, danh sách đơn chỉ lọc được một trạng thái nên mở SHIPPING. "Giao thất bại" là chuyến FAILED nên mở màn Giao hàng.
- */
+/** Link của nhóm "Đang giao" và "Giao thất bại". */
 const STAGE_DISPLAY: Record<OrderPipelineKey, StageDisplay> = {
   PENDING_CONFIRMATION: { label: "Chờ xác nhận", icon: ClipboardList, tone: "amber", href: "/sales/orders?status=PENDING_CONFIRMATION" },
   PROCESSING: { label: "Đang xử lý / đóng gói", icon: Boxes, tone: "violet", href: "/sales/orders?status=CONFIRMED" },

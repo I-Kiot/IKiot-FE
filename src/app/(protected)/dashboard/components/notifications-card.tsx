@@ -1,7 +1,6 @@
 "use client";
 
-// 4 thông báo mới nhất, đọc từ cùng kho với chuông thông báo trên header - đánh dấu đã đọc ở
-// một chỗ thì chỗ kia cũng thấy, và socket đẩy thông báo mới vào cả hai.
+// 4 thông báo mới nhất, dùng chung kho với chuông.
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";

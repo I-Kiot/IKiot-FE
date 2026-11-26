@@ -62,10 +62,7 @@ type Props = {
   onDone: () => void;
 };
 
-/**
- * Một dialog cho cả ba thao tác hàng hỏng trên một dòng tồn (`POST /inventory/:id/...`).
- * Đánh dấu hỏng có thể chọn đúng chiếc may riêng cho một đơn; sửa xong / huỷ lấy theo thứ tự nhập.
- */
+/** Dialog cho ba thao tác hàng hỏng trên một dòng tồn. */
 export function DamagedStockDialog({
   open,
   onOpenChange,

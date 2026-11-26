@@ -1,5 +1,4 @@
-// Đồng bộ BE (VIETNAM_TIMEZONE_OFFSET_MINUTES): giờ VN cố định UTC+7. `<input type="date">` chỉ trả ngày lịch địa phương, không có timezone;
-// `new Date(str).toISOString()` sẽ hiểu là UTC midnight, lệch 7 giờ so với giờ VN.
+// Giờ VN cố định UTC+7.
 const VN_OFFSET_MS = 7 * 60 * 60 * 1000
 
 /** "YYYY-MM-DD" (ngày VN) -> ISO UTC tại 00:00:00.000 giờ VN của ngày đó. */

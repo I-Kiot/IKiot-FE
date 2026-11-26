@@ -28,10 +28,7 @@ type Props = {
   onConfirmed: (order: OrderDetail) => void;
 };
 
-/**
- * D-9: chủ shop đếm số tiền shipper thu khi giao và xác nhận đủ (`POST /orders/:id/confirm-remittance`, A-10).
- * Đơn chuyển RECEIVED → COMPLETED. Nộp thiếu thì server từ chối; dialog hiện số còn thiếu.
- */
+/** Chủ shop xác nhận đã nhận đủ tiền shipper thu. */
 export function ConfirmRemittanceDialog({ order, open, onOpenChange, onConfirmed }: Props) {
   const { pending: livePending } = useLiveHold(open, [order.id]);
   const collected = order.collection?.amount ?? 0;

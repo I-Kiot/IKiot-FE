@@ -1,4 +1,4 @@
-// Badge và định dạng dùng chung cho danh sách đơn (D-1) và chi tiết đơn (D-3). Nhãn lấy từ `@/types/order-flow`; file này chỉ quyết định cách hiển thị.
+// Badge và định dạng cho đơn hàng.
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import {
@@ -143,10 +143,7 @@ export function formatDateTime(iso: string | null | undefined): string {
   });
 }
 
-/**
- * `YYYY-MM-DD` (requestedDeliveryDate) thành `dd/MM/yyyy`. Tách chuỗi thay vì parse: `new Date("2026-10-10")` là nửa đêm UTC,
- * nên hiện thành ngày 9 ở các múi giờ phía tây Greenwich.
- */
+/** Đổi `YYYY-MM-DD` thành `dd/MM/yyyy` bằng tách chuỗi. */
 export function formatPlainDate(value: string | null | undefined): string {
   if (!value) return "-";
   const [year, month, day] = value.split("-");

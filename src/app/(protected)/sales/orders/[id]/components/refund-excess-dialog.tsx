@@ -31,7 +31,7 @@ type Props = {
   onRefunded: (order: OrderDetail) => void;
 };
 
-/** Hoàn phần khách trả dư của đơn đã chốt (`POST /orders/:id/refund-excess`). Tối đa bằng `paymentSummary.overpaidBy`. */
+/** Hoàn phần khách trả dư. */
 export function RefundExcessDialog({ order, open, onOpenChange, onRefunded }: Props) {
   const { pending: livePending } = useLiveHold(open, [order.id]);
   const excess = order.paymentSummary.overpaidBy;

@@ -1,4 +1,4 @@
-// [Page – Đối soát tiền] Tình trạng tại thời điểm xem (không theo kỳ): tiền còn nằm ngoài sổ két / ngân hàng, cần người xử lý.
+// [Trang – Đối soát tiền] Tiền còn nằm ngoài sổ két / ngân hàng tại thời điểm xem.
 'use client'
 
 import { useCallback, useState, Suspense } from 'react'

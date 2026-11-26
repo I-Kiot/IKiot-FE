@@ -10,10 +10,7 @@ import { useSalesBranch } from "./_hooks/use-sales-branch";
 import { DirectSaleTab } from "./components/direct-sale-tab";
 import { PickSalesBranchDialog } from "./components/pick-sales-branch-dialog";
 
-/**
- * Bán tại quầy (POS), toàn màn hình. Tab đơn tay tách sang `/sales/orders/new` vì hai kiểu đơn cạnh nhau dễ nhầm;
- * link cũ `?mode=order` chuyển sang đó.
- */
+/** Bán tại quầy (POS), toàn màn hình. */
 function CheckOutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

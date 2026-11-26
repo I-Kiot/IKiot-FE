@@ -16,9 +16,9 @@ const eslintConfig = defineConfig([
       }
     }
   },
-  // Override default ignores of eslint-config-next.
+  // Ghi đè danh sách bỏ qua mặc định của eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
+    // Danh sách bỏ qua mặc định của eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",

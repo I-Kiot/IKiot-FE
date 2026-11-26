@@ -65,10 +65,10 @@ export function CreateReturnDialog({ open, onOpenChange, onCreated }: CreateRetu
   const [note, setNote] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Tìm đơn có debounce (BE khớp mã, tên, SĐT khách). Kết quả gắn với từ khoá đã trả lời nên không hiện danh sách cũ.
+  // Tìm đơn có debounce.
   const term = search.trim();
   const wanted = open && !order && term.length >= 2;
-  // `error`: lý do BE từ chối lần tìm (vd. thiếu quyền xem đơn). Phải hiện ra, không được coi như "không có đơn nào".
+  // Hiện lý do BE từ chối lần tìm.
   const [found, setFound] = React.useState<{
     term: string;
     items: OrderListItem[];

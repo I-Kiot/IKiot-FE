@@ -1,5 +1,4 @@
-// Khoảng thời gian của dashboard tổng quan: hôm nay / 7 ngày / 30 ngày / tháng này / tuỳ chỉnh.
-// Hàm thuần, không gọi API - mọi widget đọc cùng một kết quả nên không thể lệch kỳ với nhau.
+// Khoảng thời gian của dashboard, hàm thuần.
 
 import type { RevenueGroupBy } from "@/lib/api/stats";
 
@@ -20,9 +19,7 @@ export const PRESET_OPTIONS: { value: OverviewPreset; label: string }[] = [
 export interface ResolvedRange {
   /** `YYYY-MM-DD`, ngày đầu kỳ. */
   fromDate: string;
-  /**
-   * Gửi cho BE làm `toDate`. Kỳ kết thúc hôm nay thì là thời điểm hiện tại (ISO) để so với đúng khoảng đã trôi của kỳ trước, không phải cả ngày hôm qua.
-   */
+  /** `toDate` gửi BE; kỳ kết thúc hôm nay thì là thời điểm hiện tại. */
   toParam: string;
   /** `YYYY-MM-DD`, ngày cuối kỳ - để vẽ trục biểu đồ. */
   toDate: string;
@@ -67,7 +64,7 @@ function presetStart(preset: OverviewPreset, today: string): string {
 
 function previousLabelOf(range: OverviewRange, days: number): string {
   if (range.preset === "today") return "hôm qua";
-  // "Tháng này" cũng so với số ngày bằng nó ngay trước đó (BE `previousPeriod`), không phải cùng kỳ tháng trước.
+  // So với cùng số ngày ngay trước đó.
   return `${days} ngày trước đó`;
 }
 
@@ -103,10 +100,7 @@ export function rangeKey(range: OverviewRange): string {
   return range.preset === "custom" ? `custom:${range.from}:${range.to}` : range.preset;
 }
 
-/**
- * Mọi mốc trên trục biểu đồ, kể cả mốc không có đơn (BE chỉ trả mốc có số liệu).
- * Giờ: `YYYY-MM-DDTHH` cho 24 giờ của ngày; ngày: `YYYY-MM-DD`; tháng: `YYYY-MM`.
- */
+/** Mọi mốc trên trục biểu đồ, kể cả mốc không có đơn. */
 export function bucketsOf(fromDate: string, toDate: string, groupBy: RevenueGroupBy): string[] {
   const buckets: string[] = [];
   if (groupBy === "hour") {

@@ -23,10 +23,7 @@ export const CREATE_INBOUND_COPY: Record<InboundSource, { title: string; descrip
   },
 };
 
-/**
- * Nguồn đang chọn và các nguồn đã từng mở. Form đã mở một lần được giữ mount và chỉ ẩn đi, để đổi qua lại không mất
- * phần đang nhập; form chưa từng chọn thì chưa mount, nên chưa tải cả catalog khi chưa cần.
- */
+/** Giữ mount form đã mở để đổi qua lại không mất dữ liệu. */
 export function useInboundSourceSwitch(defaultSource: InboundSource) {
   const [source, setSource] = useState(defaultSource);
   const [opened, setOpened] = useState<InboundSource[]>([defaultSource]);

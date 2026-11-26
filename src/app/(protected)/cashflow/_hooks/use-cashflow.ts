@@ -18,7 +18,7 @@ export type FundFilter = 'ALL' | CashflowFund
 
 const DEFAULT_PAGE_SIZE = 15
 
-/** Bộ lọc chung của các trang báo cáo: kỳ (`YYYY-MM-DD`, giờ VN) và nơi, do trang đọc từ URL. Đổi kỳ / nơi thì trang tự về trang 1 (`setPage`). */
+/** Bộ lọc chung của trang báo cáo: kỳ và nơi. */
 export interface CashflowScope {
   fromDate: string
   toDate: string

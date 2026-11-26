@@ -1,7 +1,4 @@
-/**
- * Static permission matrix check for schedule module.
- * Run: node scripts/verify-schedule-permissions.mjs
- */
+/** Kiểm ma trận quyền của module lịch. Chạy: node scripts/verify-schedule-permissions.mjs */
 
 const roles = [
   "TENANT_OWNER",

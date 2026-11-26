@@ -1,6 +1,6 @@
 "use client";
 
-// Bốn chỉ số đầu trang: doanh thu, số đơn, giá trị đơn trung bình, lợi nhuận gộp - kèm % so với kỳ trước.
+// Bốn KPI đầu trang kèm % so với kỳ trước.
 
 import { useCallback } from "react";
 import { ArrowDownRight, ArrowUpRight, Banknote, Info, Minus, ReceiptText, ShoppingCart, TrendingUp } from "lucide-react";

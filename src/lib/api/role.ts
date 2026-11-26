@@ -7,11 +7,7 @@ import type {
   RoleUpdatePayload,
 } from '@/types/role'
 
-/**
- * Hình dạng backend trả về. `_count.users` là số tài khoản đang giữ vai trò - được làm
- * phẳng thành `userCount` để phần còn lại của FE không phải biết đến quy ước đặt tên của
- * Prisma.
- */
+/** Dạng vai trò backend trả về. */
 interface RoleDoc {
   id: string
   name: string
@@ -34,14 +30,8 @@ function mapRole(doc: RoleDoc): Role {
   }
 }
 
-/**
- * Gom danh mục phẳng thành nhóm tài nguyên. Backend trả 150 cặp (resource, action);
- * danh sách phẳng 150 checkbox không ai chọn nổi, nên UI làm việc trên ~30 nhóm.
- */
-/**
- * Nhãn theo chữ trên thanh điều hướng, kèm đường dẫn menu để đối chiếu.
- * Nhãn backend (`PermissionCatalog.label`) là tên nghiệp vụ chung, lệch với sidebar nên người phân quyền khó đoán màn hình. Tài nguyên không có trong bảng này giữ nhãn backend.
- */
+/** Gom danh mục quyền phẳng thành nhóm tài nguyên. */
+/** Nhãn nhóm quyền theo tên trên thanh điều hướng. */
 const RESOURCE_NAV_LABELS: Record<string, { label: string; hint: string }> = {
   reports: { label: 'Tổng quan & Sổ thu chi', hint: 'Quản lý › Tổng quan, Sổ thu chi' },
   ai_chat: { label: 'Trợ lý AI', hint: 'Quản lý › Trợ lý AI' },

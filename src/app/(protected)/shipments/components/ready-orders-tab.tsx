@@ -1,7 +1,6 @@
 "use client";
 
-// Tab "Chờ giao": đơn đã đóng gói (PACKED), chờ giao cho đơn vị vận chuyển / shipper - kể cả đơn đã gán shipper
-// mà shipper chưa xác nhận lấy hàng.
+// Tab "Chờ giao": đơn đã đóng gói.
 
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";

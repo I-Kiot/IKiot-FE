@@ -38,8 +38,7 @@ function toPayload(data: PromotionFormValues) {
       categoryIds: data.applicableRuleType === 'category' ? data.categoryIds : [],
       productItemIds: data.applicableRuleType === 'product' ? data.productItemIds : [],
     },
-    // Ngày chọn trên form là ngày lịch VN (input date-only, không có timezone) - quy đổi
-    // đúng sang mốc UTC của đầu/cuối ngày giờ VN thay vì hiểu nhầm thành UTC midnight.
+    // Đổi ngày trên form sang mốc UTC theo giờ VN.
     startDate: vnStartOfDayToIso(data.startDate),
     endDate: vnEndOfDayToIso(data.endDate),
     stackable: data.stackable,

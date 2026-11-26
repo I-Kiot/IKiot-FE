@@ -18,8 +18,7 @@ export default function OrdersPage() {
   const canCreate = allows(role, "orders", "create");
 
   return (
-    // Provider bọc cả header: nút "Sao chép" cạnh "Tạo đơn" đọc các đơn đang tích trong bảng.
-    // Suspense vì OrdersProvider đọc `useSearchParams` (lọc sẵn từ link dashboard) - Next bắt buộc khi build.
+    // Provider bọc cả header; cần Suspense.
     <Suspense>
       <OrdersProvider enabled={canView}>
         <div className="flex flex-col gap-6 px-4 lg:px-6">

@@ -68,7 +68,7 @@ const formatDate = (dateStr: string) => {
   }).format(new Date(dateStr));
 };
 
-// Backend trả người trong session dạng `{ id, phoneNumber, profile }` kèm cột `*Id`; bản ghi cũ chỉ có id vẫn có nhãn.
+// Nhãn người trong phiên két.
 const getUserFullName = (userRef?: CashDrawerUserRef | null, fallback = "Nhân viên") => {
   if (!userRef) return fallback;
   const first = userRef.profile?.firstName || "";
@@ -178,8 +178,7 @@ export default function CashDrawerDetailPage() {
     prevLocationKeyRef.current = locationKey;
   }, [locationKey, session, user, router]);
 
-  // Người nhận bàn giao: route riêng của két (quyền `cash_drawers:report`, chỉ người đang giữ két), không phải
-  // `GET /users` - thu ngân không có `users:read`. BE lọc bằng đúng điều kiện nó kiểm khi nhận log, và bỏ chính mình.
+  // Người nhận bàn giao, qua route riêng của két.
   useEffect(() => {
     // Két quá hạn không bàn giao được (BE trả CASH_DRAWER_OVERDUE), nên không tải danh sách.
     if (!isReportOpen || !session || session.overdue) return;
@@ -221,7 +220,7 @@ export default function CashDrawerDetailPage() {
 
     setIsSubmitting(true);
     try {
-      // Server yêu cầu START trước END của người giữ két. Nút "Nhận ca" đã gửi START; nếu bỏ qua thì gửi ở đây để không lỗi SHIFT_LOG_START_REQUIRED.
+      // Gửi START trước END nếu chưa nhận ca.
       if (!hasStartedShift) {
         await cashDrawerApi.submitShiftLog(id, {
           type: "START",
@@ -273,8 +272,7 @@ export default function CashDrawerDetailPage() {
     }
   };
 
-  // Mở két và chốt két là hai mã riêng (màn Vai trò tick chung, nhưng role cũ có thể chỉ có một): ai giữ một trong hai
-  // thấy khu quản lý, còn nút chốt chỉ hiện cho người có `finalize`.
+  // Ai có quyền mở hoặc chốt két thấy khu quản lý; nút chốt cần `finalize`.
   const canFinalize = canFinalizeCashDrawer(user?.role);
   const isManager = canManageCashDrawer(user?.role) || canFinalize;
   const branchName = session?.branch?.name ?? "Chi nhánh";
@@ -340,7 +338,7 @@ export default function CashDrawerDetailPage() {
     return lastLog?.type === "START" && lastLog.staffId === user.id;
   }, [session, user]);
 
-  // END cuối của người giữ két (không chỉ định người nhận) là bàn giao cho quản lý: từ đây chỉ còn "chốt két", nên không hiện nút ca nữa.
+  // Đã bàn giao cho quản lý thì ẩn nút ca.
   const awaitingFinalize = useMemo(() => {
     if (!session) return false;
     const lastLog = session.shiftLogs.at(-1);
@@ -487,7 +485,7 @@ export default function CashDrawerDetailPage() {
 
               {isOpen && (
                 <div className="pt-6 border-t mt-6 flex flex-wrap items-center gap-3">
-                  {/* Chỉ hiện khi chốt được: trong phiên (chờ nhận ca, chờ báo cáo cuối ca) nút này không có việc gì để làm. */}
+                  {/* Chỉ hiện khi chốt được. */}
                   {awaitingFinalize && canFinalize && (
                     <Button
                       variant="destructive"
@@ -803,7 +801,7 @@ export default function CashDrawerDetailPage() {
   );
 }
 
-/** Mở két → các lần nhận ca / báo cáo cuối ca → chốt két. Ai mở được két (quản lý hay nhân viên đã làm ca) đều thấy cùng một lịch sử. */
+/** Chi tiết phiên két: mở, nhận ca, báo cáo cuối ca, chốt. */
 function HandoverTimeline({
   session,
   isOpen,

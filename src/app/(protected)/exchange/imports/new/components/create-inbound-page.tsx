@@ -23,7 +23,7 @@ function listUrl(source: InboundSource): string {
   return `/exchange/imports?source=${source}`;
 }
 
-/** Trang tạo mới: chọn nguồn ban đầu theo `?source=` (nếu được tạo loại đó), không có quyền tạo thì báo. */
+/** Trang tạo mới, chọn nguồn theo `?source=`. */
 export function CreateInboundPage() {
   const params = useSearchParams();
   const creatable = creatableInboundSources(getSessionRole());

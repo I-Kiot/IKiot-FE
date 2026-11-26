@@ -89,8 +89,7 @@ client.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Không refresh với endpoint auth: 401 ở đó là sai thông tin / email chưa đăng ký, không phải token hết hạn.
-    // Refresh rồi redirect sẽ đẩy người dùng về /sign-in và nuốt mất lỗi thật.
+    // Không refresh với endpoint auth.
     const isAuthEndpoint =
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/firebase-login") ||
@@ -102,18 +101,12 @@ client.interceptors.response.use(
       originalRequest.url?.includes("/auth/forgot-password") ||
       originalRequest.url?.includes("/auth/reset-password");
 
-    // Chỉ refresh token khi 401, hoặc 403 mà backend nói rõ là phiên hết hạn.
-    // 403 thông thường là thiếu quyền/subscription - retry không giúp.
-    //
-    // Backend mới gửi `code`; chuỗi "Invalid or expired token." là của backend cũ và
-    // được giữ lại cho tới khi cutover xong - so khớp nguyên văn một câu chữ chính là
-    // thứ khiến vòng refresh chết nếu ai đó sửa câu đó.
+    // Chỉ refresh khi 401, hoặc 403 do phiên hết hạn.
     const errorBody = error.response?.data as
       | { code?: string; message?: string }
       | undefined;
 
-    // Dịch `message` sang tiếng Việt tại biên theo `code`: backend trả `message` tiếng Anh, còn `code` mới ổn định.
-    // Mã không có trong bảng thì giữ nguyên message của backend.
+    // Dịch `message` sang tiếng Việt theo `code`.
     const localized = messageForCode(errorBody?.code);
     if (localized && errorBody) errorBody.message = localized;
     const isTokenExpired =
@@ -153,11 +146,10 @@ client.interceptors.response.use(
           { refreshToken: refreshTokenFromStorage },
           { withCredentials: true },
         );
-        // Backend bọc body trong `{ success, data }`, token nằm lớp dưới. Đọc thẳng `response.data` từng làm
-        // token thành `undefined` và phiên mất sau 15 phút. Xử lý cả hai dạng như `loginUser` trong ../auth.ts.
+        // Đọc token từ cả hai dạng response.
         const body = response.data?.data ?? response.data;
         const accessToken: string | undefined = body?.accessToken;
-        // Backend rotate thì luôn cấp refresh token mới; giữ token cũ làm dự phòng để nếu backend ngừng rotate chỉ xuống cấp, không đăng xuất mọi người.
+        // Giữ refresh token cũ nếu backend không cấp mới.
         const refreshToken: string = body?.refreshToken ?? refreshTokenFromStorage;
         if (!accessToken) {
           throw new Error("Refresh response carried no access token");

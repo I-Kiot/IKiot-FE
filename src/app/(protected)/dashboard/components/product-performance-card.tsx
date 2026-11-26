@@ -1,7 +1,6 @@
 "use client";
 
-// Sản phẩm bán chạy (top 5 theo số lượng hoặc doanh thu) và bán chậm (còn trên kệ nhưng bán ít nhất)
-// trong kỳ đang chọn - để quyết định nhập thêm gì, dừng nhập gì.
+// Sản phẩm bán chạy và bán chậm trong kỳ.
 
 import { useCallback, useState, type ReactNode } from "react";
 import { Flame } from "lucide-react";

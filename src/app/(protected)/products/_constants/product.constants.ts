@@ -46,8 +46,7 @@ export const STATUS_ORDER: Record<ProductStatus, number> = {
   DISCONTINUED: 2,
 }
 
-// BE (ProductService.softDeleteProduct) chặn xóa hàng hóa nếu còn tồn kho,
-// đang có phiếu chuyển kho dang dở, hoặc đang nằm trong đơn hàng chờ xử lý.
+// Lý do BE chặn xoá hàng hoá.
 export function getDeleteProductErrorMessage(beMessage?: string): string {
   if (!beMessage) return 'Xóa hàng hóa thất bại'
   if (beMessage.includes('still items in stock')) {
@@ -77,5 +76,5 @@ export const COLUMN_LABELS: Record<string, string> = {
   status: 'Trạng thái',
 }
 
-/** Giá trị đặc biệt của ô lọc Trạng thái: chỉ sản phẩm còn hàng hỏng (`damagedStock > 0`) ở nơi đang xem. */
+/** Lọc sản phẩm còn hàng hỏng. */
 export const DAMAGED_FILTER = "DAMAGED";

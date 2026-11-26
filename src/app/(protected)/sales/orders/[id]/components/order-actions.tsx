@@ -19,7 +19,7 @@ const EDITABLE_STATUSES: readonly OrderStatus[] = [
 
 type Open = "edit" | "handling" | "cancel" | null;
 
-/** Nút trên header chi tiết đơn: sửa, huỷ và bàn giao (D-7). Các bước hành trình nằm dưới thanh bước (`OrderJourneyActions`). Không có quyền thì nút mờ và bấm vào báo cần quyền gì. */
+/** Nút sửa, huỷ, bàn giao trên header chi tiết đơn. */
 export function OrderActions({
   order,
   onChanged,
@@ -31,7 +31,7 @@ export function OrderActions({
   const editable =
     order.fulfillmentType !== "TAKEAWAY" && EDITABLE_STATUSES.includes(order.status);
   const canUpdate = allows(role, "orders", "update");
-  // Người đang phụ trách giao lại được đơn của mình dù không có `orders:update` (BE `assertReassignAccess`).
+  // Người đang phụ trách được giao lại đơn của mình.
   const me = getSessionUserId();
   const canReassign = canUpdate || (me !== undefined && order.assignee?.id === me);
   const [open, setOpen] = React.useState<Open>(null);

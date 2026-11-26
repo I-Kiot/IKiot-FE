@@ -38,8 +38,7 @@ function mapId<T extends object>(doc: ApiDoc<T>): T & { id: string } {
 // Một phiên bản như BE trả về: giá trị thuộc tính nằm ở `details`.
 type ApiItemDoc = ApiDoc<ProductItem> & { details?: ProductItem["productDetails"] };
 
-// BE gọi giá trị thuộc tính của SKU là `details`; FE dùng `productDetails` (tên của API cũ).
-// Mọi response có phiên bản đều phải qua hàm này.
+// Đổi `details` của BE thành `productDetails`.
 function mapItem(doc: ApiItemDoc): ProductItem {
   const item = mapId(doc) as ProductItem & { details?: ProductItem["productDetails"] };
   const { details, ...rest } = item;
@@ -81,8 +80,7 @@ export const productApi = {
     };
   },
 
-  // GET /products/items: danh sách SKU phẳng, không cần lấy chi tiết từng sản phẩm
-  // (GET /products không trả `items` theo từng sản phẩm; xem ProductService.js).
+  // Danh sách SKU phẳng.
   listItems: async (
     params?: ProductItemListParams,
   ): Promise<ProductItemListEntry[]> => {
@@ -175,7 +173,7 @@ export const productApi = {
       `/products/${productId}/items`,
       payload,
     );
-    // Phải qua mapItem: BE trả thuộc tính dưới tên `details`, bỏ qua thì productDetails rỗng và UI ẩn mục Thuộc tính.
+    // Đi qua mapItem để có thuộc tính.
     return mapItem(res.data.data);
   },
 
@@ -195,7 +193,7 @@ export const productApi = {
     await client.delete(`/products/items/${itemId}`);
   },
 
-  // GET /products/import/template - file .xlsx mẫu, dropdown lấy từ danh mục/thương hiệu/NCC của cửa hàng.
+  // Tải file Excel mẫu.
   downloadImportTemplate: async (): Promise<Blob> => {
     const res = await client.get<Blob>("/products/import/template", {
       responseType: "blob",

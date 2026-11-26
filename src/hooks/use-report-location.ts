@@ -1,9 +1,6 @@
 "use client"
 
-// [Hook – nơi xem báo cáo trên URL] Mọi trang báo cáo / thống kê chọn nơi xem ngay trên trang: `?place=all | branch-<id> | warehouse-<id>`
-// (cùng dạng khoá với bộ chọn địa điểm trên header). Không có thì lấy theo địa điểm đang chọn trên header.
-// Chỉ chủ shop được chọn; nhân viên luôn bị ghim ở chi nhánh/kho được gán như header (backend cũng tự giới hạn phạm vi).
-// Trang dùng hook này phải bọc Suspense vì đọc `useSearchParams`.
+// Nơi xem báo cáo trên URL (`?place=all | branch-<id> | warehouse-<id>`); nhân viên bị ghim nơi được gán. Cần bọc Suspense.
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -24,7 +21,7 @@ export interface ReportLocationOption {
 
 export const ALL_LOCATIONS = "all"
 
-/** Chọn được mọi nơi: chủ shop và admin (danh sách quyền rỗng = mọi quyền). Nhân viên bị ghim như bộ chọn trên header. */
+/** Chủ shop và admin chọn được mọi nơi. */
 function canChooseLocation(role: string | undefined): boolean {
   return role === "TENANT_OWNER" || role === "ADMIN"
 }
@@ -46,10 +43,7 @@ const warehouseOption = (w: { id: string; name: string; status?: string }): Opti
   inactive: w.status === "INACTIVE",
 })
 
-/**
- * Chi nhánh / kho cho dropdown, tải một lần cho mỗi trang. Người chọn được thì lấy cả danh sách của shop;
- * nhân viên chỉ lấy đúng nơi được gán (như bộ chọn trên header) để hiện tên.
- */
+/** Chi nhánh / kho cho dropdown, tải một lần mỗi trang. */
 function useLocationOptions(canChoose: boolean, pinnedKey: string): { branches: Option[]; warehouses: Option[] } {
   const [lists, setLists] = useState<{ branches: Option[]; warehouses: Option[] }>({ branches: [], warehouses: [] })
 

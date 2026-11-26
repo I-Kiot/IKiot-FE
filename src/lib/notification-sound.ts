@@ -1,5 +1,4 @@
-// Âm báo thông báo mới bằng Web Audio (không cần file mp3). Trình duyệt chặn âm thanh trước khi user
-// tương tác, nên context được mở khoá ở click/phím đầu; trước đó chỉ hiện toast.
+// Âm báo thông báo mới bằng Web Audio.
 const MUTE_KEY = "ikiot:notification-sound-muted";
 
 let ctx: AudioContext | null = null;

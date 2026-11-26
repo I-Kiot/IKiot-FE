@@ -74,11 +74,7 @@ const linesKey = (lines: OrderLineDraft[]) =>
     lines.map((l) => [l.id ?? null, l.productItemId, l.quantity, l.unitPrice, l.discountAmount]),
   );
 
-/**
- * D-7: sửa đơn tạo tay trước khi giao (`PATCH /orders/:id`, A-8). Thông tin giao, phí và ghi chú sửa được tới SHIPPING;
- * dòng hàng chỉ sửa khi CONFIRMED (đơn đã đóng gói thì hàng bị khoá, muốn đổi thì huỷ rồi tạo lại). Đổi cọc làm lệch số tiền đã thu
- * sẽ bị từ chối (ORDER_DEPOSIT_CHANGED); form cho phép giữ nguyên số đã thu.
- */
+/** Sửa đơn tay trước khi giao; dòng hàng chỉ sửa khi CONFIRMED. */
 export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   const { pending: livePending } = useLiveHold(open, [order.id]);
   const linesEditable = order.status === "CONFIRMED";
@@ -105,7 +101,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
   // Đơn chỉ đóng gói được khi xuất từ một nơi, nên dòng thêm mới theo nguồn hàng của các dòng đang có.
   const existingSource = order.items.find((line) => line.sourceLocation)?.sourceLocation ?? null;
   const hasSource = existingSource !== null;
-  // Tồn của dòng thêm mới đọc tại nguồn hàng của đơn; đơn chưa có nguồn thì tại kho xuất của chi nhánh, như khi tạo đơn.
+  // Đọc tồn của dòng thêm mới tại nguồn hàng của đơn.
   const [sourceOptions, setSourceOptions] = React.useState<SourceLocation[]>([]);
   const [pickedSourceId, setPickedSourceId] = React.useState<string | null>(null);
   const picked = sourceOptions.find((location) => location.id === pickedSourceId);
@@ -155,11 +151,11 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
 
   const linesChanged = linesEditable && linesKey(lines) !== linesKey(initialLines);
   const pickup = fulfillmentType === "STORE_PICKUP";
-  // Chuyển giữa khách tới lấy và giao tận nơi chỉ khi chưa có ai mang hàng đi (BE: ORDER_FULFILLMENT_TYPE_LOCKED).
+  // Chỉ đổi hình thức nhận hàng khi chưa ai mang hàng đi.
   const hasOpenShipment = order.shipments.some(
     (shipment) => !["DELIVERED", "FAILED", "RETURNED", "CANCELLED"].includes(shipment.status),
   );
-  // Đã thu tại quầy (PAID mà tổng trừ cọc vẫn > 0) thì đổi sang giao tận nơi sẽ thu lần nữa (BE: ORDER_PICKUP_ALREADY_COLLECTED).
+  // Đã thu tại quầy thì không đổi sang giao tận nơi.
   const collectedAtCounter =
     order.fulfillmentType === "STORE_PICKUP" && order.paymentStatus === "PAID" && order.amountDue > 0;
   const shippedOff = !(order.status === "CONFIRMED" || (order.status === "PACKED" && !hasOpenShipment));
@@ -170,7 +166,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
     requestedDeliveryDate !== (order.requestedDeliveryDate ?? "") && isPastDate(requestedDeliveryDate)
       ? PAST_DATE_MESSAGE
       : undefined;
-  // Giao tận nơi phải đủ người nhận, SĐT, địa chỉ - cùng luật BE kiểm tra (ORDER_DELIVERY_INFO_REQUIRED).
+  // Giao tận nơi phải đủ người nhận, SĐT, địa chỉ.
   const deliveryError =
     fulfillmentType === "HOME_DELIVERY" &&
     (!recipientName.trim() || !recipientPhone.trim() || !deliveryAddress.trim())

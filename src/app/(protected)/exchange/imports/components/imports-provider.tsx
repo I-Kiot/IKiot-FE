@@ -28,7 +28,7 @@ type Props = {
   refreshSignal: number
 }
 
-/** Dữ liệu tab Nhà cung cấp. Chỉ lấy phiếu `SUPPLIER`: phiếu nhận hàng xưởng mở từ chi tiết yêu cầu sản xuất. */
+/** Dữ liệu tab Nhà cung cấp. */
 export function ImportsProvider({ children, refreshSignal }: Props) {
   const [statusFilter, setStatusFilter] = useState<MovementStatus | 'ALL'>('ALL')
   const [reloads, setReloads] = useState(0)

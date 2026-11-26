@@ -223,12 +223,9 @@ export function SalesByProductReport() {
   )
 }
 
-// ---------------------------------------------------------------- Theo đối tượng (khách hàng; nhân viên và điểm bán có trang riêng)
+// ─── Theo đối tượng ───
 
-/**
- * Bốn cột số chung của các bảng doanh thu theo đối tượng. `totals` là tổng cả kỳ do server trả (bảng phân trang):
- * dòng Cộng và tỷ trọng tính trên tổng đó, không trên trang đang xem. Không có thì cộng các dòng đang có.
- */
+/** Bốn cột số của bảng doanh thu theo đối tượng; dòng Cộng tính trên tổng cả kỳ. */
 export function revenueColumns<T extends { orderCount: number; revenue: number; aov: number }>(
   rows: T[],
   totals?: { orderCount: number; revenue: number },
@@ -248,10 +245,7 @@ export function revenueColumns<T extends { orderCount: number; revenue: number; 
   ]
 }
 
-/**
- * So sánh doanh thu các điểm bán (chi nhánh) - chỉ hiện khi xem toàn cửa hàng. Phân trang phía server;
- * dòng Cộng và tỷ trọng tính trên tổng cả kỳ của mọi điểm bán, không đổi khi chuyển trang.
- */
+/** So sánh doanh thu các điểm bán, chỉ khi xem toàn cửa hàng. */
 export function SalesByBranchReport() {
   const { revenueDateRange } = useDashboard()
   const [page, setPage] = useState(1)
@@ -259,7 +253,7 @@ export function SalesByBranchReport() {
   const fromDate = revenueDateRange?.fromDate
   const toDate = revenueDateRange?.toDate
 
-  // Kỳ đổi thì `load` đổi (tải lại); trang giữ nguyên nếu vẫn còn, quá số trang thì thanh phân trang tự kẹp.
+  // Đổi kỳ thì tải lại, giữ trang nếu còn.
   const load = useCallback(
     () =>
       !fromDate || !toDate

@@ -51,10 +51,7 @@ function normalizeSearchText(value: string): string {
   return value.normalize("NFC").toLocaleLowerCase("vi").trim();
 }
 
-/**
- * Mức khớp với từ khóa, nhỏ hơn = sát hơn: trùng hẳn mã/SKU/mã vạch → trùng tên → mã bắt đầu bằng từ khóa →
- * tên bắt đầu bằng từ khóa → tên chứa từ khóa → còn lại (biến thể đi kèm vì cùng sản phẩm với dòng khớp).
- */
+/** Mức khớp với từ khoá, nhỏ hơn là sát hơn. */
 function matchRank(
   p: { productName: string; productCode: string; sku: string; barcode: string },
   q: string,
@@ -181,8 +178,7 @@ export function ProductSearch({
         )?.url,
       })),
     );
-    // BE trả theo ngày tạo; xếp lại: khớp từ khóa sát nhất trước, cùng mức khớp thì hàng bán được ngay lên trên.
-    // `sort` ổn định nên phần còn lại giữ thứ tự BE.
+    // Sắp lại: khớp sát trước, hàng bán được lên trên.
     const q = normalizeSearchText(query);
     return flattened
       .map((p) => ({ p, rank: matchRank(p, q), sellable: p.status === "ACTIVE" && p.availableStock > 0 }))
@@ -269,8 +265,7 @@ export function ProductSearch({
     if (product.status !== "ACTIVE") {
       return;
     }
-    // Quầy chỉ bán hàng có trên kệ (combo: đủ cả bộ). Click, Enter và nút "Mua nhanh" đều đi qua đây;
-    // trước đây chỉ làm mờ dòng nên bấm vào vẫn thêm được và đến lúc thanh toán BE mới từ chối.
+    // Chỉ thêm hàng có trên kệ vào giỏ.
     if (!allowOutOfStock && product.availableStock <= 0) {
       toast.warning(`${product.name} đã hết hàng`);
       return;

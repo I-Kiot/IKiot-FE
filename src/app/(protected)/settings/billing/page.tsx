@@ -12,8 +12,7 @@ import { canManageBilling } from "@/components/sidebar/constants/role-permission
 
 export default function BillingSettings() {
   const user = useAuthStore((state) => state.user)
-  // Gói lấy từ GET /subscription/current, không lấy từ session user (/auth/me không có subscription).
-  // Dữ liệu refetch được là thứ làm trang tự vẽ lại ngay khi thanh toán được xác nhận.
+  // Gói lấy từ GET /subscription/current.
   const { subscription, invoices, isLoading, refresh } = useBilling()
 
   return (

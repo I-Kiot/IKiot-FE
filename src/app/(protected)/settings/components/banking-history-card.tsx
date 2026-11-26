@@ -60,7 +60,7 @@ function ChangeRow({ change }: { change: BankingChange }) {
   );
 }
 
-/** "Lịch sử thay đổi" của thông tin nhận tiền (chỉ render khi người xem có `tenants:update`). Đổi `refreshKey` để tải lại từ trang 1 sau khi lưu. */
+/** Lịch sử đổi thông tin nhận tiền. */
 export function BankingHistoryCard({ refreshKey = 0 }: { refreshKey?: number }) {
   const fetchPage = useCallback((page: number) => getBankingHistory({ page, limit: PAGE_SIZE }), []);
   const { rows, pagination, loading, error, setPage } = useHistoryPage<BankingChange>(fetchPage, true, `banking:${refreshKey}`);

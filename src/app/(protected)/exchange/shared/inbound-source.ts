@@ -1,7 +1,4 @@
-/**
- * Hai nguồn hàng vào của màn Nhập hàng: mua từ nhà cung cấp (phiếu nhập) và đặt xưởng làm (yêu cầu sản xuất).
- * Quyền của từng nguồn nằm ở đây để toggle bảng, toggle dialog và menu không thể lệch nhau.
- */
+/** Hai nguồn hàng vào của màn Nhập hàng và quyền của từng nguồn. */
 import { allows } from "@/components/sidebar/constants/role-permissions";
 
 export type InboundSource = "SUPPLIER" | "WORKSHOP";
@@ -23,7 +20,7 @@ export const INBOUND_CREATE_PERMISSIONS: Record<InboundSource, readonly [string,
   WORKSHOP: ["production_requests", "create"],
 };
 
-// Thứ tự này là thứ tự tab trên toggle, và nguồn đầu tiên được phép là tab mặc định khi URL không chỉ định: Xưởng trước.
+// Thứ tự tab, nguồn đầu tiên là mặc định.
 const ALL_SOURCES: InboundSource[] = ["WORKSHOP", "SUPPLIER"];
 
 /** Những nguồn tài khoản được xem bảng. */
@@ -42,7 +39,7 @@ export function creatableInboundSources(role: string | null | undefined): Inboun
   });
 }
 
-/** Nguồn thực sự dùng: giá trị trên URL nếu hợp lệ và được phép, nếu không thì nguồn đầu tiên được phép. */
+/** Nguồn đang dùng: từ URL nếu hợp lệ, không thì nguồn đầu tiên. */
 export function resolveInboundSource(
   requested: string | null,
   allowed: InboundSource[],

@@ -44,9 +44,7 @@ export interface ApiScheduleUser {
   warehouseId?: string | { id: string };
 }
 
-/**
- * Response thô từ BE. `assignedUsers` là danh sách nhân viên cùng ca (bảng nối nên không phải một `userId`); `user` là khoá của `GET /working-schedules/:id/users/:userId`, chỉ trả về một người.
- */
+/** Lịch làm việc thô từ BE. */
 export interface ApiWorkingSchedule {
   id: string;
   tenantId: string;

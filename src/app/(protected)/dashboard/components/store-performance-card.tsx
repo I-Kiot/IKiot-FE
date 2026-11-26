@@ -1,7 +1,6 @@
 "use client";
 
-// Hiệu suất cửa hàng trong kỳ, tính từ các đơn tạo trong kỳ (mọi trạng thái): tỷ lệ hoàn thành,
-// huỷ, hoàn hàng. Thay cho "tỷ lệ phản hồi / đánh giá shop" ở ảnh thiết kế - hệ thống không có số liệu đó.
+// Hiệu suất cửa hàng: tỷ lệ hoàn thành, huỷ, hoàn hàng.
 
 import { useCallback, type ReactNode } from "react";
 import { Gauge } from "lucide-react";

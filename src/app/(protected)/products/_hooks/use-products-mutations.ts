@@ -165,9 +165,7 @@ export function useProductsMutations(screen: ProductScreen) {
 
     setIsLoading(true)
     try {
-      // allSettled: mỗi hàng hóa giờ được BE kiểm tra riêng (tồn kho / phiếu
-      // chuyển kho / đơn hàng chờ xử lý), nên một mục thất bại không được phép
-      // làm rollback các mục còn lại đã xóa thành công.
+      // Xoá từng hàng hoá độc lập.
       const results = await Promise.allSettled(
         eligibleIds.map((id) => productApi.remove(id)),
       )

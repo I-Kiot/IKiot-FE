@@ -38,7 +38,7 @@ export function useNotificationSocket() {
   }, [user?.id, receive]);
 
   useEffect(() => {
-    // Tab đang focus thì service worker không tự hiện popup (trình duyệt nhường app quyết), nên phải bắn toast.
+    // Tab đang focus thì tự bắn toast.
     return onForegroundMessage((payload) => {
       playNotificationSound();
       toast.success(payload.notification?.title ?? "Thông báo", {

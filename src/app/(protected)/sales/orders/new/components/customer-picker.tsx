@@ -21,9 +21,7 @@ interface CustomerPickerProps {
   error?: string;
 }
 
-/**
- * Giống khối khách hàng của sidebar bán trực tiếp: tìm theo tên / SĐT qua dropdown, hoặc thêm khách mới qua dialog dùng chung (tạo luôn).
- */
+/** Chọn hoặc thêm khách. */
 export function CustomerPicker({ value, onChange, error }: CustomerPickerProps) {
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState<PickedCustomer[]>([]);

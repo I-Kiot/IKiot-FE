@@ -54,7 +54,7 @@ export const orderApi = {
     );
     return res.data.data;
   },
-  /** Hủy đơn quầy đang chờ QR SePay: hàng trả về kho. Đơn đã giữ tiền (chuyển thiếu) thì gửi `refundAmount` (0 = giữ hết) và `refundMethod`. */
+  /** Huỷ đơn quầy đang chờ QR SePay. */
   cancelPosSale: async (id: string, options: CancelPosSaleOptions = {}): Promise<Order> => {
     const res = await client.post<{ success: boolean; data: Order }>(`/orders/pos/${id}/cancel`, options);
     return res.data.data;

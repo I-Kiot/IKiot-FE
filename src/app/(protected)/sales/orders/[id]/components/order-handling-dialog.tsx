@@ -45,10 +45,7 @@ interface AssigneeOption {
   name: string;
 }
 
-/**
- * D-7: giao đơn cho người khác hoặc đổi độ ưu tiên mà không mở form sửa (`PATCH /orders/:id/assignee`, `/priority`, A-8).
- * Được phép tới khi đơn giao đi, kể cả đơn đã đóng gói.
- */
+/** Giao đơn cho người khác hoặc đổi độ ưu tiên. */
 export function OrderHandlingDialog({ order, open, onOpenChange, onSaved, canSetPriority }: Props) {
   const { pending: livePending } = useLiveHold(open, [order.id]);
   const [assignees, setAssignees] = React.useState<AssigneeOption[] | null>(null);
@@ -59,7 +56,7 @@ export function OrderHandlingDialog({ order, open, onOpenChange, onSaved, canSet
   React.useEffect(() => {
     let stale = false;
     const me = getSessionUserId();
-    // BE trả đúng những người nhận được đơn này (nhân viên tại nơi bán và chủ shop), cùng luật với lúc lưu.
+    // Danh sách người nhận được đơn từ BE.
     orderJourneyApi
       .assignees(order.id)
       .catch(() => [])

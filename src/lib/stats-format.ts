@@ -26,8 +26,7 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   UNKNOWN: 'Chưa xác định',
 }
 
-// Backend chỉ trả bucket có đơn (sparse). Điền đủ khoảng fromDate..toDate để biểu đồ vẫn có mốc
-// cho mọi ngày/tháng kể cả khi bucket không có dữ liệu.
+// Điền đủ mốc ngày/tháng cho biểu đồ.
 export function generateDateBuckets(fromDate: string, toDate: string, groupBy: 'day' | 'month'): string[] {
   const buckets: string[] = []
   const start = new Date(`${fromDate}T00:00:00Z`)

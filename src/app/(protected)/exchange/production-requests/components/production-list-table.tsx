@@ -50,7 +50,7 @@ import {
 } from "@/app/(protected)/exchange/production-requests/shared/production-display";
 import { AddToRequestDialog } from "./add-to-request-dialog";
 
-/** Hàng cần sản xuất tính từ đơn, tồn kho và YCSX; dòng là sản phẩm chứ không phải chứng từ nên không truyền `visibleIds` (không toast, chỉ tải lại nền). */
+/** Tải lại nền danh sách cần sản xuất. */
 const LIST_LIVE_RESOURCES = [
   CHANGE_RESOURCES.ORDERS,
   CHANGE_RESOURCES.PRODUCTION_REQUESTS,
@@ -70,11 +70,7 @@ function specsSummary(row: ProductionListRow): string | null {
     .join(" · ");
 }
 
-/**
- * B-6: hàng cần sản xuất (`GET /production-list`, contract §3), một dòng cho mỗi (nơi, SKU), tính khi đọc:
- * nhu cầu của đơn chưa giao, trừ tồn kho, hàng xưởng đang làm và đang nháp. Hiện dạng popup ở màn Nhập hàng (nguồn Xưởng);
- * thông báo thiếu hàng mở popup đó kèm `locationId` / `productItemId` trên URL.
- */
+/** Danh sách cần sản xuất (popup ở màn Nhập hàng). */
 export function ProductionListTable() {
   const params = useSearchParams();
   const canOrder =
@@ -104,7 +100,7 @@ export function ProductionListTable() {
   const loading = loaded?.query !== query;
   const rows = loaded?.rows ?? [];
   const total = loaded?.total ?? 0;
-  // Người khác đổi dữ liệu: tải lại nền. Tick chỉ vào deps của effect tải, KHÔNG vào `query`, nên bảng không nháy "đang tải".
+  // Tải lại nền khi người khác đổi dữ liệu.
   const liveTick = useLiveTick({ resources: LIST_LIVE_RESOURCES });
   const shownQueryRef = React.useRef<string | null>(null);
 

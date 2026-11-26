@@ -33,10 +33,7 @@ type Props = {
   onCollected: () => void;
 };
 
-/**
- * Thu số còn lại của đơn khách tới lấy tại quầy (`POST /orders/:id/pickup/collect`). Số tiền do server tính.
- * Tiền mặt ghi luôn; QR hiện mã cho khách quét rồi chờ tiền về, khách không chuyển thì đổi sang tiền mặt.
- */
+/** Thu số còn lại của đơn khách tới lấy tại quầy. */
 export function PickupCollectDialog({ order, onClose, onCollected }: Props) {
   const { pending: livePending } = useLiveHold(true, [order.id]);
   const [method, setMethod] = React.useState<PickupCollectMethod>("CASH");
@@ -46,7 +43,7 @@ export function PickupCollectDialog({ order, onClose, onCollected }: Props) {
   // Hạn do server trả; mã đã hết hạn thì không vẽ ảnh. Lỗi QR_PAYMENT_EXPIRED cũng đặt cờ này.
   const countdown = useCountdown(qr?.expiresAt ?? null);
   const [expiredByServer, setExpiredByServer] = React.useState(false);
-  // Khách chuyển thiếu: số đã nhận và số còn phải thu (tính từ khoản thu mới nhất; số chính xác do server tính lại khi tạo QR / thu tiền mặt).
+  // Số đã nhận và còn phải thu khi khách chuyển thiếu.
   const [partial, setPartial] = React.useState<{ received: number; due: number } | null>(null);
   const qrExpired = !!qr && !partial && (expiredByServer || countdown.expired || !qr.qrUrl);
 

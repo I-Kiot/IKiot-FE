@@ -40,7 +40,7 @@ interface Customer {
 interface CheckoutSidebarProps {
   totalQuantity: number;
   subtotal: number;
-  /** Nút Thanh toán bấm được: giỏ có tiền, hoặc có dòng giảm giá vượt thành tiền (bấm để thấy lỗi thay vì nút khóa im lặng). */
+  /** Nút Thanh toán bấm được khi giỏ có tiền hoặc có lỗi giảm giá cần báo. */
   canCheckout: boolean;
   /** Tổng đã tính đủ (tạm tính - giảm giá/khuyến mãi + VAT), nguồn duy nhất cho hiển thị và thanh toán. */
   grandTotal: number;
@@ -167,7 +167,7 @@ export function CheckoutSidebar({
     }
   }, [selectedCustomer]);
 
-  // Billing: grandTotal đã được parent tính đủ (tạm tính, giảm giá/khuyến mãi, VAT); component này chỉ suy ra giá trị hiển thị.
+  // Chỉ suy ra giá trị hiển thị từ grandTotal.
   const hasPromotionApplied = selectedPromotionIds.length > 0;
   const changeDue = Math.max(0, customerPay - grandTotal);
 

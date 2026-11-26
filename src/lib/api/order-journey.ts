@@ -1,5 +1,4 @@
-// Route track A (BE `orders/`), dùng cho màn của track D. Hợp đồng: Ikiot_BE/docs/api-contract-order-flow.md §2.
-// Quầy bán vẫn dùng `orderApi` (`order.ts`), đã POST tới `/orders/pos` từ A-2.
+// Route hành trình đơn.
 import client from '@/lib/api/client';
 import type {
   AssigneeOption,
@@ -65,7 +64,7 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** A-8: sửa trước khi đơn giao. Chỉ sửa dòng khi CONFIRMED; đặt cọc lệch với tiền đã thu trả ORDER_DEPOSIT_CHANGED (xem `DepositChange`). */
+  /** Sửa đơn trước khi giao. */
   update: async (id: string, payload: UpdateOrderPayload): Promise<OrderDetail> => {
     const res = await client.patch<Envelope<OrderDetail>>(`/orders/${id}`, payload);
     return res.data.data;
@@ -92,7 +91,7 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** Quyết định tiền giữ treo của đơn đã kết thúc: hoàn (một phần hoặc hết) hoặc giữ lại làm thu nhập khác (quyền `returns:inspect`). */
+  /** Quyết định tiền treo của đơn đã kết thúc. */
   settleHeld: async (
     id: string,
     payload:
@@ -108,7 +107,7 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** Người phụ trách được đơn này. Chủ shop, người đang phụ trách và người có `orders:update` mới gọi được (cùng luật với `assign`). */
+  /** Người có thể phụ trách đơn. */
   assignees: async (id: string): Promise<AssigneeOption[]> => {
     const res = await client.get<Envelope<AssigneeOption[]>>(`/orders/${id}/assignees`);
     return res.data.data;
@@ -164,7 +163,7 @@ export const orderJourneyApi = {
     return res.data.data;
   },
 
-  /** Một trang đơn PACKED giao tận nơi (đã đóng gói, chờ giao cho vận chuyển) trong phạm vi chi nhánh của người gọi. Đơn khách tới lấy không qua vận chuyển nên không có trong danh sách này. */
+  /** Đơn giao tận nơi đã đóng gói, chờ giao cho vận chuyển. */
   listHandOverReady: async (page: number, limit: number): Promise<Paginated<HandOverReadyOrder>> => {
     const res = await client.get<Paginated<HandOverReadyOrder>>('/orders', {
       params: { status: 'PACKED', fulfillmentType: 'HOME_DELIVERY', page, limit },
@@ -172,7 +171,7 @@ export const orderJourneyApi = {
     return { data: res.data.data, pagination: res.data.pagination };
   },
 
-  /** Đơn khách tới lấy, đang chờ khách (PACKED): thu số còn lại tại quầy. Tiền mặt ghi luôn; QR trả `payment.qrUrl` chờ tiền về. */
+  /** Thu số còn lại tại quầy cho đơn khách tới lấy. */
   pickupCollect: async (id: string, payload: PickupCollectPayload): Promise<PickupCollectResult> => {
     const res = await client.post<Envelope<PickupCollectResult>>(`/orders/${id}/pickup/collect`, payload);
     return res.data.data;

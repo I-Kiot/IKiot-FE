@@ -5,10 +5,7 @@ import { Button } from "@/components/ui/button"
 import { cn, formatDateTime } from "@/lib/utils"
 import type { EntityChangedEvent } from "@/types/change-feed"
 
-/**
- * Báo trong hộp thoại / panel đang sửa rằng dữ liệu của nó vừa bị người khác đổi (xem `useLiveHold`).
- * Không tự ghi đè gì: người dùng quyết định tải lại. Không hiện gì khi chưa có thay đổi.
- */
+/** Báo dữ liệu trong hộp thoại vừa bị người khác đổi. */
 export function LiveChangeBanner({
   event,
   onReload,

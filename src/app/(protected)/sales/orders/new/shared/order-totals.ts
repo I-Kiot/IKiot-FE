@@ -1,5 +1,4 @@
-// Ước tính hiện khi đang nhập form. Server (`OrderPricingService`) là nguồn chính thức: sau khi tạo, trang chi tiết hiện số của server.
-// Làm tròn ở đây khớp với server đến đồng: mỗi dòng làm tròn trước khi trừ giảm giá; giảm giá cả đơn tối đa bằng giá trị hàng; phí ship cộng sau cùng.
+// Ước tính tổng tiền khi đang nhập, khớp cách làm tròn của server.
 
 export interface TotalsLine {
   quantity: number;

@@ -17,22 +17,21 @@ import { PackOrderDialog } from "./components/pack-order-dialog";
 
 const LIVE_RESOURCES = [CHANGE_RESOURCES.ORDERS] as const;
 
-/** Màn Đóng hàng (C-6): đơn CONFIRMED chờ đóng gói; bấm "Đóng hàng" để khoá hàng và chuyển đơn sang PACKED. */
+/** Màn Đóng hàng: đơn CONFIRMED chờ đóng gói. */
 export default function FulfillmentsPage() {
-  // Một state cho cả tình trạng lẫn dữ liệu để mỗi nhánh của `.then()` chỉ gọi một setter
-  // (lint cấm setState trong useEffect).
+  // Một state cho trạng thái và dữ liệu.
   const [listState, setListState] = useState<PackListState>({ status: "loading" });
   const [query, setQuery] = useState<PackListQuery>({ page: 1, limit: PACK_PAGE_SIZE });
   const [reloadKey, setReloadKey] = useState(0);
   const [selected, setSelected] = useState<PackableOrder | null>(null);
   const canPack = allows(getCachedUser()?.role, "orders", "pack");
-  // Người khác vừa đóng / đổi đơn: tải lại nền (KHÔNG gọi `reload`, nó `setSelected(null)` và sẽ đóng hộp thoại đang mở).
+  // Tải lại nền khi có thay đổi.
   const visibleIds = listState.status === "ready" ? listState.result.data.map((order) => order.id) : [];
   const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds });
   const lastLoadRef = useRef<{ query: PackListQuery; reloadKey: number } | null>(null);
 
   useEffect(() => {
-    // Cùng query và reloadKey với lần trước = lần tải nền do sự kiện: giữ danh sách đang hiện, lỗi thì im lặng.
+    // Tải nền: giữ danh sách, lỗi thì im lặng.
     const last = lastLoadRef.current;
     const silent = last?.query === query && last.reloadKey === reloadKey;
     lastLoadRef.current = { query, reloadKey };
@@ -41,8 +40,7 @@ export default function FulfillmentsPage() {
     orderJourneyApi.listPackable(query.page, query.limit).then(
       (res) => {
         if (cancelled) return;
-        // Trang hiện tại rỗng mà không phải trang 1 (vd. vừa đóng đơn cuối của trang cuối)
-        // → lùi về trang cuối còn đơn; effect tự chạy lại.
+        // Trang hiện tại rỗng thì lùi về trang cuối còn đơn.
         if (res.data.length === 0 && query.page > 1) {
           setQuery({ page: Math.max(1, res.pagination.totalPages), limit: query.limit });
         } else {
@@ -60,8 +58,7 @@ export default function FulfillmentsPage() {
     };
   }, [query, reloadKey, liveTick]);
 
-  // Danh sách trên màn hình chỉ là ảnh chụp lúc tải - sau mỗi lần đóng (thành công hay bị người khác
-  // đóng trước) đều tải lại. Đúng/sai do BE quyết định (nhận đơn theo status, khoá hàng có điều kiện).
+  // Tải lại sau mỗi lần đóng.
   const reload = () => {
     setSelected(null);
     setReloadKey((key) => key + 1);

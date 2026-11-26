@@ -35,10 +35,7 @@ type Props = {
 
 type Mode = "choose" | "refund" | "keep";
 
-/**
- * Quyết định tiền shop đang giữ treo của đơn đã kết thúc (`POST /orders/:id/settle-held`, quyền `returns:inspect`):
- * hoàn cho khách (tối đa bằng số treo, phần còn lại vẫn treo) hoặc giữ lại toàn bộ làm thu nhập khác (không hoàn tác được nên có bước xác nhận).
- */
+/** Quyết định tiền treo: hoàn cho khách hoặc giữ làm thu nhập khác. */
 export function SettleHeldDialog({ order, open, onOpenChange, onSettled }: Props) {
   const { pending: livePending } = useLiveHold(open, [order.id]);
   const held = order.paymentSummary.heldUndecided;

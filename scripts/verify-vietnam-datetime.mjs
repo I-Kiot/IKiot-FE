@@ -1,13 +1,10 @@
-/**
- * Verify Vietnam datetime helpers match BE WorkingScheduleDateUtils.
- * Run: node scripts/verify-vietnam-datetime.mjs
- */
+/** Kiểm helper ngày giờ Việt Nam khớp BE. Chạy: node scripts/verify-vietnam-datetime.mjs */
 
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 
-// Inline mirror of FE logic for node test (no TS compile needed)
+// Bản sao logic FE để chạy bằng node, không cần biên dịch TS.
 const VIETNAM_TIMEZONE = "Asia/Ho_Chi_Minh";
 
 function extractVietnamTimeFromIso(iso) {

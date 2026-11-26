@@ -42,10 +42,7 @@ const passwordSchema = z
 type IdentifierInput = z.infer<typeof identifierSchema>;
 type PasswordInput = z.infer<typeof passwordSchema>;
 
-/**
- * Quên mật khẩu qua email: nhập SĐT hoặc email → nhập mã OTP gửi về email → đặt mật khẩu mới.
- * `resetToken` chỉ giữ trong state, dùng một lần.
- */
+/** Quên mật khẩu: nhập SĐT/email → nhập OTP → đặt mật khẩu mới. */
 export function ForgotPasswordForm2({
   className,
   ...props

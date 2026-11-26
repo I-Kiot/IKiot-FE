@@ -1,8 +1,6 @@
 "use client";
 
-// Ô "Phụ trách" và "Người giao hàng" của danh sách đơn: chọn người ngay tại dòng (2026-11-08).
-// Danh sách người chỉ tải khi mở ô, nên mở trang không tốn thêm request nào. Luật thật ở BE:
-// đổi người phụ trách là `assertReassignAccess`, đổi shipper là `assertOrderStepAccess(CHANGE_DRIVER)`.
+// Chọn người phụ trách và shipper ngay tại dòng.
 
 import * as React from "react";
 import { toast } from "sonner";
@@ -25,7 +23,7 @@ import { useOrders } from "./orders-provider";
 
 /** Đổi người phụ trách được tới trước Đang vận chuyển (BE `UNSHIPPED_ORDER_STATUSES`). */
 const REASSIGNABLE_STATUSES: readonly OrderStatus[] = ["CONFIRMED", "PACKED", "PICKED_UP"];
-/** Đổi shipper khi shipper chưa xác nhận lấy hàng (BE `DRIVER_CHANGEABLE_STATUSES`). Đã lấy hàng thì khoá. */
+/** Đổi shipper khi chưa lấy hàng. */
 const DRIVER_CHANGEABLE: readonly ShipmentStatus[] = ["CREATED"];
 
 const WHO_REASSIGN = "Chủ shop, người đang phụ trách đơn, hoặc nhân viên có quyền này mới đổi được.";
@@ -55,7 +53,7 @@ interface PersonSelectProps {
   save: (id: string) => Promise<void>;
 }
 
-/** Ô chọn người trong một dòng. Không có quyền thì mờ đi, bấm vào báo cần quyền gì (như `PermissionButton`). */
+/** Ô chọn người trong một dòng. */
 function PersonSelect({ current, allowed, permission, who, load, save }: PersonSelectProps) {
   const [options, setOptions] = React.useState<Option[] | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -104,7 +102,7 @@ function PersonSelect({ current, allowed, permission, who, load, save }: PersonS
   };
 
   return (
-    // Item của Select nằm trong portal nhưng sự kiện React vẫn nổi lên tới dòng: chặn ở đây để chọn không mở / đóng dòng.
+    // Chặn sự kiện để chọn không mở/đóng dòng.
     <div onClick={(event) => event.stopPropagation()}>
       <Select value={current?.id ?? ""} onValueChange={pick} onOpenChange={onOpenChange} disabled={saving}>
         <SelectTrigger size="sm" className={triggerClass}>
@@ -162,7 +160,7 @@ export function AssigneeCell({ order }: { order: OrderListItem }) {
   );
 }
 
-/** Cột "Người giao hàng": chỉ đổi shipper đã gán của lần giao nội bộ còn ở shop; gán lần đầu vẫn ở trang chi tiết. */
+/** Cột "Người giao hàng". */
 export function DriverCell({ order }: { order: OrderListItem }) {
   const { patchOrder } = useOrders();
   const shipment = order.latestShipment;

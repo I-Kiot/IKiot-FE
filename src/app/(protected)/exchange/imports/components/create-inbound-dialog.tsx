@@ -26,10 +26,7 @@ type Props = {
   initialRequestLocationId?: string;
 };
 
-/**
- * Popup "Tạo mới" của nút "Tạo YCSX" trên đơn hàng (màn Nhập hàng dùng trang `/exchange/imports/new`).
- * Toggle chọn nguồn, form đổi theo; chỉ mount khi mở.
- */
+/** Popup tạo mới từ nút "Tạo YCSX" trên đơn. */
 export function CreateInboundDialog({
   defaultSource,
   options,
@@ -42,7 +39,7 @@ export function CreateInboundDialog({
   const { source, opened, select } = useInboundSourceSwitch(defaultSource);
   const [submitting, setSubmitting] = useState(false);
 
-  // Đang gửi thì không cho đóng: kết quả về sau khi đóng sẽ làm mất bản nháp của form còn lại mà người dùng không hay biết.
+  // Đang gửi thì không cho đóng.
   function requestClose(open: boolean) {
     if (!open && submitting) return;
     onOpenChange(open);

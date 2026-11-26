@@ -1,7 +1,6 @@
 "use client";
 
-// 5 đơn mới nhất: mã, khách, thời gian đặt, tổng tiền, trạng thái đơn và thanh toán.
-// Bấm một dòng để mở chi tiết đơn - ở đó mới có các thao tác tiếp theo, theo quyền của người xem.
+// 5 đơn mới nhất.
 
 import { useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -16,12 +15,12 @@ import { WidgetMessage } from "./widget-card";
 
 const RECENT_LIMIT = 5;
 
-/** Bảng đơn gần đây, nằm trong tab "Đơn hàng gần đây" của thẻ doanh thu (link "Xem tất cả" ở header thẻ đó). */
+/** Bảng đơn gần đây. */
 export function RecentOrdersTable() {
   const router = useRouter();
   const { branchId, liveVersion } = useOverview();
   const load = useCallback(
-    // Bỏ đơn bán tại quầy, như trang Đơn hàng: chúng nằm ngoài hành trình đơn nên trang chi tiết không dành cho chúng.
+    // Bỏ đơn bán tại quầy.
     () => orderJourneyApi.getList({ page: 1, limit: RECENT_LIMIT, sort: "createdAt", branchId, excludePos: true }),
     [branchId],
   );

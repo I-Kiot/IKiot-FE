@@ -16,7 +16,7 @@ import { CROP_VIEWPORT, type ImageCrop } from "./use-image-crop";
 interface ImageCropDialogProps {
   crop: ImageCrop;
   title: string;
-  /** Khung tròn cho avatar, vuông bo góc cho logo. Ảnh xuất ra luôn vuông; khung chỉ là cách nó sẽ hiển thị. */
+  /** Hình dạng khung cắt: tròn cho avatar, vuông cho logo. */
   shape?: "circle" | "square";
   confirmLabel?: string;
   busyLabel?: string;

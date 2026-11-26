@@ -1,4 +1,4 @@
-// [Page – Sổ doanh thu] Từng bút toán ghi nhận doanh thu: bán hàng, trả hàng, thu nhập khác. Số trên báo cáo cộng từ đây.
+// [Trang – Sổ doanh thu] Từng bút toán bán hàng, trả hàng, thu nhập khác.
 'use client'
 
 import { Fragment, Suspense, useCallback, useState } from 'react'
@@ -176,7 +176,7 @@ function SalesJournal() {
 
       <Card>
         <CardContent className="p-0">
-          {/* Khung cuộn riêng (không dùng <Table>: khung overflow-x của nó làm sticky dọc vô hiệu) để đầu bảng và dòng Tổng luôn thấy khi cuộn. */}
+          {/* Khung cuộn riêng để đầu bảng và dòng Tổng luôn thấy. */}
           <div className="max-h-[70vh] overflow-auto">
           <table className="w-full caption-bottom text-sm [&>thead>tr>th]:sticky [&>thead>tr>th]:top-0 [&>thead>tr>th]:z-20 [&>thead>tr>th]:border-b [&>thead>tr>th]:bg-muted">
             <TableHeader>

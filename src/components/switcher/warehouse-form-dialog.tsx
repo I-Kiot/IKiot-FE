@@ -31,8 +31,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 
-// Khớp với branchFormSchema: `CreateWarehouseDto` có `phoneNumber` (bắt buộc, `@ArrayNotEmpty`) từ migration 2026-08-19.
-// Form này trước đây không thu số đó nên mọi lần thêm kho đều bị 400.
+// Số điện thoại kho, bắt buộc.
 const warehouseFormSchema = z.object({
   name: z.string().min(1, {
     message: "Tên kho hàng là bắt buộc.",

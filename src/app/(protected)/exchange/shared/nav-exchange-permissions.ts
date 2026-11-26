@@ -1,8 +1,4 @@
-/**
- * Mục submenu "Giao dịch" nào được vẽ. Nhóm này từng thiếu hẳn trong sidebar STAFF nên vai trò có đủ quyền vẫn không
- * vào được nhập, chuyển, điều chỉnh kho. Mỗi mục gắn với quyền backend kiểm tra cho màn đó, giống `nav-hr-permissions.ts`.
- * Một mục có nhiều cặp quyền thì giữ một trong các cặp là vào được.
- */
+/** Mục submenu "Giao dịch" được hiện theo quyền. */
 import { allows } from "@/components/sidebar/constants/role-permissions";
 import { INBOUND_CREATE_PERMISSIONS, INBOUND_READ_PERMISSIONS } from "./inbound-source";
 

@@ -5,10 +5,7 @@ import { getCachedUser } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth-store";
 import type { Branch } from "@/types/branch";
 
-/**
- * Chi nhánh mà switcher sidebar (hoặc chi nhánh gán cho tài khoản) ghim đơn bán vào. Rỗng khi xem toàn chuỗi
- * hoặc kho: người bán tự chọn nơi bán.
- */
+/** Chi nhánh bán hàng của quầy; rỗng thì người bán tự chọn. */
 function lockedBranchId(): string {
   const user = getCachedUser() as { branchId?: string } | null;
   if (user?.branchId) return user.branchId;

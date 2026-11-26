@@ -354,8 +354,7 @@ export function ProductsMutateDialog({ open, onOpenChange, currentRow }: Product
               )}
             />
 
-            {/* Bật = đặt xưởng sản xuất được (Tạo yêu cầu sản xuất); tắt = chỉ nhập từ nhà cung cấp.
-                Chỉ hàng hoá có tồn mới đặt xưởng được - combo và dịch vụ không có. */}
+            {/* Bật thì đặt xưởng sản xuất được. */}
             {productType === 'PRODUCT' && (
               <FormField
                 control={form.control}

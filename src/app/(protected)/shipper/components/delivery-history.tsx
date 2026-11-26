@@ -1,8 +1,6 @@
 "use client";
 
-// Tab "Lịch sử giao" của màn Đơn giao của tôi: mọi lần giao của mình (xong, thất bại, hoàn, huỷ, và cả
-// những đơn còn cần giao), lọc theo ngày giao / trạng thái / từ khoá, kèm các thẻ số liệu theo trạng thái.
-// Bấm một dòng để mở lại chi tiết (ảnh bằng chứng, khoản thu, nhật trình).
+// Tab "Lịch sử giao".
 
 import { useEffect, useMemo, useState } from "react";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
@@ -62,7 +60,7 @@ const formatDateTime = (iso: string) =>
     year: "numeric",
   });
 
-/** Bảng lịch sử: mỗi dòng một lần giao; bấm dòng để mở chi tiết. Bảng cuộn ngang trong khung khi màn hẹp. */
+/** Bảng lịch sử giao. */
 function HistoryTable({
   items,
   dimmed,
@@ -141,7 +139,7 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
   const [reloadKey, setReloadKey] = useState(0);
   const [openId, setOpenId] = useState<string | null>(initialOpenId);
 
-  // Gõ xong 300ms mới tìm; setState chỉ nằm trong callback của timer (lint cấm setState trực tiếp trong effect).
+  // Tìm sau 300ms.
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput.trim());
@@ -150,7 +148,7 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Tick nền chỉ vào deps của effect tải, không vào `requestKey`: lần tải lại không bật trạng thái "đang tải".
+  // Tải nền không bật trạng thái đang tải.
   const liveTick = useLiveTick({ resources: LIVE_RESOURCES });
   const dateInvalid = !!from && !!to && from > to;
   const requestKey = useMemo(
@@ -158,7 +156,7 @@ export function DeliveryHistory({ initialOpenId = null }: { initialOpenId?: stri
     [status, from, to, search, page, pageSize, reloadKey],
   );
 
-  // Kết quả gắn với khoá của yêu cầu đã sinh ra nó: khoá lệch nghĩa là đang tải (không cần setState "loading").
+  // Kết quả gắn với khoá yêu cầu.
   const [result, setResult] = useState<
     { key: string; error: false; page: ShipmentHistoryPage } | { key: string; error: true } | null
   >(null);

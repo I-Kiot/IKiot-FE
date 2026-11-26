@@ -7,7 +7,7 @@ import { copyRows } from "@/lib/clipboard-table";
 import { orderCopyRow } from "../shared/orders-copy";
 import { useOrders } from "./orders-provider";
 
-/** Cạnh nút "Tạo đơn": chép các đơn đang tích, mỗi đơn một dòng, chỉ giá trị - dán vào bảng Excel có sẵn cột. */
+/** Chép các đơn đang tích. */
 export function OrdersCopyButton() {
   const { selectedOrders } = useOrders();
   if (selectedOrders.length === 0) return null;

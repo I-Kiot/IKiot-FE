@@ -50,7 +50,7 @@ function SortableHeader({
 export function getProductsColumns(
   brands: Brand[],
   categories: Category[],
-  // Đang xem theo chi nhánh/kho: cột tồn hiện cả tồn tại đó (có thể 0) và toàn chuỗi, để biết cửa hàng CÓ mặt hàng này và đề nghị chuyển kho.
+  // Cột tồn: tại nơi đang xem và toàn chuỗi.
   isLocationScoped = false,
 ): ColumnDef<Product>[] {
   return [

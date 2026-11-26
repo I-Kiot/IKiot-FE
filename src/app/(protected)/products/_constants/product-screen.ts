@@ -1,8 +1,6 @@
 import type { ProductType } from '@/types/product'
 
-/**
- * `/products` và `/combos` dùng chung component, chỉ khác cấu hình này. `productType` cố định lúc tạo; BE không có mặc định cho bộ lọc nên mỗi màn tự gửi `listTypes`.
- */
+/** Cấu hình màn `/products` và `/combos`. */
 export type ProductScreen = {
   /** Gửi lên GET /products. */
   listTypes: ProductType[]
@@ -13,13 +11,13 @@ export type ProductScreen = {
   title: string
   description: string
   breadcrumb: string
-  /** Cột "Tồn kho" và bộ lọc tồn. Combo không giữ tồn riêng: con số của nó là số bộ mà các thành phần đủ cho (BE tính). */
+  /** Cột tồn kho và bộ lọc tồn. */
   showStock: boolean
-  /** Dòng phụ "Toàn chuỗi" dưới số tồn khi đang xem theo một chi nhánh / kho. Màn combo không hiện: chỉ có số bộ của chi nhánh đang xem. */
+  /** Dòng phụ "Toàn chuỗi" dưới số tồn. */
   showChainStock: boolean
-  /** Nút "Tìm ở chi nhánh khác". Tìm theo hàng có tồn nên chỉ có ở màn hàng hoá; combo không có tồn riêng để tìm. */
+  /** Nút "Tìm ở chi nhánh khác". */
   crossBranchSearch: boolean
-  /** Nút "Nhập file". File mẫu chỉ tạo hàng hoá thường (một dòng không liệt kê được thành phần), nên màn combo không có. */
+  /** Nút "Nhập file". */
   importFile: boolean
 }
 

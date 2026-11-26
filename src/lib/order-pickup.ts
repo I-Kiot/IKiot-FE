@@ -5,9 +5,7 @@ import {
   type OrderStatus,
 } from "@/types/order-flow";
 
-// Đơn khách tới lấy (STORE_PICKUP) dùng chung các trạng thái của hành trình, chỉ khác đường đi: sau khi đóng đơn
-// (PACKED) đơn nằm chờ khách ở cửa hàng, thu nốt tiền rồi giao tại quầy là COMPLETED. Không có PICKED_UP, SHIPPING,
-// RECEIVED, và không có shipment.
+// Đơn khách tới lấy: PACKED chờ khách, thu tiền rồi giao tại quầy là COMPLETED.
 
 /** Nhãn của trạng thái PACKED với đơn khách tới lấy. */
 export const PICKUP_WAITING_LABEL = "Chờ khách lấy";
@@ -16,7 +14,7 @@ export function isStorePickup(order: { fulfillmentType: FulfillmentType }): bool
   return order.fulfillmentType === "STORE_PICKUP";
 }
 
-/** Số tiền shop đang giữ của đơn còn huỷ được: tiền cọc, hoặc cả đơn nếu khách tới lấy đã trả đủ tại quầy. Khoản QR chưa về không tính. */
+/** Số tiền shop đang giữ của đơn còn huỷ được. */
 export function moneyHeld(order: {
   fulfillmentType: FulfillmentType;
   paymentStatus: OrderPaymentStatus;
@@ -27,7 +25,7 @@ export function moneyHeld(order: {
   return order.deposit?.amount ?? 0;
 }
 
-/** Số còn phải thu để hiển thị. `amountDue` của BE là tổng trừ cọc, chưa trừ khoản đã thu tại quầy; đơn đã huỷ thì không còn gì để thu. */
+/** Số còn phải thu để hiển thị. */
 export function amountStillDue(order: {
   status: OrderStatus;
   fulfillmentType: FulfillmentType;
@@ -39,7 +37,7 @@ export function amountStillDue(order: {
   return order.amountDue;
 }
 
-/** Nhãn trạng thái đơn: PACKED của đơn khách tới lấy là "Chờ khách lấy", còn lại như `ORDER_STATUS_LABELS`. */
+/** Nhãn trạng thái đơn, PACKED của đơn khách tới lấy là "Chờ khách lấy". */
 export function orderStatusLabel(order: {
   status: OrderStatus;
   fulfillmentType: FulfillmentType;

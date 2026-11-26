@@ -12,10 +12,7 @@ function setsCovered(part: ComboComponent): number | null {
   return Math.floor(Math.max(0, componentItem.availableStock ?? 0) / quantity)
 }
 
-/**
- * Tồn từng thành phần: combo bán được bằng số bộ của thành phần khan nhất (khớp `comboSetsAvailable` ở BE, được tô nổi).
- * Thành phần là combo lồng thì `availableStock` là số bộ của combo con.
- */
+/** Tồn từng thành phần combo. */
 export function ComboStockList({ components }: { components: ComboComponent[] }) {
   const covered = components.map(setsCovered)
   const limits = covered.filter((n): n is number => n !== null)

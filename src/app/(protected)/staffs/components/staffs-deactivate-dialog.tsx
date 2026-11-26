@@ -20,9 +20,7 @@ type StaffsDeactivateDialogProps = {
   currentRow: Staff | null;
 };
 
-/**
- * Khóa tài khoản. Route `PATCH /users/:id/account/deactivate` không nhận body. Backend từ chối khi tài khoản còn điều hành chi nhánh/kho và nêu lý do; toast hiển thị lý do đó.
- */
+/** Khoá tài khoản nhân viên. */
 export function StaffsDeactivateDialog({
   open,
   onOpenChange,

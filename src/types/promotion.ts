@@ -105,7 +105,7 @@ export interface PromotionCalculateRequest {
   branchId?: string
   customerId?: string
   items: PromotionCalculateItem[]
-  /** Khuyến mãi người dùng chọn để áp dụng. Rỗng = không giảm. Tối đa 2; nếu có 2 thì cả hai phải stackable. */
+  /** Khuyến mãi được chọn, tối đa 2. */
   promotionIds: string[]
 }
 

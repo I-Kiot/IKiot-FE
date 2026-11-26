@@ -31,16 +31,13 @@ export function warnNoPermission(permission?: string, who?: string): void {
 type PermissionButtonProps = React.ComponentProps<typeof Button> & {
   /** Người đang đăng nhập có bấm được không. */
   allowed: boolean;
-  /** Mã `resource:action` để nêu tên quyền. Bỏ trống khi luật không phải một quyền (vd chỉ shipper của lần giao). */
+  /** Mã quyền `resource:action` để nêu tên. */
   permission?: string;
   /** Ai làm được, khi khác câu mặc định. */
   who?: string;
 };
 
-/**
- * Nút thao tác theo quyền: không có quyền thì vẫn hiện nhưng mờ đi, bấm vào cảnh báo cần quyền gì và ai làm được.
- * Không dùng thuộc tính `disabled` vì trình duyệt nuốt sự kiện click, và ẩn hẳn nút khiến người dùng không biết chức năng này tồn tại.
- */
+/** Nút theo quyền: không có quyền thì mờ, bấm vào báo cần quyền gì. */
 export function PermissionButton({ allowed, permission, who, onClick, className, disabled, ...props }: PermissionButtonProps) {
   if (allowed) {
     return <Button {...props} className={className} disabled={disabled} onClick={onClick} />;

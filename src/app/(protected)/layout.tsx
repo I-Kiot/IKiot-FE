@@ -43,7 +43,7 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     return canOpenCheckout(user.role) ? <>{children}</> : <UnauthorizedPage />;
   }
 
-  // `/settings/*` mở cho mọi người, trừ màn Gói dịch vụ: role tắt cả xem lẫn nâng cấp gói thì vào bằng URL cũng không được.
+  // `/settings/*` mở cho mọi người, trừ Gói dịch vụ.
   const isBilling =
     pathname === "/settings/billing" || pathname.startsWith("/settings/billing/");
   if (isBilling && !canViewBilling(user.role)) {
@@ -54,8 +54,7 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // `/shipments/<id>` là nơi thông báo đơn giao dẫn tới: route chỉ tra cứu rồi chuyển hướng (shipper sang /shipper, người khác sang /shipments).
-  // API trả 404 với đơn không được xem, nên route không yêu cầu `shipments:read` (shipper thường không có quyền này).
+  // `/shipments/<id>` chuyển hướng theo người xem.
   if (/^\/shipments\/[^/]+$/.test(pathname)) {
     return <>{children}</>;
   }
@@ -119,7 +118,7 @@ export default function DashboardLayout({
                 collapsible={config.collapsible}
                 side={config.side}
               />
-              {/* min-w-0: flex child mặc định không hẹp hơn nội dung; thiếu class này bảng rộng sẽ đẩy cả trang thay vì cuộn trong khung. */}
+              {/* min-w-0 để bảng rộng cuộn trong khung. */}
               <SidebarInset className="h-svh min-w-0 overflow-hidden">
                 <PageFooterProvider>
                   <SiteHeader />

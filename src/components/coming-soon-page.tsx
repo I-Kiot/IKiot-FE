@@ -10,10 +10,7 @@ interface ComingSoonPageProps {
   task: string;
 }
 
-/**
- * Chỗ giữ chỗ cho một màn của hành trình đơn mà track Phase 1 chưa làm (P0-7). Route và mục sidebar có sẵn từ đầu để các track không sửa sidebar cùng lúc;
- * track sở hữu sẽ thay trang này trong thư mục của mình.
- */
+/** Trang giữ chỗ cho màn chưa làm. */
 export function ComingSoonPage({ breadcrumbs, title, description, task }: ComingSoonPageProps) {
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6">

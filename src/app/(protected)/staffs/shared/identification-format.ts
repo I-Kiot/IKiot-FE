@@ -28,9 +28,7 @@ function getBirthYearFromCccd(centuryGenderCode: number, yearSuffix: string) {
   return centuryStart + Number(yearSuffix);
 }
 
-/**
- * @param required - tạo NV: bắt buộc; sửa: rỗng = bỏ qua (không đổi).
- */
+/** @param required - tạo nhân viên thì bắt buộc, sửa thì rỗng là giữ nguyên. */
 export function validateStaffIdentificationId(
   value?: string,
   opts?: {

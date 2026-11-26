@@ -13,7 +13,7 @@ export interface StatsOverview {
   orderCount: number;
   customerCount: number;
   aov: number;
-  /** Doanh thu thuần − giá vốn thực − phí vận chuyển thực − phí sàn. Dòng giữ hàng chưa có giá vốn tính là 0. */
+  /** Lợi nhuận gộp. */
   grossProfit: number;
   /** Số dòng bán có giữ hàng mà giá vốn = 0 - > 0 thì lợi nhuận đang bị thổi lên. */
   linesMissingCost: number;
@@ -537,7 +537,7 @@ export interface Unreconciled {
   overpaidOrders: { count: number; amount: number; items: UnreconciledOverpaidItem[] };
   /** Đơn trả hàng / huỷ mà shop còn giữ tiền chưa quyết định (hoàn hay giữ). */
   heldUndecided: { count: number; amount: number; items: UnreconciledHeldItem[] };
-  /** null khi scope = BRANCH. */
+  /** null khi phạm vi là chi nhánh. */
   unallocatedBank: { receipts: number; refunds: number; net: number } | null;
   ownerFund: {
     income: number;
@@ -638,7 +638,7 @@ export const statsApi = {
   exportReport: (
     params?: StatsDateRangeParams & {
       groupBy?: 'day' | 'month';
-      /** Chỉ xuất một báo cáo (một tab của Tổng hợp, hoặc `staff` / `branch`); bỏ trống là mọi tab của trang Tổng hợp. */
+      /** Báo cáo cần xuất, bỏ trống là mọi tab. */
       section?: string;
       staffGroupBy?: RevenueByStaffGroupBy;
       lowStockThreshold?: number;

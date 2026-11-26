@@ -1,7 +1,6 @@
 "use client";
 
-// Tab "Lần giao": thanh lọc (trạng thái, hình thức, khoảng ngày, tìm kiếm) và bảng các lần giao; bấm một
-// dòng để mở chi tiết.
+// Tab "Lần giao": bộ lọc và bảng.
 
 import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -75,7 +74,7 @@ const shipmentsColumns: ColumnDef<ShipmentSummary>[] = [
 ];
 
 
-/** Ô tìm kiếm chỉ áp khi bấm Enter / nút Tìm, để không gọi BE theo từng phím. Đổi bộ lọc thì nơi gọi đưa trang về 1. */
+/** Tìm khi bấm Enter / nút Tìm. */
 function ShipmentsToolbar({
   filters,
   onChange,

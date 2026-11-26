@@ -74,11 +74,7 @@ function legacySpecs(c: OrderItemCustomization | undefined): SpecDraft[] {
   return rows;
 }
 
-/**
- * D-2 (làm lại 2026-10-16): thông số khách đặt riêng cho một dòng, dựa trên **thuộc tính của sản phẩm**. Mỗi thuộc tính điền sẵn giá trị SKU khách chọn;
- * đổi ô nào thì ô đó là yêu cầu riêng (lưu kèm giá trị gốc). Thiếu thuộc tính thì thêm ngay tại đây. Có thêm thông số tự do, ghi chú và ảnh cho xưởng.
- * Lưu thì dòng thành hàng làm riêng; hệ thống tạo mã riêng mang đúng các giá trị này (A-4).
- */
+/** Thông số khách đặt riêng cho một dòng, theo thuộc tính sản phẩm. */
 export function CustomizationDialog({ label, productItemId, sku, value, open, onOpenChange, onSave }: Props) {
   const [productId, setProductId] = React.useState<string | null>(null);
   const [attrs, setAttrs] = React.useState<AttributeDraft[] | null>(null);
@@ -91,7 +87,7 @@ export function CustomizationDialog({ label, productItemId, sku, value, open, on
       .map((s) => ({ name: s.name, value: s.value, unit: s.unit ?? "" })),
   ]);
 
-  // Thuộc tính của sản phẩm + giá trị của SKU: dòng giỏ hàng chỉ biết SKU, nên tra sản phẩm qua danh sách SKU.
+  // Thuộc tính của sản phẩm và giá trị của SKU.
   React.useEffect(() => {
     let cancelled = false;
     (async () => {

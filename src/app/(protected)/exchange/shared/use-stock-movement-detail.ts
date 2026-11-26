@@ -23,10 +23,7 @@ async function fetchMovement(id: string, fallback: StockMovement) {
   }
 }
 
-/**
- * Load chi tiết phiếu khi expand row (GET-by-id để có đủ tên SP).
- * `loading` (skeleton) chỉ bật ở lần tải đầu của mỗi phiếu: khi `request` đổi vì danh sách tải lại nền (thời gian thực) chi tiết được tải lại im lặng, panel không nháy.
- */
+/** Tải chi tiết phiếu khi mở rộng dòng. */
 export function useStockMovementDetail(
   request: StockMovement,
   isExpanded: boolean,
@@ -93,7 +90,7 @@ export function useOpeningEditor({
   const [showReceiveForm, setShowReceiveForm] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  /** Bỏ phần đang sửa để effect gieo lại từ chi tiết mới nhất ("Tải lại phiếu" sau khi người khác đổi phiếu). */
+  /** Bỏ phần đang sửa để nạp lại chi tiết mới. */
   const reset = useCallback(() => {
     setOpeningDetails([]);
     setReceivedQtys({});
@@ -172,9 +169,7 @@ export function useOpeningEditor({
       };
     }
 
-    // IMPORT: dropdown = toàn catalog. NCC chỉ là thông tin trên giấy tờ, không ràng buộc
-    // hàng hóa - trước đây dropdown chỉ liệt kê SP đã gắn NCC nên hàng mới nhập lần đầu
-    // của một NCC không bao giờ chọn được.
+    // Phiếu nhập: dropdown là toàn bộ danh mục.
     if (detail.movementType === "IMPORT") {
       stockMovementApi
         .getCatalogProductItems()

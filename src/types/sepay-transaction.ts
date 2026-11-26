@@ -1,4 +1,4 @@
-// Sổ giao dịch SePay của shop: `GET /sepay-transactions` (cash_flows:read), `POST /sepay-transactions/:id/resolve` (cash_flows:update).
+// Sổ giao dịch SePay của shop.
 
 export type SepayOutcome = "SETTLED" | "SETTLED_LATE" | "SETTLED_PARTIAL" | "REJECTED" | "UNMATCHED";
 

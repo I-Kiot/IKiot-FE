@@ -4,10 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { PermissionButton } from "@/components/permission-button";
 import type { PackableOrder } from "@/types/order-flow";
 
-/**
- * Đếm SKU khác nhau, không đếm dòng: một SKU có thể nằm ở hai dòng (vd. dòng đặt riêng).
- * Dòng chưa có SKU tính theo id dòng.
- */
+/** Đếm SKU khác nhau. */
 function productKindCount(order: PackableOrder): number {
   return new Set(order.items.map((item) => item.sku ?? item.id)).size;
 }
@@ -19,7 +16,7 @@ interface FulfillmentsColumnsOptions {
   onPack: (order: PackableOrder) => void;
 }
 
-/** Định nghĩa cột bảng đơn chờ đóng gói; nút "Đóng hàng" cần quyền và handler từ trang nên nhận qua tham số. */
+/** Cột bảng đơn chờ đóng gói. */
 export function fulfillmentsColumns({ canPack, onPack }: FulfillmentsColumnsOptions): ColumnDef<PackableOrder>[] {
   return [
     {
