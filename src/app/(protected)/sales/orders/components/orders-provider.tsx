@@ -79,6 +79,10 @@ type OrdersContextType = {
   resetFilters: () => void;
   /** Thay vài trường của một dòng sau khi đổi ngay tại danh sách (người phụ trách, shipper), không tải lại cả trang. */
   patchOrder: (id: string, patch: Partial<OrderListItem>) => void;
+  /** Đơn đang tích (theo id) - bảng tích, nút "Sao chép" ở header đọc. Chỉ trong trang đang xem. */
+  rowSelection: Record<string, boolean>;
+  setRowSelection: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  selectedOrders: OrderListItem[];
 };
 
 /** Danh sách đơn chỉ tự cập nhật khi bảng `orders` đổi (tồn kho trên dòng đơn: chờ sự kiện đơn kế tiếp, xem kế hoạch live refresh). */
@@ -94,6 +98,8 @@ const STOCK_RESOURCES = [
 ] as const;
 
 const OrdersContext = React.createContext<OrdersContextType | null>(null);
+
+const EMPTY_SELECTION: Record<string, boolean> = {};
 
 function errorMessage(error: unknown): string {
   return (
@@ -232,6 +238,26 @@ export function OrdersProvider({
     );
   }, []);
 
+  // Lựa chọn gắn với bộ lọc / trang lúc tích: danh sách phân trang ở server, đổi trang hay bộ lọc thì lựa chọn cũ hết hiệu lực.
+  const [selection, setSelection] = useState<{
+    query: OrdersListQuery;
+    ids: Record<string, boolean>;
+  }>({ query: listQuery, ids: {} });
+  const rowSelection = selection.query === listQuery ? selection.ids : EMPTY_SELECTION;
+  const setRowSelection: OrdersContextType["setRowSelection"] = useCallback(
+    (update) =>
+      setSelection((prev) => {
+        const current = prev.query === listQuery ? prev.ids : EMPTY_SELECTION;
+        return {
+          query: listQuery,
+          ids: typeof update === "function" ? update(current) : update,
+        };
+      }),
+    [listQuery],
+  );
+  const orders = result?.orders ?? [];
+  const selectedOrders = orders.filter((order) => rowSelection[order.id]);
+
   const resetFilters = useCallback(() => {
     setKeywordInput("");
     setListQuery((prev) => ({ ...DEFAULT_LIST_QUERY, limit: prev.limit }));
@@ -241,7 +267,7 @@ export function OrdersProvider({
     <OrdersContext.Provider
       value={{
         // Kết quả cũ vẫn hiện (mờ) trong lúc tải kết quả mới.
-        orders: result?.orders ?? [],
+        orders,
         isInitialLoading: enabled && result === null,
         isFetching: enabled && result?.params !== params,
         total: result?.total ?? 0,
@@ -253,6 +279,9 @@ export function OrdersProvider({
         updatePage,
         resetFilters,
         patchOrder,
+        rowSelection,
+        setRowSelection,
+        selectedOrders,
       }}
     >
       {children}

@@ -9,6 +9,7 @@ import { allows } from "@/components/sidebar/constants/role-permissions";
 import { getSessionRole } from "@/lib/auth";
 import { OrdersProvider } from "./components/orders-provider";
 import { OrdersTable } from "./components/orders-table";
+import { OrdersCopyButton } from "./components/orders-copy-button";
 
 /** Danh sách hành trình đơn (D-1, `GET /orders`, contract §2); cùng quyền với mục sidebar. */
 export default function OrdersPage() {
@@ -17,40 +18,44 @@ export default function OrdersPage() {
   const canCreate = allows(role, "orders", "create");
 
   return (
-    <div className="flex flex-col gap-6 px-4 lg:px-6">
-      <PageHeader
-        breadcrumbs={[
-          { label: "Trang chủ", href: "/dashboard" },
-          { label: "Đơn hàng" },
-          { label: "Danh sách đơn" },
-        ]}
-        title="Đơn hàng"
-        description="Theo dõi đơn theo trạng thái, mức ưu tiên và tình trạng hàng trên kệ"
-        actions={
-          <PermissionButton allowed={canCreate} permission="orders:create" asChild>
-            <Link href="/sales/orders/new">
-              <Plus className="size-4" />
-              Tạo đơn
-            </Link>
-          </PermissionButton>
-        }
-      />
-      {canView ? (
-        // Suspense vì OrdersProvider đọc `useSearchParams` (lọc sẵn từ link dashboard) - Next bắt buộc khi build.
-        <Suspense>
-          <OrdersProvider>
+    // Provider bọc cả header: nút "Sao chép" cạnh "Tạo đơn" đọc các đơn đang tích trong bảng.
+    // Suspense vì OrdersProvider đọc `useSearchParams` (lọc sẵn từ link dashboard) - Next bắt buộc khi build.
+    <Suspense>
+      <OrdersProvider enabled={canView}>
+        <div className="flex flex-col gap-6 px-4 lg:px-6">
+          <PageHeader
+            breadcrumbs={[
+              { label: "Trang chủ", href: "/dashboard" },
+              { label: "Đơn hàng" },
+              { label: "Danh sách đơn" },
+            ]}
+            title="Đơn hàng"
+            description="Theo dõi đơn theo trạng thái, mức ưu tiên và tình trạng hàng trên kệ"
+            actions={
+              <div className="flex items-center gap-2">
+                <OrdersCopyButton />
+                <PermissionButton allowed={canCreate} permission="orders:create" asChild>
+                  <Link href="/sales/orders/new">
+                    <Plus className="size-4" />
+                    Tạo đơn
+                  </Link>
+                </PermissionButton>
+              </div>
+            }
+          />
+          {canView ? (
             <OrdersTable />
-          </OrdersProvider>
-        </Suspense>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-16 text-center">
-          <h2 className="text-lg font-semibold">Không có quyền truy cập</h2>
-          <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Tài khoản của bạn không có quyền xem đơn hàng. Vui lòng liên hệ quản trị viên
-            nếu bạn cần truy cập.
-          </p>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-16 text-center">
+              <h2 className="text-lg font-semibold">Không có quyền truy cập</h2>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Tài khoản của bạn không có quyền xem đơn hàng. Vui lòng liên hệ quản trị viên
+                nếu bạn cần truy cập.
+              </p>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </OrdersProvider>
+    </Suspense>
   );
 }
