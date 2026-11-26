@@ -127,7 +127,7 @@ export function ProductsToolbar({ table }: ProductsToolbarProps) {
             <SelectItem value="DISCONTINUED">Ngừng sản xuất</SelectItem>
             {/* Không phải trạng thái của sản phẩm: lọc sản phẩm còn hàng hỏng (lô không bán được) ở nơi đang xem. */}
             {screen.showStock && (
-              <SelectItem value={DAMAGED_FILTER}>Có hàng hỏng</SelectItem>
+              <SelectItem value={DAMAGED_FILTER}>Hàng hỏng</SelectItem>
             )}
           </SelectContent>
         </Select>

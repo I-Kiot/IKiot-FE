@@ -169,13 +169,36 @@ export function getProductsColumns(
     {
       id: "stock",
       accessorKey: "totalStock",
-      header: ({ column }) => (
-        <SortableHeader label="Tồn kho" column={column} />
+      // Đang lọc "Hàng hỏng" ở ô Trạng thái: cột này đổi sang số hàng hỏng.
+      header: ({ column, table }) => (
+        <SortableHeader
+          label={
+            table.getColumn("status")?.getFilterValue() === DAMAGED_FILTER
+              ? "Hàng hỏng"
+              : "Tồn kho"
+          }
+          column={column}
+        />
       ),
-      cell: ({ row }) => {
+      cell: ({ row, table }) => {
         const stock = row.original.totalStock ?? 0;
         const allLocations = row.original.totalStockAllLocations ?? stock;
         const damaged = row.original.damagedStock ?? 0;
+        if (table.getColumn("status")?.getFilterValue() === DAMAGED_FILTER) {
+          return (
+            <div className="flex flex-col leading-tight">
+              <span
+                className="font-semibold tabular-nums text-destructive"
+                title="Hàng hỏng, không tính vào tồn bán được"
+              >
+                {damaged.toLocaleString("vi-VN")}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Tồn bán được: {stock.toLocaleString("vi-VN")}
+              </span>
+            </div>
+          );
+        }
         return (
           <div className="flex flex-col leading-tight">
             <span
