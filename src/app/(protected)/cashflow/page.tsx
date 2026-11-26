@@ -41,6 +41,7 @@ import {
   CASHFLOW_FUND_LABELS,
   categoryLabel,
   fundLabel,
+  isTransferCategory,
   formatVND,
   PAYMENT_METHOD_LABELS,
 } from '@/lib/stats-format'
@@ -150,36 +151,36 @@ function Cashflow() {
       />
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tiền vào</CardTitle>
+        <Card className="gap-1 py-4">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-semibold">Tiền vào</CardTitle>
             <ArrowDownLeft className="size-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-3xl font-bold leading-tight tabular-nums text-green-600">
               {formatVND(summary?.income ?? 0)}
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tiền ra</CardTitle>
+        <Card className="gap-1 py-4">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-semibold">Tiền ra</CardTitle>
             <ArrowUpRight className="size-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-3xl font-bold leading-tight tabular-nums text-red-600">
               {formatVND(summary?.expense ?? 0)}
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Số dư ròng</CardTitle>
+        <Card className="gap-1 py-4">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-semibold">Số dư ròng</CardTitle>
             <Wallet className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${
+              className={`text-3xl font-bold leading-tight tabular-nums ${
                 (summary?.net ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}
             >
@@ -248,29 +249,42 @@ function Cashflow() {
 
       {((summary?.byFund?.length ?? 0) > 0 || (summary?.byCategory?.length ?? 0) > 0) && (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Theo quỹ</CardTitle>
+          <Card className="gap-0 overflow-hidden pt-4 pb-0">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">Theo quỹ</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
+              {/* Cột đầu / cuối thụt 24px cho thẳng với tiêu đề card. */}
+              <Table className="[&>*>tr>:first-child]:pl-6 [&>*>tr>:last-child]:pr-6">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Quỹ</TableHead>
                     <TableHead className="text-right">Tiền vào</TableHead>
                     <TableHead className="text-right">Tiền ra</TableHead>
-                    <TableHead className="text-right">Ròng</TableHead>
+                    <TableHead className="text-right" title="Tiền chuyển giữa các quỹ của shop (chủ đưa vào két, rút két về chủ)">
+                      Chuyển quỹ
+                    </TableHead>
+                    <TableHead className="text-right" title="Số dư quỹ tăng / giảm trong kỳ, tính cả chuyển quỹ">
+                      Thay đổi
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(summary?.byFund ?? []).map((row) => (
                     <TableRow key={row.fund}>
                       <TableCell>
-                        <Badge variant="secondary">{fundLabel(row.fund)}</Badge>
+                        <span className="font-medium">{fundLabel(row.fund)}</span>
                         <span className="ml-2 text-xs text-muted-foreground">{row.count} giao dịch</span>
                       </TableCell>
                       <TableCell className="text-right text-green-600">{formatVND(row.income)}</TableCell>
                       <TableCell className="text-right text-red-600">{formatVND(row.expense)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {(() => {
+                          const moved = (row.transferIn ?? 0) - (row.transferOut ?? 0)
+                          if (moved === 0) return '-'
+                          return `${moved > 0 ? '+' : '−'}${formatVND(Math.abs(moved))}`
+                        })()}
+                      </TableCell>
                       <TableCell className={`text-right font-semibold ${row.net >= 0 ? '' : 'text-red-600'}`}>
                         {formatVND(row.net)}
                       </TableCell>
@@ -280,12 +294,13 @@ function Cashflow() {
               </Table>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Theo hạng mục</CardTitle>
+          <Card className="gap-0 overflow-hidden pt-4 pb-0">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">Theo hạng mục</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
+              {/* Cột đầu / cuối thụt 24px cho thẳng với tiêu đề card. */}
+              <Table className="[&>*>tr>:first-child]:pl-6 [&>*>tr>:last-child]:pr-6">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Hạng mục</TableHead>
@@ -318,11 +333,11 @@ function Cashflow() {
         </div>
       )}
 
-      <Card>
+      <Card className="gap-0 overflow-hidden py-0">
         <CardContent className="p-0">
           {/* Khung cuộn riêng để đầu bảng và dòng Tổng luôn thấy. */}
           <div className="max-h-[70vh] overflow-auto">
-          <table className="w-full caption-bottom text-sm [&>thead>tr>th]:sticky [&>thead>tr>th]:top-0 [&>thead>tr>th]:z-20 [&>thead>tr>th]:border-b [&>thead>tr>th]:bg-muted">
+          <table className="w-full caption-bottom text-sm [&>*>tr>:first-child]:pl-6 [&>*>tr>:last-child]:pr-6 [&>thead>tr>th]:sticky [&>thead>tr>th]:top-0 [&>thead>tr>th]:z-20 [&>thead>tr>th]:border-b [&>thead>tr>th]:bg-muted">
             <TableHeader>
               <TableRow>
                 <TableHead>Thời gian</TableHead>
@@ -342,19 +357,23 @@ function Cashflow() {
               {rows.length > 0 && (
                 rows.map((tx) => {
                   const isIncome = tx.flowType === 'INCOME'
+                  // Chuyển quỹ chỉ đổi chỗ tiền, không tô màu thu / chi.
+                  const isTransfer = isTransferCategory(tx.category)
                   return (
                     <TableRow key={tx.id}>
                       <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                         {formatDateTime(tx.createdAt)}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={isIncome ? 'success' : 'error'}>
-                          {isIncome ? 'Tiền vào' : 'Tiền ra'}
-                        </Badge>
+                      <TableCell
+                        className={`font-medium ${
+                          isTransfer ? 'text-muted-foreground' : isIncome ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {isTransfer ? 'Chuyển quỹ' : isIncome ? 'Tiền vào' : 'Tiền ra'}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">{categoryLabel(tx.category)}</TableCell>
                       <TableCell>
-                        {tx.fund ? <Badge variant="secondary">{fundLabel(tx.fund)}</Badge> : '-'}
+                        {tx.fund ? fundLabel(tx.fund) : '-'}
                       </TableCell>
                       <TableCell className="max-w-[280px] truncate">
                         {tx.description || tx.supplierName || '-'}
@@ -383,7 +402,7 @@ function Cashflow() {
                       </TableCell>
                       <TableCell
                         className={`text-right font-semibold whitespace-nowrap ${
-                          isIncome ? 'text-green-600' : 'text-red-600'
+                          isTransfer ? 'text-muted-foreground' : isIncome ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
                         {isIncome ? '+' : '−'}
@@ -402,6 +421,11 @@ function Cashflow() {
                     <span className="text-green-600">+{formatVND(summary.income)}</span>
                     {' · '}
                     <span className="text-red-600">−{formatVND(summary.expense)}</span>
+                    {(summary.transferred ?? 0) > 0 && (
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        (không tính {formatVND(summary.transferred)} chuyển quỹ)
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className={`text-right whitespace-nowrap ${summary.net >= 0 ? '' : 'text-red-600'}`}>
                     {formatVND(summary.net)}

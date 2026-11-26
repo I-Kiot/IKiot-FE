@@ -225,7 +225,13 @@ export type CashflowCategory =
   | 'SALE_CHANGE'
   | 'SUPPLIER_PAYMENT'
   | 'UNALLOCATED_RECEIPT'
-  | 'UNALLOCATED_REFUND';
+  | 'UNALLOCATED_REFUND'
+  /** Chuyển quỹ (két ↔ chủ): không phải thu chi, chỉ đổi chỗ tiền. */
+  | 'FUND_TRANSFER_IN'
+  | 'FUND_TRANSFER_OUT'
+  /** Chênh lệch khi đếm két. */
+  | 'DRAWER_SURPLUS'
+  | 'DRAWER_SHORTAGE';
 
 /** Quỹ chứa tiền: két chi nhánh, quỹ chủ (shipper nộp thẳng chủ) hoặc tài khoản ngân hàng. */
 export type CashflowFund = 'DRAWER' | 'OWNER' | 'BANK';
@@ -242,14 +248,21 @@ export interface CashflowByFund {
   fund: CashflowFund;
   income: number;
   expense: number;
+  /** Tiền chuyển đến / đi từ quỹ khác của shop, không nằm trong income / expense. */
+  transferIn: number;
+  transferOut: number;
+  /** Số dư quỹ thay đổi trong kỳ: thu − chi + chuyển đến − chuyển đi. */
   net: number;
   count: number;
 }
 
 export interface Cashflow {
+  /** Thu / chi không tính chuyển quỹ. */
   income: number;
   expense: number;
   net: number;
+  /** Tổng đã chuyển giữa các quỹ trong kỳ. */
+  transferred: number;
   byType: CashflowByType[];
   byCategory?: CashflowByCategory[];
   byFund?: CashflowByFund[];

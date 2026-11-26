@@ -103,7 +103,15 @@ export const CASHFLOW_CATEGORY_LABELS: Record<string, string> = {
   SUPPLIER_PAYMENT: 'Trả nhà cung cấp',
   UNALLOCATED_RECEIPT: 'Tiền về chưa gắn đơn',
   UNALLOCATED_REFUND: 'Hoàn tiền chưa gắn đơn',
+  FUND_TRANSFER_IN: 'Chuyển quỹ (nhận)',
+  FUND_TRANSFER_OUT: 'Chuyển quỹ (chuyển đi)',
+  DRAWER_SURPLUS: 'Thừa két',
+  DRAWER_SHORTAGE: 'Thiếu két',
 }
+
+/** Chuyển quỹ: không phải thu chi, nên không tô xanh / đỏ như tiền vào / ra. */
+export const isTransferCategory = (category: string | null | undefined): boolean =>
+  category === 'FUND_TRANSFER_IN' || category === 'FUND_TRANSFER_OUT'
 
 export const CASHFLOW_FUND_LABELS: Record<string, string> = {
   DRAWER: 'Két',
