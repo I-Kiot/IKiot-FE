@@ -95,15 +95,21 @@ export interface PromotionCalculateItem {
   unitPrice: number
 }
 
+/**
+ * Khách của giỏ: `customerId` là khách có sẵn; `newCustomer` là khách sẽ tạo cùng đơn (chưa dùng lượt nào); không có
+ * cả hai là khách vãng lai, không dùng được khuyến mãi giới hạn lượt theo khách.
+ */
 export interface PromotionCandidatesRequest {
   branchId?: string
   customerId?: string
+  newCustomer?: boolean
   items: PromotionCalculateItem[]
 }
 
 export interface PromotionCalculateRequest {
   branchId?: string
   customerId?: string
+  newCustomer?: boolean
   items: PromotionCalculateItem[]
   /** Khuyến mãi được chọn, tối đa 2. */
   promotionIds: string[]
