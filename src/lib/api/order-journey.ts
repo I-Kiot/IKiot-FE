@@ -40,6 +40,24 @@ export const orderJourneyApi = {
     return res.data;
   },
 
+  /** `GET /orders/export`: cùng bộ lọc với danh sách (bỏ phân trang), file cùng khuôn file mẫu nhập; `ids` là đơn đã tích. */
+  exportFile: async (params: OrderJourneyQuery, ids?: string[]): Promise<Blob> => {
+    const res = await client.get<Blob>('/orders/export', {
+      // Xuất mọi trang: bỏ page / limit.
+      params: { ...params, page: undefined, limit: undefined, ids: ids?.length ? ids.join(',') : undefined },
+      responseType: 'blob',
+    });
+    return res.data;
+  },
+
+  /** `GET /orders/export/rows`: các dòng của file xuất, đúng thứ tự cột file mẫu nhập (cho nút "Sao chép"). */
+  exportRows: async (ids: string[]): Promise<(string | number | null)[][]> => {
+    const res = await client.get<{ data: { rows: (string | number | null)[][] } }>('/orders/export/rows', {
+      params: { ids: ids.join(',') },
+    });
+    return res.data.data.rows;
+  },
+
   /** `POST /orders/import`: cả file đúng mới tạo; lỗi 400 kèm `errors` theo dòng (xem importErrorsOf). */
   importFile: async (
     file: File,

@@ -11,6 +11,7 @@ import { OrdersProvider } from "./components/orders-provider";
 import { OrdersTable } from "./components/orders-table";
 import { OrdersCopyButton } from "./components/orders-copy-button";
 import { OrdersImportDialog } from "./components/orders-import-dialog";
+import { OrdersExportButton } from "./components/orders-export-button";
 
 /** Danh sách hành trình đơn (D-1, `GET /orders`, contract §2); cùng quyền với mục sidebar. */
 export default function OrdersPage() {
@@ -35,6 +36,7 @@ export default function OrdersPage() {
             actions={
               <div className="flex items-center gap-2">
                 <OrdersCopyButton />
+                <OrdersExportButton allowed={canView} />
                 <PermissionButton
                   allowed={canCreate}
                   permission="orders:create"

@@ -5,6 +5,7 @@ import type {
   Product,
   ProductItem,
   ProductQueryParams,
+  ProductType,
   ProductListResponse,
   ProductCreatePayload,
   ProductUpdatePayload,
@@ -191,6 +192,12 @@ export const productApi = {
 
   removeItem: async (itemId: string): Promise<void> => {
     await client.delete(`/products/items/${itemId}`);
+  },
+
+  // POST /products/export - file cùng khuôn file mẫu nhập; `ids` là hàng đã tích, bỏ trống là mọi hàng của các loại.
+  exportFile: async (body: { ids?: string[]; productType?: ProductType[] }): Promise<Blob> => {
+    const res = await client.post<Blob>("/products/export", body, { responseType: "blob" });
+    return res.data;
   },
 
   // Tải file Excel mẫu.

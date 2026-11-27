@@ -85,6 +85,8 @@ type OrdersContextType = {
   selectedOrders: OrderListItem[];
   /** Tải lại danh sách với bộ lọc hiện tại. */
   reload: () => void;
+  /** Bộ lọc đang gửi lên `GET /orders`, dùng cho nút "Xuất file". */
+  params: OrderJourneyQuery;
 };
 
 /** Tải lại khi bảng `orders` đổi. */
@@ -284,6 +286,7 @@ export function OrdersProvider({
         setRowSelection,
         selectedOrders,
         reload,
+        params,
       }}
     >
       {children}

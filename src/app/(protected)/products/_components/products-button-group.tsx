@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Download, Plus, Trash2, Upload } from 'lucide-react'
+import { Copy, Download, Loader2, Plus, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { PermissionButton } from "@/components/permission-button";
@@ -11,6 +11,8 @@ import { useState } from 'react'
 import { copyRows } from '@/lib/clipboard-table'
 import { productApi } from '@/lib/api/product'
 import { productImportRows } from '../_constants/product-copy'
+import { messageForCode } from '@/lib/api/error-codes'
+import { blobErrorCode, saveBlob } from '@/lib/download-file'
 
 export function ProductsButtonGroup() {
   const { setOpen, selectedIds, screen, products, brands, categories } = useProducts()
@@ -19,6 +21,26 @@ export function ProductsButtonGroup() {
   const canDelete = canDeleteProduct(role)
 
   const [copying, setCopying] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  /** Xuất theo khuôn file mẫu nhập: hàng đã tích, không tích thì mọi hàng của màn này. */
+  async function exportFile() {
+    setExporting(true)
+    try {
+      const blob = await productApi.exportFile({
+        ids: selectedIds.length > 0 ? selectedIds : undefined,
+        productType: screen.listTypes,
+      })
+      saveBlob(blob, `hang-hoa-${new Date().toLocaleDateString('sv-SE')}.xlsx`)
+      toast.success(
+        selectedIds.length > 0 ? `Đã xuất ${selectedIds.length} ${screen.noun}` : `Đã xuất toàn bộ ${screen.noun}`,
+      )
+    } catch (error) {
+      toast.error(messageForCode(await blobErrorCode(error)) ?? `Xuất file ${screen.noun} thất bại`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   /** Chép hàng hoá đã chọn theo cột file mẫu. */
   async function copySelected() {
@@ -75,10 +97,19 @@ export function ProductsButtonGroup() {
           Xóa {selectedIds.length} mục
         </PermissionButton>
       )}
-      <Button variant="outline" size="sm" className="cursor-pointer">
-        <Download className="mr-2 size-4" />
-        Xuất file
-      </Button>
+      {screen.importFile && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          disabled={exporting}
+          onClick={exportFile}
+          title="Cùng cột với file mẫu nhập hàng hóa: sửa xong có thể nhập lại"
+        >
+          {exporting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Download className="mr-2 size-4" />}
+          {selectedIds.length > 0 ? `Xuất ${selectedIds.length} mục` : 'Xuất file'}
+        </Button>
+      )}
       {screen.importFile && (
         <PermissionButton
           allowed={canWrite}
