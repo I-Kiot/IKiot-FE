@@ -44,10 +44,17 @@ export function OrdersImportDialog({
           <li>
             Khách hàng khớp theo số điện thoại; chưa có thì cần tên để tạo khách mới. Giao tận nơi cần địa chỉ giao.
           </li>
+          <li>
+            Giảm giá đơn ghi số tiền (100000) hoặc phần trăm (5%) - phần trăm tính trên tiền hàng sau giảm từng dòng.
+          </li>
+          <li>
+            Dòng làm riêng: điền <strong className="text-foreground">Thông số làm riêng</strong> dạng &quot;Màu:
+            Trắng; Dài: 200 cm&quot; và/hoặc ghi chú cho xưởng - hệ thống tạo SKU riêng cho dòng đó. Ảnh mẫu thêm trên
+            màn hình đơn sau khi nhập.
+          </li>
           <li>Tiền cọc là tiền đã thu: được ghi vào sổ thu chi ngay khi nhập.</li>
           <li>
-            Không nhập khuyến mãi và đơn may theo số đo. Hướng dẫn chi tiết và ví dụ ở trang &quot;Hướng dẫn&quot;
-            trong file mẫu.
+            Không nhập khuyến mãi. Hướng dẫn chi tiết và ví dụ ở trang &quot;Hướng dẫn&quot; trong file mẫu.
           </li>
         </>
       }
