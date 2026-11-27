@@ -16,6 +16,11 @@ interface OrderCartLinesProps {
   lines: OrderLineDraft[];
   onChange: (lines: OrderLineDraft[]) => void;
   error?: string;
+  /**
+   * Giảm giá khuyến mãi phân bổ cho từng dòng (theo `key`), khi đơn đang áp khuyến mãi. Có giá trị thì đơn giá và giảm
+   * giá dòng bị khoá: BE tự phân bổ khuyến mãi lên dòng và từ chối giá thoả thuận đi kèm khuyến mãi.
+   */
+  promotionDiscounts?: Record<string, number> | null;
 }
 
 /** Dòng hàng của đơn tay. */
@@ -23,7 +28,11 @@ export function OrderCartLines({
   lines,
   onChange,
   error,
+  promotionDiscounts = null,
 }: OrderCartLinesProps) {
+  const locked = promotionDiscounts !== null;
+  const discountOf = (line: OrderLineDraft) =>
+    locked ? (promotionDiscounts[line.key] ?? 0) : line.discountAmount;
   const [customizing, setCustomizing] = React.useState<string | null>(null);
   const customizingLine =
     lines.find((line) => line.key === customizing) ?? null;
@@ -151,19 +160,23 @@ export function OrderCartLines({
                       aria-label={`Đơn giá ${line.name}`}
                       value={line.unitPrice}
                       onChange={(unitPrice) => patch(line.key, { unitPrice })}
+                      disabled={locked}
+                      title={locked ? "Đơn đang áp khuyến mãi: bán theo giá niêm yết" : undefined}
                     />
                   </div>
                   <div className="grid w-32 gap-1">
                     <span className="text-xs text-muted-foreground">
-                      Giảm giá
+                      {locked ? "Khuyến mãi" : "Giảm giá"}
                     </span>
                     <MoneyInput
                       className="h-8 text-right text-sm font-medium text-red-500 tabular-nums"
                       aria-label={`Giảm giá ${line.name}`}
-                      value={line.discountAmount}
+                      value={discountOf(line)}
                       onChange={(discountAmount) =>
                         patch(line.key, { discountAmount })
                       }
+                      disabled={locked}
+                      title={locked ? "Khuyến mãi tự phân bổ lên dòng" : undefined}
                     />
                   </div>
                   <div className="grid min-w-32 gap-1 text-right">
@@ -171,7 +184,9 @@ export function OrderCartLines({
                       Thành tiền
                     </span>
                     <span className="flex h-8 items-center justify-end text-sm font-semibold tabular-nums">
-                      {formatVND(lineTotal(line))}
+                      {formatVND(
+                        lineTotal({ ...line, discountAmount: discountOf(line) }),
+                      )}
                     </span>
                   </div>
                   <Button

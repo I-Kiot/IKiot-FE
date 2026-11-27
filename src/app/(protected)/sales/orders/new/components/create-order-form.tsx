@@ -4,7 +4,7 @@ import * as React from "react";
 import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Banknote, Check, FileText, QrCode } from "lucide-react";
+import { Banknote, Check, FileText, QrCode, Tag, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { customerApi } from "@/lib/api/customer";
+import { promotionApi } from "@/lib/api/promotion";
+import { PromotionPickerDialog } from "@/components/promotion-picker-dialog";
+import type { PromotionCalculateResponse } from "@/types/promotion";
 import { orderReturnApi } from "@/lib/api/order-return";
 import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
@@ -136,6 +139,12 @@ function OrderDraftForm({
   const [depositMethod, setDepositMethod] =
     React.useState<DepositMethod>("CASH");
   const [note, setNote] = React.useState("");
+  // Khuyến mãi đã chọn; kết quả tính kèm signature của giỏ lúc tính, như màn bán tại quầy.
+  const [promotionIds, setPromotionIds] = React.useState<string[]>([]);
+  const [promotionResult, setPromotionResult] = React.useState<
+    (PromotionCalculateResponse & { signature: string }) | null
+  >(null);
+  const [promotionPickerOpen, setPromotionPickerOpen] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [attempted, setAttempted] = React.useState(false);
   const keySeq = React.useRef(0);
@@ -232,13 +241,91 @@ function OrderDraftForm({
   const pickup = fulfillment === "STORE_PICKUP";
   const effectiveShippingFee = pickup ? 0 : shippingFee;
 
+  // Khuyến mãi tính theo giá niêm yết: BE từ chối giá thoả thuận và giảm cả đơn đi kèm khuyến mãi, và tự phân bổ
+  // giảm giá lên dòng. Giá / giảm tay vẫn giữ trong form, bỏ khuyến mãi là dùng lại.
+  // Khách mới chưa có id nhưng chưa dùng lượt nào; chưa chọn khách là khách vãng lai.
+  const promotionCustomerId =
+    customerMode === "existing" ? customer?.id : undefined;
+  const promotionNewCustomer = customerMode === "new";
+  const promotionItems = lines.map((line) => ({
+    productItemId: line.productItemId,
+    quantity: line.quantity,
+    unitPrice: line.retailPrice,
+  }));
+  const promotionSignature =
+    promotionIds.length > 0 && lines.length > 0 && branchId
+      ? [
+          branchId,
+          promotionCustomerId ?? (promotionNewCustomer ? "new" : ""),
+          promotionItems
+            .map((i) => `${i.productItemId}:${i.quantity}:${i.unitPrice}`)
+            .join(","),
+          [...promotionIds].sort().join(","),
+        ].join("|")
+      : null;
+
+  // Tính lại khi giỏ, khách hoặc nơi bán đổi (debounce); BE từ chối thì bỏ chọn, như màn bán tại quầy.
+  React.useEffect(() => {
+    if (!promotionSignature) return;
+    const signature = promotionSignature;
+    const payload = {
+      branchId,
+      customerId: promotionCustomerId,
+      newCustomer: promotionNewCustomer,
+      items: promotionItems,
+      promotionIds,
+    };
+    const handler = setTimeout(() => {
+      promotionApi
+        .calculate(payload)
+        .then((result) => setPromotionResult({ ...result, signature }))
+        .catch((error) => {
+          const body = getApiErrorBody(error);
+          toast.warning(
+            messageForCode(body?.code) ??
+              "Khuyến mãi đã chọn không còn đủ điều kiện, vui lòng chọn lại.",
+          );
+          setPromotionIds([]);
+        });
+    }, 300);
+    return () => clearTimeout(handler);
+    // Chỉ chạy lại theo signature: nó đã gồm mọi giá trị payload dùng.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promotionSignature]);
+
+  const promoted = promotionIds.length > 0;
+  const activePromotion =
+    promotionResult && promotionResult.signature === promotionSignature
+      ? promotionResult
+      : null;
+  // Engine trả phân bổ theo đúng thứ tự dòng gửi lên.
+  const promotionDiscounts: Record<string, number> | null = promoted
+    ? Object.fromEntries(
+        lines.map((line, index) => [
+          line.key,
+          activePromotion?.itemBreakdown[index]?.discountAmount ?? 0,
+        ]),
+      )
+    : null;
+
   const totals = computeTotals({
-    lines,
-    orderDiscount,
+    lines: promotionDiscounts
+      ? lines.map((line) => ({
+          quantity: line.quantity,
+          unitPrice: line.retailPrice,
+          discountAmount: promotionDiscounts[line.key] ?? 0,
+        }))
+      : lines,
+    orderDiscount: promoted ? 0 : orderDiscount,
     shippingFee: effectiveShippingFee,
     depositType,
     depositValue,
   });
+  const hasManualPricing =
+    orderDiscount > 0 ||
+    lines.some(
+      (line) => line.unitPrice !== line.retailPrice || line.discountAmount > 0,
+    );
 
   const isNewCustomer = customerMode === "new";
   const customerError =
@@ -403,6 +490,10 @@ function OrderDraftForm({
   async function submit() {
     setAttempted(true);
     if (!valid || (!isNewCustomer && !customer)) return;
+    if (promoted && !activePromotion) {
+      toast.info("Đang tính khuyến mãi, thử lại sau giây lát.");
+      return;
+    }
     let customerId = customer?.id ?? "";
     let newlyAdded: Customer | null = null;
     if (isNewCustomer) {
@@ -435,18 +526,21 @@ function OrderDraftForm({
       items: lines.map((line) => ({
         productItemId: line.productItemId,
         quantity: line.quantity,
-        unitPrice: line.unitPrice,
+        // Áp khuyến mãi: giá niêm yết, không giảm tay - BE tự phân bổ khuyến mãi lên dòng.
+        unitPrice: promoted ? line.retailPrice : line.unitPrice,
         ...(stockLocation ? { sourceLocationId: stockLocation.id } : {}),
-        ...(line.discountAmount > 0
+        ...(!promoted && line.discountAmount > 0
           ? { discountAmount: line.discountAmount }
           : {}),
         ...(line.customization ? { customization: line.customization } : {}),
       })),
       customerId,
       ...(effectiveShippingFee > 0 ? { shippingFee: effectiveShippingFee } : {}),
-      ...(orderDiscount > 0
-        ? { discountType: "ORDER" as const, discountValue: orderDiscount }
-        : {}),
+      ...(promoted
+        ? { appliedPromotions: promotionIds.map((promotionId) => ({ promotionId })) }
+        : orderDiscount > 0
+          ? { discountType: "ORDER" as const, discountValue: orderDiscount }
+          : {}),
       ...(depositType !== "NONE" && depositValue > 0
         ? {
             deposit: {
@@ -582,6 +676,7 @@ function OrderDraftForm({
             lines={lines}
             onChange={setLines}
             error={show(errors.lines)}
+            promotionDiscounts={promotionDiscounts}
           />
         </CardContent>
       </Card>
@@ -898,10 +993,70 @@ function OrderDraftForm({
                 <MoneyInput
                   id="order-discount"
                   className="text-right"
-                  value={orderDiscount}
+                  value={promoted ? 0 : orderDiscount}
                   onChange={setOrderDiscount}
+                  disabled={promoted}
+                  title={
+                    promoted
+                      ? "Không dùng chung với khuyến mãi - bỏ khuyến mãi để giảm tay"
+                      : undefined
+                  }
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <Label className={sectionLabel}>Khuyến mãi</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                  disabled={lines.length === 0 || !branchId}
+                  onClick={() => setPromotionPickerOpen(true)}
+                >
+                  <Tag className="mr-1.5 size-4" />
+                  {promoted ? "Đổi khuyến mãi" : "Chọn khuyến mãi"}
+                </Button>
+              </div>
+              {promoted ? (
+                <div className="flex items-start justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="text-sm font-medium">
+                      {activePromotion
+                        ? activePromotion.appliedPromotions
+                            .map((p) => p.promoName)
+                            .join(" + ")
+                        : "Đang tính khuyến mãi..."}
+                    </p>
+                    {activePromotion && (
+                      <p className="text-xs text-muted-foreground">
+                        Giảm {formatVND(activePromotion.totalDiscount)}, phân
+                        bổ lên từng dòng.
+                        {hasManualPricing &&
+                          " Giá thoả thuận và giảm giá tay tạm bỏ khi áp khuyến mãi."}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0 cursor-pointer"
+                    aria-label="Bỏ khuyến mãi"
+                    onClick={() => setPromotionIds([])}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {lines.length === 0
+                    ? "Thêm mặt hàng để xem khuyến mãi áp dụng được."
+                    : "Chưa áp khuyến mãi. Khuyến mãi không dùng chung với giá thoả thuận và giảm giá tay."}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -1012,6 +1167,16 @@ function OrderDraftForm({
                   {formatVND(totals.goods)}
                 </span>
               </div>
+              {promoted && activePromotion && activePromotion.totalDiscount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-medium">
+                    Khuyến mãi (đã trừ trong tiền hàng)
+                  </span>
+                  <span className="font-semibold tabular-nums text-red-500">
+                    -{formatVND(activePromotion.totalDiscount)}
+                  </span>
+                </div>
+              )}
               {totals.orderDiscount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground font-medium">
@@ -1104,6 +1269,16 @@ function OrderDraftForm({
           Tạo đơn
         </Button>
       </div>
+      <PromotionPickerDialog
+        open={promotionPickerOpen}
+        onOpenChange={setPromotionPickerOpen}
+        branchId={branchId}
+        customerId={promotionCustomerId}
+        newCustomer={promotionNewCustomer}
+        items={promotionItems}
+        selectedPromotionIds={promotionIds}
+        onConfirm={setPromotionIds}
+      />
       <Dialog
         open={addedCustomer !== null}
         onOpenChange={(open) => {

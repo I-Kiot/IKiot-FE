@@ -38,6 +38,8 @@ interface PromotionPickerDialogProps {
   onOpenChange: (open: boolean) => void;
   branchId: string;
   customerId?: string;
+  /** Khách sẽ tạo cùng đơn: chưa dùng lượt nào. */
+  newCustomer?: boolean;
   items: PromotionCalculateItem[];
   selectedPromotionIds: string[];
   onConfirm: (selectedIds: string[]) => void;
@@ -48,6 +50,7 @@ export function PromotionPickerDialog({
   onOpenChange,
   branchId,
   customerId,
+  newCustomer = false,
   items,
   selectedPromotionIds,
   onConfirm,
@@ -69,7 +72,7 @@ export function PromotionPickerDialog({
 
     setIsLoading(true);
     promotionApi
-      .listCandidates({ branchId, customerId, items })
+      .listCandidates({ branchId, customerId, newCustomer, items })
       .then(setCandidates)
       .catch((error) => {
         console.error("Lỗi khi tải danh sách khuyến mãi:", error);
@@ -77,7 +80,7 @@ export function PromotionPickerDialog({
       })
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, branchId, customerId, itemsKey]);
+  }, [open, branchId, customerId, newCustomer, itemsKey]);
 
   const allCandidates = [
     ...(candidates?.branchPromotions ?? []),

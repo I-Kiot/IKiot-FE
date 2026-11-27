@@ -13,7 +13,7 @@ import { CheckoutSidebar } from "./checkout-sidebar";
 import { CustomerDialog } from "./customer-dialog";
 import { ReceiptDialog } from "./receipt-dialog";
 import { OrderQrDialog } from "./order-qr-dialog";
-import { PromotionPickerDialog } from "./promotion-picker-dialog";
+import { PromotionPickerDialog } from "@/components/promotion-picker-dialog";
 import { orderApi } from "@/lib/api/order";
 import { productApi } from "@/lib/api/product";
 import { promotionApi } from "@/lib/api/promotion";
@@ -506,21 +506,6 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
       return;
     }
 
-    // Chụp giỏ lúc tính khuyến mãi.
-    const promotionToApply =
-      hasPromotionApplied && activePromotionResult
-        ? {
-            branchId: resolvedBranchId,
-            customerId: activeInvoice.selectedCustomer?.id,
-            items: activeInvoice.items.map((item) => ({
-              productItemId: item.productItemId,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-            })),
-            promotionIds: activeInvoice.selectedPromotionIds,
-          }
-        : null;
-
     let discountType: "ORDER" | "PROMOTION" | null = null;
     let discountValue = 0;
     let appliedPromotions = null;
@@ -595,13 +580,7 @@ export function DirectSaleTab({ sales }: { sales: SalesBranch }) {
         const orderId = createdOrder.id || (createdOrder as any).id || "";
         const receipt = buildReceipt(createdOrder, orderId);
 
-        // Ghi lượt dùng khuyến mãi sau khi tạo đơn, lỗi không chặn.
-        if (promotionToApply && orderId) {
-          promotionApi.apply({ ...promotionToApply, orderId }).catch((error) => {
-            console.error("Lỗi khi ghi nhận khuyến mãi cho đơn hàng:", error);
-            toast.warning("Đơn hàng đã tạo nhưng ghi nhận khuyến mãi thất bại.");
-          });
-        }
+        // Lượt dùng khuyến mãi đã được server ghi cùng lúc tạo đơn.
 
         if (activeInvoice.paymentMethod === "SEPAY") {
           // SEPAY: hiện QR dialog, chờ xác nhận payment

@@ -128,6 +128,8 @@ export const ERROR_MESSAGES = {
   PRODUCT_ITEM_NOT_FOUND: "Không tìm thấy mặt hàng",
   PRODUCT_NOT_FOUND: "Không tìm thấy sản phẩm",
   PROMOTION_BRANCH_DENIED: "Khuyến mãi này không áp dụng cho chi nhánh của bạn",
+  PROMOTION_CUSTOMER_REQUIRED:
+    "Khuyến mãi này giới hạn lượt theo từng khách - không áp dụng cho khách vãng lai, hãy chọn hoặc tạo khách hàng",
   PROMOTION_CUSTOMER_USAGE_EXHAUSTED: "Khách hàng đã hết lượt sử dụng khuyến mãi này",
   PROMOTION_MAX_DISCOUNT_INVALID: "maxDiscountAmount chỉ dùng được khi giảm theo phần trăm",
   PROMOTION_NOT_APPLICABLE: "Một khuyến mãi đã chọn không còn tồn tại hoặc không áp dụng cho đơn này",
