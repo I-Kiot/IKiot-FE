@@ -3,7 +3,7 @@ import { TransactionsTable } from "./_components/table/transactions-table";
 
 export default function AdminTransactionsPage() {
   return (
-    <div className="flex flex-col gap-6 px-4  lg:px-6">
+    <div className="flex flex-col gap-6 px-4 lg:px-6">
       <PageHeader
         breadcrumbs={[
           { label: "Trang chủ", href: "/admin/dashboard" },

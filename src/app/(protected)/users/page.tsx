@@ -66,29 +66,22 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="@container/main px-4 lg:px-6 pt-6">
-        <PageHeader
-          breadcrumbs={[
-            { label: 'Trang chủ', href: '/dashboard' },
-            { label: 'Người dùng' },
-          ]}
-          title="Người dùng"
-          description="Quản lý tài khoản và phân quyền người dùng"
-        />
-      </div>
-      <div className="@container/main px-4 lg:px-6">
-        <StatCards />
-      </div>
-      
-      <div className="@container/main px-4 lg:px-6 mt-8 lg:mt-12">
-        <DataTable 
-          users={users}
-          onDeleteUser={handleDeleteUser}
-          onEditUser={handleEditUser}
-          onAddUser={handleAddUser}
-        />
-      </div>
+    <div className="@container/main flex flex-col gap-6 px-4 lg:px-6">
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Trang chủ', href: '/dashboard' },
+          { label: 'Người dùng' },
+        ]}
+        title="Người dùng"
+        description="Quản lý tài khoản và phân quyền người dùng"
+      />
+      <StatCards />
+      <DataTable
+        users={users}
+        onDeleteUser={handleDeleteUser}
+        onEditUser={handleEditUser}
+        onAddUser={handleAddUser}
+      />
     </div>
   )
 }

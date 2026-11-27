@@ -252,13 +252,14 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild className="cursor-pointer" isActive={subItem.url === activeUrl}>
+                          {/* h-auto: tên dài cạnh badge xuống dòng thay vì bị cắt nửa chữ. */}
+                          <SidebarMenuSubButton asChild className="h-auto min-h-7 cursor-pointer py-1" isActive={subItem.url === activeUrl}>
                             <Link
                               href={subItem.url}
                               target={(item.title === "Auth Pages" || item.title === "Errors") ? "_blank" : undefined}
                               rel={(item.title === "Auth Pages" || item.title === "Errors") ? "noopener noreferrer" : undefined}
                             >
-                              <span>{subItem.title}</span>
+                              <span className="min-w-0 flex-1 leading-snug">{subItem.title}</span>
                               {alertByUrl[subItem.url] && (
                                 <CountBadge
                                   className="ml-auto"
