@@ -564,6 +564,14 @@ export interface CreateOrderLinePayload {
   sourceLocationId?: string;
   /** Có giá trị → dòng đặt riêng (sản xuất theo yêu cầu). */
   customization?: OrderItemCustomization;
+  /** Chỉ dòng combo: thông số riêng cho từng món trong combo. */
+  componentCustomizations?: ComboComponentCustomization[];
+}
+
+/** Làm riêng một món trong combo; `productItemId` là SKU của món đó. */
+export interface ComboComponentCustomization {
+  productItemId: string;
+  customization: OrderItemCustomization;
 }
 
 export interface CreateOrderJourneyPayload {

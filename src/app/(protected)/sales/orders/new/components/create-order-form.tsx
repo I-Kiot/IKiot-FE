@@ -39,6 +39,7 @@ import { customerApi } from "@/lib/api/customer";
 import { promotionApi } from "@/lib/api/promotion";
 import { PromotionPickerDialog } from "@/components/promotion-picker-dialog";
 import type { PromotionCalculateResponse } from "@/types/promotion";
+import type { MadeToOrderComponent } from "@/types/product";
 import { orderReturnApi } from "@/lib/api/order-return";
 import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import { orderJourneyApi } from "@/lib/api/order-journey";
@@ -432,6 +433,7 @@ function OrderDraftForm({
                 sku: line.sku ?? "",
                 retailPrice: line.listUnitPrice,
                 stock: 0,
+                isManufacturable: line.isManufacturable,
                 quantity: item.quantity,
                 unitPrice: line.unitPrice,
                 discountAmount: 0,
@@ -533,6 +535,9 @@ function OrderDraftForm({
           ? { discountAmount: line.discountAmount }
           : {}),
         ...(line.customization ? { customization: line.customization } : {}),
+        ...(line.componentCustomizations?.length
+          ? { componentCustomizations: line.componentCustomizations }
+          : {}),
       })),
       customerId,
       ...(effectiveShippingFee > 0 ? { shippingFee: effectiveShippingFee } : {}),
@@ -598,13 +603,16 @@ function OrderDraftForm({
       sku: string;
       retailPrice: number;
       stock: number;
+      isManufacturable: boolean;
+      madeToOrderComponents?: MadeToOrderComponent[];
     }) => {
       setLines((current) => {
         const existing = current.find(
           (line) =>
             line.productItemId === product.id &&
             line.unitPrice === product.retailPrice &&
-            !line.customization,
+            !line.customization &&
+            !line.componentCustomizations?.length,
         );
         if (existing) {
           return current.map((line) =>
@@ -624,6 +632,8 @@ function OrderDraftForm({
             sku: product.sku,
             retailPrice: product.retailPrice,
             stock: product.stock,
+            isManufacturable: product.isManufacturable,
+            madeToOrderComponents: product.madeToOrderComponents,
             quantity: 1,
             unitPrice: product.retailPrice,
             discountAmount: 0,

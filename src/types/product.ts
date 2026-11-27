@@ -83,6 +83,15 @@ export interface ProductItemSupplier {
   phoneNumber?: string;
 }
 
+/** Món lá của combo làm riêng được (PRODUCT, sản phẩm bật "Có thể sản xuất"). */
+export interface MadeToOrderComponent {
+  productItemId: string;
+  sku: string | null;
+  productName: string;
+  /** Số chiếc trong một bộ. */
+  quantity: number;
+}
+
 export interface ProductItem {
   id: string;
   tenantId: string;
@@ -101,6 +110,8 @@ export interface ProductItem {
   suppliers?: ProductItemSupplier[];
   itemType?: ProductItemType;
   comboComponents?: ComboComponent[];
+  /** Chỉ combo, chỉ trong `GET /products/search`: các món lá làm riêng được khi tạo đơn. Rỗng = không có nút làm riêng. */
+  madeToOrderComponents?: MadeToOrderComponent[];
   // Tồn tại địa điểm đang xem (tổng stockDetails); không lọc địa điểm thì bằng stockAllLocations.
   stock?: number;
   // Tồn ở mọi chi nhánh / kho.
