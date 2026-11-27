@@ -34,6 +34,24 @@ type Envelope<T> = { success: boolean; data: T };
 export const PACK_PAGE_SIZE = 10;
 
 export const orderJourneyApi = {
+  /** File mẫu nhập đơn (`GET /orders/import/template`): dropdown chi nhánh, nhân viên của cửa hàng. */
+  downloadImportTemplate: async (): Promise<Blob> => {
+    const res = await client.get<Blob>('/orders/import/template', { responseType: 'blob' });
+    return res.data;
+  },
+
+  /** `POST /orders/import`: cả file đúng mới tạo; lỗi 400 kèm `errors` theo dòng (xem importErrorsOf). */
+  importFile: async (
+    file: File,
+  ): Promise<{ orderCount: number; orderIds: string[]; codes: string[] }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await client.post<{
+      data: { orderCount: number; orderIds: string[]; codes: string[] };
+    }>('/orders/import', formData, { headers: { 'Content-Type': undefined } });
+    return res.data.data;
+  },
+
   getList: async (params?: OrderJourneyQuery): Promise<Paginated<OrderListItem>> => {
     const res = await client.get<Paginated<OrderListItem>>('/orders', { params });
     return { data: res.data.data, pagination: res.data.pagination };
