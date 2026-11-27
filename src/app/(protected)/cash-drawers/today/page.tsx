@@ -320,11 +320,14 @@ export default function CashDrawersTodayPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[50vh] flex-col items-center justify-center gap-2">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">
-          Đang tải thông tin két tiền...
-        </p>
+      <div className="flex flex-col gap-6 px-4 lg:px-6">
+        <PageHeader breadcrumbs={BREADCRUMBS} title="Hôm nay" description="Quản lý két tiền và lịch sử bàn giao ca làm việc" />
+        <div className="flex h-[50vh] flex-col items-center justify-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
+            Đang tải thông tin két tiền...
+          </p>
+        </div>
       </div>
     );
   }
@@ -336,7 +339,7 @@ export default function CashDrawersTodayPage() {
 
   if (isWarehouse) {
     return (
-      <div className="flex flex-col gap-6 px-4  lg:px-6">
+      <div className="flex flex-col gap-6 px-4 lg:px-6">
         <PageHeader
           breadcrumbs={BREADCRUMBS}
           title="Hôm nay"
@@ -369,7 +372,7 @@ export default function CashDrawersTodayPage() {
   // Bộ chọn chi nhánh (Tenant Owner - chế độ "all")
   if (!activeBranchId && user?.role === "TENANT_OWNER") {
     return (
-      <div className="flex flex-col gap-6 px-4  lg:px-6">
+      <div className="flex flex-col gap-6 px-4 lg:px-6">
         <PageHeader
           breadcrumbs={BREADCRUMBS}
           title="Hôm nay"
@@ -580,7 +583,7 @@ export default function CashDrawersTodayPage() {
   const isManager = canManageCashDrawer(user?.role);
 
   return (
-    <div className="flex flex-col gap-6 px-4  lg:px-6">
+    <div className="flex flex-col gap-6 px-4 lg:px-6">
       <PageHeader
         breadcrumbs={BREADCRUMBS}
         title="Hôm nay"

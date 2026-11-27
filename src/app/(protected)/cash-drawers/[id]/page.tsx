@@ -445,9 +445,12 @@ export default function CashDrawerDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[50vh] flex-col items-center justify-center gap-2">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Đang tải chi tiết két tiền...</p>
+      <div className="flex flex-col gap-6 px-4 lg:px-6">
+        <PageHeader breadcrumbs={breadcrumbs} />
+        <div className="flex h-[50vh] flex-col items-center justify-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Đang tải chi tiết két tiền...</p>
+        </div>
       </div>
     );
   }

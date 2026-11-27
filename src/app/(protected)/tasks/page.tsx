@@ -46,28 +46,35 @@ export default function TaskPage() {
     pending: tasks.filter(t => t.status === "pending").length,
   }
 
+  const header = (
+    <div className="px-4 lg:px-6">
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Trang chủ', href: '/dashboard' },
+          { label: 'Công việc' },
+        ]}
+        title="Công việc"
+        description="Theo dõi và quản lý toàn bộ công việc của nhóm"
+      />
+    </div>
+  )
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading tasks...</div>
-      </div>
+      <>
+        {header}
+        <div className="flex items-center justify-center h-96">
+          <div className="text-muted-foreground">Đang tải công việc...</div>
+        </div>
+      </>
     )
   }
 
   return (
     <>
-      <div className="px-4 md:px-6">
-        <PageHeader
-          breadcrumbs={[
-            { label: 'Trang chủ', href: '/dashboard' },
-            { label: 'Công việc' },
-          ]}
-          title="Công việc"
-          description="Theo dõi và quản lý toàn bộ công việc của nhóm"
-        />
-      </div>
+      {header}
 
-      <div className="md:hidden px-4 md:px-6">
+      <div className="md:hidden px-4 lg:px-6">
         <div className="flex items-center justify-center h-96 border rounded-lg bg-muted/20">
           <div className="text-center p-8">
             <h3 className="text-lg font-semibold mb-2">Tasks Dashboard</h3>

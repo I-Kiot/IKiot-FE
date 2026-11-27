@@ -64,7 +64,7 @@ function Unreconciled() {
   }
 
   return (
-    <div className="flex-1 space-y-6 px-6 pt-0">
+    <div className="flex-1 space-y-6 px-4 lg:px-6">
       <PageHeader
         breadcrumbs={[
           { label: 'Trang chủ', href: '/dashboard' },
