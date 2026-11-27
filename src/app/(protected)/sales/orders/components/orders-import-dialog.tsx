@@ -52,6 +52,11 @@ export function OrdersImportDialog({
             Trắng; Dài: 200 cm&quot; và/hoặc ghi chú cho xưởng - hệ thống tạo SKU riêng cho dòng đó. Ảnh mẫu thêm trên
             màn hình đơn sau khi nhập.
           </li>
+          <li>
+            Combo làm riêng từng món: thêm dưới dòng combo mỗi món một dòng phụ, cột{' '}
+            <strong className="text-foreground">Thuộc combo</strong> ghi SKU của combo, cột SKU ghi SKU của món, để
+            trống số lượng và giá.
+          </li>
           <li>Tiền cọc là tiền đã thu: được ghi vào sổ thu chi ngay khi nhập.</li>
           <li>
             Không nhập khuyến mãi. Hướng dẫn chi tiết và ví dụ ở trang &quot;Hướng dẫn&quot; trong file mẫu.
