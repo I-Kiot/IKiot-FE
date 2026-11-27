@@ -22,6 +22,7 @@ export type ChangeSource = "USER" | "SYSTEM" | "WEBHOOK";
 export type ChangeAction =
   | "ORDER_CREATED"
   | "ORDER_POS_CREATED"
+  | "ORDERS_IMPORTED"
   | "ORDER_CANCELLED"
   | "ORDER_EDITED"
   | "ORDER_ASSIGNEE_CHANGED"

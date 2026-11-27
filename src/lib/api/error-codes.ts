@@ -318,6 +318,8 @@ export const ERROR_MESSAGES = {
   // Nhập hàng hoá từ Excel; chi tiết từng dòng đọc qua `importErrorsOf`.
   PRODUCT_IMPORT_FILE_INVALID: "File không đúng mẫu nhập hàng hóa",
   PRODUCT_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có hàng hóa nào được tạo",
+  ORDER_IMPORT_FILE_INVALID: "File không đúng mẫu nhập đơn hàng",
+  ORDER_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có đơn nào được tạo",
   PRODUCT_COMBO_COMPONENT_DISCONTINUED:
     "Combo có món thuộc hàng hoá đã ngừng kinh doanh - bỏ món đó khỏi combo (hoặc kinh doanh lại hàng hoá) trước",
   PRODUCT_ITEM_NOT_STOCKABLE: "Combo và dịch vụ không có tồn kho riêng - hãy nhập / chuyển từng món của combo",
@@ -514,11 +516,19 @@ function isImportRowError(value: unknown): value is ImportRowError {
   return typeof v.message === "string" && (v.row === null || typeof v.row === "number");
 }
 
-/** Các lỗi theo dòng của `POST /products/import`; rỗng nếu lỗi không phải lỗi của file import. */
+/** Các lỗi theo dòng của `POST /products/import` và `POST /orders/import`; rỗng nếu không phải lỗi của file import. */
+const IMPORT_ERROR_CODES: ReadonlySet<string> = new Set([
+  "PRODUCT_IMPORT_FILE_INVALID",
+  "PRODUCT_IMPORT_ROWS_INVALID",
+  "ORDER_IMPORT_FILE_INVALID",
+  "ORDER_IMPORT_ROWS_INVALID",
+]);
+
 export function importErrorsOf(error: unknown): { errors: ImportRowError[]; total: number } {
   const body = getApiErrorBody(error) as (ApiErrorBody & { errorCount?: number }) | undefined;
   if (
-    (body?.code !== "PRODUCT_IMPORT_FILE_INVALID" && body?.code !== "PRODUCT_IMPORT_ROWS_INVALID") ||
+    !body?.code ||
+    !IMPORT_ERROR_CODES.has(body.code) ||
     !Array.isArray(body.errors)
   ) {
     return { errors: [], total: 0 };

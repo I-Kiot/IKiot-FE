@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { PermissionButton } from "@/components/permission-button";
 import { allows } from "@/components/sidebar/constants/role-permissions";
@@ -10,12 +10,14 @@ import { getSessionRole } from "@/lib/auth";
 import { OrdersProvider } from "./components/orders-provider";
 import { OrdersTable } from "./components/orders-table";
 import { OrdersCopyButton } from "./components/orders-copy-button";
+import { OrdersImportDialog } from "./components/orders-import-dialog";
 
 /** Danh sách hành trình đơn (D-1, `GET /orders`, contract §2); cùng quyền với mục sidebar. */
 export default function OrdersPage() {
   const role = getSessionRole();
   const canView = allows(role, "orders", "read");
   const canCreate = allows(role, "orders", "create");
+  const [importOpen, setImportOpen] = useState(false);
 
   return (
     // Provider bọc cả header; cần Suspense.
@@ -33,6 +35,15 @@ export default function OrdersPage() {
             actions={
               <div className="flex items-center gap-2">
                 <OrdersCopyButton />
+                <PermissionButton
+                  allowed={canCreate}
+                  permission="orders:create"
+                  variant="outline"
+                  onClick={() => setImportOpen(true)}
+                >
+                  <Upload className="size-4" />
+                  Nhập file
+                </PermissionButton>
                 <PermissionButton allowed={canCreate} permission="orders:create" asChild>
                   <Link href="/sales/orders/new">
                     <Plus className="size-4" />
@@ -54,6 +65,7 @@ export default function OrdersPage() {
             </div>
           )}
         </div>
+        {canCreate && <OrdersImportDialog open={importOpen} onOpenChange={setImportOpen} />}
       </OrdersProvider>
     </Suspense>
   );

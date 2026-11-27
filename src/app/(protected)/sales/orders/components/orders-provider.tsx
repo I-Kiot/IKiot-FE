@@ -83,6 +83,8 @@ type OrdersContextType = {
   rowSelection: Record<string, boolean>;
   setRowSelection: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   selectedOrders: OrderListItem[];
+  /** Tải lại danh sách với bộ lọc hiện tại. */
+  reload: () => void;
 };
 
 /** Tải lại khi bảng `orders` đổi. */
@@ -135,7 +137,10 @@ export function OrdersProvider({
   const visibleIds = useMemo(() => result?.orders.map((order) => order.id) ?? [], [result]);
   const ordersTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds, enabled });
   const stockTick = useLiveTick({ resources: STOCK_RESOURCES, enabled });
-  const liveTick = ordersTick + stockTick;
+  // Tải lại theo yêu cầu (vd. vừa nhập đơn từ Excel: realtime không phát lại cho chính tab gây ra thay đổi).
+  const [reloadTick, setReloadTick] = useState(0);
+  const reload = useCallback(() => setReloadTick((tick) => tick + 1), []);
+  const liveTick = ordersTick + stockTick + reloadTick;
 
   // Đổi chi nhánh thì về trang 1.
   const [listedLocationKey, setListedLocationKey] = useState(locationKey);
@@ -278,6 +283,7 @@ export function OrdersProvider({
         rowSelection,
         setRowSelection,
         selectedOrders,
+        reload,
       }}
     >
       {children}
