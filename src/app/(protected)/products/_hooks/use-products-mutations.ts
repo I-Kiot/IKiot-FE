@@ -23,15 +23,15 @@ export function useProductsMutations(screen: ProductScreen) {
 
   useEffect(() => {
     productApi
-      .getList({ productType: screen.listTypes })
-      .then((res) => setProducts(res.data))
+      .getAll({ productType: screen.listTypes })
+      .then(setProducts)
       .catch(() => toast.error(`Tải danh sách ${screen.noun} thất bại`))
   }, [locationKey, screen])
 
   // Sau khi nhập file: hàng mới không đi qua handleAdd nên phải tải lại cả danh sách.
   async function reload(): Promise<void> {
     try {
-      setProducts((await productApi.getList({ productType: screen.listTypes })).data)
+      setProducts(await productApi.getAll({ productType: screen.listTypes }))
     } catch {
       toast.error(`Tải danh sách ${screen.noun} thất bại`)
     }

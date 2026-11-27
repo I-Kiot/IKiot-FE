@@ -322,6 +322,7 @@ export const ERROR_MESSAGES = {
   // Nhập hàng hoá từ Excel; chi tiết từng dòng đọc qua `importErrorsOf`.
   PRODUCT_IMPORT_FILE_INVALID: "File không đúng mẫu nhập hàng hóa",
   PRODUCT_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có hàng hóa nào được tạo",
+  PRODUCT_IMPORT_STOCK_DENIED: "Bạn không có quyền ghi tồn kho ở địa điểm trong file - để trống các cột Tồn kho hoặc nhờ quản lý nhập",
   ORDER_IMPORT_FILE_INVALID: "File không đúng mẫu nhập đơn hàng",
   ORDER_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có đơn nào được tạo",
   EXCEL_EXPORT_TOO_LARGE: "Quá nhiều dòng để xuất một lần - lọc hẹp lại hoặc chọn bớt rồi xuất",

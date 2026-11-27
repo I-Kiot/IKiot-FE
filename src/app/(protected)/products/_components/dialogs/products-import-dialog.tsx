@@ -26,7 +26,10 @@ export function ProductsImportDialog({ open, onOpenChange }: ProductsImportDialo
       upload={async (file) => {
         const result = await productApi.importFile(file)
         await reloadProducts()
-        return `Đã nhập ${result.productCount} hàng hóa (${result.itemCount} mặt hàng)`
+        const stock = result.stockMovementIds.length
+          ? `, ghi tồn kho tại ${result.stockMovementIds.length} địa điểm`
+          : ''
+        return `Đã nhập ${result.productCount} hàng hóa (${result.itemCount} mặt hàng)${stock}`
       }}
       tips={
         <>
@@ -42,9 +45,14 @@ export function ProductsImportDialog({ open, onOpenChange }: ProductsImportDialo
             Danh mục, thương hiệu, nhà cung cấp chọn trong ô thả xuống - lấy từ dữ liệu hiện có của cửa hàng. Mã
             hàng, SKU bỏ trống để hệ thống tự sinh.
           </li>
+          <li>
+            Tồn kho: mỗi kho/chi nhánh một cột <strong className="text-foreground">Tồn kho - tên địa điểm</strong>{' '}
+            ở cuối file. Bỏ trống nếu không có hàng ở đó. Mỗi địa điểm có số lượng tạo một phiếu điều chỉnh tồn kho
+            đã hoàn tất (cần quyền duyệt điều chỉnh tại địa điểm đó).
+          </li>
           <li>File không có ảnh - nhập xong, thêm ảnh cho hàng hóa và từng mặt hàng ngay trên màn hình này.</li>
           <li>
-            Chỉ tạo hàng hóa mới, không nhập tồn kho, không nhập combo. Hướng dẫn chi tiết và ví dụ ở trang
+            Chỉ tạo hàng hóa mới, không nhập combo. Hướng dẫn chi tiết và ví dụ ở trang
             &quot;Hướng dẫn&quot; trong file mẫu.
           </li>
         </>
