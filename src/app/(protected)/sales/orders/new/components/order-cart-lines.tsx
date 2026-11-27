@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CustomizationChips } from "@/app/(protected)/sales/orders/shared/customization-chips";
-import { Minus, Plus, ShoppingCart, Trash2, Ruler } from "lucide-react";
+import { ChevronDown, Minus, Plus, ShoppingCart, Trash2, Ruler } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,25 @@ import { ImageAttachments } from "@/components/image-attachments";
 import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { CustomizationDialog } from "../../shared/customization-dialog";
 import { formatVND, lineTotal, stockLevel } from "../shared/order-totals";
+import { cn } from "@/lib/utils";
+import type { OrderItemCustomization } from "@/types/order-flow";
+import type { MadeToOrderComponent } from "@/types/product";
 import type { OrderLineDraft } from "./order-lines-editor";
+
+/** Đang sửa thông số của dòng nào; `component` có giá trị = một món trong combo của dòng đó. */
+type Customizing = { key: string; component?: MadeToOrderComponent };
+
+/** Ghi / bỏ thông số của một món trong combo; mỗi món giữ thông số riêng, không gộp. */
+function withComponent(
+  line: OrderLineDraft,
+  productItemId: string,
+  customization: OrderItemCustomization | undefined,
+) {
+  const rest = (line.componentCustomizations ?? []).filter(
+    (part) => part.productItemId !== productItemId,
+  );
+  return customization ? [...rest, { productItemId, customization }] : rest;
+}
 
 interface OrderCartLinesProps {
   lines: OrderLineDraft[];
@@ -33,9 +51,18 @@ export function OrderCartLines({
   const locked = promotionDiscounts !== null;
   const discountOf = (line: OrderLineDraft) =>
     locked ? (promotionDiscounts[line.key] ?? 0) : line.discountAmount;
-  const [customizing, setCustomizing] = React.useState<string | null>(null);
+  const [customizing, setCustomizing] = React.useState<Customizing | null>(null);
   const customizingLine =
-    lines.find((line) => line.key === customizing) ?? null;
+    lines.find((line) => line.key === customizing?.key) ?? null;
+  const customizingPart = customizing?.component;
+  // Dòng combo đang mở danh sách món làm riêng.
+  const [expanded, setExpanded] = React.useState<ReadonlySet<string>>(new Set());
+  const toggle = (key: string) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
 
   const patch = (key: string, change: Partial<OrderLineDraft>) =>
     onChange(
@@ -68,6 +95,9 @@ export function OrderCartLines({
       <ol className="flex flex-col gap-3">
         {lines.map((line, index) => {
           const { level, missing } = stockLevel(line.stock, line.quantity);
+          // Chỉ combo có `madeToOrderComponents` (tìm kiếm chỉ trả trường này cho combo).
+          const parts = line.madeToOrderComponents;
+          const customizedParts = line.componentCustomizations ?? [];
           return (
             <li
               key={line.key}
@@ -85,6 +115,11 @@ export function OrderCartLines({
                       </span>
                       {line.customization && (
                         <Badge variant="outline">Làm riêng</Badge>
+                      )}
+                      {customizedParts.length > 0 && (
+                        <Badge variant="outline">
+                          Làm riêng {customizedParts.length} món
+                        </Badge>
                       )}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground">
@@ -228,18 +263,102 @@ export function OrderCartLines({
                     )}
                   </>
                 )}
-                <Button
-                  type="button"
-                  variant={line.customization ? "secondary" : "outline"}
-                  size="sm"
-                  className="h-7 w-fit cursor-pointer gap-1.5 text-xs"
-                  onClick={() => setCustomizing(line.key)}
-                >
-                  <Ruler className="size-3.5" />
-                  {line.customization
-                    ? "Sửa yêu cầu làm riêng"
-                    : "Làm riêng theo yêu cầu"}
-                </Button>
+                {/* Hàng làm riêng luôn phải đặt xưởng, nên chỉ sản phẩm bật "Có thể sản xuất" mới có nút. */}
+                {parts ? (
+                  // Combo: làm riêng từng món bên trong, mỗi món một bộ thông số. Không món nào làm riêng được thì không có nút.
+                  parts.length > 0 && (
+                    <>
+                      <Button
+                        type="button"
+                        variant={customizedParts.length > 0 ? "secondary" : "outline"}
+                        size="sm"
+                        className="h-7 w-fit cursor-pointer gap-1.5 text-xs"
+                        aria-expanded={expanded.has(line.key)}
+                        onClick={() => toggle(line.key)}
+                      >
+                        <Ruler className="size-3.5" />
+                        {customizedParts.length > 0
+                          ? `Làm riêng ${customizedParts.length}/${parts.length} món`
+                          : "Làm riêng theo yêu cầu"}
+                        <ChevronDown
+                          className={cn(
+                            "size-3.5 transition-transform",
+                            expanded.has(line.key) && "rotate-180",
+                          )}
+                        />
+                      </Button>
+                      {expanded.has(line.key) && (
+                        <ul className="divide-y rounded-md border">
+                          {parts.map((part) => {
+                            const done = customizedParts.find(
+                              (entry) => entry.productItemId === part.productItemId,
+                            );
+                            return (
+                              <li
+                                key={part.productItemId}
+                                className="flex flex-col gap-1.5 px-3 py-2"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="text-sm font-medium">
+                                        {part.productName}
+                                      </span>
+                                      {done && (
+                                        <Badge variant="warning">Cần đặt xưởng</Badge>
+                                      )}
+                                    </div>
+                                    <span className="font-mono text-xs text-muted-foreground">
+                                      {part.sku ? `SKU: ${part.sku} · ` : ""}
+                                      {part.quantity * line.quantity} chiếc
+                                    </span>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant={done ? "secondary" : "outline"}
+                                    size="sm"
+                                    className="h-7 cursor-pointer gap-1.5 text-xs"
+                                    onClick={() =>
+                                      setCustomizing({ key: line.key, component: part })
+                                    }
+                                  >
+                                    <Ruler className="size-3.5" />
+                                    {done ? "Sửa yêu cầu" : "Làm riêng"}
+                                  </Button>
+                                </div>
+                                {done && (
+                                  <>
+                                    <CustomizationChips customization={done.customization} />
+                                    {done.customization.note && (
+                                      <span className="text-xs text-muted-foreground">
+                                        Ghi chú cho xưởng: {done.customization.note}
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </>
+                  )
+                ) : (
+                  line.isManufacturable && (
+                  <Button
+                    type="button"
+                    variant={line.customization ? "secondary" : "outline"}
+                    size="sm"
+                    className="h-7 w-fit cursor-pointer gap-1.5 text-xs"
+                    onClick={() => setCustomizing({ key: line.key })}
+                  >
+                    <Ruler className="size-3.5" />
+                    {line.customization
+                      ? "Sửa yêu cầu làm riêng"
+                      : "Làm riêng theo yêu cầu"}
+                  </Button>
+                  )
+                )}
               </div>
             </li>
           );
@@ -249,15 +368,36 @@ export function OrderCartLines({
       {customizingLine && (
         <CustomizationDialog
           open
-          label={customizingLine.name}
-          productItemId={customizingLine.productItemId}
-          sku={customizingLine.sku}
-          value={customizingLine.customization}
+          label={
+            customizingPart
+              ? `${customizingPart.productName} (trong ${customizingLine.name})`
+              : customizingLine.name
+          }
+          productItemId={customizingPart?.productItemId ?? customizingLine.productItemId}
+          sku={customizingPart ? customizingPart.sku : customizingLine.sku}
+          value={
+            customizingPart
+              ? customizingLine.componentCustomizations?.find(
+                  (entry) => entry.productItemId === customizingPart.productItemId,
+                )?.customization
+              : customizingLine.customization
+          }
           onOpenChange={(open) => {
             if (!open) setCustomizing(null);
           }}
           onSave={(value) => {
-            patch(customizingLine.key, { customization: value });
+            patch(
+              customizingLine.key,
+              customizingPart
+                ? {
+                    componentCustomizations: withComponent(
+                      customizingLine,
+                      customizingPart.productItemId,
+                      value,
+                    ),
+                  }
+                : { customization: value },
+            );
             setCustomizing(null);
           }}
         />

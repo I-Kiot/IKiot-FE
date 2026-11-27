@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useCheckoutProducts, type CheckoutLocation } from "../_hooks/use-checkout-products";
 import { productApi } from "@/lib/api/product";
-import type { ProductSearchParams } from "@/types/product";
+import type { MadeToOrderComponent, ProductSearchParams } from "@/types/product";
 import { useAuthStore } from "@/store/auth-store";
 import { getCachedUser } from "@/lib/auth";
 
@@ -30,6 +30,10 @@ interface Product {
   availableStock: number;
   status: string;
   imageUrl?: string;
+  /** Sản phẩm bật "Có thể sản xuất" (đơn tay dùng để cho phép làm riêng). */
+  isManufacturable: boolean;
+  /** Combo: các món làm riêng được. */
+  madeToOrderComponents?: MadeToOrderComponent[];
 }
 
 interface ProductSearchProps {
@@ -137,6 +141,8 @@ export function ProductSearch({
             stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
             availableStock: item.availableStock ?? item.stock ?? 0,
             status: product.status,
+            isManufacturable: product.isManufacturable ?? false,
+            madeToOrderComponents: item.madeToOrderComponents,
             imageUrl: (
               item.images?.find((img) => img.isThumbnail) ||
               item.images?.[0] ||
@@ -170,6 +176,8 @@ export function ProductSearch({
         stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
         availableStock: item.availableStock ?? item.stock ?? 0,
         status: product.status,
+        isManufacturable: product.isManufacturable ?? false,
+        madeToOrderComponents: item.madeToOrderComponents,
         imageUrl: (
           item.images?.find((img) => img.isThumbnail) ||
           item.images?.[0] ||

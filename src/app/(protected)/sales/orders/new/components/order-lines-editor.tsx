@@ -17,7 +17,8 @@ import {
 import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { productApi } from "@/lib/api/product";
 import type { LocationType } from "@/types/location";
-import type { OrderItemCustomization } from "@/types/order-flow";
+import type { ComboComponentCustomization, OrderItemCustomization } from "@/types/order-flow";
+import type { MadeToOrderComponent } from "@/types/product";
 import { CustomizationDialog } from "../../shared/customization-dialog";
 import { formatVND, lineTotal, stockLevel } from "../shared/order-totals";
 
@@ -37,6 +38,12 @@ export interface OrderLineDraft {
   discountAmount: number;
   /** D-2: hàng làm riêng theo số đo khách - dòng được cấp SKU riêng khi tạo (A-4). */
   customization?: OrderItemCustomization;
+  /** Sản phẩm bật "Có thể sản xuất". Tắt thì không làm riêng được: hàng làm riêng phải đặt xưởng. */
+  isManufacturable?: boolean;
+  /** Combo: các món làm riêng được (từ tìm kiếm). Có ít nhất một món thì dòng combo mới có nút làm riêng. */
+  madeToOrderComponents?: MadeToOrderComponent[];
+  /** Combo: thông số riêng của từng món, gửi lên dưới dạng `componentCustomizations`. */
+  componentCustomizations?: ComboComponentCustomization[];
 }
 
 interface SkuOption {
@@ -45,6 +52,7 @@ interface SkuOption {
   sku: string;
   retailPrice: number;
   stock: number;
+  isManufacturable: boolean;
 }
 
 interface OrderLinesEditorProps {
@@ -102,6 +110,7 @@ export function OrderLinesEditor({
                 sku: item.sku,
                 retailPrice: item.retailPrice,
                 stock: item.stock ?? 0,
+                isManufacturable: product.isManufacturable ?? false,
               })),
             ),
           });
@@ -141,6 +150,7 @@ export function OrderLinesEditor({
           sku: option.sku,
           retailPrice: option.retailPrice,
           stock: option.stock,
+          isManufacturable: option.isManufacturable,
           quantity: 1,
           unitPrice: option.retailPrice,
           discountAmount: 0,
@@ -226,7 +236,7 @@ export function OrderLinesEditor({
                       {line.customization && (
                         <CustomizationChips customization={line.customization} className="mt-1" />
                       )}
-                      {allowCustomization && (
+                      {allowCustomization && line.isManufacturable && (
                         <Button
                           type="button"
                           variant={line.customization ? "secondary" : "outline"}

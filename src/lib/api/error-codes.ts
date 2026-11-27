@@ -278,6 +278,8 @@ export const ERROR_MESSAGES = {
   ORDER_EMPTY: "Đơn hàng chưa có sản phẩm",
   ORDER_ITEM_CUSTOM_LOCKED: "Thông số hàng làm riêng đã khoá vì đã gửi xưởng",
   ORDER_ITEM_NOT_CUSTOMIZABLE: "Sản phẩm này không nhận làm theo yêu cầu",
+  ORDER_ITEM_NOT_MANUFACTURABLE:
+    "Sản phẩm chưa bật \"Có thể sản xuất\" nên không làm riêng theo yêu cầu được",
   ORDER_ITEM_NOT_FOUND: "Không tìm thấy dòng đơn",
   ORDER_NOT_CONFIRMABLE: "Chỉ xác nhận được đơn nháp hoặc đơn chờ xác nhận",
   ORDER_NOT_DRAFT: "Chỉ sửa được đơn nháp",
