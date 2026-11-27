@@ -9,3 +9,14 @@ export function saveBlob(blob: Blob, filename: string): void {
   link.remove()
   URL.revokeObjectURL(url)
 }
+
+/** Mã lỗi của request tải blob: thân lỗi cũng là Blob nên phải đọc ra JSON. */
+export async function blobErrorCode(error: unknown): Promise<string | undefined> {
+  const data = (error as { response?: { data?: unknown } })?.response?.data
+  if (!(data instanceof Blob)) return (data as { code?: string } | undefined)?.code
+  try {
+    return (JSON.parse(await data.text()) as { code?: string }).code
+  } catch {
+    return undefined
+  }
+}

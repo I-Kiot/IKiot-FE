@@ -324,6 +324,7 @@ export const ERROR_MESSAGES = {
   PRODUCT_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có hàng hóa nào được tạo",
   ORDER_IMPORT_FILE_INVALID: "File không đúng mẫu nhập đơn hàng",
   ORDER_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có đơn nào được tạo",
+  EXCEL_EXPORT_TOO_LARGE: "Quá nhiều dòng để xuất một lần - lọc hẹp lại hoặc chọn bớt rồi xuất",
   PRODUCT_COMBO_COMPONENT_DISCONTINUED:
     "Combo có món thuộc hàng hoá đã ngừng kinh doanh - bỏ món đó khỏi combo (hoặc kinh doanh lại hàng hoá) trước",
   PRODUCT_ITEM_NOT_STOCKABLE: "Combo và dịch vụ không có tồn kho riêng - hãy nhập / chuyển từng món của combo",
