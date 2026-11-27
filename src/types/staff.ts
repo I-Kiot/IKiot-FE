@@ -1,11 +1,4 @@
-/**
- * A role is a **row the shop owner created**, not one of three fixed values.
- *
- * The rewritten backend replaced `User.role` (BRANCH_MANAGER | WAREHOUSE_MANAGER | STAFF)
- * with `User.roleId` pointing at a tenant-owned `Role` the owner defines and grants
- * permissions to - see `GET /roles`. So there is no union to enumerate here any more, and
- * what a screen shows is the role's own name.
- */
+/** Vai trò do chủ cửa hàng tạo. */
 export interface StaffRoleRef {
   id: string;
   name: string;
@@ -24,11 +17,6 @@ export interface StaffProfile {
   taxNumber?: string;
 }
 
-export interface StaffLeaveBalance {
-  annualLeaveDays: number;
-  remainingDays: number;
-}
-
 export interface Staff {
   id: string;
   tenantId: string;
@@ -36,21 +24,22 @@ export interface Staff {
   branchName: string;
   warehouseId?: string;
   warehouseName?: string;
+  /** Nhân viên xưởng: xưởng (NCC loại WORKSHOP) người này thuộc về. */
+  workshopId?: string;
+  workshopName?: string;
   firstName: string;
   lastName: string;
   fullName: string;
   phoneNumber: string;
   email?: string;
+  /** `null` = email chưa được xác minh bằng OTP. */
+  emailVerifiedAt?: string | null;
   roleId: string | null;
   roleName: string;
   status: StaffStatus;
   joinedAt: string;
-  /** Assigned paysheet from User.paySheetId (POST/PATCH /staff). */
-  paySheetId?: string | null;
-  paySheetName?: string;
   profile?: StaffProfile;
   accountNote?: string;
-  leaveBalance?: StaffLeaveBalance;
   createdAt: string;
   updatedAt: string;
 }
@@ -96,12 +85,12 @@ export interface CreateStaffPayload {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  email?: string;
+  /** Bắt buộc: mã OTP đăng nhập lần đầu được gửi tới email này. */
+  email: string;
   roleId: string;
   branchId?: string | null;
   warehouseId?: string | null;
-  /** Optional - createStaffDTO accepts paySheetId. */
-  paySheetId?: string | null;
+  workshopId?: string | null;
   hireDate?: string;
   profile?: StaffProfilePayload;
   newPassword?: string;
@@ -110,18 +99,17 @@ export interface CreateStaffPayload {
 
 export interface UpdateStaffPayload {
   firstName?: string;
-  /** The tenant role this account holds - `PATCH /users/:id` accepts it. */
+  /** Vai trò của tenant mà tài khoản đang giữ; `PATCH /users/:id` nhận trường này. */
   roleId?: string;
   lastName?: string;
   email?: string;
   /** Không gửi qua PATCH /staff - đổi manager dùng API gán Branch/Warehouse. */
   branchId?: string | null;
   warehouseId?: string | null;
-  /**
-   * PATCH /staff data.paySheetId - ObjectId string, or null to remove assignment
-   * (OpenAPI UpdateStaffRequest).
-   */
-  paySheetId?: string | null;
+  /** `null` bỏ gắn xưởng; `undefined` giữ nguyên. */
+  workshopId?: string | null;
+  /** Bỏ gắn chi nhánh/kho. */
+  clearLocation?: boolean;
   hireDate?: string;
   profile?: StaffProfilePayload;
   accountNote?: string;
@@ -137,7 +125,7 @@ export interface StaffManagerActionPayload {
 }
 
 export interface StaffRoleOption {
-  /** The role row id - what `POST /users` and `?roleId=` want. */
+  /** Id dòng `Role` - thứ `POST /users` và `?roleId=` cần. */
   value: string;
   label: string;
 }

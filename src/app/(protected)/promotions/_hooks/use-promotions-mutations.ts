@@ -1,4 +1,3 @@
-// [Mutations – Promotion]
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -30,15 +29,16 @@ function toPayload(data: PromotionFormValues) {
     branchIds: data.branchIds,
     discountType: data.discountType,
     discountValue: data.discountValue,
-    maxDiscountAmount: data.maxDiscountAmount,
+    // BE chỉ chấp nhận mức trần cho giảm theo %, nên không gửi kèm khi giảm số tiền cố định.
+    maxDiscountAmount:
+      data.discountType === 'PERCENT' ? (data.maxDiscountAmount ?? null) : null,
     minOrderValue: data.minOrderValue,
     applicableRule: {
       type: data.applicableRuleType,
       categoryIds: data.applicableRuleType === 'category' ? data.categoryIds : [],
       productItemIds: data.applicableRuleType === 'product' ? data.productItemIds : [],
     },
-    // Ngày chọn trên form là ngày lịch VN (input date-only, không có timezone) - quy đổi
-    // đúng sang mốc UTC của đầu/cuối ngày giờ VN thay vì hiểu nhầm thành UTC midnight.
+    // Đổi ngày trên form sang mốc UTC theo giờ VN.
     startDate: vnStartOfDayToIso(data.startDate),
     endDate: vnEndOfDayToIso(data.endDate),
     stackable: data.stackable,
@@ -111,6 +111,22 @@ export function usePromotionsMutations() {
     }
   }
 
+  /** Bật lại một khuyến mãi đã tắt - PATCH chỉ đổi `status`, không đụng tới các trường khác. */
+  async function handleActivate(id: string): Promise<boolean> {
+    setIsLoading(true)
+    try {
+      const promotion = await promotionApi.update(id, { status: 'ACTIVE' })
+      setPromotions((prev) => prev.map((p) => (p.id === id ? promotion : p)))
+      toast.success('Đã bật lại khuyến mãi')
+      return true
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Bật lại khuyến mãi thất bại'))
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   async function handleDeleteMany(ids: string[]): Promise<boolean> {
     setIsLoading(true)
     try {
@@ -128,5 +144,13 @@ export function usePromotionsMutations() {
     }
   }
 
-  return { promotions, isLoading, handleAdd, handleEdit, handleDelete, handleDeleteMany }
+  return {
+    promotions,
+    isLoading,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    handleActivate,
+    handleDeleteMany,
+  }
 }

@@ -49,9 +49,9 @@ export function ContactSection() {
   });
 
   function onSubmit(values: z.infer<typeof contactFormSchema>) {
-    // Here you would typically send the form data to your backend
+    // Chỗ này sẽ gửi dữ liệu form lên backend.
     console.log(values);
-    // You could also show a success message or redirect
+    // Có thể hiện thông báo thành công hoặc chuyển trang sau khi gửi.
     form.reset();
   }
 
@@ -67,12 +67,11 @@ export function ContactSection() {
           </h2>
           <p className="text-lg text-muted-foreground">
             Đội ngũ chuyên gia của iKiot luôn sẵn sàng đồng hành cùng bạn thiết
-            lập chuỗi cửa hàng bán lẻ công nghệ tối ưu nhất.
+            lập chuỗi cửa hàng bán lẻ tối ưu nhất.
           </p>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Contact Options */}
           <div className="space-y-6 order-2 lg:order-1">
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader>
@@ -144,7 +143,6 @@ export function ContactSection() {
             </Card>
           </div>
 
-          {/* Contact Form */}
           <div className="lg:col-span-2 order-1 lg:order-2">
             <Card>
               <CardHeader>
@@ -228,7 +226,7 @@ export function ContactSection() {
                           <FormLabel>Lời nhắn</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Hãy cho chúng tôi biết nhu cầu hoặc thắc mắc của bạn về quản lý chuỗi bán lẻ công nghệ..."
+                              placeholder="Hãy cho chúng tôi biết nhu cầu hoặc thắc mắc của bạn về quản lý chuỗi bán lẻ..."
                               rows={10}
                               className="min-h-50"
                               {...field}

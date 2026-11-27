@@ -67,7 +67,6 @@ export function TeamSection() {
   return (
     <section id="team" className="py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div className="mx-auto max-w-4xl text-center mb-16">
           <Badge variant="outline" className="mb-4">
             Đội ngũ sáng lập
@@ -76,17 +75,15 @@ export function TeamSection() {
             Đội ngũ của chúng tôi
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Chúng tôi gồm những chuyên gia công nghệ và vận hành bán lẻ đầy nhiệt huyết, cam kết đem lại giải pháp tốt nhất cho sự phát triển chuỗi cửa hàng của bạn.
+            Chúng tôi gồm những đội ngũ hỗ trợ kinh nghiệm và đầy nhiệt huyết, cam kết đem lại giải pháp tốt nhất cho sự phát triển chuỗi cửa hàng của bạn.
           </p>
         </div>
 
-        {/* Team Grid */}
         <div className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 xl:grid-cols-4">
           {team.map((member) => (
             <Card key={member.id} className="shadow-xs py-2">
               <CardContent className="p-4">
                 <div className="text-center">
-                  {/* Avatar */}
                   <div className="flex justify-center mb-4">
                     <CardDecorator>
                       <Avatar className="h-24 w-24 border shadow-lg">
@@ -102,7 +99,6 @@ export function TeamSection() {
                     </CardDecorator>
                   </div>
 
-                  {/* Name and Role */}
                   <h3 className="text-lg font-semibold text-foreground mb-1">
                     {member.name}
                   </h3>
@@ -110,12 +106,10 @@ export function TeamSection() {
                     {member.role}
                   </p>
 
-                  {/* Description */}
                   <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                     {member.description}
                   </p>
 
-                  {/* Social Links */}
                   <div className="flex items-center justify-center gap-3">
                     <Button
                       variant="ghost"

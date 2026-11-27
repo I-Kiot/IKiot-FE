@@ -1,9 +1,8 @@
-// [Table – Expanded Panel Supplier]
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { Mail, MapPin, Banknote, Pencil, Phone, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BookOpen, Mail, MapPin, Banknote, Pencil, Phone, Trash2 } from "lucide-react";
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -11,6 +10,7 @@ import type { Supplier } from "@/types/supplier";
 import { useSuppliers } from "../../_context/suppliers-provider";
 import { getCachedUser } from "@/lib/auth";
 import {
+  allows,
   canDeleteSupplier,
   canUpdateSupplier,
 } from "@/components/sidebar/constants/role-permissions";
@@ -123,7 +123,7 @@ export function SuppliersExpandedPanel({
         <div className="flex flex-col gap-0.5">
           <span className="text-xs text-muted-foreground">Hạn mức tín dụng</span>
           <span className="tabular-nums font-medium">
-            {formatVND(supplier.creditLimit)}
+            {formatVND(Number(supplier.creditLimit) || 0)}
           </span>
         </div>
         <div className="flex flex-col gap-0.5">
@@ -136,7 +136,7 @@ export function SuppliersExpandedPanel({
                 : "text-muted-foreground",
             )}
           >
-            {formatVND(supplier.outstandingDebt)}
+            {formatVND(Number(supplier.outstandingDebt) || 0)}
           </span>
           {supplier.creditLimit > 0 && (
             <span className="text-xs text-muted-foreground">
@@ -161,12 +161,12 @@ export function SuppliersExpandedPanel({
         )}
       </div>
 
-      {(canDelete || canEdit || supplier.outstandingDebt > 0) && (
-        <>
+      <>
           <Separator className="mt-4" />
           <div className="flex items-center justify-between mt-3">
-            {canDelete ? (
-              <Button
+            <PermissionButton
+                allowed={canDelete}
+                permission="suppliers:delete"
                 variant="destructive"
                 size="sm"
                 className="cursor-pointer"
@@ -178,13 +178,27 @@ export function SuppliersExpandedPanel({
               >
                 <Trash2 className="mr-2 size-4" />
                 Xóa
-              </Button>
-            ) : (
-              <span />
-            )}
+              </PermissionButton>
             <div className="flex items-center gap-2">
+              <PermissionButton
+                allowed={allows(role, "suppliers", "read")}
+                permission="suppliers:read"
+                size="sm"
+                variant="outline"
+                className="cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentRow(supplier);
+                  setOpen("ledger");
+                }}
+              >
+                <BookOpen className="mr-2 size-4" />
+                Sổ công nợ
+              </PermissionButton>
               {supplier.outstandingDebt > 0 && (
-                <Button
+                <PermissionButton
+                  allowed={allows(role, "suppliers", "pay_debt")}
+                  permission="suppliers:pay_debt"
                   size="sm"
                   variant="outline"
                   className="cursor-pointer border-orange-400 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-500 dark:text-orange-400 dark:hover:bg-orange-950"
@@ -196,10 +210,11 @@ export function SuppliersExpandedPanel({
                 >
                   <Banknote className="mr-2 size-4" />
                   Thanh toán
-                </Button>
+                </PermissionButton>
               )}
-              {canEdit && (
-                <Button
+              <PermissionButton
+                  allowed={canEdit}
+                  permission="suppliers:update"
                   size="sm"
                   className="cursor-pointer"
                   onClick={(e) => {
@@ -210,12 +225,10 @@ export function SuppliersExpandedPanel({
                 >
                   <Pencil className="mr-2 size-4" />
                   Chỉnh sửa
-                </Button>
-              )}
+                </PermissionButton>
             </div>
           </div>
         </>
-      )}
     </div>
   );
 }

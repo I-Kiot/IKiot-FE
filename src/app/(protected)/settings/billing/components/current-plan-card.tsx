@@ -40,8 +40,7 @@ interface CurrentPlanCardProps {
 }
 
 export function CurrentPlanCard({ subscription, isLoading }: CurrentPlanCardProps) {
-  // "Chưa có gói" and "chưa tải xong" look identical once rendered, and telling a paying
-  // shop it has no plan while the request is still in flight is the worse of the two.
+  // Phân biệt "đang tải" và "chưa có gói".
   if (isLoading) {
     return (
       <Card>

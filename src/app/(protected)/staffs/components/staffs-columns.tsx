@@ -39,8 +39,13 @@ export const staffsColumns: ColumnDef<Staff>[] = [
     cell: ({ row }) => (
       <div className="flex flex-col">
         <span className="font-medium">{row.original.fullName}</span>
-        <span className="text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {row.original.email || "Chưa có email"}
+          {row.original.email && !row.original.emailVerifiedAt && (
+            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+              Chưa xác minh
+            </Badge>
+          )}
         </span>
       </div>
     ),
@@ -57,8 +62,7 @@ export const staffsColumns: ColumnDef<Staff>[] = [
   {
     accessorKey: "roleName",
     header: "Vai trò",
-    // Roles are rows the shop owner defines, so there is no fixed set to colour-code -
-    // one neutral badge showing whatever they named it.
+    // Vai trò do chủ shop tự đặt nên không có bảng màu cố định; dùng một badge trung tính.
     cell: ({ row }) => (
       <Badge variant={STAFF_ROLE_BADGE_VARIANT}>{row.original.roleName}</Badge>
     ),

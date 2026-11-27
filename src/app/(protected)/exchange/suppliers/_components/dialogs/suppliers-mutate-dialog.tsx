@@ -1,4 +1,3 @@
-// [Dialog – Mutate Supplier]
 'use client'
 
 import { useEffect } from 'react'
@@ -24,9 +23,19 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { FormDescription } from '@/components/ui/form'
+import { SUPPLIER_TYPE_LABELS } from '../../_constants/supplier.constants'
 import type { Supplier } from '@/types/supplier'
 import { supplierFormSchema, type SupplierFormValues } from '../../_types/supplier.types'
 import { useSuppliers } from '../../_context/suppliers-provider'
+import { MoneyInput } from '@/app/(protected)/exchange/shared/form-fields'
 
 const EMPTY_VALUES: SupplierFormValues = {
   supplierName: '',
@@ -35,6 +44,7 @@ const EMPTY_VALUES: SupplierFormValues = {
   email: '',
   address: '',
   creditLimit: 0,
+  type: 'GOODS',
 }
 
 type SuppliersMutateDialogProps = {
@@ -59,13 +69,15 @@ export function SuppliersMutateDialog({
   useEffect(() => {
     if (!open) return
     if (isEdit && currentRow) {
+      // Ô tuỳ chọn bỏ trống lúc tạo về từ BE là `null`; schema zod chỉ nhận chuỗi nên đổi về '' (bug 44).
       form.reset({
         supplierName: currentRow.supplierName,
-        contactName: currentRow.contactName,
-        phoneNumber: currentRow.phoneNumber,
-        email: currentRow.email,
-        address: currentRow.address,
+        contactName: currentRow.contactName ?? '',
+        phoneNumber: currentRow.phoneNumber ?? '',
+        email: currentRow.email ?? '',
+        address: currentRow.address ?? '',
         creditLimit: currentRow.creditLimit,
+        type: currentRow.type ?? 'GOODS',
       })
     } else {
       form.reset(EMPTY_VALUES)
@@ -113,6 +125,32 @@ export function SuppliersMutateDialog({
 
               <FormField
                 control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Loại</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full cursor-pointer">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="GOODS">{SUPPLIER_TYPE_LABELS.GOODS}</SelectItem>
+                        <SelectItem value="WORKSHOP">{SUPPLIER_TYPE_LABELS.WORKSHOP}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Nhà cung cấp hàng nhập qua phiếu nhập; xưởng nhận đặt làm qua yêu cầu sản
+                      xuất. Không đổi được loại sau khi đã có phiếu nhập hoặc yêu cầu sản xuất.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="contactName"
                 render={({ field }) => (
                   <FormItem>
@@ -130,7 +168,9 @@ export function SuppliersMutateDialog({
                 name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Số điện thoại</FormLabel>
+                    <FormLabel>
+                      Số điện thoại <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="VD: 0901234567" {...field} />
                     </FormControl>
@@ -160,15 +200,10 @@ export function SuppliersMutateDialog({
                   <FormItem>
                     <FormLabel>Hạn mức tín dụng (VND)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="VD: 50000000"
-                        type="number"
-                        min={0}
-                        {...field}
-                        onChange={(e) => {
-                          const val = e.target.valueAsNumber
-                          field.onChange(isNaN(val) ? 0 : val)
-                        }}
+                      <MoneyInput
+                        placeholder="VD: 50.000.000"
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />

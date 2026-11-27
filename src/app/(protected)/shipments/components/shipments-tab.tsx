@@ -1,0 +1,185 @@
+"use client";
+
+// Tab "Lần giao": bộ lọc và bảng.
+
+import { useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { shipmentApi, SHIPMENT_PAGE_SIZE } from "@/lib/api/shipment";
+import {
+  personName,
+  SHIPMENT_STATUS_LABELS,
+  type ShipmentStatus,
+  type ShipmentSummary,
+} from "@/types/order-flow";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
+import { PagedTable, usePagedList, type PageParams, type PagedLive } from "./paged-table";
+import { amountDueText, ShipmentStatusBadge } from "./shipment-ui";
+
+/** Bộ lọc của tab (không gồm trang). */
+interface ShipmentFilters {
+  status?: ShipmentStatus;
+  from?: string;
+  to?: string;
+  search?: string;
+}
+
+type ShipmentListQuery = PageParams & ShipmentFilters;
+
+const LIVE: PagedLive<ShipmentSummary> = {
+  resources: [CHANGE_RESOURCES.SHIPMENTS, CHANGE_RESOURCES.ORDERS],
+  idsOf: (row) => [row.id, row.order.id],
+};
+
+/** Khai báo ngoài component để `usePagedList` nhận một hàm ổn định. */
+const loadShipments = (query: ShipmentListQuery) => shipmentApi.getList(query);
+
+const ALL = "all";
+
+
+const shipmentsColumns: ColumnDef<ShipmentSummary>[] = [
+  {
+    id: "order",
+    header: "Mã đơn",
+    cell: ({ row }) => <span className="font-medium">{row.original.order.code}</span>,
+  },
+  {
+    id: "customer",
+    header: "Khách hàng",
+    cell: ({ row }) => row.original.order.customerName,
+  },
+  {
+    id: "carrier",
+    header: "Shipper",
+    cell: ({ row }) => personName(row.original.driver),
+  },
+  {
+    accessorKey: "status",
+    header: "Trạng thái",
+    cell: ({ row }) => <ShipmentStatusBadge status={row.original.status} />,
+  },
+  {
+    id: "amountDue",
+    header: () => <div className="text-right">Còn phải thu</div>,
+    cell: ({ row }) => <div className="text-right">{amountDueText(row.original)}</div>,
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Ngày tạo",
+    cell: ({ row }) => new Date(row.original.createdAt).toLocaleString("vi-VN"),
+  },
+];
+
+
+/** Tìm khi bấm Enter / nút Tìm. */
+function ShipmentsToolbar({
+  filters,
+  onChange,
+}: {
+  filters: ShipmentFilters;
+  onChange: (filters: ShipmentFilters) => void;
+}) {
+  const [search, setSearch] = useState(filters.search ?? "");
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onChange({ ...filters, search: search.trim() || undefined });
+        }}
+        className="flex flex-1 min-w-56 max-w-sm items-center gap-2"
+      >
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Mã đơn, mã vận đơn, người nhận..."
+            className="pl-9 h-9"
+          />
+        </div>
+        <Button type="submit" variant="outline" size="sm">
+          Tìm
+        </Button>
+      </form>
+
+      <Select
+        value={filters.status ?? ALL}
+        onValueChange={(value) =>
+          onChange({ ...filters, status: value === ALL ? undefined : (value as ShipmentStatus) })
+        }
+      >
+        <SelectTrigger className="h-9 w-44 cursor-pointer">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Mọi trạng thái</SelectItem>
+          {(Object.keys(SHIPMENT_STATUS_LABELS) as ShipmentStatus[])
+            .filter((status) => status !== "CREATED")
+            .map((status) => (
+              <SelectItem key={status} value={status}>
+                {SHIPMENT_STATUS_LABELS[status]}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+
+      <Input
+        type="date"
+        aria-label="Từ ngày"
+        value={filters.from ?? ""}
+        onChange={(event) => onChange({ ...filters, from: event.target.value || undefined })}
+        className="h-9 w-40"
+      />
+      <span className="text-sm text-muted-foreground">–</span>
+      <Input
+        type="date"
+        aria-label="Đến ngày"
+        value={filters.to ?? ""}
+        onChange={(event) => onChange({ ...filters, to: event.target.value || undefined })}
+        className="h-9 w-40"
+      />
+    </div>
+  );
+}
+
+
+interface ShipmentsTabProps {
+  reloadKey: number;
+  onOpen: (shipment: ShipmentSummary) => void;
+  /** Lọc sẵn khi mở trang (link "Giao thất bại" trên dashboard gửi FAILED). */
+  initialStatus?: ShipmentStatus;
+}
+
+/** Bảng lần giao kèm thanh lọc, phân trang ở server. */
+export function ShipmentsTab({ reloadKey, onOpen, initialStatus }: ShipmentsTabProps) {
+  const [query, setQuery] = useState<ShipmentListQuery>({
+    page: 1,
+    limit: SHIPMENT_PAGE_SIZE,
+    status: initialStatus,
+  });
+  const state = usePagedList(loadShipments, query, setQuery, reloadKey, LIVE);
+
+  return (
+    <div className="space-y-4">
+      <ShipmentsToolbar
+        filters={query}
+        // Đổi bộ lọc → về trang 1, đặt cùng một lần để không gọi BE cho trang cũ với bộ lọc mới.
+        onChange={(filters) => setQuery({ ...filters, page: 1, limit: query.limit })}
+      />
+      <PagedTable
+        state={state}
+        query={query}
+        onQueryChange={setQuery}
+        columns={shipmentsColumns}
+        unit="lần giao"
+        errorText="Không tải được danh sách lần giao - bấm Tải lại để thử lại"
+        onRowClick={onOpen}
+      />
+    </div>
+  );
+}

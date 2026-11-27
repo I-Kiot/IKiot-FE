@@ -69,7 +69,7 @@ export function StaffsAccountDialog({
       form.reset();
       onOpenChange(false);
     } catch {
-      // Error toast handled in provider
+      // Provider đã toast lỗi.
     }
   }
 

@@ -36,13 +36,15 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { listTenants, setSepayKey, type Tenant } from "@/lib/api/tenant";
+import {
+  listTenants,
+  setSepayKey,
+  syncSepayAccounts,
+  type Tenant,
+} from "@/lib/api/tenant";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
 function ownerLabel(tenant: Tenant): string {
-  const owner = tenant.tenantOwnerId;
+  const owner = tenant.tenantOwner;
   const name = [owner?.profile?.lastName, owner?.profile?.firstName]
     .filter(Boolean)
     .join(" ")
@@ -53,14 +55,11 @@ function ownerLabel(tenant: Tenant): string {
 function hasBankInfo(tenant: Tenant): boolean {
   return Boolean(
     tenant.banking?.bankName ||
-      tenant.banking?.accountNumber ||
-      tenant.banking?.accountName,
+    tenant.banking?.accountNumber ||
+    tenant.banking?.accountName,
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Stat card
-// ─────────────────────────────────────────────────────────────────────────────
 function StatCard({
   icon: Icon,
   label,
@@ -87,18 +86,15 @@ function StatCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────────────────────
 export default function AdminSepayPage() {
   const [tenants, setTenants] = React.useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
 
-  // Link dialog state
   const [dialogTenant, setDialogTenant] = React.useState<Tenant | null>(null);
   const [keyInput, setKeyInput] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isSyncing, setIsSyncing] = React.useState(false);
 
   const loadData = React.useCallback(async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
@@ -157,7 +153,7 @@ export default function AdminSepayPage() {
       toast.success(
         `Đã liên kết SePay cho cửa hàng "${dialogTenant.name}" thành công!`,
       );
-      // Optimistically mark as linked, then refetch for source of truth.
+      // Đánh dấu đã liên kết ngay (lạc quan), sau đó refetch để lấy dữ liệu thật từ server.
       setTenants((prev) =>
         prev.map((t) =>
           t.id === dialogTenant.id ? { ...t, hasSepayKey: true } : t,
@@ -173,6 +169,24 @@ export default function AdminSepayPage() {
     }
   };
 
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      const result = await syncSepayAccounts();
+      toast.success(
+        `SePay đang theo dõi ${result.accounts} tài khoản. Liên kết mới: ${result.linked.length}, gỡ liên kết: ${result.unlinked.length}.`,
+      );
+      loadData(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(
+        err.response?.data?.message || "Không đồng bộ được với SePay!",
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6">
       <PageHeader
@@ -181,10 +195,9 @@ export default function AdminSepayPage() {
           { label: "Liên kết SePay" },
         ]}
         title="Liên kết SePay"
-        description="Theo dõi thông tin ngân hàng của từng cửa hàng và trạng thái liên kết cổng thanh toán SePay. Cập nhật thủ công webhook key sau khi liên kết tài khoản trong dashboard SePay."
+        description="Thêm tài khoản ngân hàng của cửa hàng vào SePay của nền tảng; hệ thống tự đánh dấu 'Đã liên kết' khi thấy số tài khoản đó trên SePay (mỗi 10 phút, khi cửa hàng lưu tài khoản, hoặc khi bấm Đồng bộ). Webhook key riêng chỉ cần cho cửa hàng dùng webhook cũ."
       />
 
-      {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           icon={Store}
@@ -206,7 +219,6 @@ export default function AdminSepayPage() {
         />
       </div>
 
-      {/* Toolbar */}
       <div className="flex items-center justify-between gap-3">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -217,18 +229,28 @@ export default function AdminSepayPage() {
             className="pl-9"
           />
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => loadData(false)}
-          className="cursor-pointer text-xs gap-1.5 shrink-0"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Làm mới
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="cursor-pointer text-xs gap-1.5 shrink-0"
+          >
+            <Link2 className="h-3.5 w-3.5" />
+            {isSyncing ? "Đang đồng bộ..." : "Đồng bộ với SePay"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadData(false)}
+            className="cursor-pointer text-xs gap-1.5 shrink-0"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Làm mới
+          </Button>
+        </div>
       </div>
 
-      {/* Table */}
       <div className="border rounded-xl overflow-hidden bg-background">
         <Table>
           <TableHeader className="bg-muted/40">
@@ -265,7 +287,6 @@ export default function AdminSepayPage() {
                 const linked = Boolean(tenant.hasSepayKey);
                 return (
                   <TableRow key={tenant.id} className="align-top">
-                    {/* Store */}
                     <TableCell>
                       <div className="font-medium">{tenant.name || "-"}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
@@ -273,7 +294,6 @@ export default function AdminSepayPage() {
                       </div>
                     </TableCell>
 
-                    {/* Bank info */}
                     <TableCell>
                       {bank ? (
                         <div className="text-xs space-y-0.5">
@@ -294,7 +314,6 @@ export default function AdminSepayPage() {
                       )}
                     </TableCell>
 
-                    {/* SePay status */}
                     <TableCell>
                       {linked ? (
                         <Badge
@@ -315,11 +334,10 @@ export default function AdminSepayPage() {
                       )}
                     </TableCell>
 
-                    {/* Action */}
                     <TableCell className="text-right">
                       <Button
                         size="sm"
-                        variant={linked ? "outline" : "default"}
+                        variant="outline"
                         className="cursor-pointer text-xs gap-1.5"
                         onClick={() => openDialog(tenant)}
                         disabled={!bank}
@@ -329,8 +347,8 @@ export default function AdminSepayPage() {
                             : undefined
                         }
                       >
-                        <Link2 className="h-3.5 w-3.5" />
-                        {linked ? "Cập nhật key" : "Liên kết SePay"}
+                        <KeyRound className="h-3.5 w-3.5" />
+                        Webhook key riêng
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -341,7 +359,6 @@ export default function AdminSepayPage() {
         </Table>
       </div>
 
-      {/* Link dialog */}
       <Dialog
         open={Boolean(dialogTenant)}
         onOpenChange={(open) => {
@@ -357,9 +374,9 @@ export default function AdminSepayPage() {
                 : "Liên kết SePay"}
             </DialogTitle>
             <DialogDescription>
-              Nhập <span className="font-medium">webhook API key</span> nhận được
-              từ dashboard SePay sau khi liên kết tài khoản ngân hàng của cửa
-              hàng{" "}
+              Nhập <span className="font-medium">webhook API key</span> nhận
+              được từ dashboard SePay sau khi liên kết tài khoản ngân hàng của
+              cửa hàng{" "}
               <span className="font-semibold text-foreground">
                 {dialogTenant?.name}
               </span>

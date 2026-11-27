@@ -1,4 +1,3 @@
-// [UI Types – Brand]
 import { z } from 'zod'
 
 export type BrandsDialogType = 'add' | 'edit' | 'delete' | 'deleteMany'

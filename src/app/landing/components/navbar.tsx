@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, LayoutDashboard, ChevronDown, X, Moon, Sun } from "lucide-react";
+import { Menu, LayoutDashboard, ChevronDown, X, Moon, Sun, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -28,18 +28,17 @@ import { Logo } from "@/components/logo";
 import { MegaMenu } from "@/components/landing/mega-menu";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useTheme } from "@/hooks/use-theme";
+import { useLandingSession } from "../hooks/use-landing-session";
 
 const navigationItems = [
   { name: "Trang chủ", href: "#hero" },
   { name: "Tính năng", href: "#features" },
   { name: "Giải pháp", href: "#features", hasMegaMenu: true },
-  // { name: "Đội ngũ", href: "#team" },
   { name: "Bảng giá", href: "#pricing" },
   { name: "Hỏi đáp", href: "#faq" },
   { name: "Liên hệ", href: "#contact" },
 ];
 
-// Solutions menu items for mobile
 const solutionsItems = [
   { title: "Tính năng cốt lõi" },
   { name: "Bán hàng & POS", href: "#features" },
@@ -57,7 +56,6 @@ const solutionsItems = [
   { name: "AI dự báo xu hướng", href: "#features" },
 ];
 
-// Smooth scroll function
 const smoothScrollTo = (targetId: string) => {
   if (targetId.startsWith("#")) {
     const element = document.querySelector(targetId);
@@ -74,11 +72,11 @@ export function LandingNavbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [solutionsOpen, setSolutionsOpen] = useState(false);
   const { setTheme, theme } = useTheme();
+  const { user, displayName, homeHref, logout } = useLandingSession();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center space-x-2">
           <Link
             href="/landing"
@@ -89,7 +87,6 @@ export function LandingNavbar() {
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
         <NavigationMenu className="hidden xl:flex">
           <NavigationMenuList>
             {navigationItems.map((item) => (
@@ -123,24 +120,36 @@ export function LandingNavbar() {
           </NavigationMenuList>
         </NavigationMenu>
 
-        {/* Desktop CTA */}
         <div className="hidden xl:flex items-center space-x-2">
           <ModeToggle variant="ghost" />
-          <Button variant="outline" asChild className="cursor-pointer">
-            <Link href="/dashboard" target="_blank" rel="noopener noreferrer">
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              Bảng điều khiển
-            </Link>
-          </Button>
-          <Button variant="ghost" asChild className="cursor-pointer">
-            <Link href="/sign-in">Đăng nhập</Link>
-          </Button>
-          <Button asChild className="cursor-pointer">
-            <Link href="/sign-up">Bắt đầu ngay</Link>
-          </Button>
+          {user ? (
+            <>
+              <span className="max-w-64 truncate px-2 text-sm text-muted-foreground">
+                Xin chào, <span className="font-medium text-foreground">{displayName}</span>
+              </span>
+              <Button asChild className="cursor-pointer">
+                <Link href={homeHref}>
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Vào trang quản lý
+                </Link>
+              </Button>
+              <Button variant="ghost" className="cursor-pointer" onClick={() => logout()}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Đăng xuất
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" asChild className="cursor-pointer">
+                <Link href="/sign-in">Đăng nhập</Link>
+              </Button>
+              <Button asChild className="cursor-pointer">
+                <Link href="/sign-up">Bắt đầu ngay</Link>
+              </Button>
+            </>
+          )}
         </div>
 
-        {/* Mobile Menu */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild className="xl:hidden">
             <Button variant="ghost" size="icon" className="cursor-pointer">
@@ -153,7 +162,6 @@ export function LandingNavbar() {
             className="w-full sm:w-[400px] p-0 gap-0 [&>button]:hidden overflow-hidden flex flex-col"
           >
             <div className="flex flex-col h-full">
-              {/* Header */}
               <SheetHeader className="space-y-0 p-4 pb-2 border-b">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-primary/10 rounded-lg">
@@ -186,7 +194,6 @@ export function LandingNavbar() {
                 </div>
               </SheetHeader>
 
-              {/* Navigation Links */}
               <div className="flex-1 overflow-y-auto">
                 <nav className="p-6 space-y-1">
                   {navigationItems.map((item) => (
@@ -253,22 +260,32 @@ export function LandingNavbar() {
                 </nav>
               </div>
 
-              {/* Footer Actions */}
               <div className="border-t p-6 space-y-4">
-                {/* Primary Actions */}
-                <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    asChild
-                    className="w-full cursor-pointer"
-                  >
-                    <Link href="/dashboard">
-                      <LayoutDashboard className="size-4" />
-                      Bảng điều khiển
-                    </Link>
-                  </Button>
-
+                {user ? (
+                  <div className="space-y-3">
+                    <p className="truncate text-sm text-muted-foreground">
+                      Xin chào, <span className="font-medium text-foreground">{displayName}</span>
+                    </p>
+                    <Button asChild size="lg" className="w-full cursor-pointer">
+                      <Link href={homeHref}>
+                        <LayoutDashboard className="size-4" />
+                        Vào trang quản lý
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full cursor-pointer"
+                      onClick={() => {
+                        setIsOpen(false);
+                        logout();
+                      }}
+                    >
+                      <LogOut className="size-4" />
+                      Đăng xuất
+                    </Button>
+                  </div>
+                ) : (
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
@@ -282,7 +299,7 @@ export function LandingNavbar() {
                       <Link href="/sign-up">Đăng ký</Link>
                     </Button>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </SheetContent>

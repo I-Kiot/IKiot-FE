@@ -1,8 +1,7 @@
-/**
- * Auth Helper - Token management and authentication state
- */
+/** Helper xác thực: token và trạng thái đăng nhập. */
 
 import axios from "axios";
+import type { LocationRef } from "@/types/location";
 
 const AUTH_TOKEN_KEY = "auth_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -15,7 +14,7 @@ export interface AuthTokens {
 
 export interface User {
   id: string;
-  /** Optional on the backend - `phoneNumber` is the required identifier. */
+  /** Không bắt buộc ở backend; `phoneNumber` mới là định danh bắt buộc. */
   email?: string | null;
   full_name?: string;
   display_name?: string;
@@ -24,37 +23,15 @@ export interface User {
   bio?: string;
   created_at?: string;
   updated_at?: string;
-  /**
-   * The **account kind** - `ADMIN | TENANT_OWNER | STAFF | CUSTOMER`.
-   *
-   * Normalised at the API boundary from the backend's `systemRole`. The rewrite renamed
-   * this concept and reused the name `role` for the tenant-defined `Role` relation, so a
-   * raw `/auth/me` row carries `role: {id,name} | null` - an object, never one of these
-   * strings. Every `user.role === "…"` gate in the app was silently false until this was
-   * mapped; see `normalizeSessionUser`.
-   */
+  /** Loại tài khoản, lấy từ `systemRole`. */
   role?: string;
-  /**
-   * Every `"resource:action"` this account holds, as `GET /auth/me` returned it.
-   *
-   * **Empty for ADMIN and TENANT_OWNER** - they short-circuit the backend's guard before it
-   * is consulted, so empty means "not applicable", not "nothing". Read it through `allows()`
-   * in `role-permissions.ts`, which handles that.
-   */
+  /** Quyền `resource:action` của tài khoản; rỗng với ADMIN và TENANT_OWNER (mọi quyền). */
   permissions?: string[];
-  /** The backend's own name for the account kind, kept beside the normalised `role`. */
+  /** Tên loại tài khoản do backend trả, giữ cạnh `role` đã normalise. */
   systemRole?: string;
-  /** The tenant-defined role's display name, when the account holds one. */
+  /** Tên hiển thị của role do tenant định nghĩa, nếu tài khoản có role. */
   roleName?: string;
-  /**
-   * The shop this account belongs to.
-   *
-   * **Never populated.** `/auth/me` returns the user row and its role relation and
-   * nothing else (`AuthService.toPublicUser` strips only the password), so every reader of
-   * this falls through its optional chain to a blank. `GET /tenant/me` (`getMyTenant()` in
-   * `lib/api/tenant.ts`) is the real source and `/settings` now reads it; this stays typed
-   * so anyone tempted to reach for `me.tenant` sees why it is empty.
-   */
+  /** Không dùng: `/auth/me` không trả tenant, lấy qua `getMyTenant()`. */
   tenant?: {
     id?: string;
     name?: string;
@@ -71,8 +48,15 @@ export interface User {
   phoneNumber?: string;
   status?: string;
   tenantId?: string;
+  /** Nơi làm việc của user, null với chủ shop và admin. */
+  locationId?: string | null;
+  location?: LocationRef | null;
+  /** Chi nhánh / kho tách từ `location`. */
   branchId?: string;
   warehouseId?: string;
+  /** Nhân viên xưởng (2026-10-09): xưởng (NCC loại WORKSHOP) tài khoản này thuộc về; null với người khác. */
+  workshopId?: string | null;
+  workshop?: { id: string; supplierName: string } | null;
   profile?: {
     firstName?: string;
     lastName?: string;
@@ -83,65 +67,43 @@ export interface User {
     address?: string;
     gender?: "MALE" | "FEMALE" | "OTHER";
   };
-  /**
-   * **Removed - `/auth/me` has never returned this.**
-   *
-   * The old Express backend joined the subscription onto the profile for TENANT_OWNERs;
-   * `AuthService.me` in the rewrite returns the user row and its role relation and nothing
-   * else, so the field sat here typed and permanently `undefined`, and the billing screen
-   * that read `user.subscription` drew an empty plan on every render - a `fetchMe()` after
-   * a payment brought back the same blank.
-   *
-   * The plan comes from `getCurrentSubscription()` in `lib/api/subscription.ts`.
-   */
+  /** Không dùng: lấy gói qua `getCurrentSubscription()`. */
 }
 
-/**
- * Check if user is authenticated (has valid access token)
- */
+/** Đã có access token chưa. */
 export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
   return !!token;
 }
 
-/**
- * Get access token from localStorage
- */
+/** Lấy access token. */
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(AUTH_TOKEN_KEY);
 }
 
-/**
- * Get refresh token from localStorage
- */
+/** Lấy refresh token. */
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
-/**
- * Store auth tokens to localStorage
- */
+/** Lưu token. */
 export function setTokens(tokens: AuthTokens): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(AUTH_TOKEN_KEY, tokens.accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
 }
 
-/**
- * Clear auth tokens from localStorage
- */
+/** Xoá token. */
 export function clearTokens(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-/**
- * Decode JWT payload (không verify - chỉ đọc role/branch từ access token).
- */
+/** Đọc payload JWT (không verify). */
 export function getJwtPayload(): Record<string, unknown> | null {
   const token = getAccessToken();
   if (!token) return null;
@@ -163,15 +125,12 @@ export function getSessionRole(): string | undefined {
   return getCachedUser()?.role;
 }
 
+// Access token chỉ mang `sub`, nên posting lấy từ cached profile; xem `normalizeSessionUser`.
 export function getSessionBranchId(): string | undefined {
-  const fromJwt = getJwtPayload()?.branchId;
-  if (typeof fromJwt === "string" && fromJwt) return fromJwt;
   return getCachedUser()?.branchId;
 }
 
 export function getSessionWarehouseId(): string | undefined {
-  const fromJwt = getJwtPayload()?.warehouseId;
-  if (typeof fromJwt === "string" && fromJwt) return fromJwt;
   return getCachedUser()?.warehouseId;
 }
 
@@ -204,9 +163,7 @@ export function mergeUserWithJwtPayload(user: User): User {
   };
 }
 
-/**
- * Get current user from localStorage (if cached)
- */
+/** Lấy user đã cache. */
 export function getCachedUser(): User | null {
   if (typeof window === "undefined") return null;
   const userStr = localStorage.getItem("user");
@@ -218,17 +175,13 @@ export function getCachedUser(): User | null {
   }
 }
 
-/**
- * Cache user to localStorage
- */
+/** Cache user. */
 export function setCachedUser(user: User): void {
   if (typeof window === "undefined") return;
   localStorage.setItem("user", JSON.stringify(user));
 }
 
-/**
- * Clear cached user from localStorage
- */
+/** Xoá user đã cache. */
 export function clearCachedUser(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem("user");

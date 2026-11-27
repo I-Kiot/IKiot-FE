@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { COLUMN_LABELS } from '../../_constants/product.constants'
+import { COLUMN_LABELS, DAMAGED_FILTER } from '../../_constants/product.constants'
 import type { Product } from '@/types/product'
 import { useProducts } from '../../_context/products-provider'
 
@@ -28,7 +28,7 @@ type ProductsToolbarProps = {
 }
 
 export function ProductsToolbar({ table }: ProductsToolbarProps) {
-  const { brands, categories, setOpen } = useProducts()
+  const { brands, categories, setOpen, screen } = useProducts()
 
   const brandFilter = table.getColumn('brandId')?.getFilterValue() as string | undefined
   const categoryFilter = table.getColumn('categoryId')?.getFilterValue() as string | undefined
@@ -92,22 +92,24 @@ export function ProductsToolbar({ table }: ProductsToolbarProps) {
           className="w-36 h-9 text-sm cursor-pointer"
         />
 
-        <Select
-          onValueChange={(value) => {
-            if (value === 'all') table.getColumn('stock')?.setFilterValue(undefined)
-            else if (value === 'out') table.getColumn('stock')?.setFilterValue('out')
-            else if (value === 'low') table.getColumn('stock')?.setFilterValue('low')
-          }}
-        >
-          <SelectTrigger className="cursor-pointer w-28 h-9 text-sm">
-            <SelectValue placeholder="Tồn kho" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="out">Hết hàng (= 0)</SelectItem>
-            <SelectItem value="low">Sắp hết (&lt; 10)</SelectItem>
-          </SelectContent>
-        </Select>
+        {screen.showStock && (
+          <Select
+            onValueChange={(value) => {
+              if (value === 'all') table.getColumn('stock')?.setFilterValue(undefined)
+              else if (value === 'out') table.getColumn('stock')?.setFilterValue('out')
+              else if (value === 'low') table.getColumn('stock')?.setFilterValue('low')
+            }}
+          >
+            <SelectTrigger className="cursor-pointer w-28 h-9 text-sm">
+              <SelectValue placeholder="Tồn kho" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="out">Hết hàng (= 0)</SelectItem>
+              <SelectItem value="low">Sắp hết (&lt; 10)</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
 
         <Select
           value={statusFilter ?? ''}
@@ -123,20 +125,26 @@ export function ProductsToolbar({ table }: ProductsToolbarProps) {
             <SelectItem value="ACTIVE">Đang kinh doanh</SelectItem>
             <SelectItem value="INACTIVE">Ngừng kinh doanh</SelectItem>
             <SelectItem value="DISCONTINUED">Ngừng sản xuất</SelectItem>
+            {/* Không phải trạng thái của sản phẩm: lọc sản phẩm còn hàng hỏng (lô không bán được) ở nơi đang xem. */}
+            {screen.showStock && (
+              <SelectItem value={DAMAGED_FILTER}>Hàng hỏng</SelectItem>
+            )}
           </SelectContent>
         </Select>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="cursor-pointer h-9"
-          onClick={() => setOpen('crossBranchSearch')}
-        >
-          <Building2 className="mr-1.5 size-4" />
-          Tìm ở chi nhánh khác
-        </Button>
+        {screen.crossBranchSearch && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="cursor-pointer h-9"
+            onClick={() => setOpen('crossBranchSearch')}
+          >
+            <Building2 className="mr-1.5 size-4" />
+            Tìm ở chi nhánh khác
+          </Button>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

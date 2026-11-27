@@ -1,4 +1,3 @@
-// [Dialog – Mutate Category]
 'use client'
 
 import { useEffect } from 'react'

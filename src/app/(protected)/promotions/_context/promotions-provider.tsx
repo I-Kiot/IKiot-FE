@@ -1,4 +1,3 @@
-// [Context – UI State]
 'use client'
 
 import React, { useState } from 'react'
@@ -16,6 +15,7 @@ type PromotionsContextType = {
   handleAdd: (data: PromotionFormValues) => Promise<boolean>
   handleEdit: (id: string, data: PromotionFormValues) => Promise<boolean>
   handleDelete: (id: string) => Promise<boolean>
+  handleActivate: (id: string) => Promise<boolean>
   selectedIds: string[]
   setSelectedIds: (ids: string[]) => void
   handleDeleteMany: (ids: string[]) => Promise<boolean>
@@ -25,8 +25,15 @@ type PromotionsContextType = {
 const PromotionsContext = React.createContext<PromotionsContextType | null>(null)
 
 export function PromotionsProvider({ children }: { children: React.ReactNode }) {
-  const { promotions, isLoading, handleAdd, handleEdit, handleDelete, handleDeleteMany } =
-    usePromotionsMutations()
+  const {
+    promotions,
+    isLoading,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    handleActivate,
+    handleDeleteMany,
+  } = usePromotionsMutations()
   const [open, setOpen] = useState<PromotionsDialogType | null>(null)
   const [currentRow, setCurrentRow] = useState<Promotion | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -53,6 +60,7 @@ export function PromotionsProvider({ children }: { children: React.ReactNode }) 
         handleAdd,
         handleEdit,
         handleDelete,
+        handleActivate,
         selectedIds,
         setSelectedIds,
         handleDeleteMany: handleDeleteManyWrapper,

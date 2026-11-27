@@ -1,4 +1,3 @@
-// [Dialog – Orchestrator Promotion]
 'use client'
 
 import { usePromotions } from '../../_context/promotions-provider'

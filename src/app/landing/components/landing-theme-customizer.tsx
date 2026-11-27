@@ -54,7 +54,7 @@ export function LandingThemeCustomizer({
   const [selectedTheme, setSelectedTheme] = React.useState("default");
   const [selectedRadius, setSelectedRadius] = React.useState("0.5rem");
 
-  // Load from local storage on mount
+  // Đọc từ localStorage khi mount
   React.useEffect(() => {
     try {
       const savedTheme = localStorage.getItem("theme-preset");
@@ -67,11 +67,9 @@ export function LandingThemeCustomizer({
   }, []);
 
   const handleReset = () => {
-    // Reset all state variables to initial values
     setSelectedTheme("default");
     setSelectedRadius("0.5rem");
 
-    // Reset theme and radius to defaults
     resetTheme();
     applyRadius("0.5rem");
     try {
@@ -83,7 +81,6 @@ export function LandingThemeCustomizer({
   };
 
   const handleRandomTheme = () => {
-    // Apply a random theme from all presets
     const allThemes = [...colorThemes, ...tweakcnThemes];
     const randomTheme = allThemes[Math.floor(Math.random() * allThemes.length)];
     setSelectedTheme(randomTheme.value);
@@ -115,7 +112,7 @@ export function LandingThemeCustomizer({
     toggleTheme(event);
   };
 
-  // Re-apply themes when theme mode changes
+  // Áp lại theme khi đổi chế độ sáng/tối
   React.useEffect(() => {
     if (selectedTheme) {
       applyTheme(selectedTheme, isDarkMode);
@@ -162,7 +159,6 @@ export function LandingThemeCustomizer({
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* Mode Section */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Mode</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -189,7 +185,6 @@ export function LandingThemeCustomizer({
 
             <Separator />
 
-            {/* Theme Presets */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Theme Presets</Label>
@@ -317,7 +312,6 @@ export function LandingThemeCustomizer({
 
             <Separator />
 
-            {/* Radius Selection */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Radius</Label>
               <div className="grid grid-cols-5 gap-2">
@@ -345,7 +339,6 @@ export function LandingThemeCustomizer({
   );
 }
 
-// Floating trigger button for landing page
 export function LandingThemeCustomizerTrigger({
   onClick,
 }: {

@@ -1,4 +1,3 @@
-// [Layout – Suppliers]
 import { SuppliersProvider } from './_context/suppliers-provider'
 import { SuppliersDialogs } from './_components/dialogs/suppliers-dialogs'
 

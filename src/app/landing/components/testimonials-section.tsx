@@ -39,7 +39,6 @@ export function TestimonialsSection() {
   return (
     <section id="testimonials" className="py-24 sm:py-32">
       <div className="container mx-auto px-8 sm:px-6">
-        {/* Section Header */}
         <div className="mx-auto max-w-2xl text-center mb-16">
           <Badge variant="outline" className="mb-4">
             Đánh giá thực tế
@@ -48,12 +47,11 @@ export function TestimonialsSection() {
             Khách hàng nói gì về iKiot
           </h2>
           <p className="text-lg text-muted-foreground">
-            Hàng ngàn chủ cửa hàng và chuỗi bán lẻ công nghệ đã tối ưu hóa được
+            Hàng ngàn chủ cửa hàng và chuỗi bán lẻ đã tối ưu hóa được
             quy trình vận hành và tăng trưởng doanh thu vượt trội.
           </p>
         </div>
 
-        {/* Testimonials Masonry Grid */}
         <div className="columns-1 gap-4 md:columns-2 md:gap-6 lg:columns-3 lg:gap-4">
           {testimonials.map((testimonial, index) => (
             <Card

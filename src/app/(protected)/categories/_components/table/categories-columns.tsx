@@ -1,4 +1,3 @@
-// [Table – Columns Category]
 import { type ColumnDef } from '@tanstack/react-table'
 import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'

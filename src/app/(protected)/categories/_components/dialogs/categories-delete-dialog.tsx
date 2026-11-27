@@ -1,4 +1,3 @@
-// [Dialog – Delete Category]
 'use client'
 
 import { Trash2 } from 'lucide-react'

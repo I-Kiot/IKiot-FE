@@ -17,15 +17,42 @@ function PopoverTrigger({
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
 }
 
+/** Chặn sự kiện cuộn ở popover để danh sách bên trong cuộn được khi dialog đang mở. */
+function stopScrollLock(node: HTMLElement | null) {
+  if (!node) return
+  const stop = (e: Event) => e.stopPropagation()
+  node.addEventListener("wheel", stop, { passive: true })
+  node.addEventListener("touchmove", stop, { passive: true })
+  return () => {
+    node.removeEventListener("wheel", stop)
+    node.removeEventListener("touchmove", stop)
+  }
+}
+
 function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  ref,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  const composedRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (typeof ref === "function") ref(node)
+      else if (ref) ref.current = node
+      const cleanup = stopScrollLock(node)
+      return () => {
+        cleanup?.()
+        if (typeof ref === "function") ref(null)
+        else if (ref) ref.current = null
+      }
+    },
+    [ref]
+  )
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
+        ref={composedRef}
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}

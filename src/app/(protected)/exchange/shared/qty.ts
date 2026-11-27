@@ -4,17 +4,14 @@ import type {
   StockMovementDetail,
 } from "@/types/stock-movement";
 
-/** Safe number parsing for spinner/keyboard number inputs. */
+/** Phân tích số an toàn cho ô nhập số kiểu spinner / bàn phím. */
 export function parseNumberInput(value: string, fallback = 0): number {
   if (value.trim() === "") return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-/**
- * Receive qty: floor at 0. Doc + BE (after remove-cap): IMPORT/EXPORT/RETURN
- * đều cho phép receivedQuantity khác (kể cả >) quantity.
- */
+/** Số nhận không âm. */
 export function clampReceivedQuantity(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.trunc(value));

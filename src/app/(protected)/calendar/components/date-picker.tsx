@@ -19,7 +19,6 @@ export function DatePicker({ selectedDate, onDateSelect, events = [] }: DatePick
     }
   }
 
-  // Create a map of dates with events for styling
   const eventDates = events.reduce((acc, event) => {
     const dateKey = event.date.toDateString()
     acc[dateKey] = event.count

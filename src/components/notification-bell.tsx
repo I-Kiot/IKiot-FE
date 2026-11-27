@@ -153,7 +153,7 @@ export function NotificationBell({
                   </span>
                 </button>
 
-                {/* Delete button - shows on row hover */}
+                {/* Nút xoá, chỉ hiện khi hover dòng */}
                 <button
                   onClick={(e) => handleDelete(e, item.id)}
                   className="absolute right-2 top-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive cursor-pointer"

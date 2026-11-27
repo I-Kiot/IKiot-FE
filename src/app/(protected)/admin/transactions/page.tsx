@@ -1,4 +1,3 @@
-// [Page – Admin Transactions]
 import { PageHeader } from "@/components/page-header";
 import { TransactionsTable } from "./_components/table/transactions-table";
 

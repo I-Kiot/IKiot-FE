@@ -1,4 +1,3 @@
-// [Types – Roles feature]
 import { z } from 'zod'
 
 export type RolesDialogType = 'add' | 'edit' | 'delete'
@@ -10,8 +9,7 @@ export const roleFormSchema = z.object({
     .min(1, 'Tên vai trò là bắt buộc')
     .max(60, 'Tên vai trò tối đa 60 ký tự'),
   description: z.string().trim().max(255, 'Mô tả tối đa 255 ký tự').optional(),
-  // Mỗi phần tử là "resource:action" - một chuỗi khoá cho mọi thứ trong bộ chọn, dễ đưa
-  // vào Set hơn hẳn so với mảng object. Chỉ tách lại thành cặp ở đúng lúc gửi API.
+  // Mỗi phần tử là "resource:action".
   permissionKeys: z.array(z.string()).min(1, 'Chọn ít nhất một quyền'),
 })
 
@@ -25,14 +23,7 @@ export function splitPermissionKey(key: string) {
   return { resource: key.slice(0, at), action: key.slice(at + 1) }
 }
 
-/**
- * Nhãn tiếng Việt cho từng hành động.
- *
- * Danh mục quyền của backend chỉ kèm nhãn cho *tài nguyên* (`label`), còn `action` là mã
- * thô. 29 mã dưới đây là toàn bộ những gì `prisma/seed.ts` phát ra; mã lạ rơi về chính nó
- * chứ không bị ẩn - một quyền không đọc được vẫn phải chọn được, còn hơn là biến mất khỏi
- * màn hình phân quyền.
- */
+/** Nhãn tiếng Việt cho action. */
 export const ACTION_LABELS: Record<string, string> = {
   create: 'Tạo mới',
   read: 'Xem',
@@ -63,6 +54,22 @@ export const ACTION_LABELS: Record<string, string> = {
   export: 'Xuất dữ liệu',
   suspend: 'Tạm khóa',
   inactive: 'Ngừng hoạt động',
+  // Hành trình đơn hàng (2026-10-02)
+  confirm: 'Xác nhận đơn',
+  assign: 'Gán người phụ trách',
+  verify: 'Xác nhận đã đóng hàng',
+  deliver: 'Giao hàng (shipper)',
+  inspect: 'Kiểm hàng hoàn',
+  refund: 'Hoàn tiền',
 }
 
-export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action
+/** Nhãn riêng khi cùng một action mang nghĩa khác theo resource (`deliver` của shipper vs của xưởng). */
+const RESOURCE_ACTION_LABELS: Record<string, string> = {
+  // Mã vẫn là `orders:ship` (role_permissions trỏ vào nó); tên hiển thị nói rõ bước và hậu quả.
+  'orders:ship': 'Bắt đầu vận chuyển (trừ tồn kho)',
+}
+
+export const actionLabel = (action: string, resource?: string) =>
+  (resource ? RESOURCE_ACTION_LABELS[`${resource}:${action}`] : undefined) ??
+  ACTION_LABELS[action] ??
+  action

@@ -1,0 +1,64 @@
+"use client";
+
+import type { ColumnDef } from "@tanstack/react-table";
+import { PermissionButton } from "@/components/permission-button";
+import type { PackableOrder } from "@/types/order-flow";
+
+/** Đếm SKU khác nhau. */
+function productKindCount(order: PackableOrder): number {
+  return new Set(order.items.map((item) => item.sku ?? item.id)).size;
+}
+
+interface FulfillmentsColumnsOptions {
+  /** Người dùng có quyền `orders:pack` - không có thì nút mờ và bấm vào báo cần quyền. */
+  canPack: boolean;
+  /** Mở dialog đóng gói cho đơn. */
+  onPack: (order: PackableOrder) => void;
+}
+
+/** Cột bảng đơn chờ đóng gói. */
+export function fulfillmentsColumns({ canPack, onPack }: FulfillmentsColumnsOptions): ColumnDef<PackableOrder>[] {
+  return [
+    {
+      accessorKey: "code",
+      header: "Mã đơn",
+      cell: ({ row }) => <span className="font-medium">{row.original.code}</span>,
+    },
+    {
+      id: "customer",
+      header: "Khách hàng",
+      cell: ({ row }) => (
+        <>
+          {row.original.customer.name}
+          {row.original.customer.phone && (
+            <span className="block text-xs text-muted-foreground">{row.original.customer.phone}</span>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "branch",
+      header: "Chi nhánh",
+      cell: ({ row }) => row.original.branch.name,
+    },
+    {
+      id: "productKinds",
+      header: () => <div className="text-right">Số loại sản phẩm</div>,
+      cell: ({ row }) => <div className="text-right">{productKindCount(row.original)}</div>,
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Ngày tạo",
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleString("vi-VN"),
+    },
+    {
+      id: "actions",
+      header: () => <span className="sr-only">Thao tác</span>,
+      cell: ({ row }) => (
+        <PermissionButton allowed={canPack} permission="orders:pack" size="sm" onClick={() => onPack(row.original)}>
+          Đóng hàng
+        </PermissionButton>
+      ),
+    },
+  ];
+}

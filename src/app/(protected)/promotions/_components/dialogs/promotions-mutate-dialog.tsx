@@ -1,4 +1,3 @@
-// [Dialog – Mutate Promotion]
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -26,6 +25,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { MoneyInput, NullableCountInput, NullableMoneyInput } from '@/app/(protected)/exchange/shared/form-fields'
 import {
   Select,
   SelectContent,
@@ -124,7 +124,7 @@ function RuleTargetsMultiSelect({
           <ChevronsUpDown className="ml-auto size-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
@@ -195,17 +195,10 @@ export function PromotionsMutateDialog({
   const [branchOptions, setBranchOptions] = useState<Option[]>([])
   const [categoryOptions, setCategoryOptions] = useState<Option[]>([])
   const [productItemOptions, setProductItemOptions] = useState<Option[]>([])
-  // Decoupled from `branchIds` itself: turning this switch off with zero branches
-  // picked yet must still show the multi-select (not silently mean "whole system").
+  // Công tắc áp dụng toàn hệ thống.
   const [applyToAllBranches, setApplyToAllBranches] = useState(true)
 
-  // Somebody posted at a branch scopes their promotion to that branch.
-  //
-  // The comment here used to claim the backend force-overrides `branchIds` on create and
-  // update. **It does not** - `PromotionService.create/update` take the list as given after
-  // only checking the branches exist, and the service header says the old branch-manager
-  // rule "goes with the role". So this is the only thing narrowing the scope, and it was
-  // keyed on a role nobody carries any more.
+  // Giới hạn phạm vi vào chi nhánh của người đăng.
   const ownBranchId = getSessionBranchId()
   const isBranchScoped = Boolean(ownBranchId)
   const ownBranchLabel = branchOptions.find((b) => b.value === ownBranchId)?.label
@@ -264,10 +257,7 @@ export function PromotionsMutateDialog({
   const branchIds = form.watch('branchIds')
   const branchIdsKey = branchIds.join(',')
 
-  // Danh sách luôn là toàn bộ hàng hóa của cửa hàng (theo tenant). Chọn chi nhánh cụ thể thì
-  // `branchIds` chỉ gắn thêm tồn kho của (các) chi nhánh đó vào nhãn - KHÔNG lọc bớt: hàng
-  // chưa nhập về chi nhánh vẫn phải chọn được, vì đặt khuyến mãi cho lô hàng tuần sau là
-  // chuyện bình thường. Hàng còn tồn được xếp lên trước cho dễ chọn.
+  // Liệt kê toàn bộ hàng hoá, hàng còn tồn lên trước.
   useEffect(() => {
     if (!open) return
     if (!applyToAllBranches && branchIds.length === 0) {
@@ -384,15 +374,10 @@ export function PromotionsMutateDialog({
                       Giá trị giảm {discountType === 'PERCENT' ? '(%)' : '(VND)'}
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
+                      <MoneyInput
+                        value={field.value}
+                        onChange={field.onChange}
                         max={discountType === 'PERCENT' ? 100 : undefined}
-                        {...field}
-                        onChange={(e) => {
-                          const val = e.target.valueAsNumber
-                          field.onChange(isNaN(val) ? 0 : val)
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -409,15 +394,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Mức giảm tối đa (VND, để trống nếu không giới hạn)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          field.onChange(val === '' ? null : Number(val))
-                        }}
-                      />
+                      <NullableMoneyInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -433,15 +410,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Giá trị đơn tối thiểu (VND)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        {...field}
-                        onChange={(e) => {
-                          const val = e.target.valueAsNumber
-                          field.onChange(isNaN(val) ? 0 : val)
-                        }}
-                      />
+                      <MoneyInput value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -613,15 +582,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Giới hạn lượt dùng (để trống nếu không giới hạn)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          field.onChange(val === '' ? null : Number(val))
-                        }}
-                      />
+                      <NullableCountInput placeholder="Không giới hạn" value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -634,15 +595,7 @@ export function PromotionsMutateDialog({
                   <FormItem>
                     <FormLabel>Giới hạn lượt dùng / khách hàng</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          field.onChange(val === '' ? null : Number(val))
-                        }}
-                      />
+                      <NullableCountInput placeholder="Không giới hạn" value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

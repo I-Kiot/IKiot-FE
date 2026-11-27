@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import {
   UserPlus,
   X,
@@ -39,17 +40,21 @@ interface Customer {
 interface CheckoutSidebarProps {
   totalQuantity: number;
   subtotal: number;
-  /** Fully computed total (subtotal - discount/promotion + VAT) - the single source of truth for display and payment. */
+  /** Nút Thanh toán bấm được khi giỏ có tiền hoặc có lỗi giảm giá cần báo. */
+  canCheckout: boolean;
+  /** Tổng đã tính đủ (tạm tính - giảm giá/khuyến mãi + VAT), nguồn duy nhất cho hiển thị và thanh toán. */
   grandTotal: number;
   discount: number;
   discountType: "cash" | "percent";
-  /** Ids of the manually assigned promotions. When non-empty, the manual discount input below is locked (mutually exclusive). */
+  /** Id khuyến mãi đã gán. Khi có, ô giảm giá tay bên dưới bị khoá vì hai cách loại trừ nhau. */
   selectedPromotionIds: string[];
-  /** Resolved discount amount for the currently assigned promotion(s), from the last successful calculate call. */
+  /** Số tiền giảm của khuyến mãi đang gán, lấy từ lần calculate thành công gần nhất. */
   promotionDiscount: number;
-  /** Names of the promotions currently assigned, for display next to the discount amount. */
+  /** Tên khuyến mãi đang gán, hiển thị cạnh số tiền giảm. */
   promotionNames: string[];
   paymentMethod: "CASH" | "SEPAY";
+  /** Tài khoản của shop chưa liên kết SePay: khoá "Chuyển khoản" (BE cũng từ chối). */
+  sepayNotLinked: boolean;
   customerPay: number;
   note: string;
   selectedCustomer: Customer | null;
@@ -58,12 +63,16 @@ interface CheckoutSidebarProps {
   onDiscountTypeChange: (type: "cash" | "percent") => void;
   onPaymentMethodChange: (method: "CASH" | "SEPAY") => void;
   onCustomerPayChange: (pay: number) => void;
+  /** Nút "Đủ tiền": điền tiền khách đưa bằng tổng hóa đơn và báo toast, cùng hành vi với phím F4. */
+  onExactPay: () => void;
   onNoteChange: (note: string) => void;
   onCheckout: () => void;
   onCancel: () => void;
   onOpenNewCustomerModal: () => void;
   onOpenPromotionPicker: () => void;
   onClearPromotion: () => void;
+  /** "Nơi bán" selector, drawn right under the payment block. */
+  branchSelect?: React.ReactNode;
 }
 
 const formatVND = (value: number) =>
@@ -74,6 +83,7 @@ const formatVND = (value: number) =>
 export function CheckoutSidebar({
   totalQuantity,
   subtotal,
+  canCheckout,
   grandTotal,
   discount,
   discountType,
@@ -81,6 +91,7 @@ export function CheckoutSidebar({
   promotionDiscount,
   promotionNames,
   paymentMethod,
+  sepayNotLinked,
   customerPay,
   note,
   selectedCustomer,
@@ -89,12 +100,14 @@ export function CheckoutSidebar({
   onDiscountTypeChange,
   onPaymentMethodChange,
   onCustomerPayChange,
+  onExactPay,
   onNoteChange,
   onCheckout,
   onCancel,
   onOpenNewCustomerModal,
   onOpenPromotionPicker,
   onClearPromotion,
+  branchSelect,
 }: CheckoutSidebarProps) {
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerResults, setCustomerResults] = useState<Customer[]>([]);
@@ -103,7 +116,6 @@ export function CheckoutSidebar({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Search customer records dynamically from backend
   useEffect(() => {
     if (!customerQuery.trim()) {
       setCustomerResults([]);
@@ -134,7 +146,6 @@ export function CheckoutSidebar({
     };
   }, [customerQuery]);
 
-  // Click outside to close customer search dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -150,19 +161,16 @@ export function CheckoutSidebar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Set the search text to empty when a customer is chosen/reset
   useEffect(() => {
     if (selectedCustomer) {
       setCustomerQuery("");
     }
   }, [selectedCustomer]);
 
-  // Billing math - grandTotal is fully computed by the parent (subtotal, discount/promotion,
-  // VAT all folded in already); this component only derives display-only values from it.
+  // Chỉ suy ra giá trị hiển thị từ grandTotal.
   const hasPromotionApplied = selectedPromotionIds.length > 0;
   const changeDue = Math.max(0, customerPay - grandTotal);
 
-  // Quick cash triggers
   const handleQuickCash = (amount: number) => {
     onCustomerPayChange(amount);
   };
@@ -175,7 +183,6 @@ export function CheckoutSidebar({
     Math.ceil(grandTotal / 500000) * 500000,
   ].filter((v) => v >= grandTotal && v > 0);
 
-  // Ensure suggestions are unique and reasonable
   const uniqueCashSuggestions = Array.from(new Set(cashSuggestions)).slice(
     0,
     4,
@@ -193,7 +200,6 @@ export function CheckoutSidebar({
       </CardHeader>
 
       <CardContent className="space-y-4 pb-4 flex-1 overflow-y-auto scrollbar-thin">
-        {/* Customer Select */}
         <div className="space-y-1.5 relative">
           <Label className="font-semibold text-base text-muted-foreground">
             Khách hàng
@@ -284,7 +290,6 @@ export function CheckoutSidebar({
 
         <Separator className="my-2" />
 
-        {/* Pricing Math Details */}
         <div className="space-y-3 text-base">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">
@@ -295,7 +300,7 @@ export function CheckoutSidebar({
             </span>
           </div>
 
-          {/* Assigned promotion(s) - mutually exclusive with the manual discount below */}
+          {/* Khuyến mãi đã gán, loại trừ với ô giảm giá tay bên dưới. */}
           {hasPromotionApplied ? (
             <div className="flex justify-between items-start gap-4">
               <span className="text-muted-foreground font-medium shrink-0">
@@ -339,7 +344,7 @@ export function CheckoutSidebar({
             </button>
           )}
 
-          {/* Discount Input - locked while a promotion is assigned */}
+          {/* Ô giảm giá tay, khoá khi đã gán khuyến mãi. */}
           <div
             className={cn(
               "flex items-center justify-between gap-4",
@@ -350,21 +355,30 @@ export function CheckoutSidebar({
               Giảm giá đơn
             </span>
             <div className="flex items-center gap-1.5 flex-1 max-w-[180px]">
-              <Input
-                type="number"
-                value={discount}
-                disabled={hasPromotionApplied}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  const clean = isNaN(val) || val < 0 ? 0 : val;
-                  if (discountType === "percent") {
+              {discountType === "percent" ? (
+                // Giảm theo % là con số 0-100, không phải tiền: không chèn dấu chấm ngăn cách.
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={discount}
+                  disabled={hasPromotionApplied}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    const clean = isNaN(val) || val < 0 ? 0 : val;
                     onDiscountChange(clean > 100 ? 100 : clean);
-                  } else {
-                    onDiscountChange(clean > subtotal ? subtotal : clean);
-                  }
-                }}
-                className="h-9 text-right font-semibold tabular-nums text-base"
-              />
+                  }}
+                  className="h-9 text-right font-semibold tabular-nums text-base"
+                />
+              ) : (
+                <MoneyInput
+                  value={discount}
+                  max={subtotal}
+                  disabled={hasPromotionApplied}
+                  onChange={onDiscountChange}
+                  className="h-9 text-right font-semibold tabular-nums text-base"
+                />
+              )}
               <div className="flex border rounded-md overflow-hidden shrink-0">
                 <button
                   type="button"
@@ -404,7 +418,6 @@ export function CheckoutSidebar({
 
           <Separator className="my-2" />
 
-          {/* Grand total */}
           <div className="flex justify-between items-center pt-1">
             <span className="text-muted-foreground font-bold text-lg">
               Khách cần trả
@@ -414,7 +427,6 @@ export function CheckoutSidebar({
             </span>
           </div>
 
-          {/* Payment Method Selector */}
           <div className="space-y-1.5 pt-1">
             <Label className="font-semibold text-base text-muted-foreground">
               Phương thức thanh toán
@@ -427,10 +439,12 @@ export function CheckoutSidebar({
                 ] as const
               ).map(({ method, label, Icon }) => {
                 const isSelected = paymentMethod === method;
+                const isDisabled = method === "SEPAY" && sepayNotLinked;
                 return (
                   <button
                     key={method}
                     type="button"
+                    disabled={isDisabled}
                     onClick={() => {
                       onPaymentMethodChange(method);
                       onCustomerPayChange(grandTotal);
@@ -440,6 +454,7 @@ export function CheckoutSidebar({
                       isSelected
                         ? "bg-primary/5 border-primary text-primary font-bold shadow-xs"
                         : "bg-background border-border text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                      isDisabled && "cursor-not-allowed opacity-50 hover:bg-background hover:text-muted-foreground",
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
@@ -451,6 +466,11 @@ export function CheckoutSidebar({
                 );
               })}
             </div>
+            {sepayNotLinked && (
+              <p className="text-xs text-muted-foreground">
+                Tài khoản ngân hàng của cửa hàng chưa liên kết SePay nên chưa thu được bằng mã QR.
+              </p>
+            )}
           </div>
 
           {/* Customer Pay Input - chỉ hiện khi CASH */}
@@ -462,7 +482,7 @@ export function CheckoutSidebar({
                 </Label>
                 <button
                   type="button"
-                  onClick={() => onCustomerPayChange(grandTotal)}
+                  onClick={onExactPay}
                   className="text-sm text-primary font-bold hover:underline cursor-pointer"
                 >
                   Đủ tiền (F4)
@@ -470,13 +490,9 @@ export function CheckoutSidebar({
               </div>
               <div className="relative">
                 <Coins className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="number"
+                <MoneyInput
                   value={customerPay}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    onCustomerPayChange(isNaN(val) || val < 0 ? 0 : val);
-                  }}
+                  onChange={onCustomerPayChange}
                   className="pl-8 h-10 text-right font-bold tabular-nums text-base text-foreground focus-visible:ring-primary"
                 />
               </div>
@@ -507,7 +523,6 @@ export function CheckoutSidebar({
             </div>
           )}
 
-          {/* SEPAY hint */}
           {paymentMethod === "SEPAY" && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm">
               <QrCode className="size-4 shrink-0 mt-0.5" />
@@ -518,7 +533,8 @@ export function CheckoutSidebar({
             </div>
           )}
 
-          {/* Order Note */}
+          {branchSelect}
+
           <div className="space-y-1 pt-1">
             <Label className="font-semibold text-base text-muted-foreground flex items-center gap-1">
               <FileText className="size-3" /> Ghi chú đơn hàng
@@ -537,10 +553,10 @@ export function CheckoutSidebar({
         <Button
           type="button"
           onClick={onCheckout}
-          disabled={subtotal === 0}
+          disabled={!canCheckout}
           className={cn(
             "w-full h-11 text-lg font-bold shadow-md cursor-pointer transition-all duration-200",
-            subtotal > 0
+            canCheckout
               ? "bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.01]"
               : "bg-muted text-muted-foreground",
           )}
@@ -551,7 +567,8 @@ export function CheckoutSidebar({
           type="button"
           variant="outline"
           onClick={onCancel}
-          disabled={subtotal === 0}
+          // Theo số món, không theo tiền: giỏ giảm giá về 0 đ vẫn phải hủy được.
+          disabled={totalQuantity === 0}
           className="w-full h-9 text-base cursor-pointer text-red-500 hover:bg-red-50 hover:text-red-600 border-red-200"
         >
           Hủy đơn hàng

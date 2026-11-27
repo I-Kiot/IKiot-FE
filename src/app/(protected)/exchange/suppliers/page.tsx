@@ -1,4 +1,3 @@
-// [Page – Suppliers]
 import { PageHeader } from "@/components/page-header";
 import { SuppliersButtonGroup } from "./_components/suppliers-button-group";
 import { SuppliersTable } from "./_components/table/suppliers-table";

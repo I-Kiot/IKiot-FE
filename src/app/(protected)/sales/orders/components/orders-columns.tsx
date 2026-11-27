@@ -1,0 +1,263 @@
+import { amountStillDue } from "@/lib/order-pickup";
+import Link from "next/link";
+import { type ColumnDef } from "@tanstack/react-table";
+import { ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { FULFILLMENT_TYPE_LABELS, type OrderListItem } from "@/types/order-flow";
+import {
+  daysUntilPlainDate,
+  formatDateTime,
+  formatPlainDate,
+  formatVND,
+  orderStatusDisplay,
+  priorityDisplay,
+  stockDisplay,
+} from "../shared/order-display";
+import { AssigneeCell, DriverCell } from "./orders-person-cells";
+
+/** Trạng thái mà ngày hẹn giao không còn ý nghĩa đếm ngược. */
+const DELIVERY_ENDED_STATUSES: ReadonlySet<string> = new Set(["RECEIVED", "COMPLETED", "CANCELLED", "RETURNED"]);
+
+export const ORDERS_COLUMN_LABELS: Record<string, string> = {
+  code: "Mã đơn",
+  customer: "Khách hàng",
+  status: "Trạng thái",
+  fulfillmentType: "Hình thức giao",
+  priority: "Ưu tiên",
+  stockSummary: "Tồn kho",
+  assignee: "Phụ trách",
+  driver: "Người giao hàng",
+  requestedDeliveryDate: "Hẹn giao",
+  products: "Sản phẩm",
+  deliveryAddress: "Địa chỉ nhận hàng",
+  grandTotal: "Tổng tiền",
+  deposit: "Tiền cọc",
+  amountDue: "Còn thu",
+  createdAt: "Ngày tạo",
+};
+
+export const ordersColumns: ColumnDef<OrderListItem>[] = [
+  {
+    // Tích để sao chép (mỗi đơn một dòng, dán vào Excel). Chặn lan lên để tích không mở/đóng dòng.
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex items-center justify-center" onClick={(event) => event.stopPropagation()}>
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Chọn tất cả đơn trên trang"
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center" onClick={(event) => event.stopPropagation()}>
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label={`Chọn đơn ${row.original.code}`}
+        />
+      </div>
+    ),
+    size: 40,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "code",
+    header: ORDERS_COLUMN_LABELS.code,
+    cell: ({ row }) => (
+      <div className="flex flex-col">
+        {/* Mở chi tiết (D-3); chặn lan lên để click không đồng thời mở/đóng dòng. */}
+        <Link
+          href={`/sales/orders/${row.original.id}`}
+          onClick={(event) => event.stopPropagation()}
+          className="font-mono text-sm font-medium text-primary underline-offset-2 hover:underline"
+        >
+          {row.original.code}
+        </Link>
+        <span className="text-xs text-muted-foreground">
+          {row.original.branch?.name ?? "-"}
+        </span>
+      </div>
+    ),
+    enableHiding: false,
+  },
+  {
+    id: "customer",
+    header: ORDERS_COLUMN_LABELS.customer,
+    cell: ({ row }) => (
+      <div className="flex flex-col">
+        <span className="font-medium">{row.original.customer?.name ?? "-"}</span>
+        <span className="text-xs text-muted-foreground">
+          {row.original.customer?.phone ?? ""}
+        </span>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: ORDERS_COLUMN_LABELS.status,
+    cell: ({ row }) => {
+      const display = orderStatusDisplay(
+        row.original.status,
+        row.original.latestShipmentStatus,
+        row.original.fulfillmentType,
+      );
+      return <Badge variant={display.variant}>{display.label}</Badge>;
+    },
+  },
+  {
+    accessorKey: "fulfillmentType",
+    header: ORDERS_COLUMN_LABELS.fulfillmentType,
+    cell: ({ row }) => (
+      <span className="text-sm">
+        {FULFILLMENT_TYPE_LABELS[row.original.fulfillmentType] ?? row.original.fulfillmentType}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "priority",
+    header: ORDERS_COLUMN_LABELS.priority,
+    cell: ({ row }) => {
+      const display = priorityDisplay(row.original.priority);
+      return <Badge variant={display.variant}>{display.label}</Badge>;
+    },
+  },
+  {
+    accessorKey: "stockSummary",
+    header: ORDERS_COLUMN_LABELS.stockSummary,
+    // Null khi đơn đã giao đi: không còn hàng nào để tính tồn.
+    cell: ({ row }) => {
+      const summary = row.original.stockSummary;
+      if (!summary) return <span className="text-muted-foreground">-</span>;
+      const display = stockDisplay(summary);
+      return <Badge variant={display.variant}>{display.label}</Badge>;
+    },
+  },
+  {
+    id: "assignee",
+    header: ORDERS_COLUMN_LABELS.assignee,
+    // Chọn người ngay tại dòng khi đơn chưa đi giao (2026-11-08).
+    cell: ({ row }) => <AssigneeCell order={row.original} />,
+  },
+  {
+    id: "driver",
+    header: ORDERS_COLUMN_LABELS.driver,
+    // Hiện shipper của lần giao mới nhất; đổi được khi hàng còn ở shop.
+    cell: ({ row }) => <DriverCell order={row.original} />,
+  },
+  {
+    accessorKey: "requestedDeliveryDate",
+    header: ORDERS_COLUMN_LABELS.requestedDeliveryDate,
+    // Trong 10 ngày thì đếm ngược.
+    cell: ({ row }) => {
+      const value = row.original.requestedDeliveryDate;
+      const ended = DELIVERY_ENDED_STATUSES.has(row.original.status);
+      const days = value && !ended ? daysUntilPlainDate(value) : null;
+      if (value && days !== null && days <= 10) {
+        const overdue = days < 0;
+        return (
+          <span
+            className={cn("text-sm", overdue && "text-destructive")}
+            title={formatPlainDate(value)}
+          >
+            {days === 0
+              ? "Hôm nay"
+              : overdue
+                ? `Quá hạn ${-days} ngày`
+                : `Còn ${days} ngày`}
+          </span>
+        );
+      }
+      return <span className="text-sm">{formatPlainDate(value)}</span>;
+    },
+  },
+  {
+    id: "products",
+    header: ORDERS_COLUMN_LABELS.products,
+    cell: ({ row }) => {
+      const items = row.original.items;
+      const quantity = items.reduce((sum, item) => sum + item.quantity, 0);
+      if (items.length === 0) return <span className="text-muted-foreground">-</span>;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="default" className="cursor-default">
+              {quantity} sản phẩm
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <ul className="space-y-0.5">
+              {items.map((item) => (
+                <li key={item.id}>
+                  {item.productName ?? item.sku ?? "-"}
+                  {item.variantLabel ? ` (${item.variantLabel})` : ""} × {item.quantity}
+                </li>
+              ))}
+            </ul>
+          </TooltipContent>
+        </Tooltip>
+      );
+    },
+  },
+  {
+    id: "deliveryAddress",
+    header: ORDERS_COLUMN_LABELS.deliveryAddress,
+    cell: ({ row }) => (
+      <span className="line-clamp-2 max-w-64 text-sm" title={row.original.deliveryAddress ?? undefined}>
+        {row.original.deliveryAddress ?? "-"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "grandTotal",
+    header: ORDERS_COLUMN_LABELS.grandTotal,
+    cell: ({ row }) => (
+      <span className="font-medium">{formatVND(row.original.grandTotal)}</span>
+    ),
+  },
+  {
+    id: "deposit",
+    header: ORDERS_COLUMN_LABELS.deposit,
+    cell: ({ row }) => (
+      <span className="text-sm">
+        {row.original.deposit ? formatVND(row.original.deposit.amount) : "-"}
+      </span>
+    ),
+  },
+  {
+    id: "amountDue",
+    header: ORDERS_COLUMN_LABELS.amountDue,
+    cell: ({ row }) => (
+      <span className="text-sm font-medium">{formatVND(amountStillDue(row.original))}</span>
+    ),
+  },
+  {
+    accessorKey: "createdAt",
+    header: ORDERS_COLUMN_LABELS.createdAt,
+    cell: ({ row }) => (
+      <span className="text-sm text-muted-foreground">
+        {formatDateTime(row.original.createdAt)}
+      </span>
+    ),
+  },
+  {
+    id: "expand",
+    header: "",
+    cell: ({ row }) => (
+      <ChevronRight
+        className={cn(
+          "size-4 text-muted-foreground transition-transform duration-200",
+          row.getIsExpanded() && "rotate-90",
+        )}
+      />
+    ),
+    size: 40,
+    enableHiding: false,
+  },
+];

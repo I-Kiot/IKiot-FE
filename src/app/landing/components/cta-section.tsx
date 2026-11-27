@@ -5,15 +5,16 @@ import { ArrowRight, TrendingUp, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useLandingSession } from "../hooks/use-landing-session";
 
 export function CTASection() {
+  const { user, homeHref } = useLandingSession();
   return (
     <section className="py-16 lg:py-24 bg-muted/80">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
             <div className="space-y-8">
-              {/* Badge and Stats */}
               <div className="flex flex-col items-center gap-4">
                 <Badge variant="outline" className="flex items-center gap-2">
                   <TrendingUp className="size-3" />
@@ -32,14 +33,13 @@ export function CTASection() {
                 </div>
               </div>
 
-              {/* Main Content */}
               <div className="space-y-6">
                 <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl">
                   Bứt phá doanh thu chuỗi
                   <span className="flex sm:inline-flex justify-center">
                     <span className="relative mx-2">
                       <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                        cửa hàng điện tử
+                        cửa hàng
                       </span>
                       <div className="absolute start-0 -bottom-2 h-1 w-full bg-gradient-to-r from-primary/30 to-secondary/30" />
                     </span>
@@ -54,16 +54,15 @@ export function CTASection() {
                 </p>
               </div>
 
-              {/* CTA Buttons */}
               <div className="flex flex-col justify-center gap-4 sm:flex-row sm:gap-6">
                 <Button
                   size="lg"
                   className="cursor-pointer px-8 py-6 text-lg font-medium"
                   asChild
                 >
-                  <Link href="/sign-up">
+                  <Link href={user ? homeHref : "/sign-up"}>
                     <Package className="me-2 size-5" />
-                    Bắt đầu dùng thử miễn phí
+                    {user ? "Vào trang quản lý" : "Bắt đầu dùng thử miễn phí"}
                   </Link>
                 </Button>
                 <Button
@@ -79,7 +78,6 @@ export function CTASection() {
                 </Button>
               </div>
 
-              {/* Trust Indicators */}
               <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="size-2 rounded-full bg-green-600 dark:bg-green-400 me-1" />

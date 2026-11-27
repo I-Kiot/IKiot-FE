@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
+import { allows } from "@/components/sidebar/constants/role-permissions";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MovementDetailHeader } from "@/app/(protected)/exchange/shared/movement-detail-header";
+import { MovementActors } from "@/app/(protected)/exchange/shared/movement-actors";
 import { MovementOrderNote } from "@/app/(protected)/exchange/shared/movement-order-note";
 import { CancelConfirmDialog } from "@/app/(protected)/exchange/shared/cancel-confirm-dialog";
 import {
@@ -35,6 +38,8 @@ import {
 } from "@/app/(protected)/exchange/shared/form-fields";
 import { MovementProductSearch } from "@/app/(protected)/exchange/shared/movement-product-search";
 import { QuantityStepper } from "@/app/(protected)/exchange/shared/quantity-stepper";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 import { useStockMovementDetail } from "@/app/(protected)/exchange/shared/use-stock-movement-detail";
 import { getAuthScope } from "@/app/(protected)/exchange/shared/auth-scope";
 import { stockMovementApi } from "@/lib/api/stock-movement";
@@ -74,14 +79,14 @@ type EditRow = {
   note?: string;
 };
 
+const WHO_AT_LOCATION = "Chỉ người thuộc địa điểm kiểm kê của phiếu này mới làm được. Chủ shop chọn đúng địa điểm đó, hoặc Toàn bộ chuỗi, ở góc trên thanh bên.";
+
 export function AdjustmentsExpandedPanel({
   request,
   isExpanded,
-  onClose,
 }: {
   request: StockMovement;
   isExpanded: boolean;
-  onClose?: () => void;
 }) {
   const { detail, loading, refreshDetail } = useStockMovementDetail(
     request,
@@ -102,15 +107,17 @@ export function AdjustmentsExpandedPanel({
   const isCancelled = detail.status === "CANCELLED";
 
   const matchesFromLocation =
-    (detail.fromLocationType === "warehouse" &&
+    (detail.fromLocationType === "WAREHOUSE" &&
       !!authScope.warehouseId &&
       detail.fromLocationId === authScope.warehouseId) ||
-    (detail.fromLocationType === "branch" &&
+    (detail.fromLocationType === "BRANCH" &&
       !!authScope.branchId &&
       detail.fromLocationId === authScope.branchId);
   const isTenantOwner = authScope.role === "TENANT_OWNER";
   const canActAsFrom = isTenantOwner || matchesFromLocation;
   const canEditPending = isPending && canActAsFrom;
+  // Đang sửa số đếm: người khác đổi phiếu thì hoãn tải lại và báo, không ghi đè.
+  const { pending: livePending, clear: clearLive } = useLiveHold(isExpanded && canEditPending, [request.id]);
 
   useEffect(() => {
     if (!isExpanded || !isPending) {
@@ -132,7 +139,7 @@ export function AdjustmentsExpandedPanel({
     stockMovementApi
       .getProductItemsAtSource(
         detail.fromLocationId,
-        detail.fromLocationType ?? "warehouse",
+        detail.fromLocationType ?? "WAREHOUSE",
       )
       .then(setProducts)
       .catch(() => setProducts([]));
@@ -230,17 +237,25 @@ export function AdjustmentsExpandedPanel({
   }
 
   const locLabel =
-    detail.fromLocationType === "warehouse" ? "Kho" : "Chi nhánh";
+    detail.fromLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh";
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm animate-in fade-in-0 duration-200">
+      <LiveChangeBanner
+        className="mb-4"
+        event={livePending}
+        reloadLabel="Tải lại phiếu"
+        onReload={() => {
+          void refreshDetail();
+          clearLive();
+        }}
+      />
       <MovementDetailHeader
         movementId={detail.id}
         title={`Điều chỉnh tồn kho - ${detail.fromLocationName || "-"}`}
         subtitle={locLabel}
         status={detail.status}
         movementType={detail.movementType}
-        onClose={onClose}
       />
 
       <div className="mb-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
@@ -252,7 +267,11 @@ export function AdjustmentsExpandedPanel({
         <InfoItem
           icon={<User className="size-4" />}
           label="Người thực hiện"
-          value={detail.requestedByName || "-"}
+          value={
+            detail.requestedByPhone
+              ? `${detail.requestedByName || "-"} · ${detail.requestedByPhone}`
+              : detail.requestedByName || "-"
+          }
         />
         <InfoItem
           icon={<CalendarDays className="size-4" />}
@@ -266,6 +285,8 @@ export function AdjustmentsExpandedPanel({
           }
         />
       </div>
+
+      <MovementActors detail={detail} />
 
       <MovementOrderNote note={detail.note} />
 
@@ -496,17 +517,23 @@ export function AdjustmentsExpandedPanel({
         </div>
       )}
 
-      {canEditPending && (
+      {isPending && (
         <div className="flex gap-3">
-          <Button
+          <PermissionButton
+            allowed={canActAsFrom && allows(authScope.role, "stock_movement", "approve")}
+            permission="stock_movement:approve"
+            who={canActAsFrom ? undefined : WHO_AT_LOCATION}
             className="flex-1 cursor-pointer"
             onClick={() => void onApprove()}
             disabled={isActionLoading}
           >
             <CheckCircle className="mr-2 size-4" />
             Duyệt điều chỉnh
-          </Button>
-          <Button
+          </PermissionButton>
+          <PermissionButton
+            allowed={canActAsFrom && allows(authScope.role, "stock_movement", "cancel")}
+            permission="stock_movement:cancel"
+            who={canActAsFrom ? undefined : WHO_AT_LOCATION}
             variant="outline"
             className="flex-1 cursor-pointer"
             onClick={() => setCancelConfirmOpen(true)}
@@ -514,7 +541,7 @@ export function AdjustmentsExpandedPanel({
           >
             <XCircle className="mr-2 size-4" />
             Huỷ phiếu
-          </Button>
+          </PermissionButton>
         </div>
       )}
 

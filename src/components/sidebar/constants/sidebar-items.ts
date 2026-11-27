@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  MessageCircle,
   Users,
   Package,
   Shuffle,
@@ -11,30 +10,43 @@ import {
   ShieldAlert,
   Megaphone,
   LifeBuoy,
-  Bell,
   MessageSquarePlus,
-  Wallet,
   Landmark,
   Vault,
+  PackageCheck,
+  Truck,
+  BarChart3,
+  ChartLine,
+  Factory,
+  History,
 } from "lucide-react";
 import { type NavItem } from "./types";
 
 export const sidebarItems = {
-  // Quản lý
   tongQuan: {
     title: "Tổng quan",
     url: "/dashboard",
     icon: LayoutDashboard,
   },
-  troLyAI: {
-    title: "Trợ lý AI",
-    url: "/chat",
-    icon: MessageCircle,
+  // Nhóm Báo cáo, mọi mục cần `reports:read`.
+  baoCao: {
+    title: "Báo cáo",
+    url: "#",
+    icon: BarChart3,
+    items: [
+      { title: "Tổng hợp", url: "/reports" },
+      { title: "Nhân viên", url: "/reports/staff" },
+      { title: "Sổ doanh thu", url: "/reports/sales-journal" },
+      // URL `/cashflow`, cần `reports:read`.
+      { title: "Sổ thu chi", url: "/cashflow" },
+      { title: "Đối soát tiền", url: "/reports/unreconciled" },
+    ],
   },
-  soThuChi: {
-    title: "Sổ thu chi",
-    url: "/cashflow",
-    icon: Wallet,
+  // Biểu đồ tăng trưởng, tách khỏi trang Báo cáo (2026-11-23).
+  thongKe: {
+    title: "Thống kê",
+    url: "/statistics",
+    icon: ChartLine,
   },
   nhanVien: {
     title: "Nhân viên",
@@ -43,19 +55,10 @@ export const sidebarItems = {
     items: [
       { title: "Danh sách", url: "/staffs" },
       { title: "Lịch làm", url: "/staffs/schedule" },
-      { title: "Nghỉ phép", url: "/staffs/schedule/leave-requests" },
       { title: "Ngày lễ", url: "/staffs/holidays" },
-      { title: "Bảng lương", url: "/staffs/payroll" },
-
     ],
   },
-  /**
-   * Bản dành cho chủ cửa hàng: giống `nhanVien` cộng thêm "Phân quyền".
-   *
-   * Trang đó gác bằng `canManageRoles` (bản sao của `OwnerOrAdminGuard` ở backend), mà
-   * `nhanVien` thì dùng chung cho cả nhân viên thường - hiện link cho họ chỉ để họ bấm
-   * vào và gặp màn hình từ chối.
-   */
+  /** Menu nhân viên cho chủ shop, thêm "Phân quyền". */
   nhanVienChuCuaHang: {
     title: "Nhân viên",
     url: "#",
@@ -63,25 +66,18 @@ export const sidebarItems = {
     items: [
       { title: "Danh sách", url: "/staffs" },
       { title: "Lịch làm", url: "/staffs/schedule" },
-      { title: "Nghỉ phép", url: "/staffs/schedule/leave-requests" },
       { title: "Ngày lễ", url: "/staffs/holidays" },
-      { title: "Bảng lương", url: "/staffs/payroll" },
       { title: "Phân quyền", url: "/staffs/roles" },
     ],
   },
-  luong: {
-    title: "Lương của tôi",
-    url: "/staffs/payroll/my-payslips",
-    icon: Wallet,
-  },
 
-  // Quản lý bán hàng
   hangHoa: {
     title: "Hàng hóa",
     url: "/products",
     icon: Package,
     items: [
       { title: "Danh sách", url: "/products" },
+      { title: "Combo", url: "/combos" },
       { title: "Danh mục", url: "/categories" },
       { title: "Thương hiệu", url: "/brands" },
     ],
@@ -92,25 +88,48 @@ export const sidebarItems = {
     icon: Shuffle,
     items: [
       { title: "Nhà cung cấp", url: "/exchange/suppliers" },
-      { title: "Nhập hàng", url: "/exchange/imports" },
+      // Trang tạo mới chung cho đơn nhập NCC và yêu cầu sản xuất; trang tự chọn nguồn tài khoản được tạo.
+      { title: "Tạo đơn nhập/YCSX", url: "/exchange/imports/new" },
+      { title: "Danh sách đơn nhập", url: "/exchange/imports" },
       { title: "Chuyển kho", url: "/exchange/exports" },
       { title: "Điều chỉnh tồn kho", url: "/exchange/adjustments" },
     ],
   },
-  // `giaoDichBranch` (a BRANCH_MANAGER-only variant without "Nhập hàng") lived here until
-  // 2026-09-09. Its only reader was the BRANCH_MANAGER block deleted on 2026-09-07, so it
-  // was config nothing could match. Per-role trimming of this menu is a permission question
-  // now - see `nav-exchange-permissions.ts`.
+  // Menu thu gọn theo quyền.
   donHang: {
     title: "Đơn hàng",
     url: "/#",
     icon: ShoppingCart,
     items: [
+      { title: "Tạo đơn hàng", url: "/sales/orders/new" },
+      { title: "Danh sách đơn", url: "/sales/orders" },
+      { title: "Hoàn hàng", url: "/order-returns" },
       { title: "Hoá đơn", url: "/sales/invoices" },
     ],
   },
+  // Hành trình đơn (P0-7, 2026-10-02): đóng gói và giao hàng, mỗi màn track C một mục.
+  vanHanh: {
+    title: "Vận hành",
+    url: "/#",
+    icon: PackageCheck,
+    items: [
+      { title: "Đóng đơn", url: "/fulfillments" },
+      { title: "Giao hàng", url: "/shipments" },
+    ],
+  },
+  /** Đơn giao của tôi. */
+  donGiaoCuaToi: {
+    title: "Đơn giao của tôi",
+    url: "/shipper",
+    icon: Truck,
+  },
+  /** Nhân viên xưởng (2026-10-09): YCSX gửi cho xưởng mình + phiếu giao. Chỉ STAFF gắn xưởng. */
+  xuongCuaToi: {
+    title: "Xưởng của tôi",
+    url: "/workshop",
+    icon: Factory,
+  },
 
-  // CRM
   khachHang: {
     title: "Khách hàng",
     url: "/customers",
@@ -122,7 +141,6 @@ export const sidebarItems = {
     icon: Ticket,
   },
 
-  // ADMIN Quản lý
   adminDashboard: {
     title: "Dashboard",
     url: "/admin/dashboard",
@@ -153,15 +171,15 @@ export const sidebarItems = {
     url: "/admin/audit-logs",
     icon: ShieldAlert,
   },
+  tenantAuditLog: {
+    title: "Lịch sử hành động",
+    url: "/audit-logs",
+    icon: History,
+  },
   adminNotifications: {
     title: "Gửi thông báo",
     url: "/admin/notifications",
     icon: Megaphone,
-  },
-  adminSystemNotifications: {
-    title: "Thông báo",
-    url: "/admin/system-notifications",
-    icon: Bell,
   },
   adminTickets: {
     title: "Hỗ trợ kỹ thuật",
@@ -169,14 +187,12 @@ export const sidebarItems = {
     icon: LifeBuoy,
   },
 
-  // ADMIN Cài đặt
   cauHinhHeThong: {
     title: "Cấu hình hệ thống",
     url: "/admin/settings",
     icon: Settings,
   },
 
-  // CSKH (Tenant)
   tenantPhanAnh: {
     title: "Phản ánh",
     url: "/tickets",

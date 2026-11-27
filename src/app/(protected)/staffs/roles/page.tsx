@@ -1,4 +1,3 @@
-// [Page – Roles]
 'use client'
 
 import { PageHeader } from '@/components/page-header'
@@ -8,9 +7,7 @@ import { RolesButtonGroup } from './_components/roles-button-group'
 import { RolesTable } from './_components/table/roles-table'
 
 export default function RolesPage() {
-  // Backend gác các route này bằng OwnerOrAdminGuard - cố ý **không** đi qua chính danh
-  // mục quyền, để không một vai trò tự tạo nào, dù rộng đến đâu, tự cấp cho mình quyền sửa
-  // phân quyền. Gate ở đây phản chiếu đúng luật đó.
+  // Chỉ chủ shop và admin quản lý vai trò.
   const canView = canManageRoles(getCachedUser()?.role)
 
   if (!canView) {

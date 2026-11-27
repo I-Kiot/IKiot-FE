@@ -10,7 +10,6 @@ export function LayoutTab() {
   const { config: sidebarConfig, updateConfig: updateSidebarConfig } = useSidebarConfig()
   const { toggleSidebar, state: sidebarState } = useSidebar()
 
-  // Sidebar handler functions
   const handleSidebarVariantSelect = (variant: "sidebar" | "floating" | "inset") => {
     updateSidebarConfig({ variant })
   }
@@ -18,7 +17,7 @@ export function LayoutTab() {
   const handleSidebarCollapsibleSelect = (collapsible: "offcanvas" | "icon" | "none") => {
     updateSidebarConfig({ collapsible })
     
-    // If switching to icon mode and sidebar is currently expanded, auto-collapse it
+    // Chuyển sang chế độ icon khi sidebar đang mở thì tự thu gọn
     if (collapsible === "icon" && sidebarState === "expanded") {
       toggleSidebar()
     }
@@ -30,9 +29,7 @@ export function LayoutTab() {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Sidebar Configuration */}
       <div className="space-y-3">
-        {/* Sidebar Variant */}
         <div>
           <Label className="text-sm font-medium">Kiểu dáng Sidebar</Label>
           {sidebarConfig.variant && (
@@ -54,11 +51,9 @@ export function LayoutTab() {
               }`}
               onClick={() => handleSidebarVariantSelect(variant.value as "sidebar" | "floating" | "inset")}
             >
-              {/* Visual representation of sidebar variant */}
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-center">{variant.name}</div>
                 <div className={`flex h-40 rounded border ${ variant.value === "inset" ? "bg-muted" : "bg-background" }`}>
-                  {/* Sidebar representation - smaller and more proportional */}
                   <div 
                     className={`w-3.5 flex-shrink-0 bg-muted flex flex-col gap-1.5 p-1 ${
                       variant.value === "floating" ? "border-r m-1 rounded" :
@@ -66,7 +61,6 @@ export function LayoutTab() {
                       "border-r"
                     }`}
                   >
-                    {/* Menu icon representations - clearer and more visible */}
                     <div className="h-0.5 w-full bg-foreground/60 rounded"></div>
                     <div className="h-0.5 w-3/4 bg-foreground/50 rounded"></div>
                     <div className="h-0.5 w-2/3 bg-foreground/40 rounded"></div>
@@ -77,7 +71,6 @@ export function LayoutTab() {
                     <div className="h-0.5 w-1/2 bg-foreground/15 rounded"></div>
                     <div className="h-0.5 w-1/3 bg-foreground/10 rounded"></div>
                   </div>
-                  {/* Main content area - larger and more prominent */}
                   <div className={`flex-1 ${ variant.value === "inset" ? "bg-background ms-0" : "bg-background/50" } m-1 rounded-sm border-dashed border border-muted-foreground/20`}>
                   </div>
                 </div>
@@ -89,7 +82,6 @@ export function LayoutTab() {
       
       <Separator />
 
-      {/* Sidebar Collapsible Mode */}
       <div className="space-y-3">
         <div>
           <Label className="text-sm font-medium">Chế độ thu gọn Sidebar</Label>
@@ -112,13 +104,11 @@ export function LayoutTab() {
               }`}
               onClick={() => handleSidebarCollapsibleSelect(option.value as "offcanvas" | "icon" | "none")}
             >
-              {/* Visual representation of collapsible mode */}
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-center">{option.name}</div>
                 <div className="flex h-40 rounded border bg-background">
-                  {/* Sidebar representation based on collapsible mode */}
                   {option.value === "offcanvas" ? (
-                    // Off-canvas: Show collapsed state with hamburger menu
+                    // Off-canvas: hiện trạng thái thu gọn với nút hamburger
                     <div className="flex-1 bg-background/50 m-1 rounded-sm border-dashed border border-muted-foreground/20 flex items-center justify-start pl-2">
                       <div className="flex flex-col gap-1">
                         <div className="w-3 h-0.5 bg-foreground/60 rounded"></div>
@@ -127,7 +117,7 @@ export function LayoutTab() {
                       </div>
                     </div>
                   ) : option.value === "icon" ? (
-                    // Icon mode: Show thin icon sidebar with clear icons
+                    // Icon mode: hiện sidebar icon mỏng
                     <>
                       <div className="w-4 flex-shrink-0 bg-muted flex flex-col gap-1.5 p-1 border-r items-center">
                         <div className="w-2 h-2 bg-foreground/60 rounded-sm"></div>
@@ -142,7 +132,7 @@ export function LayoutTab() {
                       <div className="flex-1 bg-background/50 m-1 rounded-sm border-dashed border border-muted-foreground/20"></div>
                     </>
                   ) : (
-                    // None: Always show full sidebar - more proportional
+                    // None: luôn hiện sidebar đầy đủ
                     <>
                       <div className="w-6 flex-shrink-0 bg-muted flex flex-col gap-1.5 p-1 border-r">
                         <div className="h-0.5 w-full bg-foreground/60 rounded"></div>
@@ -167,7 +157,6 @@ export function LayoutTab() {
 
       <Separator />
 
-      {/* Sidebar Side */}
       <div className="space-y-3">
         <div>
           <Label className="text-sm font-medium">Vị trí Sidebar</Label>
@@ -189,12 +178,11 @@ export function LayoutTab() {
               }`}
               onClick={() => handleSidebarSideSelect(side.value as "left" | "right")}
             >
-              {/* Visual representation of sidebar side */}
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-center">{side.name}</div>
                 <div className="flex h-40 rounded border bg-background">
                   {side.value === "left" ? (
-                    // Left sidebar layout - more proportional
+                    // Sidebar bên trái
                     <>
                       <div className="w-6 flex-shrink-0 bg-muted flex flex-col gap-1.5 p-1 border-r">
                         <div className="h-0.5 w-full bg-foreground/60 rounded"></div>
@@ -210,7 +198,7 @@ export function LayoutTab() {
                       <div className="flex-1 bg-background/50 m-1 rounded-sm border-dashed border border-muted-foreground/20"></div>
                     </>
                   ) : (
-                    // Right sidebar layout - more proportional
+                    // Sidebar bên phải
                     <>
                       <div className="flex-1 bg-background/50 m-1 rounded-sm border-dashed border border-muted-foreground/20"></div>
                       <div className="w-6 flex-shrink-0 bg-muted flex flex-col gap-1.5 p-1 border-l">

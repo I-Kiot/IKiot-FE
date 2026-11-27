@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard } from "./admin-dashboard-provider";
-import { formatCompactVND, formatNumber, formatPercent } from "../../../dashboard/shared/format";
+import { formatCompactVND, formatNumber, formatPercent } from "@/lib/stats-format";
 
 export function MetricsOverview() {
   const { data, isLoading } = useAdminDashboard();

@@ -1,4 +1,3 @@
-// [Mutations – Supplier]
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -35,6 +34,7 @@ export function useSuppliersMutations() {
         email: data.email || undefined,
         address: data.address || undefined,
         creditLimit: data.creditLimit,
+        type: data.type,
       })
       setSuppliers((prev) => [supplier, ...prev])
       toast.success('Thêm nhà cung cấp thành công')
@@ -57,6 +57,7 @@ export function useSuppliersMutations() {
         email: data.email || undefined,
         address: data.address || undefined,
         creditLimit: data.creditLimit,
+        type: data.type,
       })
       setSuppliers((prev) => prev.map((s) => (s.id === id ? updated : s)))
       toast.success('Cập nhật nhà cung cấp thành công')
@@ -108,7 +109,12 @@ export function useSuppliersMutations() {
       toast.success(`Thanh toán ${payload.amount.toLocaleString('vi-VN')} ₫ thành công`)
       return true
     } catch (error) {
-      toast.error(extractErrorMessage(error, 'Thanh toán công nợ thất bại'))
+      const code = (error as { response?: { data?: { code?: string } } })?.response?.data?.code
+      toast.error(
+        code === 'LOCATION_NOT_FOUND'
+          ? 'Không tìm thấy địa điểm hoặc bạn không được chi từ két này. Chọn két khác hoặc quỹ chủ shop.'
+          : extractErrorMessage(error, 'Thanh toán công nợ thất bại'),
+      )
       return false
     } finally {
       setIsLoading(false)

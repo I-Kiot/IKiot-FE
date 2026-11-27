@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, UserCog, Warehouse } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { getSessionRole } from "@/lib/auth";
 import {
   canAssignBranchManager,
@@ -21,12 +21,11 @@ export function StaffsButtonGroup() {
   const canAssignBranch = canAssignBranchManager(userRole);
   const canAssignWarehouse = canAssignWarehouseManager(userRole);
 
-  if (!canCreate && !canAssignBranch && !canAssignWarehouse) return null;
-
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {canAssignBranch && (
-        <Button
+      <PermissionButton
+          allowed={canAssignBranch}
+          permission="branches:assign_manager"
           size="sm"
           variant="outline"
           className="cursor-pointer"
@@ -34,10 +33,10 @@ export function StaffsButtonGroup() {
         >
           <UserCog className="mr-2 size-4" />
           Đổi quản lý chi nhánh
-        </Button>
-      )}
-      {canAssignWarehouse && (
-        <Button
+        </PermissionButton>
+        <PermissionButton
+          allowed={canAssignWarehouse}
+          permission="warehouses:assign_manager"
           size="sm"
           variant="outline"
           className="cursor-pointer"
@@ -45,18 +44,17 @@ export function StaffsButtonGroup() {
         >
           <Warehouse className="mr-2 size-4" />
           Đổi quản lý kho
-        </Button>
-      )}
-      {canCreate && (
-        <Button
+        </PermissionButton>
+        <PermissionButton
+          allowed={canCreate}
+          permission="users:create"
           size="sm"
           className="cursor-pointer"
           onClick={() => setOpen("add")}
         >
           <Plus className="mr-2 size-4" />
           Thêm nhân viên
-        </Button>
-      )}
+        </PermissionButton>
     </div>
   );
 }

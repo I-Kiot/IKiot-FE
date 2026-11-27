@@ -38,7 +38,6 @@ import {
 import { cn } from "@/lib/utils"
 import { type CalendarEvent } from "../types"
 
-// Import data
 import eventsData from "../data/events.json"
 import calendarsData from "../data/calendars.json"
 
@@ -54,7 +53,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [showCalendarSheet, setShowCalendarSheet] = useState(false)
 
-  // Convert JSON events to CalendarEvent objects with proper Date objects
   const sampleEvents: CalendarEvent[] = eventsData.map(event => ({
     ...event,
     date: new Date(event.date),
@@ -64,7 +62,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
 
-  // Extend to show full weeks (including previous/next month days)
   const calendarStart = new Date(monthStart)
   calendarStart.setDate(calendarStart.getDate() - monthStart.getDay())
   
@@ -96,12 +93,12 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
 
   const handleNewCalendar = () => {
     console.log("Creating new calendar")
-    // In a real app, this would open a new calendar form
+    // Mock: chưa có form tạo lịch.
   }
 
   const handleNewEvent = () => {
     console.log("Creating new event")
-    // In a real app, this would open event form
+    // Mock: chưa mở form sự kiện.
   }
 
   const renderCalendarGrid = () => {
@@ -109,7 +106,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
     
     return (
       <div className="flex-1 bg-background">
-        {/* Calendar Header */}
         <div className="grid grid-cols-7 border-b">
           {weekDays.map(day => (
             <div key={day} className="p-4 text-center font-medium text-sm text-muted-foreground border-r last:border-r-0">
@@ -118,7 +114,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
           ))}
         </div>
 
-        {/* Calendar Grid */}
         <div className="grid grid-cols-7 min-h-[600px]">
           {calendarDays.map((day) => {
             const dayEvents = getEventsForDay(day)
@@ -137,7 +132,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
                 )}
                 onClick={() => handleDateSelect(day)}
               >
-                {/* Date Number */}
                 <div className={cn(
                   "text-sm font-medium mb-1",
                   isDayToday && "text-blue-600 dark:text-blue-400"
@@ -145,7 +139,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
                   {format(day, 'd')}
                 </div>
 
-                {/* Events */}
                 <div className="space-y-1">
                   {dayEvents.slice(0, 3).map((event) => (
                     <div
@@ -187,7 +180,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
           </Button>
         </div>
         
-        {/* Date Picker */}
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -202,7 +194,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
         />
       </div>
 
-      {/* Mini Calendars List */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium">My Calendars</h3>
@@ -226,18 +217,14 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
   return (
     <div className="border rounded-lg bg-background relative">
       <div className="flex min-h-[800px]">
-        {/* Desktop Sidebar */}
         <div className="hidden xl:block w-80 flex-shrink-0">
           {renderSidebar()}
         </div>
         
-        {/* Main Calendar Panel */}
         <div className="flex-1 min-w-0">
-          {/* Calendar Toolbar */}
           <div className="border-b bg-background px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                {/* Mobile Menu Button */}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -247,7 +234,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
                   <Menu className="h-4 w-4" />
                 </Button>
 
-                {/* Month Navigation */}
                 <div className="flex items-center space-x-2">
                   <Button variant="ghost" size="sm" onClick={() => navigateMonth("prev")}>
                     <ChevronLeft className="h-4 w-4" />
@@ -273,7 +259,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
                   </Button>
                 </div>
 
-                {/* View Mode Toggle */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
@@ -305,12 +290,10 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
             </div>
           </div>
 
-          {/* Calendar Content */}
           {renderCalendarGrid()}
         </div>
       </div>
 
-      {/* Mobile/Tablet Sheet */}
       <Sheet open={showCalendarSheet} onOpenChange={setShowCalendarSheet}>
         <SheetContent side="left" className="w-80 p-0">
           <SheetHeader className="p-4 pb-2">
@@ -323,7 +306,6 @@ export function CalendarMain({ eventDates = [] }: CalendarMainProps) {
         </SheetContent>
       </Sheet>
 
-      {/* Event Details Dialog */}
       <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

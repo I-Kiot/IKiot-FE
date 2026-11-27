@@ -1,0 +1,124 @@
+"use client";
+
+// Phần dùng chung của màn Giao hàng: báo lỗi theo mã, nhãn trạng thái, định dạng tiền, quyền hiện nút.
+
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { allows } from "@/components/sidebar/constants/role-permissions";
+import { getCachedUser } from "@/lib/auth";
+import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
+import {
+  personName,
+  SHIPMENT_STATUS_LABELS,
+  type CarrierType,
+  type Shipment,
+  type ShipmentStatus,
+  type ShipmentSummary,
+} from "@/types/order-flow";
+
+/** Mã lỗi nghĩa là "đơn / lần giao vừa đổi ở nơi khác" – dữ liệu trên màn đã cũ, phải tải lại. */
+const STALE_CODES = new Set([
+  "ORDER_STATUS_CONFLICT",
+  "ORDER_STATUS_TRANSITION_INVALID",
+  "SHIPMENT_STATUS_INVALID",
+  "SHIPMENT_ORDER_NOT_PACKED",
+  "SHIPMENT_FULFILLMENT_NOT_HANDED_OVER",
+  "SHIPMENT_ALREADY_OPEN",
+  "ORDER_QR_PAYMENT_NOT_PENDING",
+  // Không còn gì phải thu (tiền vừa về): thu tiền mặt / tạo lại mã đều vô nghĩa, tải lại để thấy số mới.
+  "ORDER_COLLECTION_AMOUNT_MISMATCH",
+]);
+
+/** Hiện lỗi của một thao tác giao hàng; trả về `true` nếu màn hình cần tải lại vì dữ liệu đã cũ. */
+export function reportShipmentError(error: unknown, fallback: string): boolean {
+  const code = getApiErrorBody(error)?.code;
+  toast.error(messageForCode(code) ?? fallback);
+  return code !== undefined && STALE_CODES.has(code);
+}
+
+/** Đơn vị vận chuyển: "Shipper của shop" hoặc tên ĐVVC. */
+export function carrierLabel(carrierType: CarrierType, carrierName: string | null): string {
+  return carrierType === "INTERNAL" ? "Shipper của shop" : carrierName || "Đơn vị vận chuyển";
+}
+
+const VND = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
+
+export function formatVND(value: number): string {
+  return VND.format(value);
+}
+
+/** "Còn phải thu" của một lần giao. */
+export function amountDueText(shipment: { status: string; order: { amountDue: number } }): string {
+  if (shipment.order.amountDue > 0) return formatVND(shipment.order.amountDue);
+  return shipment.status === "DELIVERED" ? "Đã thu" : "Không phải thu";
+}
+
+const STATUS_VARIANT: Record<ShipmentStatus, "info" | "warning" | "success" | "error" | "secondary" | "muted"> = {
+  CREATED: "secondary",
+  PICKED_UP: "info",
+  IN_TRANSIT: "warning",
+  OUT_FOR_DELIVERY: "warning",
+  DELIVERED: "success",
+  FAILED: "error",
+  RETURNED: "muted",
+  CANCELLED: "secondary",
+};
+
+/** Badge trạng thái lần giao. */
+export function ShipmentStatusBadge({ status }: { status: ShipmentStatus }) {
+  return <Badge variant={STATUS_VARIANT[status]}>{SHIPMENT_STATUS_LABELS[status]}</Badge>;
+}
+
+/** Lần giao đang trên đường. */
+export function isOnTheRoad(status: ShipmentStatus): boolean {
+  return status === "IN_TRANSIT" || status === "OUT_FOR_DELIVERY" || status === "FAILED";
+}
+
+/** Lần giao đã kết thúc: chỉ xem. */
+export function isFinished(status: ShipmentStatus): boolean {
+  return status === "DELIVERED" || status === "RETURNED" || status === "CANCELLED";
+}
+
+/** Nút bấm được theo quyền. */
+export function shipmentActions(shipment?: Pick<ShipmentSummary, "driver"> | null) {
+  const user = getCachedUser();
+  const role = user?.role;
+  const isDriver = shipment?.driver?.id !== undefined && shipment.driver.id === user?.id;
+  return {
+    canHandOver: allows(role, "shipments", "create"),
+    canShip: allows(role, "orders", "ship"),
+    canChangeDriver: allows(role, "shipments", "update"),
+    canTrack: allows(role, "shipments", "update") || isDriver,
+  };
+}
+
+/** Nhật trình của lần giao, mới nhất trước. */
+export function ShipmentTimeline({ shipment }: { shipment: Pick<Shipment, "events" | "proofPhotoUrls"> }) {
+  const events = [...shipment.events].sort(
+    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+  );
+  return (
+    <ol className="space-y-3 border-l pl-4">
+      {events.map((event) => (
+        <li key={event.id} className="text-sm">
+          <p className="font-medium">{SHIPMENT_STATUS_LABELS[event.status]}</p>
+          <p className="text-xs text-muted-foreground">
+            {new Date(event.occurredAt).toLocaleString("vi-VN")}
+            {event.createdBy && ` · ${personName(event.createdBy)}`}
+          </p>
+          {event.note && <p className="mt-1">{event.note}</p>}
+          {event.status === "DELIVERED" && shipment.proofPhotoUrls.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {shipment.proofPhotoUrls.map((url) => (
+                <a key={url} href={url} target="_blank" rel="noreferrer" title="Mở ảnh gốc">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- ảnh bằng chứng từ Cloudinary */}
+                  <img src={url} alt="Ảnh bằng chứng giao hàng" className="size-20 rounded-md border object-cover" />
+                </a>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}

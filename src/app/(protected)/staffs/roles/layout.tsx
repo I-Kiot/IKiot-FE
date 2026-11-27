@@ -1,4 +1,3 @@
-// [Layout – Roles]
 import { RolesDialogs } from './_components/dialogs/roles-dialogs'
 import { RolesProvider } from './_context/roles-provider'
 

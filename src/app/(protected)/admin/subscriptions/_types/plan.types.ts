@@ -6,7 +6,7 @@ const VALID_FEATURE_KEYS = PLAN_FEATURE_OPTIONS.map((f) => f.key) as [
   ...string[],
 ];
 
-// -1 = unlimited; any value below that is invalid
+// -1 = không giới hạn; giá trị nhỏ hơn -1 là không hợp lệ.
 const limitField = z
   .number({ error: "Phải là số" })
   .int("Phải là số nguyên")
@@ -24,7 +24,7 @@ export const planFormSchema = z.object({
     .int("Phải là số nguyên")
     .min(0, "Không được âm"),
   features: z.array(z.enum(VALID_FEATURE_KEYS)),
-  // Textarea: one bullet per line; split into an array on submit.
+  // Textarea: mỗi dòng một bullet, tách thành mảng khi submit.
   displayFeaturesText: z.string().optional(),
   isPopular: z.boolean(),
   isActive: z.boolean(),

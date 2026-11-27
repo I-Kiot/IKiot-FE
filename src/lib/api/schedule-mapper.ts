@@ -9,8 +9,6 @@ import {
 import type {
   ApiScheduleUser,
   ApiWorkingSchedule,
-  AttendanceDetail,
-  AttendanceLocation,
   ScheduleAssignee,
   ShiftTemplate,
   ShiftTemplateOption,
@@ -28,58 +26,7 @@ function resolveStaffName(user: ApiScheduleUser): string {
   return name || user.phoneNumber || user.id;
 }
 
-function mapAttendanceLocation(value: unknown): AttendanceLocation | null {
-  if (!value || typeof value !== "object") return null;
-  const loc = value as Record<string, unknown>;
-  return {
-    latitude: typeof loc.latitude === "number" ? loc.latitude : undefined,
-    longitude: typeof loc.longitude === "number" ? loc.longitude : undefined,
-    accuracy: typeof loc.accuracy === "number" ? loc.accuracy : undefined,
-    distance: typeof loc.distance === "number" ? loc.distance : undefined,
-    verificationStatus:
-      typeof loc.verificationStatus === "string"
-        ? loc.verificationStatus
-        : undefined,
-  };
-}
-
-function mapAttendance(
-  att: ApiScheduleUser["attendance"],
-): AttendanceDetail {
-  return {
-    id: att?.id,
-    status: att?.status ?? "NOT_CHECKED_IN",
-    actualCheckinAt: att?.actualCheckinAt ?? null,
-    actualCheckoutAt: att?.actualCheckoutAt ?? null,
-    checkInLocation:
-      att && "checkInLocation" in att
-        ? mapAttendanceLocation(att.checkInLocation)
-        : null,
-    checkOutLocation:
-      att && "checkOutLocation" in att
-        ? mapAttendanceLocation(att.checkOutLocation)
-        : null,
-    workedMinutes:
-      att && "workedMinutes" in att ? (att.workedMinutes ?? null) : null,
-    overtimeMinute:
-      att && "overtimeMinute" in att ? (att.overtimeMinute ?? null) : null,
-    lateMinutes:
-      att && "lateMinutes" in att ? (att.lateMinutes ?? null) : null,
-  };
-}
-
-/**
- * Everyone rostered on a shift.
- *
- * The response key is **`assignedUsers`** - `WorkingSchedule` has a join table, so a shift
- * carries a list of people, not one `userId`. This read `raw.userId`, which the API has
- * never sent: every schedule came back with an empty assignee list, so the roster showed
- * blank names and `staffPhone: ""` on every row. The old Mongo model did have a `userId`
- * array, which is where the name came from.
- *
- * The string/single-object branches are kept because the same mapper runs over
- * `GET /working-schedules/:id/users/:userId`, which answers one `user` rather than a list.
- */
+/** Danh sách người trong một ca. */
 function normalizeApiUsers(
   assigned: ApiWorkingSchedule["assignedUsers"],
 ): ApiScheduleUser[] {
@@ -119,7 +66,7 @@ function mapAssignee(user: ApiScheduleUser): ScheduleAssignee {
     role: user.role ?? "STAFF",
     branchId: resolveWorkplaceId(user.branchId),
     warehouseId: resolveWorkplaceId(user.warehouseId),
-    attendance: mapAttendance(user.attendance),
+    series: user.series ?? null,
   };
 }
 
@@ -181,8 +128,6 @@ export function mapScheduleFromApi(raw: ApiWorkingSchedule): WorkingSchedule {
   const workDate = resolveWorkDateText(raw.workDate, raw.startAt);
 
   const { startTime, endTime } = resolveShiftTimes(raw, shiftTemplate);
-  const scheduleType =
-    raw.scheduleType === "OVERTIME" ? "OVERTIME" : "NORMAL";
 
   return {
     id: raw.id,
@@ -198,7 +143,6 @@ export function mapScheduleFromApi(raw: ApiWorkingSchedule): WorkingSchedule {
     startTime,
     endTime,
     workDate,
-    scheduleType,
     dayInfo: raw.dayInfo
       ? {
           dayType: raw.dayInfo.dayType ?? "NORMAL",
@@ -209,7 +153,6 @@ export function mapScheduleFromApi(raw: ApiWorkingSchedule): WorkingSchedule {
         }
       : undefined,
     status: raw.status as WorkingSchedule["status"],
-    attendance: firstAssignee?.attendance ?? mapAttendance(undefined),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
@@ -244,13 +187,7 @@ export type ScheduleWorkplaceScope =
   | { type: "branch"; branchId: string }
   | { type: "warehouse"; warehouseId: string };
 
-/**
- * The workplace a roster response should be narrowed to, or `null` for "show everything".
- *
- * A **posting** decides this now. The old test also demanded the BRANCH_MANAGER /
- * WAREHOUSE_MANAGER role, which no account carries, so it always returned `null` and
- * `filterScheduleToWorkplaceScope` handed back every assignee on a mixed shift.
- */
+/** Nơi làm việc để lọc danh sách ca, null là tất cả. */
 export function resolveScheduleWorkplaceScope(
   _role?: string | null,
   branchId?: string | null,
@@ -286,7 +223,6 @@ export function filterScheduleToWorkplaceScope(
     staffName: buildStaffLabel(assignees),
     staffAvatarUrl: firstAssignee?.staffAvatarUrl,
     staffPhone: firstAssignee?.staffPhone ?? "",
-    attendance: firstAssignee?.attendance ?? schedule.attendance,
   };
 }
 

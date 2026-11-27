@@ -1,49 +1,44 @@
 // [Query – Cashflow (sổ thu chi)]
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { useAuthStore } from '@/store/auth-store'
-import { locationFilter } from '@/lib/location-key'
-import { statsApi, type Cashflow, type CashflowList } from '@/lib/api/stats'
+import {
+  statsApi,
+  type Cashflow,
+  type CashflowCategory,
+  type CashflowFund,
+  type CashflowList,
+} from '@/lib/api/stats'
 
-export type CashflowRange = '7d' | '30d' | '90d' | '12m'
 export type FlowTypeFilter = 'ALL' | 'INCOME' | 'EXPENSE'
-export type FlowPrefixFilter = 'ALL' | 'ORD' | 'SUP' | 'PAYR'
+export type FlowPrefixFilter = 'ALL' | 'ORD' | 'SUP'
+export type CategoryFilter = 'ALL' | CashflowCategory
+export type FundFilter = 'ALL' | CashflowFund
 
-const RANGE_DAYS: Record<CashflowRange, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-  '12m': 365,
+const DEFAULT_PAGE_SIZE = 15
+
+/** Bộ lọc chung của trang báo cáo: kỳ và nơi. */
+export interface CashflowScope {
+  fromDate: string
+  toDate: string
+  branchId?: string
+  warehouseId?: string
 }
 
-const PAGE_SIZE = 15
-
-function toDateOnly(date: Date): string {
-  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
-}
-
-export function useCashflow() {
-  const locationKey = useAuthStore((state) => state.locationKey)
-  const { branchId, warehouseId } = locationFilter(locationKey)
-
-  const [range, setRangeState] = useState<CashflowRange>('30d')
+export function useCashflow({ fromDate, toDate, branchId, warehouseId }: CashflowScope) {
   const [flowType, setFlowTypeState] = useState<FlowTypeFilter>('ALL')
   const [flow, setFlowState] = useState<FlowPrefixFilter>('ALL')
+  const [category, setCategoryState] = useState<CategoryFilter>('ALL')
+  const [fund, setFundState] = useState<FundFilter>('ALL')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSizeState] = useState(DEFAULT_PAGE_SIZE)
 
   const [summary, setSummary] = useState<Cashflow | null>(null)
   const [list, setList] = useState<CashflowList | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Changing any filter resets back to the first page. Reset in the setters
-  // (rather than an effect) to avoid a cascading re-render. The active
-  // branch/warehouse from the sidebar switcher scopes the ledger too.
-  const setRange = useCallback((value: CashflowRange) => {
-    setRangeState(value)
-    setPage(1)
-  }, [])
+  // Đổi bộ lọc bất kỳ sẽ về trang đầu. Reset trong setter (không dùng effect) để tránh render lặp.
   const setFlowType = useCallback((value: FlowTypeFilter) => {
     setFlowTypeState(value)
     setPage(1)
@@ -52,30 +47,42 @@ export function useCashflow() {
     setFlowState(value)
     setPage(1)
   }, [])
+  const setCategory = useCallback((value: CategoryFilter) => {
+    setCategoryState(value)
+    setPage(1)
+  }, [])
+  const setFund = useCallback((value: FundFilter) => {
+    setFundState(value)
+    setPage(1)
+  }, [])
+  const setPageSize = useCallback((value: number) => {
+    setPageSizeState(value)
+    setPage(1)
+  }, [])
+
+  // Một bộ lọc cho tổng, bảng và file xuất, để ba thứ luôn nói về cùng các dòng.
+  const filters = useMemo(
+    () => ({
+      fromDate,
+      toDate,
+      branchId,
+      warehouseId,
+      flowType: flowType === 'ALL' ? undefined : flowType,
+      flow: flow === 'ALL' ? undefined : flow,
+      category: category === 'ALL' ? undefined : category,
+      fund: fund === 'ALL' ? undefined : fund,
+    }),
+    [fromDate, toDate, branchId, warehouseId, flowType, flow, category, fund],
+  )
+
+  const exportFile = useCallback(() => statsApi.exportCashflow(filters), [filters])
 
   const fetchAll = useCallback(async () => {
     setIsLoading(true)
     try {
-      const toDate = new Date()
-      const fromDate = new Date(toDate.getTime() - RANGE_DAYS[range] * 24 * 60 * 60 * 1000)
-      const dateParams = {
-        fromDate: toDateOnly(fromDate),
-        toDate: toDateOnly(toDate),
-        branchId,
-        warehouseId,
-      }
-      const flowTypeParam = flowType === 'ALL' ? undefined : flowType
-      const flowParam = flow === 'ALL' ? undefined : flow
-
       const [summaryRes, listRes] = await Promise.all([
-        statsApi.getCashflow({ ...dateParams, flowType: flowTypeParam, flow: flowParam }),
-        statsApi.getCashflowList({
-          ...dateParams,
-          flowType: flowTypeParam,
-          flow: flowParam,
-          page,
-          limit: PAGE_SIZE,
-        }),
+        statsApi.getCashflow(filters),
+        statsApi.getCashflowList({ ...filters, page, limit: pageSize }),
       ])
 
       setSummary(summaryRes)
@@ -86,7 +93,7 @@ export function useCashflow() {
     } finally {
       setIsLoading(false)
     }
-  }, [range, flowType, flow, branchId, warehouseId, page])
+  }, [filters, page, pageSize])
 
   useEffect(() => {
     fetchAll()
@@ -96,15 +103,19 @@ export function useCashflow() {
     summary,
     list,
     isLoading,
-    range,
-    setRange,
     flowType,
     setFlowType,
     flow,
     setFlow,
+    category,
+    setCategory,
+    fund,
+    setFund,
     page,
     setPage,
-    pageSize: PAGE_SIZE,
+    pageSize,
+    setPageSize,
     refetch: fetchAll,
+    exportFile,
   }
 }

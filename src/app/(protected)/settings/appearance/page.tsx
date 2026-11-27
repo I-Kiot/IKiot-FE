@@ -40,7 +40,7 @@ export default function AppearanceSettings() {
 
   function onSubmit(data: AppearanceFormValues) {
     console.log("Form submitted:", data)
-    // Here you would typically save the data
+    // Chưa có API lưu; hiện chỉ log dữ liệu.
   }
 
   return (
@@ -57,7 +57,6 @@ export default function AppearanceSettings() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Theme Section */}
             <h3 className="text-lg font-medium mb-2">Theme</h3>
             <FormField
               control={form.control}
@@ -174,7 +173,6 @@ export default function AppearanceSettings() {
               )}
             />
 
-            {/* Layout Section */}
             <FormField
               control={form.control}
               name="sidebarWidth"

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MovementDetailHeader } from "@/app/(protected)/exchange/shared/movement-detail-header";
+import { MovementActors } from "@/app/(protected)/exchange/shared/movement-actors";
 import { MovementOrderNote } from "@/app/(protected)/exchange/shared/movement-order-note";
 import { CancelConfirmDialog } from "@/app/(protected)/exchange/shared/cancel-confirm-dialog";
 import { buildReceivePayload } from "@/app/(protected)/exchange/shared/qty";
@@ -29,6 +30,8 @@ import {
   useOpeningEditor,
   useStockMovementDetail,
 } from "@/app/(protected)/exchange/shared/use-stock-movement-detail";
+import { useLiveHold } from "@/hooks/use-live-refresh";
+import { LiveChangeBanner } from "@/components/live-change-banner";
 import { getEffectiveLocationScope } from "@/app/(protected)/exchange/shared/auth-scope";
 import type { TransferUiLabels } from "@/app/(protected)/exchange/shared/transfer-ui-labels";
 import {
@@ -36,6 +39,7 @@ import {
   MovementDetailsTable,
 } from "@/app/(protected)/exchange/shared/movement-panel-sections";
 import { stockMovementApi } from "@/lib/api/stock-movement";
+import { isStockMovementConflict } from "@/lib/api/error-codes";
 import { getStockMovementErrorMessage } from "@/app/(protected)/exchange/shared/stock-movement-error";
 import { useAuthStore } from "@/store/auth-store";
 import type { StockMovement } from "@/types/stock-movement";
@@ -60,7 +64,7 @@ export type MovementImportActions = {
 
 export type MovementTransferActions = {
   handleOpen: (id: string) => Promise<void>;
-  /** Receiver OPENING: PATCH details only (BE close = fromLocation). */
+  /** Người nhận khi phiếu đang mở: chỉ PATCH chi tiết (backend đóng phiếu theo fromLocation). */
   handleSubmitFromOpening: (
     id: string,
     details: {
@@ -70,7 +74,7 @@ export type MovementTransferActions = {
       note?: string;
     }[],
   ) => Promise<void>;
-  /** Sender OPENING: updateDetails + close. */
+  /** Người gửi khi phiếu đang mở: updateDetails rồi close. */
   handleShipFromOpening: (
     id: string,
     details: {
@@ -94,14 +98,12 @@ export type MovementTransferActions = {
 export function MovementExpandedPanel({
   request,
   isExpanded,
-  onClose,
   mode,
   importActions,
   transferActions,
 }: {
   request: StockMovement;
   isExpanded: boolean;
-  onClose?: () => void;
   mode: "import" | "transfer";
   importActions?: MovementImportActions;
   transferActions?: MovementTransferActions;
@@ -134,12 +136,21 @@ export function MovementExpandedPanel({
     removeOpeningRow,
     validateOpening,
     runAction,
+    reset,
   } = useOpeningEditor({
     isExpanded,
     detail,
     enabled: openingEnabled,
     requireImportPrice,
   });
+
+  // Đang sửa dòng / nhập số nhận: người khác đổi phiếu thì hoãn tải lại và báo, không ghi đè.
+  const editing =
+    isExpanded &&
+    (showReceiveForm ||
+      detail.status === "OPENING" ||
+      (detail.movementType === "IMPORT" && detail.status === "PENDING"));
+  const { pending: livePending, clear: clearLive } = useLiveHold(editing, [request.id]);
 
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
@@ -194,15 +205,14 @@ export function MovementExpandedPanel({
   const isReceiver = mode === "transfer" && canActAsToLocation;
 
   const canOpenDraft = mode === "transfer" && isDraft && isSender;
-  // Doc: IMPORT details - user at toLocation
+  // Phiếu NHẬP (IMPORT): chi tiết do người ở toLocation sửa.
   const canEditOpening =
     mode === "import"
       ? detail.movementType === "IMPORT" && isPending && canActAsToLocation
       : isOpening && (isSender || isReceiver);
   const canShipClosed = mode === "transfer" && isClosed && isSender;
 
-  // IMPORT: Giao hàng khi PENDING (cần fromLocation). Nhận hàng sau IN_TRANSIT;
-  // phiếu cũ không ship được → vẫn nhận từ PENDING (doc cho phép).
+  // Thao tác của phiếu nhập theo trạng thái.
   const canShipImportPending =
     mode === "import" &&
     detail.movementType === "IMPORT" &&
@@ -224,15 +234,34 @@ export function MovementExpandedPanel({
     !!transferActions?.handleReturnGoods &&
     (isReceived || isInTransit);
 
-  // Huỷ được từ cả hai đầu, đúng như backend cho phép (`cancel` kiểm tra source HOẶC
-  // destination): bên nhận cũng tạo được phiếu chuyển nên phải rút lại được phiếu của mình,
-  // và phiếu nhập từ NCC vốn không có nơi gửi để mà khớp. Không huỷ RECEIVED / COMPLETED /
-  // CANCELLED.
+  // Huỷ được từ cả hai đầu.
   const canCancel =
     (canActAsFromLocation || canActAsToLocation) &&
     !isReceived &&
     detail.status !== "COMPLETED" &&
     detail.status !== "CANCELLED";
+
+  const openStatus = !isReceived && detail.status !== "COMPLETED" && detail.status !== "CANCELLED";
+  const WHO_FROM = "Chỉ người thuộc nơi gửi của phiếu này mới làm được. Chủ shop chọn đúng nơi đó, hoặc Toàn bộ chuỗi, ở góc trên thanh bên.";
+  const WHO_TO = "Chỉ người thuộc nơi nhận của phiếu này mới làm được. Chủ shop chọn đúng nơi đó, hoặc Toàn bộ chuỗi, ở góc trên thanh bên.";
+  const WHO_ENDS = "Chỉ người thuộc nơi gửi hoặc nơi nhận của phiếu này mới làm được.";
+  const lockedActions = [
+    { when: mode === "transfer" && isDraft && !isSender, label: "Mở phiếu", who: WHO_FROM },
+    { when: mode === "transfer" && isOpening && !isSender, label: "Chốt phiếu (đóng)", who: WHO_FROM },
+    { when: mode === "transfer" && isClosed && !isSender, label: "Xuất hàng", who: WHO_FROM },
+    { when: mode === "transfer" && isInTransit && !isReceiver, label: "Xác nhận đã nhận", who: WHO_TO },
+    {
+      when: mode === "import" && isPending && !!detail.fromLocationId && !canActAsFromLocation,
+      label: "Giao hàng",
+      who: WHO_FROM,
+    },
+    {
+      when: mode === "import" && isInTransit && !canActAsToLocation,
+      label: "Nhận hàng",
+      who: WHO_TO,
+    },
+    { when: openStatus && !canCancel, label: mode === "import" ? "Huỷ đơn" : "Huỷ", who: WHO_ENDS },
+  ].filter((action) => action.when);
 
   const showReceivedColumn =
     isReceived ||
@@ -242,7 +271,13 @@ export function MovementExpandedPanel({
 
   const withRefresh = async (fn: () => Promise<void>) => {
     await runAction(async () => {
-      await fn();
+      try {
+        await fn();
+      } catch (error) {
+        // Người khác vừa đổi phiếu: tải lại chi tiết để thấy trạng thái mới rồi mới ném lỗi tiếp.
+        if (isStockMovementConflict(error)) await refreshDetail();
+        throw error;
+      }
       await refreshDetail();
     });
   };
@@ -456,21 +491,30 @@ export function MovementExpandedPanel({
   const headerSubtitle =
     mode === "import"
       ? `Nơi nhận: ${detail.toLocationName || "-"} · ${
-          detail.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"
+          detail.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"
         }`
-      : `${detail.fromLocationType === "warehouse" ? "Kho" : "Chi nhánh"} → ${
-          detail.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"
+      : `${detail.fromLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"} → ${
+          detail.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"
         }`;
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm animate-in fade-in-0 duration-200">
+      <LiveChangeBanner
+        className="mb-4"
+        event={livePending}
+        reloadLabel="Tải lại phiếu"
+        onReload={() => {
+          reset();
+          void refreshDetail();
+          clearLive();
+        }}
+      />
       <MovementDetailHeader
         movementId={detail.id}
         title={headerTitle}
         subtitle={headerSubtitle}
         status={detail.status}
         movementType={detail.movementType}
-        onClose={onClose}
       />
 
       {mode === "transfer" ? (
@@ -482,7 +526,7 @@ export function MovementExpandedPanel({
                 {detail.fromLocationName ?? "-"}
               </span>
               <span className="text-xs text-muted-foreground capitalize">
-                {detail.fromLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+                {detail.fromLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
               </span>
             </div>
             <ArrowRight className="size-5 shrink-0 text-muted-foreground" />
@@ -492,7 +536,7 @@ export function MovementExpandedPanel({
                 {detail.toLocationName || "-"}
               </span>
               <span className="text-xs text-muted-foreground capitalize">
-                {detail.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+                {detail.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
               </span>
             </div>
           </div>
@@ -501,7 +545,11 @@ export function MovementExpandedPanel({
             <InfoItem
               icon={<User className="size-4" />}
               label="Người yêu cầu"
-              value={detail.requestedByName || "-"}
+              value={
+                detail.requestedByPhone
+                  ? `${detail.requestedByName || "-"} · ${detail.requestedByPhone}`
+                  : detail.requestedByName || "-"
+              }
             />
             <InfoItem
               icon={<CalendarDays className="size-4" />}
@@ -526,12 +574,16 @@ export function MovementExpandedPanel({
           <InfoItem
             icon={<Warehouse className="size-4" />}
             label="Nơi nhận"
-            value={`${detail.toLocationName} (${detail.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"})`}
+            value={`${detail.toLocationName} (${detail.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"})`}
           />
           <InfoItem
             icon={<User className="size-4" />}
             label="Người tạo"
-            value={detail.requestedByName || "-"}
+            value={
+              detail.requestedByPhone
+                ? `${detail.requestedByName || "-"} · ${detail.requestedByPhone}`
+                : detail.requestedByName || "-"
+            }
           />
           <InfoItem
             icon={<CalendarDays className="size-4" />}
@@ -546,6 +598,8 @@ export function MovementExpandedPanel({
           />
         </div>
       )}
+
+      <MovementActors detail={detail} />
 
       <MovementOrderNote note={detail.note} />
 
@@ -602,6 +656,7 @@ export function MovementExpandedPanel({
         canReceiveTransit={canReceiveTransit}
         canReturnGoods={canReturnGoods}
         canCancel={canCancel}
+        lockedActions={lockedActions}
         showReceiveForm={showReceiveForm}
         setShowReceiveForm={setShowReceiveForm}
         isActionLoading={isActionLoading}

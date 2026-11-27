@@ -138,7 +138,7 @@ export function validateOpeningDetailsSubmit(
   return validateMovementDetails(details, options)
 }
 
-/** Validate line items before create / update details. */
+/** Kiểm tra các dòng hàng trước khi tạo / cập nhật chi tiết. */
 export function validateMovementDetails(
   details: MovementDetailInput[],
   options: MovementDetailValidateOptions,

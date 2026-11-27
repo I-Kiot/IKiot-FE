@@ -1,17 +1,13 @@
 import { sidebarItems } from "./sidebar-items";
 import { type UserRole, type NavGroup } from "./types";
 
-// Reuse groups to minimize duplication and improve maintainability
+// Nhóm dùng chung, tránh lặp cấu hình
 const quanLyBanHangGroup = (
   items: (typeof sidebarItems)[keyof typeof sidebarItems][],
 ) => ({
   label: "Quản lý bán hàng",
   items,
 });
-const salaryGroup = {
-  label: "Lương",
-  items: [sidebarItems.luong],
-}
 const crmGroup = {
   label: "CRM",
   items: [sidebarItems.khachHang, sidebarItems.khuyenMai],
@@ -23,16 +19,13 @@ const cskhGroup = {
 };
 
 
-// `BRANCH_MANAGER` and `WAREHOUSE_MANAGER` had entries here until 2026-09-07. Neither is
-// an account kind any more - a shop defines its own roles - so those two blocks were nav
-//configuration nothing could ever match.
+// Cấu hình menu theo loại tài khoản.
 export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
   ADMIN: [
     {
       label: "Quản lý",
       items: [
         sidebarItems.adminDashboard,
-        sidebarItems.adminSystemNotifications,
         sidebarItems.adminUsers,
         sidebarItems.subscriptions,
         sidebarItems.adminSepay,
@@ -53,15 +46,19 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       label: "Quản lý",
       items: [
         sidebarItems.tongQuan,
-        sidebarItems.troLyAI,
-        sidebarItems.soThuChi,
+        sidebarItems.thongKe,
+        sidebarItems.baoCao,
         sidebarItems.nhanVienChuCuaHang,
+        sidebarItems.tenantAuditLog,
       ],
     },
     quanLyBanHangGroup([
       sidebarItems.hangHoa,
       sidebarItems.giaoDich,
       sidebarItems.donHang,
+      sidebarItems.vanHanh,
+      // Chủ shop cũng có thể tự giao hàng (chốt 2026-10-06).
+      sidebarItems.donGiaoCuaToi,
       sidebarItems.ketTien,
     ]),
     crmGroup,
@@ -70,20 +67,14 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
 
 
 
-  // A shop's own roles are all STAFF accounts, so this is the config every custom role
-  // draws from: list everything a tenant can grant, and let the permission filters in
-  // `AppSidebar` decide what this particular role actually sees. Leaving a group out here
-  // is not a restriction, it is an entry nobody can ever reach - which is what happened to
-  // `giaoDich` until 2026-09-09, hiding imports/transfers even from a full-permission role,
-  // and to `tongQuan`/`troLyAI`/`soThuChi` until 2026-09-09. Those three are leaves, so they
-  // are gated by `nav-leaf-permissions.ts` rather than by a submenu filter.
+  // Menu cho mọi STAFF; lọc theo quyền của role.
   STAFF: [
     {
       label: "Quản lý",
       items: [
         sidebarItems.tongQuan,
-        sidebarItems.troLyAI,
-        sidebarItems.soThuChi,
+        sidebarItems.thongKe,
+        sidebarItems.baoCao,
         sidebarItems.nhanVien,
       ],
     },
@@ -91,11 +82,14 @@ export const sidebarRoleConfig: Record<UserRole, NavGroup[]> = {
       sidebarItems.hangHoa,
       sidebarItems.giaoDich,
       sidebarItems.donHang,
+      sidebarItems.vanHanh,
+      sidebarItems.donGiaoCuaToi,
+      // Chỉ STAFF: chủ shop không gắn xưởng nên màn này không có gì cho họ.
+      sidebarItems.xuongCuaToi,
       sidebarItems.ketTien,
     ]),
     crmGroup,
     cskhGroup,
-    salaryGroup
   ],
 
   CUSTOMER: [],

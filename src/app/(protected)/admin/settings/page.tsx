@@ -18,11 +18,9 @@ export default function AdminSettingsPage() {
   const { isDarkMode, resetTheme, applyRadius, applyTheme } = useThemeManager();
   const { updateConfig: updateSidebarConfig } = useSidebarConfig();
 
-  // Theme states
   const [selectedTheme, setSelectedTheme] = React.useState("twitter");
   const [selectedRadius, setSelectedRadius] = React.useState("1rem");
 
-  // Load Theme variables from local storage on mount
   React.useEffect(() => {
     try {
       const savedTheme = localStorage.getItem("theme-preset");
@@ -38,7 +36,6 @@ export default function AdminSettingsPage() {
     }
   }, []);
 
-  // Re-apply themes when theme mode changes
   React.useEffect(() => {
     if (selectedTheme) {
       applyTheme(selectedTheme, isDarkMode);
@@ -86,7 +83,6 @@ export default function AdminSettingsPage() {
         description="Quản lý các thiết lập và tùy chỉnh hệ thống."
       />
       <div className="flex flex-col md:flex-row gap-8 items-start">
-        {/* Left Navigation Sidebar */}
         <aside className="w-full md:w-64 shrink-0 md:sticky md:top-20 space-y-6">
           <nav className="space-y-6">
             {sidebarItems.map((group) => (
@@ -123,9 +119,7 @@ export default function AdminSettingsPage() {
           </nav>
         </aside>
 
-        {/* Right Content Panel */}
         <main className="flex-1 w-full min-w-0 bg-card border rounded-xl shadow-xs overflow-hidden flex flex-col md:h-[calc(100vh-12rem)] md:max-h-[750px]">
-          {/* Header of Active Section */}
           <div className="flex items-center justify-between p-6 border-b bg-muted/10">
             <div>
               <h2 className="text-lg font-bold">
@@ -140,7 +134,6 @@ export default function AdminSettingsPage() {
               </p>
             </div>
 
-            {/* Reset customizer options */}
             <Button
               variant="outline"
               size="sm"
@@ -153,7 +146,6 @@ export default function AdminSettingsPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6">
-            {/* Tab: Theme Settings */}
             {activeTab === "theme" && (
               <div className="border rounded-xl bg-card overflow-hidden">
                 <ThemeTab
@@ -165,7 +157,6 @@ export default function AdminSettingsPage() {
               </div>
             )}
 
-            {/* Tab: Layout Settings */}
             {activeTab === "layout" && (
               <div className="border rounded-xl bg-card overflow-hidden">
                 <LayoutTab />

@@ -1,7 +1,9 @@
-// [Domain – Types]
 export type CustomerGender = 'MALE' | 'FEMALE' | 'OTHER'
-export type CustomerOrderStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'RETURNED'
-export type CustomerOrderPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'MOMO' | 'VNPAY'
+import type { OrderStatus } from './order-flow'
+import type { OrderPaymentMethod } from './order'
+
+export type CustomerOrderStatus = OrderStatus
+export type CustomerOrderPaymentMethod = OrderPaymentMethod
 
 export interface CustomerOrderItem {
   productName: string
@@ -25,6 +27,7 @@ export interface Customer {
   customerCode: string
   name: string
   phone: string
+  email: string
   gender: CustomerGender
   address: string
   dob: string
@@ -32,14 +35,7 @@ export interface Customer {
   orders: CustomerOrder[]
 }
 
-/**
- * What `GET /customers` actually filters on (`QueryCustomerDto`).
- *
- * `gender`, `dateFrom` and `dateTo` used to be declared here as though the server honoured
- * them; it never has. The customers table applies all three **in the browser** over the
- * rows it already holds (see `customers-table.tsx`), so listing them here only invited
- * somebody to pass them and wonder why nothing narrowed.
- */
+/** Tham số `GET /customers`. */
 export interface CustomerQueryParams {
   page?: number
   limit?: number
@@ -59,6 +55,7 @@ export interface CustomerCreatePayload {
   customerCode?: string
   name: string
   phone?: string
+  email?: string | null
   gender: CustomerGender
   address?: string
   dob?: string

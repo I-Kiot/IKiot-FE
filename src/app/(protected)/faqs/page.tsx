@@ -2,7 +2,6 @@ import { PageHeader } from "@/components/page-header"
 import { FAQList } from "./components/faq-list"
 import { FeaturesGrid } from "./components/features-grid"
 
-// Import data
 import categoriesData from "./data/categories.json"
 import faqsData from "./data/faqs.json"
 import featuresData from "./data/features.json"

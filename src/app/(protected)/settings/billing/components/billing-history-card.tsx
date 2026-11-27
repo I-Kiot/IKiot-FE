@@ -25,11 +25,7 @@ interface BillingHistoryCardProps {
   isLoading: boolean
 }
 
-/**
- * Fetched by `useBilling` rather than here: the invoice that was just paid flips
- * PENDING -> PAID at the same instant the plan activates, so both halves of the screen
- * have to be reloadable from the one call the payment dialog makes.
- */
+/** Hoá đơn lấy từ `useBilling`. */
 export function BillingHistoryCard({
   invoices,
   isLoading,
@@ -55,7 +51,7 @@ export function BillingHistoryCard({
               <div key={invoice.id}>
                 <div className="flex items-center justify-between py-2">
                   <div>
-                    <p className="font-medium">{invoice.planId?.planName ?? "-"}</p>
+                    <p className="font-medium">{invoice.plan?.planName ?? "-"}</p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(invoice.paidAt ?? invoice.createdAt).toLocaleDateString("vi-VN", {
                         year: "numeric",

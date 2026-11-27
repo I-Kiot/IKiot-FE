@@ -1,12 +1,12 @@
 // [Dialog – Thanh toán công nợ nhà cung cấp]
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Banknote, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Banknote, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -22,84 +22,126 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import type { Supplier } from '@/types/supplier'
-import { useSuppliers } from '../../_context/suppliers-provider'
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { branchApi } from "@/lib/api/branch";
+import { warehouseApi } from "@/lib/api/warehouse";
+import { getCachedUser, getSessionRole } from "@/lib/auth";
+import type { Supplier } from "@/types/supplier";
+import { useSuppliers } from "../../_context/suppliers-provider";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 
-// --- Schema ---
 const payDebtSchema = z.object({
   amount: z
-    .number({ message: 'Số tiền phải là số' })
-    .positive('Số tiền phải lớn hơn 0')
-    .max(1_000_000_000_000, 'Số tiền vượt giới hạn'),
-  note: z.string().max(500, 'Ghi chú tối đa 500 ký tự').optional(),
-})
+    .number({ message: "Số tiền phải là số" })
+    .positive("Số tiền phải lớn hơn 0")
+    .max(1_000_000_000_000, "Số tiền vượt giới hạn"),
+  note: z.string().max(500, "Ghi chú tối đa 500 ký tự").optional(),
+});
 
-type PayDebtFormValues = z.infer<typeof payDebtSchema>
+type PayDebtFormValues = z.infer<typeof payDebtSchema>;
 
 function formatVND(amount: number) {
-  return amount.toLocaleString('vi-VN') + ' ₫'
+  return amount.toLocaleString("vi-VN") + " ₫";
+}
+
+const OWNER_FUND = "OWNER";
+
+type DrawerOption = { id: string; label: string };
+
+/** Két có thể chọn: chủ shop chọn được mọi địa điểm, nhân viên chỉ nơi mình được phân công. */
+function useDrawerOptions(open: boolean): DrawerOption[] {
+  const [options, setOptions] = useState<DrawerOption[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const role = getSessionRole();
+    const isOwner = role === "TENANT_OWNER" || role === "ADMIN";
+    const ownLocationId = getCachedUser()?.locationId ?? null;
+    if (!isOwner && !ownLocationId) return;
+    Promise.all([
+      branchApi.getList({ limit: 100 }).then((r) => r.data.map((b) => ({ id: b.id, label: "Chi nhánh " + b.name }))).catch(() => []),
+      warehouseApi.getList({ limit: 100 }).then((r) => r.data.map((w) => ({ id: w.id, label: "Kho " + w.name }))).catch(() => []),
+    ]).then(([branches, warehouses]) => {
+      if (cancelled) return;
+      const all = [...branches, ...warehouses];
+      if (isOwner) setOptions(all);
+      else setOptions(all.filter((o) => o.id === ownLocationId).concat(all.some((o) => o.id === ownLocationId) ? [] : [{ id: ownLocationId as string, label: "Nơi làm việc của tôi" }]));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+  return options;
 }
 
 type SuppliersPayDebtDialogProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  supplier: Supplier | null
-}
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  supplier: Supplier | null;
+};
 
 export function SuppliersPayDebtDialog({
   open,
   onOpenChange,
   supplier,
 }: SuppliersPayDebtDialogProps) {
-  const { handlePayDebt } = useSuppliers()
+  const { handlePayDebt } = useSuppliers();
+  const drawerOptions = useDrawerOptions(open);
+  const [fund, setFund] = useState<string>(OWNER_FUND);
 
   const form = useForm<PayDebtFormValues>({
     resolver: zodResolver(payDebtSchema),
     defaultValues: {
       amount: undefined as unknown as number,
-      note: '',
+      note: "",
     },
-  })
+  });
 
   // Reset khi đóng/mở dialog
   useEffect(() => {
     if (!open) {
+      setFund(OWNER_FUND);
       form.reset({
         amount: undefined as unknown as number,
-        note: '',
-      })
+        note: "",
+      });
     }
-  }, [open, form])
+  }, [open, form]);
 
-  const watchedAmount = form.watch('amount')
+  const watchedAmount = form.watch("amount");
   const exceedsDebt =
-    supplier && watchedAmount > 0 && watchedAmount > supplier.outstandingDebt
+    supplier && watchedAmount > 0 && watchedAmount > supplier.outstandingDebt;
 
   const debtRatio =
     supplier && supplier.creditLimit > 0
       ? (supplier.outstandingDebt / supplier.creditLimit) * 100
-      : 0
+      : 0;
 
   async function onSubmit(data: PayDebtFormValues) {
-    if (!supplier) return
+    if (!supplier) return;
 
     const success = await handlePayDebt(supplier.id, {
       amount: data.amount,
-      paymentMethod: 'CASH',
+      paymentMethod: "CASH",
       note: data.note || undefined,
-    })
+      locationId: fund === OWNER_FUND ? undefined : fund,
+    });
 
     if (success) {
-      onOpenChange(false)
+      onOpenChange(false);
     }
   }
 
-  if (!supplier) return null
-
+  if (!supplier) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -122,10 +164,12 @@ export function SuppliersPayDebtDialog({
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Công nợ hiện tại</span>
             <Badge
-              variant={supplier.outstandingDebt > 0 ? 'destructive' : 'secondary'}
+              variant={
+                supplier.outstandingDebt > 0 ? "destructive" : "secondary"
+              }
               className="tabular-nums font-bold text-sm px-2 py-0.5"
             >
-              {formatVND(supplier.outstandingDebt)}
+              {formatVND(Number(supplier.outstandingDebt) || 0)}
             </Badge>
           </div>
           {supplier.creditLimit > 0 && (
@@ -134,10 +178,10 @@ export function SuppliersPayDebtDialog({
               <span
                 className={
                   debtRatio >= 90
-                    ? 'text-destructive font-semibold'
+                    ? "text-destructive font-semibold"
                     : debtRatio >= 60
-                    ? 'text-orange-500 font-medium'
-                    : 'text-muted-foreground'
+                      ? "text-orange-500 font-medium"
+                      : "text-muted-foreground"
                 }
               >
                 {debtRatio.toFixed(1)}% / {formatVND(supplier.creditLimit)}
@@ -160,24 +204,20 @@ export function SuppliersPayDebtDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Số tiền thanh toán <span className="text-destructive">*</span>
+                      Số tiền thanh toán{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="VD: 5000000"
-                        type="number"
-                        min={1}
-                        max={supplier.outstandingDebt}
-                        {...field}
-                        onChange={(e) => {
-                          const val = e.target.valueAsNumber
-                          field.onChange(isNaN(val) ? undefined : val)
-                        }}
+                      <MoneyInput
+                        placeholder="VD: 5.000.000"
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     {exceedsDebt && (
                       <p className="text-xs text-destructive">
-                        Số tiền ({formatVND(watchedAmount)}) vượt quá công nợ ({formatVND(supplier.outstandingDebt)})
+                        Số tiền ({formatVND(watchedAmount)}) vượt quá công nợ (
+                        {formatVND(Number(supplier.outstandingDebt))}).
                       </p>
                     )}
                     <div className="flex gap-2 pt-1">
@@ -186,7 +226,12 @@ export function SuppliersPayDebtDialog({
                         variant="outline"
                         size="sm"
                         className="text-xs h-7"
-                        onClick={() => form.setValue('amount', Math.floor(supplier.outstandingDebt / 2))}
+                        onClick={() =>
+                          form.setValue(
+                            "amount",
+                            Math.floor(supplier.outstandingDebt / 2),
+                          )
+                        }
                       >
                         50%
                       </Button>
@@ -195,7 +240,9 @@ export function SuppliersPayDebtDialog({
                         variant="outline"
                         size="sm"
                         className="text-xs h-7"
-                        onClick={() => form.setValue('amount', supplier.outstandingDebt)}
+                        onClick={() =>
+                          form.setValue("amount", supplier.outstandingDebt)
+                        }
                       >
                         Toàn bộ
                       </Button>
@@ -213,6 +260,29 @@ export function SuppliersPayDebtDialog({
                   <span className="font-medium">Tiền mặt</span>
                 </div>
               </div>
+
+              {/* Nguồn tiền: mặc định quỹ chủ, hoặc két của một địa điểm */}
+              {drawerOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <FormLabel>Trả từ két</FormLabel>
+                  <Select value={fund} onValueChange={setFund}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={OWNER_FUND}>Quỹ chủ shop (mặc định)</SelectItem>
+                      {drawerOptions.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>
+                          Két {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Chỉ áp dụng cho tiền mặt. Chọn két thì khoản chi vào đối soát két của địa điểm đó.
+                  </p>
+                </div>
+              )}
 
               {/* Ghi chú */}
               <FormField
@@ -249,9 +319,15 @@ export function SuppliersPayDebtDialog({
                   disabled={!!exceedsDebt || form.formState.isSubmitting}
                 >
                   {form.formState.isSubmitting ? (
-                    <><Loader2 className="mr-2 size-4 animate-spin" />Đang xử lý...</>
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Đang xử lý...
+                    </>
                   ) : (
-                    <><Banknote className="mr-2 size-4" />Xác nhận thanh toán</>
+                    <>
+                      <Banknote className="mr-2 size-4" />
+                      Xác nhận thanh toán
+                    </>
                   )}
                 </Button>
               </DialogFooter>
@@ -260,5 +336,5 @@ export function SuppliersPayDebtDialog({
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,6 +1,6 @@
 export const CCCD_LENGTH = 12;
 
-/** Align with BE StaffIdentificationValidator */
+/** Khớp với StaffIdentificationValidator ở BE. */
 const VIETNAM_PROVINCE_CODES = new Set([
   "001", "002", "004", "006", "008", "010", "011", "012", "014",
   "015", "017", "019", "020", "022", "024", "025", "026", "027",
@@ -28,9 +28,7 @@ function getBirthYearFromCccd(centuryGenderCode: number, yearSuffix: string) {
   return centuryStart + Number(yearSuffix);
 }
 
-/**
- * @param required - tạo NV: bắt buộc; sửa: rỗng = bỏ qua (không đổi).
- */
+/** @param required - tạo nhân viên thì bắt buộc, sửa thì rỗng là giữ nguyên. */
 export function validateStaffIdentificationId(
   value?: string,
   opts?: {

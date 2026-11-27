@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { CommandSearch, SearchTrigger } from "@/components/command-search";
@@ -9,6 +9,8 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { ShoppingCart } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { NotificationBell } from "@/components/notification-bell";
+import { AdminNotificationBell } from "@/components/admin-notification-bell";
+import { canOpenCheckout } from "@/components/sidebar/utils/get-sidebar";
 
 export function SiteHeader() {
   const { user } = useAuthStore();
@@ -28,7 +30,7 @@ export function SiteHeader() {
 
   return (
     <>
-      <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+      <header className="sticky top-0 z-30 flex h-(--header-height) shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
         <div className="flex w-full items-center gap-1 px-4 py-3 lg:gap-2 lg:px-6">
           <SidebarTrigger className="-ml-1" />
           <Separator
@@ -39,8 +41,11 @@ export function SiteHeader() {
             <SearchTrigger onClick={() => setSearchOpen(true)} />
           </div>
           <div className="ml-auto flex items-center gap-2">
+            {/* Tài khoản nền tảng không bán hàng nên không có nút này. */}
             {user?.role !== "ADMIN" && (
-              <Button
+              <PermissionButton
+                allowed={canOpenCheckout(user?.role)}
+                permission="orders:create"
                 variant="default"
                 asChild
                 size="sm"
@@ -53,11 +58,11 @@ export function SiteHeader() {
                   className="flex items-center"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  Bán hàng
+                  Bán tại quầy
                 </a>
-              </Button>
+              </PermissionButton>
             )}
-            {user?.role !== "ADMIN" && <NotificationBell />}
+            {user?.role === "ADMIN" ? <AdminNotificationBell /> : <NotificationBell />}
             <ModeToggle />
           </div>
         </div>

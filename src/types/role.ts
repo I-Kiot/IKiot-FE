@@ -1,21 +1,10 @@
-/**
- * Hai khái niệm khác nhau cùng gọi là "vai trò" - đừng lẫn:
- *
- *  - **`UserRole`** là *loại tài khoản*, cố định trong code backend
- *    (`User.systemRole`): chủ cửa hàng, nhân viên, quản trị nền tảng. Tenant không sửa
- *    được. Dùng cho hiển thị và cho các gate ở FE.
- *  - **`Role`** (bên dưới) là *vai trò của cửa hàng*: một dòng trong bảng `Role` do chủ
- *    cửa hàng tự tạo, đặt tên và gắn quyền. Đây là thứ trang `/staffs/roles` quản lý và
- *    là thứ `User.roleId` trỏ tới.
- */
+/** `UserRole` là loại tài khoản, `Role` là vai trò do chủ shop tạo. */
 export type UserRole =
   | "ADMIN"
   | "TENANT_OWNER"
   | "STAFF"
   | "CUSTOMER"
-  // Hai giá trị của bản backend cũ. Không tài khoản mới nào mang chúng nữa, nhưng một
-  // user còn nằm trong localStorage từ trước có thể vẫn có - giữ lại để hiển thị đúng
-  // thay vì rơi ra chuỗi thô.
+  // Giá trị cũ, giữ để hiển thị user cũ.
   | "BRANCH_MANAGER"
   | "WAREHOUSE_MANAGER";
 
@@ -42,6 +31,8 @@ export interface PermissionGrant {
 /** Một dòng của danh mục quyền. `label` là tên tiếng Việt của nhóm tài nguyên. */
 export interface PermissionCatalogEntry extends PermissionGrant {
   label: string
+  /** Quyền này mở tính năng gì - BE ghi cho những quyền mà tên ngắn chưa đủ rõ, còn lại `null`. */
+  description?: string | null
 }
 
 export interface Role {
@@ -67,5 +58,8 @@ export type RoleUpdatePayload = Partial<RoleCreatePayload>
 export interface PermissionResourceGroup {
   resource: string
   label: string
+  hint?: string
   actions: string[]
+  /** Mô tả theo action, chỉ có ở những quyền BE có ghi. */
+  descriptions: Record<string, string>
 }

@@ -1,4 +1,3 @@
-// [Dialog – Orchestrator Brand]
 'use client'
 
 import { useBrands } from '../../_context/brands-provider'

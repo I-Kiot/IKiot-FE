@@ -16,7 +16,7 @@ export function ModeToggle({ variant = "outline" }: ModeToggleProps) {
   const { theme } = useTheme()
   const { toggleTheme } = useCircularTransition()
 
-  // Simple, reliable dark mode detection with re-sync
+  // Nhận diện dark mode đơn giản, đồng bộ lại khi cần
   const [isDarkMode, setIsDarkMode] = React.useState(false)
 
   React.useEffect(() => {
@@ -32,7 +32,6 @@ export function ModeToggle({ variant = "outline" }: ModeToggleProps) {
 
     updateMode()
 
-    // Listen for system theme changes
     const mediaQuery = typeof window !== "undefined" ? window.matchMedia("(prefers-color-scheme: dark)") : null
     if (mediaQuery) {
       mediaQuery.addEventListener("change", updateMode)
@@ -56,7 +55,7 @@ export function ModeToggle({ variant = "outline" }: ModeToggleProps) {
       onClick={handleToggle}
       className="cursor-pointer mode-toggle-button relative overflow-hidden"
     >
-      {/* Show the icon for the mode you can switch TO */}
+      {/* Hiện icon của chế độ sẽ chuyển sang */}
       {isDarkMode ? (
         <Sun className="h-[1.2rem] w-[1.2rem] transition-transform duration-300 rotate-0 scale-100" />
       ) : (

@@ -1,4 +1,3 @@
-// [Dialog – Mutate Customer]
 'use client'
 
 import { useEffect } from 'react'
@@ -38,6 +37,7 @@ const EMPTY_VALUES: CustomerFormValues = {
   name: '',
   customerCode: '',
   phone: '',
+  email: '',
   gender: 'MALE',
   address: '',
   dob: '',
@@ -69,6 +69,7 @@ export function CustomersMutateDialog({
         name: currentRow.name,
         customerCode: currentRow.customerCode,
         phone: currentRow.phone,
+        email: currentRow.email,
         gender: currentRow.gender,
         address: currentRow.address,
         dob: currentRow.dob,
@@ -121,11 +122,9 @@ export function CustomersMutateDialog({
                 name="customerCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Mã khách hàng <span className="text-destructive">*</span>
-                    </FormLabel>
+                    <FormLabel>Mã khách hàng</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: KH-001" {...field} />
+                      <Input placeholder="Để trống để tự sinh (KH000001...)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,6 +144,20 @@ export function CustomersMutateDialog({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="VD: khach@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

@@ -1,0 +1,303 @@
+"use client";
+
+import * as React from "react";
+import { Search } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { useLiveTick } from "@/hooks/use-live-refresh";
+import { CHANGE_RESOURCES } from "@/types/change-feed";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { DataTableEmpty } from "@/components/data-table/data-table-empty";
+import { DataTableLoading } from "@/components/data-table/data-table-loading";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
+import { productionRequestApi } from "@/lib/api/production-request";
+import { getApiErrorBody } from "@/lib/api/error-codes";
+import {
+  PRODUCTION_REQUEST_STATUS_LABELS,
+  type ProductionRequest,
+  type ProductionRequestStatus,
+} from "@/types/order-flow";
+import {
+  formatDate,
+  formatDateTime,
+  requestProgress,
+  requestStatusDisplay,
+  workshopAcceptanceDisplay,
+} from "../shared/production-display";
+import { PendingDeliveryActions } from "./pending-delivery-actions";
+import { ProductionRequestDetailDialog } from "./production-request-detail-dialog";
+
+const LIVE_RESOURCES = [CHANGE_RESOURCES.PRODUCTION_REQUESTS, CHANGE_RESOURCES.PRODUCTION_DELIVERIES] as const;
+
+const DEFAULT_PAGE_SIZE = 10;
+const ALL = "ALL";
+
+type Props = {
+  /** Tăng lên khi dữ liệu đổi từ bên ngoài bảng (vừa tạo yêu cầu trong dialog chung) để tải lại. */
+  refreshSignal: number;
+};
+
+/** Danh sách YCSX, tab Xưởng. */
+export function ProductionRequestsTable({ refreshSignal }: Props) {
+  const [page, setPage] = React.useState(1);
+
+  const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
+  const [status, setStatus] = React.useState<string>(ALL);
+  // Link từ lịch sử đơn hàng mang theo `?search=<mã yêu cầu>` (trang đã bọc Suspense).
+  const initialSearch = useSearchParams().get("search") ?? "";
+  const [search, setSearch] = React.useState(initialSearch);
+  const [term, setTerm] = React.useState(initialSearch.trim());
+  const [reloads, setReloads] = React.useState(0);
+  const [selected, setSelected] = React.useState<ProductionRequest | null>(
+    null,
+  );
+  // Gắn kèm query đã trả lời: khi tag khác nghĩa là có yêu cầu mới đang chạy.
+  const query = `${page}|${pageSize}|${status}|${term}|${reloads}|${refreshSignal}`;
+  const [loaded, setLoaded] = React.useState<{
+    query: string;
+    rows: ProductionRequest[];
+    total: number;
+  } | null>(null);
+  const loading = loaded?.query !== query;
+  const rows = loaded?.rows ?? [];
+  const total = loaded?.total ?? 0;
+  // Tải lại nền khi người khác đổi dữ liệu.
+  const liveTick = useLiveTick({ resources: LIVE_RESOURCES, visibleIds: rows.map((row) => row.id) });
+  const shownQueryRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setTerm(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  React.useEffect(() => {
+    // Cùng query với lần đã hiển thị = tải nền: lỗi thì giữ dữ liệu đang hiện, không toast.
+    const silent = shownQueryRef.current === query;
+    let stale = false;
+    productionRequestApi
+      .getList({
+        page,
+        limit: pageSize,
+        ...(status !== ALL
+          ? { status: status as ProductionRequestStatus }
+          : {}),
+        ...(term ? { search: term } : {}),
+      })
+      .then((result) => {
+        if (stale) return;
+        shownQueryRef.current = query;
+        setLoaded({
+          query,
+          rows: result.data,
+          total: result.pagination.total,
+        });
+      })
+      .catch((error) => {
+        if (stale || silent) return;
+        toast.error(
+          getApiErrorBody(error)?.message ?? "Không tải được yêu cầu sản xuất",
+        );
+        shownQueryRef.current = query;
+        setLoaded({ query, rows: [], total: 0 });
+      });
+    return () => {
+      stale = true;
+    };
+  }, [page, pageSize, status, term, query, liveTick]);
+
+  const pages = Math.ceil(total / pageSize);
+  const reload = () => setReloads((n) => n + 1);
+
+  const replaceRow = (updated: ProductionRequest) =>
+    setLoaded((prev) =>
+      prev
+        ? {
+            ...prev,
+            rows: prev.rows.map((row) =>
+              row.id === updated.id ? updated : row,
+            ),
+          }
+        : prev,
+    );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <Input
+            className="pl-8"
+            placeholder="Mã yêu cầu"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+        <Select
+          value={status}
+          onValueChange={(value) => {
+            setStatus(value);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-52">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+            {(
+              Object.keys(
+                PRODUCTION_REQUEST_STATUS_LABELS,
+              ) as ProductionRequestStatus[]
+            ).map((value) => (
+              <SelectItem key={value} value={value}>
+                {PRODUCTION_REQUEST_STATUS_LABELS[value]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Mã</TableHead>
+              <TableHead>Xưởng</TableHead>
+              <TableHead>Nơi nhận</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead className="text-right">Đã nhận / đặt</TableHead>
+              <TableHead>Hẹn xong</TableHead>
+              <TableHead>Ngày tạo</TableHead>
+              <TableHead>Phiếu xưởng giao</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => {
+              const display = requestStatusDisplay(row.status, row.closedShort);
+              const acceptance = workshopAcceptanceDisplay(row);
+              const progress = requestProgress(row);
+              // Chỉ YCSX còn nhận hàng mới có nút.
+              const canStillReceive = row.status === "SENT" || row.status === "PARTIALLY_RECEIVED";
+              const pendingDeliveries = canStillReceive
+                ? (row.deliveries ?? []).filter((d) => d.status === "PENDING")
+                : [];
+              return (
+                <TableRow
+                  key={row.id}
+                  className="cursor-pointer"
+                  onClick={() => setSelected(row)}
+                >
+                  <TableCell className="font-medium">{row.code}</TableCell>
+                  <TableCell>{row.supplier.supplierName}</TableCell>
+                  <TableCell>{row.location.name}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant={display.variant}>{display.label}</Badge>
+                      {acceptance && (
+                        <Badge variant={acceptance.variant}>
+                          {acceptance.label}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {progress.received}/{progress.ordered}
+                  </TableCell>
+                  <TableCell>{formatDate(row.expectedReadyDate)}</TableCell>
+                  <TableCell>{formatDateTime(row.createdAt)}</TableCell>
+                  {/* Chặn click trong ô mở chi tiết. */}
+                  <TableCell
+                    onClick={(event) => event.stopPropagation()}
+                    className="cursor-default"
+                  >
+                    {pendingDeliveries.length === 0 ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {pendingDeliveries.map((delivery) => {
+                          return (
+                            <div
+                              key={delivery.id}
+                              className="flex flex-wrap items-center gap-2"
+                            >
+                              <PendingDeliveryActions
+                                delivery={delivery}
+                                onChanged={reload}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {!loading && rows.length === 0 && (
+              <DataTableEmpty
+                columnCount={8}
+                messageRoute="/exchange/production-requests"
+              />
+            )}
+            {loading && rows.length === 0 && (
+              <DataTableLoading columnCount={8} />
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <DataTablePagination
+        page={page}
+        pageCount={pages}
+        pageSize={pageSize}
+        total={total}
+        unit="yêu cầu"
+        disabled={loading}
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+      />
+
+      <ProductionRequestDetailDialog
+        key={
+          selected
+            ? `${selected.id}:${selected.status}:${selected.updatedAt}`
+            : "none"
+        }
+        request={selected}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+        onChanged={(updated) => {
+          setSelected(updated);
+          replaceRow(updated);
+        }}
+        onDeleted={() => {
+          setSelected(null);
+          setReloads((n) => n + 1);
+        }}
+      />
+    </div>
+  );
+}

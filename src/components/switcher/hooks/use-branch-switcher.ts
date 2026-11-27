@@ -19,6 +19,14 @@ export type SwitcherItem = {
   status?: string;
 };
 
+/** Mục "toàn chuỗi" (locationKey "all"). */
+export const ALL_LOCATIONS_ITEM: SwitcherItem = {
+  id: "all-branches",
+  name: "Tổng",
+  address: "Toàn bộ chuỗi",
+  type: "branch",
+};
+
 export function useBranchSwitcher() {
   const { isMobile } = useSidebar();
   const [dbBranches, setDbBranches] = React.useState<Branch[]>([]);
@@ -33,18 +41,15 @@ export function useBranchSwitcher() {
   const locationKey = useAuthStore((state) => state.locationKey);
   const setLocationKey = useAuthStore((state) => state.setLocationKey);
 
-  // Edit branch states
   const [editingBranch, setEditingBranch] = React.useState<Branch | null>(null);
   const [isEditBranchDialogOpen, setIsEditBranchDialogOpen] =
     React.useState(false);
 
-  // Edit warehouse states
   const [editingWarehouse, setEditingWarehouse] =
     React.useState<DWBWarehouse | null>(null);
   const [isEditWarehouseDialogOpen, setIsEditWarehouseDialogOpen] =
     React.useState(false);
 
-  // Delete confirmation states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<{
     id: string;
@@ -96,7 +101,7 @@ export function useBranchSwitcher() {
         setDbBranches(fetchedBranches);
         setDbWarehouses(fetchedWarehouses);
       } else {
-        // Non-TENANT_OWNER user: fetch their specific assigned branch or warehouse to show name/address
+        // Không phải TENANT_OWNER: lấy chi nhánh/kho được gán để hiện tên và địa chỉ
         if (user?.branchId) {
           try {
             const branch = await branchApi.getById(user.branchId);
@@ -138,7 +143,7 @@ export function useBranchSwitcher() {
     };
   }, [fetchBranches]);
 
-  // Synchronize activeItem with the global locationKey
+  // Đồng bộ activeItem với locationKey toàn cục
   React.useEffect(() => {
     if (!locationKey) {
       setActiveItem(null);
@@ -146,19 +151,14 @@ export function useBranchSwitcher() {
     }
 
     if (locationKey === "all") {
-      setActiveItem({
-        id: "all-branches",
-        name: "Tổng",
-        address: "all",
-        type: "branch",
-      });
+      setActiveItem(ALL_LOCATIONS_ITEM);
       return;
     }
 
     const parsed = parseLocationKey(locationKey);
     const type = parsed?.locationType;
     const id = parsed?.locationId ?? "";
-    if (type === "branch") {
+    if (type === "BRANCH") {
       const match = dbBranches.find((b) => b.id === id);
       if (match) {
         setActiveItem(mapBranchToItem(match));
@@ -170,7 +170,7 @@ export function useBranchSwitcher() {
           type: "branch",
         });
       }
-    } else if (type === "warehouse") {
+    } else if (type === "WAREHOUSE") {
       const match = dbWarehouses.find((w) => w.id === id);
       if (match) {
         setActiveItem(mapWarehouseToItem(match));
@@ -192,7 +192,7 @@ export function useBranchSwitcher() {
     }
     const key = item.id === "all-branches" ? "all" : `${item.type}-${item.id}`;
     setLocationKey(key);
-    // Backward compatibility:
+    // Tương thích ngược:
     localStorage.setItem("activeSwitcherItemId", item.id);
     localStorage.setItem("activeSwitcherItemType", item.type);
     toast.success(`Đã chuyển sang: ${item.name}`);
@@ -294,12 +294,7 @@ export function useBranchSwitcher() {
       }
 
       if (activeItem && activeItem.id === id) {
-        handleSelect({
-          id: "all-branches",
-          name: "Tổng",
-          address: "all",
-          type: "branch",
-        });
+        handleSelect(ALL_LOCATIONS_ITEM);
       }
       await fetchBranches();
       window.dispatchEvent(new Event("branches-updated"));

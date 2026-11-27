@@ -8,10 +8,15 @@ import { useSidebarConfig } from "@/hooks/use-sidebar-config";
 import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/components/auth-guard";
 import { useNotificationSocket } from "@/hooks/use-notification-socket";
+import { useTabBadge } from "@/hooks/use-tab-badge";
 import { useAuthStore } from "@/store/auth-store";
-import { sidebarRoleConfig } from "@/components/sidebar/constants/sidebar-role";
-import { type UserRole } from "@/components/sidebar/constants/types";
+import {
+  canOpenCheckout,
+  getAllowedSidebarUrls,
+} from "@/components/sidebar/utils/get-sidebar";
+import { canViewBilling } from "@/components/sidebar/constants/role-permissions";
 import { UnauthorizedPage } from "@/components/unauthorized";
+import { PageFooterProvider, PageFooterSlot } from "@/components/layouts/page-footer";
 
 function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
@@ -19,7 +24,7 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
-  // Paths that are always allowed for any authenticated user
+  // Các đường dẫn luôn được phép với mọi người đã đăng nhập
   const publicProtectedRoutes = [
     "/settings",
     "/calendar",
@@ -29,41 +34,34 @@ function RoutePermissionGuard({ children }: { children: React.ReactNode }) {
     "/pricing",
   ];
 
-  // Check if current route is a public protected route
   const isPublicProtected = publicProtectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + "/"),
   );
 
-  // Special handling for checkout (allowed for all except ADMIN)
   const isCheckout = pathname === "/check-out" || pathname.startsWith("/check-out/");
-  if (isCheckout && user.role !== "ADMIN") {
-    return <>{children}</>;
+  if (isCheckout) {
+    return canOpenCheckout(user.role) ? <>{children}</> : <UnauthorizedPage />;
+  }
+
+  // `/settings/*` mở cho mọi người, trừ Gói dịch vụ.
+  const isBilling =
+    pathname === "/settings/billing" || pathname.startsWith("/settings/billing/");
+  if (isBilling && !canViewBilling(user.role)) {
+    return <UnauthorizedPage />;
   }
 
   if (isPublicProtected) {
     return <>{children}</>;
   }
 
-  // Get allowed URLs based on role config
-  const roleConfig = sidebarRoleConfig[user.role as UserRole] || [];
-  const allowedUrls: string[] = [];
+  // `/shipments/<id>` chuyển hướng theo người xem.
+  if (/^\/shipments\/[^/]+$/.test(pathname)) {
+    return <>{children}</>;
+  }
 
-  roleConfig.forEach((group) => {
-    group.items.forEach((item) => {
-      if (item.url && item.url !== "#" && !item.url.startsWith("/#")) {
-        allowedUrls.push(item.url);
-      }
-      if (item.items) {
-        item.items.forEach((subItem) => {
-          if (subItem.url && subItem.url !== "#" && !subItem.url.startsWith("/#")) {
-            allowedUrls.push(subItem.url);
-          }
-        });
-      }
-    });
-  });
+  // Cùng danh sách với sidebar: cấu hình theo loại tài khoản, thu hẹp theo quyền của role.
+  const allowedUrls = getAllowedSidebarUrls(user.role);
 
-  // Perform prefix matching check
   const isAllowed = allowedUrls.some(
     (allowedUrl) => pathname === allowedUrl || pathname.startsWith(allowedUrl + "/"),
   );
@@ -81,8 +79,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   useNotificationSocket();
+  useTabBadge();
   const { config } = useSidebarConfig();
   const pathname = usePathname();
+  // Cuộn xảy ra trong khung nội dung (không còn là cả cửa sổ), nên chuyển trang phải tự đưa nó về đầu.
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [pathname]);
 
   if (pathname === "/check-out") {
     return (
@@ -114,28 +118,37 @@ export default function DashboardLayout({
                 collapsible={config.collapsible}
                 side={config.side}
               />
-              <SidebarInset>
-                <SiteHeader />
-                <div className="flex flex-1 flex-col">
-                  <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                      {children}
+              {/* min-w-0 để bảng rộng cuộn trong khung. */}
+              <SidebarInset className="h-svh min-w-0 overflow-hidden">
+                <PageFooterProvider>
+                  <SiteHeader />
+                  {/* Chỉ vùng này cuộn: header và chân trang (phân trang) đứng yên, thanh cuộn không lên tới header. */}
+                  <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                    <div className="@container/main flex flex-1 flex-col gap-2">
+                      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                        {children}
+                      </div>
                     </div>
                   </div>
-                </div>
+                  <PageFooterSlot />
+                </PageFooterProvider>
               </SidebarInset>
             </>
           ) : (
             <>
-              <SidebarInset>
-                <SiteHeader />
-                <div className="flex flex-1 flex-col">
-                  <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                      {children}
+              <SidebarInset className="h-svh min-w-0 overflow-hidden">
+                <PageFooterProvider>
+                  <SiteHeader />
+                  {/* Chỉ vùng này cuộn: header và chân trang (phân trang) đứng yên, thanh cuộn không lên tới header. */}
+                  <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                    <div className="@container/main flex flex-1 flex-col gap-2">
+                      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                        {children}
+                      </div>
                     </div>
                   </div>
-                </div>
+                  <PageFooterSlot />
+                </PageFooterProvider>
               </SidebarInset>
               <AppSidebar
                 variant={config.variant}

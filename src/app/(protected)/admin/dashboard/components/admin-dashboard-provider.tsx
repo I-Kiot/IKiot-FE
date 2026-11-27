@@ -1,4 +1,3 @@
-// [Context – Admin (platform) Dashboard]
 "use client";
 
 import * as React from "react";

@@ -1,4 +1,3 @@
-// [Table – Columns Promotion]
 import { type ColumnDef } from '@tanstack/react-table'
 import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -121,8 +120,10 @@ export const promotionsColumns: ColumnDef<Promotion>[] = [
       const promotion = row.original
       return (
         <span className="text-sm tabular-nums">
-          {promotion.usedCount}
-          {promotion.usageLimit != null ? ` / ${promotion.usageLimit}` : ''}
+          {promotion.usedCount.toLocaleString('vi-VN')}
+          {promotion.usageLimit != null
+            ? ` / ${promotion.usageLimit.toLocaleString('vi-VN')}`
+            : ''}
         </span>
       )
     },
@@ -138,7 +139,8 @@ export const promotionsColumns: ColumnDef<Promotion>[] = [
         </Badge>
       )
     },
-    filterFn: (row, columnId, value: string) => row.getValue(columnId) === value,
+    filterFn: (row, _columnId, value: string) =>
+      getPromotionDisplayStatus(row.original) === value,
   },
   {
     id: 'expand',

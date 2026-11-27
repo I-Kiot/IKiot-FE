@@ -1,4 +1,3 @@
-// [UI Types – Category]
 import { z } from 'zod'
 
 export type CategoriesDialogType = 'add' | 'edit' | 'delete' | 'deleteMany'

@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
+    // Bảng rộng hơn khung thì cuộn ngang; panel mở rộng luôn rộng bằng phần đang nhìn thấy.
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className="@container/table relative w-full overflow-x-auto"
     >
       <table
         data-slot="table"

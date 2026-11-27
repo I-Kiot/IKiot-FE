@@ -15,7 +15,7 @@ export function DotPattern({
   opacity = "medium",
   fadeStyle = "ellipse"
 }: DotPatternProps) {
-  // Use predefined Tailwind classes instead of template literals for Next.js compatibility
+  // Dùng class Tailwind viết sẵn thay vì template literal để tương thích Next.js
   const sizeMap = {
     sm: "[background-size:12px_12px]",
     md: "[background-size:16px_16px]",
@@ -47,14 +47,13 @@ export function DotPattern({
   )
 }
 
-// Alternative themed variants
 export function DotPatternLight({
   className,
   size = "md",
   opacity = "medium",
   fadeStyle = "ellipse"
 }: DotPatternProps) {
-  // Use predefined Tailwind classes instead of template literals for Next.js compatibility
+  // Dùng class Tailwind viết sẵn thay vì template literal để tương thích Next.js
   const sizeMap = {
     sm: "[background-size:12px_12px]",
     md: "[background-size:16px_16px]",
@@ -92,7 +91,7 @@ export function DotPatternDark({
   opacity = "medium",
   fadeStyle = "ellipse"
 }: DotPatternProps) {
-  // Use predefined Tailwind classes instead of template literals for Next.js compatibility
+  // Dùng class Tailwind viết sẵn thay vì template literal để tương thích Next.js
   const sizeMap = {
     sm: "[background-size:12px_12px]",
     md: "[background-size:16px_16px]",

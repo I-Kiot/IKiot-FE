@@ -24,7 +24,8 @@ import {
   sortSchedulesForDay,
   type CalendarScheduleEntry,
 } from "@/app/(protected)/staffs/shared/schedule-utils";
-import type { WorkingSchedule } from "@/types/working-schedule";
+import { getVietnamDateString } from "@/app/(protected)/staffs/shared/vietnam-datetime";
+import type { ScheduleAssignee, WorkingSchedule } from "@/types/working-schedule";
 import { ScheduleDayListItem } from "./schedule-day-list-item";
 import { ScheduleDetailContent } from "./schedule-detail-content";
 import { useSchedule } from "./schedule-provider";
@@ -33,7 +34,6 @@ export function ScheduleDetailPanel() {
   const {
     schedules,
     holidaysByDate,
-    leaveByDate,
     selectedSchedule,
     setSelectedSchedule,
     selectedAssigneeUserId,
@@ -41,6 +41,7 @@ export function ScheduleDetailPanel() {
     selectedDayDate,
     setSelectedDayDate,
     fetchScheduleDetail,
+    openStopSeries,
     setCurrentRow,
     setOpen,
     filters,
@@ -72,10 +73,6 @@ export function ScheduleDetailPanel() {
   const dayHolidayName = selectedDayDate
     ? holidaysByDate.get(selectedDayDate) ?? null
     : null;
-
-  const dayLeaveItems = selectedDayDate
-    ? leaveByDate.get(selectedDayDate) ?? []
-    : [];
 
   /** Mỗi ca (schedule.id) cần đếm riêng để hiển thị số người. */
   const dayScheduleCount = useMemo(
@@ -133,7 +130,7 @@ export function ScheduleDetailPanel() {
     targetAssigneeUserId,
   );
 
-  // Shown when the only reason you cannot edit this shift is that you are on it.
+  // Hiện khi chỉ vì mình đang được gán vào ca này nên không sửa được.
   const readOnlyHint =
     !scheduleLocked &&
     !canEdit &&
@@ -163,6 +160,18 @@ export function ScheduleDetailPanel() {
     setOpen("delete");
   }
 
+  function handleStopSeries(assignee: ScheduleAssignee) {
+    if (!data || !assignee.series) return;
+    // Mặc định dừng từ ngày đang xem, nhưng không lùi về quá khứ.
+    const today = getVietnamDateString();
+    const viewed = data.workDate.slice(0, 10);
+    openStopSeries({
+      series: assignee.series,
+      staffName: assignee.staffName,
+      defaultFromDate: viewed > today ? viewed : today,
+    });
+  }
+
   function handleEdit() {
     if (!selectedSchedule) return;
     setCurrentRow(selectedSchedule);
@@ -184,7 +193,6 @@ export function ScheduleDetailPanel() {
           {showDetail ? "Chi tiết ca làm" : `Ca làm ngày ${dateLabel}`}
         </SheetTitle>
 
-        {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-2 border-b px-5 py-3.5">
           <div className="min-w-0 flex-1">
             {showDetail && selectedDayDate ? (
@@ -208,11 +216,6 @@ export function ScheduleDetailPanel() {
                   <p className="text-xs text-muted-foreground">
                     {[
                       dayHolidayName,
-                      dayLeaveItems.length > 0
-                        ? dayLeaveItems[0]?.status === "PENDING"
-                          ? "Chờ duyệt nghỉ"
-                          : "Nghỉ phép"
-                        : null,
                       dayEntries.length > 0
                         ? `${dayEntries.length} nhân viên · ${dayScheduleCount} ca`
                         : null,
@@ -238,42 +241,9 @@ export function ScheduleDetailPanel() {
           </Button>
         </div>
 
-        {/* Body */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {showDayList && (
             <div className="space-y-2 p-4">
-              {dayLeaveItems.map((leave) => (
-                <div
-                  key={`${leave.id}-${leave.date}`}
-                  className={
-                    leave.status === "PENDING"
-                      ? "rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3"
-                      : "rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-3"
-                  }
-                >
-                  <p
-                    className={
-                      leave.status === "PENDING"
-                        ? "text-xs font-medium uppercase tracking-wide text-orange-800 dark:text-orange-200"
-                        : "text-xs font-medium uppercase tracking-wide text-violet-800 dark:text-violet-200"
-                    }
-                  >
-                    {leave.status === "PENDING"
-                      ? "Chờ duyệt nghỉ"
-                      : "Nghỉ phép"}
-                  </p>
-                  <p
-                    className={
-                      leave.status === "PENDING"
-                        ? "mt-1 text-sm font-medium text-orange-950 dark:text-orange-100"
-                        : "mt-1 text-sm font-medium text-violet-950 dark:text-violet-100"
-                    }
-                  >
-                    {leave.reason || "Không có lý do"}
-                  </p>
-                </div>
-              ))}
-
               {dayEntries.length === 0 ? (
                 <div className="space-y-3 py-6 text-center">
                   {dayHolidayName ? (
@@ -286,11 +256,9 @@ export function ScheduleDetailPanel() {
                       </p>
                     </div>
                   ) : null}
-                  {dayLeaveItems.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Không có lịch làm trong ngày này.
-                    </p>
-                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Không có lịch làm trong ngày này.
+                  </p>
                 </div>
               ) : (
                 dayEntries.map((entry) => (
@@ -320,6 +288,7 @@ export function ScheduleDetailPanel() {
               readOnlyHint={readOnlyHint}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onStopSeries={handleStopSeries}
             />
           )}
         </div>

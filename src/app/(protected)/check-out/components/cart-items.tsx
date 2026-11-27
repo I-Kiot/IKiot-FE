@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2, Plus, Minus, ShoppingCart } from "lucide-react";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import {
   Table,
   TableBody,
@@ -10,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
 interface CartItem {
@@ -22,6 +24,10 @@ interface CartItem {
   unitPrice: number;
   discountAmount: number;
   imageUrl?: string;
+  stock: number;
+  stockAllLocations: number;
+  /** Số bán được ngay (tồn trên kệ; combo = số bộ): trần của số lượng trong giỏ. */
+  availableStock: number;
 }
 
 interface CartItemsProps {
@@ -51,9 +57,12 @@ export function CartItems({
           <ShoppingCart className="size-8" />
         </div>
         <div className="space-y-1 max-w-sm">
-          <h3 className="text-lg font-bold text-foreground">Giỏ Hàng Đang Trống</h3>
+          <h3 className="text-lg font-bold text-foreground">
+            Giỏ Hàng Đang Trống
+          </h3>
           <p className="text-base text-muted-foreground leading-normal">
-            Vui lòng nhập tên, mã sản phẩm hoặc quét mã vạch ở ô tìm kiếm phía trên để thêm sản phẩm vào đơn hàng.
+            Vui lòng nhập tên, mã sản phẩm hoặc quét mã vạch ở ô tìm kiếm phía
+            trên để thêm sản phẩm vào đơn hàng.
           </p>
         </div>
       </div>
@@ -65,39 +74,68 @@ export function CartItems({
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
-            <TableHead className="w-12 text-center font-bold text-base">STT</TableHead>
+            <TableHead className="w-12 text-center font-bold text-base">
+              STT
+            </TableHead>
             <TableHead className="font-bold text-base">Sản phẩm</TableHead>
-            <TableHead className="w-32 text-center font-bold text-base">Số lượng</TableHead>
-            <TableHead className="w-32 text-right font-bold text-base">Đơn giá</TableHead>
-            <TableHead className="w-28 text-right font-bold text-base">Giảm giá</TableHead>
-            <TableHead className="w-32 text-right font-bold text-base">Thành tiền</TableHead>
+            <TableHead className="w-32 text-center font-bold text-base">
+              Số lượng
+            </TableHead>
+            <TableHead className="w-32 text-right font-bold text-base">
+              Đơn giá
+            </TableHead>
+            <TableHead className="w-28 text-right font-bold text-base">
+              Giảm giá
+            </TableHead>
+            <TableHead className="w-32 text-right font-bold text-base">
+              Thành tiền
+            </TableHead>
             <TableHead className="w-12 text-center"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item, index) => {
-            const rowTotal = item.quantity * (item.unitPrice - item.discountAmount);
+            // Giảm giá vượt đơn giá không bị cắt nữa: hiện 0 đ kèm cảnh báo, thanh toán sẽ bị chặn.
+            const isOverDiscounted = item.discountAmount > item.unitPrice;
+            const rowTotal = Math.max(
+              0,
+              item.quantity * (item.unitPrice - item.discountAmount),
+            );
+            // Tồn được đọc lại khi đổi nơi bán, nên số lượng đã chọn có thể vượt số còn ở nơi bán mới.
+            const isShort = item.quantity > item.availableStock;
 
             return (
-              <TableRow key={item.productItemId} className="group hover:bg-muted/30 transition-colors duration-150">
-                {/* Ordinal Index */}
+              <TableRow
+                key={item.productItemId}
+                className="group hover:bg-muted/30 transition-colors duration-150"
+              >
                 <TableCell className="text-center font-medium font-mono text-muted-foreground text-base">
                   {index + 1}
                 </TableCell>
 
-                {/* Product details */}
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-bold text-lg text-foreground">{item.name}</span>
+                    <span className="font-bold text-lg text-foreground">
+                      {item.name}
+                    </span>
                     <div className="flex gap-2 text-sm text-muted-foreground font-mono mt-0.5">
                       <span>{item.productCode}</span>
                       <span>|</span>
                       <span>SKU: {item.sku}</span>
+                      <span>|</span>
+                      <span>
+                        Tồn CN: {item.availableStock ?? 0} / Tổng:{" "}
+                        {item.stockAllLocations ?? 0}
+                      </span>
                     </div>
+                    {isShort && (
+                      <span className="text-sm font-medium text-destructive mt-0.5">
+                        Chỉ còn {item.availableStock} tại nơi bán
+                      </span>
+                    )}
                   </div>
                 </TableCell>
 
-                {/* Quantity editor */}
                 <TableCell>
                   <div className="flex items-center justify-center gap-1">
                     <Button
@@ -105,7 +143,9 @@ export function CartItems({
                       variant="outline"
                       size="icon"
                       className="size-9 shrink-0 cursor-pointer"
-                      onClick={() => onQuantityChange(item.productItemId, item.quantity - 1)}
+                      onClick={() =>
+                        onQuantityChange(item.productItemId, item.quantity - 1)
+                      }
                       disabled={item.quantity <= 1}
                     >
                       <Minus className="size-4" />
@@ -115,7 +155,10 @@ export function CartItems({
                       value={item.quantity}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        onQuantityChange(item.productItemId, isNaN(val) || val < 1 ? 1 : val);
+                        onQuantityChange(
+                          item.productItemId,
+                          isNaN(val) || val < 1 ? 1 : val,
+                        );
                       }}
                       className="w-14 h-9 px-1 text-center font-bold text-base tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
@@ -124,54 +167,49 @@ export function CartItems({
                       variant="outline"
                       size="icon"
                       className="size-9 shrink-0 cursor-pointer"
-                      onClick={() => onQuantityChange(item.productItemId, item.quantity + 1)}
+                      onClick={() =>
+                        onQuantityChange(item.productItemId, item.quantity + 1)
+                      }
+                      disabled={item.quantity >= item.availableStock}
                     >
                       <Plus className="size-4" />
                     </Button>
                   </div>
                 </TableCell>
 
-                {/* Unit Price editor */}
                 <TableCell>
                   <div className="flex justify-end">
-                    <Input
-                      type="number"
+                    <MoneyInput
                       value={item.unitPrice}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        onUnitPriceChange(item.productItemId, isNaN(val) || val < 0 ? 0 : val);
-                      }}
-                      className="w-28 h-9 text-right text-base font-bold tabular-nums px-1.5 focus-visible:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      onChange={(val) => onUnitPriceChange(item.productItemId, val)}
+                      className="w-28 h-9 text-right text-base font-bold tabular-nums px-1.5 focus-visible:ring-primary"
                     />
                   </div>
                 </TableCell>
 
-                {/* Unit Discount editor */}
                 <TableCell>
-                  <div className="flex justify-end">
-                    <Input
-                      type="number"
+                  <div className="flex flex-col items-end gap-0.5">
+                    {/* Không giới hạn bằng `max`: cắt im lặng làm thu ngân không biết số mình gõ đã bị đổi. */}
+                    <MoneyInput
                       value={item.discountAmount}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        const cleanVal = isNaN(val) || val < 0 ? 0 : val;
-                        // Clamp discount amount to item unit price
-                        onDiscountChange(
-                          item.productItemId,
-                          cleanVal > item.unitPrice ? item.unitPrice : cleanVal,
-                        );
-                      }}
-                      className="w-24 h-9 text-right text-base font-bold text-red-500 tabular-nums px-1.5 focus-visible:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      onChange={(val) => onDiscountChange(item.productItemId, val)}
+                      className={cn(
+                        "w-24 h-9 text-right text-base font-bold text-red-500 tabular-nums px-1.5 focus-visible:ring-primary",
+                        isOverDiscounted && "border-destructive",
+                      )}
                     />
+                    {isOverDiscounted && (
+                      <span className="text-xs font-medium text-destructive">
+                        Giảm giá vượt thành tiền
+                      </span>
+                    )}
                   </div>
                 </TableCell>
 
-                {/* Row Total */}
                 <TableCell className="text-right font-bold text-lg tabular-nums text-foreground">
                   {formatVND(rowTotal)}
                 </TableCell>
 
-                {/* Delete button */}
                 <TableCell>
                   <Button
                     type="button"

@@ -7,8 +7,9 @@ export interface Branch {
   address?: string;
   email?: string;
   status: BranchStatus;
-  /** Who runs this location. Appointed through `PATCH /:id/manager`, not by holding a
-   *  particular role - the rewrite moved that from `User.role` onto the location itself. */
+  /** Kho xuất hàng mặc định của đơn chi nhánh này; để trống = chính chi nhánh. */
+  defaultFulfillmentLocationId?: string | null;
+  /** Người quản lý địa điểm, gán qua `PATCH /:id/manager` chứ không theo vai trò tài khoản. */
   managerId?: string | null;
   createdAt: string;
   updatedAt?: string;

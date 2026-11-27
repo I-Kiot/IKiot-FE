@@ -37,22 +37,20 @@ export function AboutSection() {
   return (
     <section id="about" className="py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div className="mx-auto max-w-4xl text-center mb-16">
           <Badge variant="outline" className="mb-4">
             Về iKiot
           </Badge>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-6">
-            Giải pháp chuyên biệt cho chuỗi cửa hàng điện tử & công nghệ
+            Giải pháp chuyên biệt cho chuỗi cửa hàng
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            iKiot mang sứ mệnh đồng hành cùng các nhà bán lẻ công nghệ tối ưu
+            iKiot mang sứ mệnh đồng hành cùng các nhà bán lẻ tối ưu
             hóa quy trình quản trị, bán lẻ đa chi nhánh nhanh chóng và hiệu quả
             hơn nhờ sức mạnh của dữ liệu lớn và trí tuệ nhân tạo.
           </p>
         </div>
 
-        {/* Modern Values Grid with Enhanced Design */}
         <div className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 xl:grid-cols-4 mb-12">
           {values.map((value, index) => (
             <Card key={index} className="group shadow-xs py-2">

@@ -22,24 +22,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DataTableEmpty } from '@/components/data-table/data-table-empty'
+import { DataTableLoading } from '@/components/data-table/data-table-loading'
+import { DataTablePagination } from '@/components/data-table/data-table-pagination'
 import { cn } from '@/lib/utils'
 import { parseLocationKey } from '@/lib/location-key'
 import { useAuthStore } from '@/store/auth-store'
 import { useProducts } from '../../_context/products-provider'
 import { getProductsColumns } from './products-columns'
 import { ProductsToolbar } from './products-toolbar'
-import { ProductsPagination } from './products-pagination'
 import { ProductsExpandedPanel } from './products-expanded-panel'
-import { ProductsEmpty } from '../products-empty'
 
 export function ProductsTable() {
-  const { products, setSelectedIds, selectionVersion, brands, categories, skuSearchIndex } =
+  const { screen, products, isLoading, setSelectedIds, selectionVersion, brands, categories, skuSearchIndex } =
     useProducts()
   const locationKey = useAuthStore((state) => state.locationKey)
   const isLocationScoped = parseLocationKey(locationKey) !== null
   const columns = useMemo(
-    () => getProductsColumns(brands, categories, isLocationScoped),
-    [brands, categories, isLocationScoped],
+    () =>
+      getProductsColumns(brands, categories, isLocationScoped && screen.showChainStock).filter(
+        (column) => screen.showStock || column.id !== 'stock',
+      ),
+    [brands, categories, isLocationScoped, screen.showStock, screen.showChainStock],
   )
 
   const [sorting, setSorting] = useState<SortingState>([{ id: 'status', desc: false }])
@@ -64,8 +68,7 @@ export function ProductsTable() {
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     onExpandedChange: setExpanded,
-    // Default global filter only sees column values on `Product` rows, which never
-    // carry sku/productCode - match those via the pre-built skuSearchIndex instead.
+    // Khớp SKU và mã hàng qua skuSearchIndex.
     globalFilterFn: (row, _columnId, filterValue) => {
       const term = String(filterValue ?? '').trim().toLowerCase()
       if (!term) return true
@@ -91,6 +94,11 @@ export function ProductsTable() {
     if (selectionVersion > 0) setRowSelection({})
   }, [selectionVersion])
 
+  const rows = table.getRowModel().rows
+  const columnCount = table.getVisibleLeafColumns().length
+  // Skeleton chỉ khi chưa có dữ liệu nào; lúc thêm/sửa/xoá (cũng bật isLoading) vẫn giữ các dòng cũ.
+  const showLoading = isLoading && products.length === 0
+
   return (
     <div className="space-y-4">
       <ProductsToolbar table={table} />
@@ -111,8 +119,10 @@ export function ProductsTable() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, index, rows) => (
+            {showLoading && <DataTableLoading columnCount={columnCount} />}
+            {!showLoading && rows.length === 0 && <DataTableEmpty columnCount={columnCount} />}
+            {!showLoading &&
+              rows.map((row, index) => (
                 <Fragment key={row.id}>
                   <TableRow
                     data-state={row.getIsSelected() ? 'selected' : undefined}
@@ -145,7 +155,7 @@ export function ProductsTable() {
                     <TableCell colSpan={row.getVisibleCells().length} className="p-0">
                       <div
                         className={cn(
-                          'grid transition-[grid-template-rows] duration-300 ease-in-out',
+                          'sticky left-0 w-[100cqw] grid transition-[grid-template-rows] duration-300 ease-in-out',
                           row.getIsExpanded() ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
                         )}
                       >
@@ -160,19 +170,23 @@ export function ProductsTable() {
                     </TableCell>
                   </TableRow>
                 </Fragment>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length}>
-                  <ProductsEmpty />
-                </TableCell>
-              </TableRow>
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>
 
-      <ProductsPagination table={table} />
+      <DataTablePagination
+        page={table.getState().pagination.pageIndex + 1}
+        pageCount={table.getPageCount()}
+        pageSize={table.getState().pagination.pageSize}
+        total={table.getFilteredRowModel().rows.length}
+        unit={screen.noun}
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+        onPageSizeChange={(pageSize) => {
+          table.setPageSize(pageSize)
+          table.setPageIndex(0)
+        }}
+      />
     </div>
   )
 }

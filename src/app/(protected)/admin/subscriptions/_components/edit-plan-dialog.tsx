@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
@@ -41,7 +42,7 @@ type EditPlanDialogProps = {
   onSubmit: (id: string, payload: UpdatePlanPayload) => Promise<boolean>;
 };
 
-// number input onChange helper: empty string -> NaN so zod flags "required"
+// Ô số: chuỗi rỗng -> NaN để zod báo lỗi "bắt buộc".
 const numberChange =
   (onChange: (v: number) => void) =>
   (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -179,11 +180,9 @@ export function EditPlanDialog({
                   <FormItem>
                     <FormLabel>Giá (VND)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={Number.isNaN(field.value) ? "" : field.value}
-                        onChange={numberChange(field.onChange)}
+                      <MoneyInput
+                        value={Number.isNaN(field.value) ? 0 : field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />

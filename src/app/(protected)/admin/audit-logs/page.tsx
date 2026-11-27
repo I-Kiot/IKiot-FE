@@ -24,19 +24,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
+import { PageFooter } from "@/components/layouts/page-footer";
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filter states
   const [userQuery, setUserQuery] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [resourceFilter, setResourceFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
   const [totalPages, setTotalPages] = useState(1);
@@ -77,7 +76,6 @@ export default function AuditLogsPage() {
     pageSize,
   ]);
 
-  // Debounce text filters (user query + resource) by 400ms
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -126,7 +124,7 @@ export default function AuditLogsPage() {
         description="Lưu giữ toàn bộ thao tác thay đổi, thêm, xóa thông tin của các quản trị viên cấp cao trên hệ thống."
       />
 
-      {/* Toolbar / Filters - reactive, no buttons needed */}
+      {/* Bộ lọc áp dụng ngay khi thay đổi, không cần nút. */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
         <div className="space-y-1">
           <Label className="text-xs font-semibold">Người thực hiện</Label>
@@ -201,7 +199,6 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      {/* Main Table Card */}
       <div className="rounded-xl border bg-card overflow-hidden shadow-xs">
         <Table>
           <TableHeader className="bg-muted/40">
@@ -294,9 +291,8 @@ export default function AuditLogsPage() {
         </Table>
       </div>
 
-      {/* Pagination Footer */}
-      {!loading && logs.length > 0 && (
-        <div className="flex items-center justify-between space-x-2 py-4">
+      <PageFooter>
+        <div className="flex items-center justify-between space-x-2 py-3">
           <div className="flex items-center space-x-2">
             <Label htmlFor="page-size" className="text-sm font-medium">
               Hiển thị
@@ -331,7 +327,7 @@ export default function AuditLogsPage() {
             <div className="flex items-center space-x-2 text-sm">
               <p className="font-medium text-xs text-muted-foreground">Trang</p>
               <strong className="text-xs">
-                {currentPage} / {totalPages}
+                {currentPage} / {Math.max(totalPages, 1)}
               </strong>
             </div>
             <div className="flex items-center space-x-2">
@@ -350,7 +346,7 @@ export default function AuditLogsPage() {
                 onClick={() =>
                   setCurrentPage(Math.min(currentPage + 1, totalPages))
                 }
-                disabled={currentPage === totalPages}
+                disabled={currentPage >= totalPages}
                 className="cursor-pointer h-8 text-xs"
               >
                 Sau
@@ -358,7 +354,7 @@ export default function AuditLogsPage() {
             </div>
           </div>
         </div>
-      )}
+      </PageFooter>
     </div>
   );
 }

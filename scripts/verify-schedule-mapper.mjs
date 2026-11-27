@@ -1,7 +1,4 @@
-/**
- * Schedule mapper / calendar expansion / workplace scope checks.
- * Run: node scripts/verify-schedule-mapper.mjs
- */
+/** Kiểm mapper lịch, mở rộng lịch và phạm vi nơi làm việc. Chạy: node scripts/verify-schedule-mapper.mjs */
 
 function buildStaffLabel(assignees) {
   if (assignees.length === 0) return "-";
@@ -29,7 +26,6 @@ function filterScheduleToWorkplaceScope(schedule, scope) {
     staffName: buildStaffLabel(assignees),
     staffAvatarUrl: firstAssignee?.staffAvatarUrl,
     staffPhone: firstAssignee?.staffPhone ?? "",
-    attendance: firstAssignee?.attendance ?? schedule.attendance,
   };
 }
 
@@ -66,7 +62,6 @@ const multiSchedule = {
     { userId: "u2", staffName: "Bình", branchId: "br-b" },
   ],
   staffName: "An, Bình",
-  attendance: {},
 };
 
 let failed = 0;

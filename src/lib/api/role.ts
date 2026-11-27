@@ -1,4 +1,3 @@
-// [API – Role]
 import client from '@/lib/api/client'
 import type {
   PermissionCatalogEntry,
@@ -8,11 +7,7 @@ import type {
   RoleUpdatePayload,
 } from '@/types/role'
 
-/**
- * Hình dạng backend trả về. `_count.users` là số tài khoản đang giữ vai trò - được làm
- * phẳng thành `userCount` để phần còn lại của FE không phải biết đến quy ước đặt tên của
- * Prisma.
- */
+/** Dạng vai trò backend trả về. */
 interface RoleDoc {
   id: string
   name: string
@@ -35,25 +30,56 @@ function mapRole(doc: RoleDoc): Role {
   }
 }
 
-/**
- * Gom danh mục phẳng thành từng nhóm tài nguyên.
- *
- * Backend trả 150 cặp (resource, action) đã sắp xếp sẵn; một danh sách phẳng 150 dòng
- * checkbox thì không ai chọn nổi, nên giao diện làm việc trên ~30 nhóm.
- */
+/** Gom danh mục quyền phẳng thành nhóm tài nguyên. */
+/** Nhãn nhóm quyền theo tên trên thanh điều hướng. */
+const RESOURCE_NAV_LABELS: Record<string, { label: string; hint: string }> = {
+  reports: { label: 'Tổng quan & Sổ thu chi', hint: 'Quản lý › Tổng quan, Sổ thu chi' },
+  ai_chat: { label: 'Trợ lý AI', hint: 'Quản lý › Trợ lý AI' },
+  users: { label: 'Nhân viên - Danh sách', hint: 'Quản lý › Nhân viên › Danh sách' },
+  schedules: { label: 'Nhân viên - Lịch làm', hint: 'Quản lý › Nhân viên › Lịch làm' },
+  holidays: { label: 'Nhân viên - Ngày lễ', hint: 'Quản lý › Nhân viên › Ngày lễ' },
+  products: { label: 'Hàng hóa - Danh sách', hint: 'Quản lý bán hàng › Hàng hóa › Danh sách' },
+  categories: { label: 'Hàng hóa - Danh mục', hint: 'Quản lý bán hàng › Hàng hóa › Danh mục' },
+  brands: { label: 'Hàng hóa - Thương hiệu', hint: 'Quản lý bán hàng › Hàng hóa › Thương hiệu' },
+  inventory: { label: 'Hàng hóa - Tồn kho', hint: 'Quản lý bán hàng › Hàng hóa (cột Tồn kho)' },
+  suppliers: { label: 'Giao dịch - Nhà cung cấp', hint: 'Quản lý bán hàng › Giao dịch › Nhà cung cấp' },
+  stock_movement: {
+    label: 'Giao dịch - Nhập hàng / Chuyển kho / Điều chỉnh',
+    hint: 'Quản lý bán hàng › Giao dịch › Nhập hàng, Chuyển kho, Điều chỉnh tồn kho',
+  },
+  orders: { label: 'Đơn hàng - Hoá đơn', hint: 'Quản lý bán hàng › Đơn hàng › Hoá đơn; Bán hàng' },
+  cash_drawers: { label: 'Két tiền', hint: 'Quản lý bán hàng › Két tiền › Hôm nay, Lịch sử' },
+  cash_flows: { label: 'Sổ thu chi (phiếu thu/chi)', hint: 'Quản lý › Sổ thu chi' },
+  customers: { label: 'Khách hàng', hint: 'CRM › Khách hàng' },
+  promotions: { label: 'Khuyến mãi', hint: 'CRM › Khuyến mãi' },
+  tickets: { label: 'Phản ánh', hint: 'CSKH › Phản ánh' },
+  branches: { label: 'Chi nhánh', hint: 'Bộ chọn chi nhánh (góc trên sidebar); Cài đặt' },
+  warehouses: { label: 'Kho', hint: 'Bộ chọn kho (góc trên sidebar); Cài đặt' },
+  profile: { label: 'Hồ sơ cá nhân', hint: 'Cài đặt › Tài khoản' },
+  subscriptions: { label: 'Gói dịch vụ', hint: 'Cài đặt › Thanh toán' },
+  tenants: { label: 'Cửa hàng (doanh nghiệp)', hint: 'Cài đặt › Cửa hàng' },
+}
+
 export function groupCatalog(
   entries: PermissionCatalogEntry[],
 ): PermissionResourceGroup[] {
   const groups = new Map<string, PermissionResourceGroup>()
   for (const entry of entries) {
     const group = groups.get(entry.resource)
+    const descriptions = entry.description
+      ? { [entry.action]: entry.description }
+      : {}
     if (group) {
       group.actions.push(entry.action)
+      Object.assign(group.descriptions, descriptions)
     } else {
+      const nav = RESOURCE_NAV_LABELS[entry.resource]
       groups.set(entry.resource, {
         resource: entry.resource,
-        label: entry.label || entry.resource,
+        label: nav?.label ?? entry.label ?? entry.resource,
+        hint: nav?.hint,
         actions: [entry.action],
+        descriptions,
       })
     }
   }

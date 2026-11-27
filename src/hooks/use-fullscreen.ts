@@ -12,7 +12,7 @@ export function useFullscreen() {
 
     document.addEventListener("fullscreenchange", handleFullscreenChange)
     
-    // Defer check to avoid synchronous state updates during react's render phase
+    // Đẩy việc kiểm tra sang microtask để tránh setState đồng bộ trong lúc render.
     Promise.resolve().then(() => {
       setIsFullscreen(!!document.fullscreenElement)
     })

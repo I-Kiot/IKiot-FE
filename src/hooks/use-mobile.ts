@@ -15,7 +15,7 @@ export function useIsMobile() {
       mql.addEventListener("change", onChange)
     }
     
-    // Defer check to avoid synchronous state updates during react's render phase
+    // Đẩy việc kiểm tra sang microtask để tránh setState đồng bộ trong lúc render.
     Promise.resolve().then(() => {
       setIsMobile(typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false)
     })

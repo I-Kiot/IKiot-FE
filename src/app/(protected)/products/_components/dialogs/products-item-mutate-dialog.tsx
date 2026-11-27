@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { CurrencySuffix } from "@/app/(protected)/exchange/shared/form-fields";
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Pencil, Plus, ShoppingBag, X } from 'lucide-react'
+import { Pencil, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { uploadImage } from '@/lib/api/upload'
 import {
   Dialog,
   DialogContent,
@@ -33,10 +33,20 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import type { ProductItem } from '@/types/product'
+import type { ProductItem, ProductType } from '@/types/product'
 import { productApi } from '@/lib/api/product'
+import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
 import { productItemFormSchema, type ProductItemFormValues } from '../../_types/product.types'
 import { formatPriceAmount, parsePriceAmount } from '../../_constants/product.constants'
+import { ProductItemImagesField, toItemImagePayload } from '../product-item-images-field'
+import {
+  ComboComponentsField,
+  ComboCostField,
+  hasInvalidQuantity,
+  toComboPayload,
+  toComboRows,
+  type ComboComponentRow,
+} from '../combo-components-field'
 
 const EMPTY_VALUES: ProductItemFormValues = {
   useParentNameForItem: true,
@@ -59,6 +69,8 @@ type Props =
       mode: 'create'
       productId: string
       productName: string
+      /** Loại của sản phẩm cha - phiên bản mới luôn cùng loại (BE tự gán itemType theo nó). */
+      productType: ProductType
       open: boolean
       onOpenChange: (open: boolean) => void
       onSuccess: (item: ProductItem) => void
@@ -75,7 +87,11 @@ export function ProductsItemMutateDialog(props: Props) {
   const { open, onOpenChange, onSuccess } = props
   const isEdit = props.mode === 'edit'
   const existingItem = props.mode === 'edit' ? props.item : undefined
+  // Còn ảnh đang tải lên thì khoá nút Lưu, tránh lưu thiếu ảnh.
   const [uploading, setUploading] = useState(false)
+  const [comboRows, setComboRows] = useState<ComboComponentRow[]>([])
+  // Loại theo sản phẩm cha, không chọn ở đây.
+  const isCombo = (isEdit ? existingItem?.itemType : props.productType) === 'COMBO'
 
   const form = useForm<ProductItemFormValues>({
     resolver: zodResolver(productItemFormSchema),
@@ -99,33 +115,19 @@ export function ProductsItemMutateDialog(props: Props) {
         vat: existingItem.vat != null ? String(existingItem.vat) : '',
         warrantyPeriod: existingItem.warrantyPeriod ?? '',
         description: existingItem.description ?? '',
-        images: existingItem.images ?? [],
+        images: toItemImagePayload(existingItem.images),
         productDetails: existingItem.productDetails?.map((d) => ({ name: d.name, value: d.value })) ?? [],
-        // Not used in edit mode (only create needs the parent/custom choice),
-        // but the schema requires a value.
+        // Không dùng khi sửa (chỉ lúc tạo mới cần chọn cha/tuỳ chỉnh), nhưng schema bắt buộc có giá trị.
         useParentNameForItem: true,
         itemProductName: existingItem.productName,
       })
+      setComboRows(toComboRows(existingItem.comboComponents))
     } else {
       form.reset(EMPTY_VALUES)
+      setComboRows([])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isEdit, existingItem, form])
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const url = await uploadImage(file)
-      form.setValue('images', [{ url, isThumbnail: true }])
-      toast.success('Tải ảnh lên thành công')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Tải ảnh lên thất bại')
-    } finally {
-      setUploading(false)
-    }
-  }
 
   async function onSubmit(data: ProductItemFormValues) {
     if (props.mode === 'create' && !data.useParentNameForItem && !data.itemProductName?.trim()) {
@@ -136,14 +138,32 @@ export function ProductsItemMutateDialog(props: Props) {
       form.setError('itemProductName', { message: 'Tên phiên bản là bắt buộc' })
       return
     }
+    if (!isCombo && !data.costPrice?.trim()) {
+      form.setError('costPrice', { message: 'Giá vốn là bắt buộc' })
+      return
+    }
+    if (isCombo && comboRows.length === 0) {
+      toast.error('Combo phải có ít nhất một món')
+      return
+    }
+    if (isCombo && hasInvalidQuantity(comboRows)) {
+      toast.error('Số lượng mỗi món trong combo phải từ 1 đến 999')
+      return
+    }
 
     const { useParentNameForItem, itemProductName, ...rest } = data
     const payload = {
       ...rest,
-      costPrice: parsePriceAmount(data.costPrice),
+      // Để trống: tạo mới thì BE tự sinh, sửa thì giữ nguyên mã hiện có.
+      productCode: data.productCode?.trim() || undefined,
+      sku: data.sku?.trim() || undefined,
+      // Combo: BE tự tính từ các món, không gửi.
+      costPrice: isCombo ? undefined : parsePriceAmount(data.costPrice),
       retailPrice: parsePriceAmount(data.retailPrice),
       vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
+      images: toItemImagePayload(data.images),
       productDetails: data.productDetails?.filter((d) => d.name.trim() && d.value.trim()),
+      comboComponents: isCombo ? toComboPayload(comboRows) : undefined,
     }
     try {
       let result: ProductItem
@@ -162,8 +182,11 @@ export function ProductsItemMutateDialog(props: Props) {
       }
       onSuccess(result)
       onOpenChange(false)
-    } catch {
-      toast.error(isEdit ? 'Cập nhật phiên bản thất bại' : 'Thêm phiên bản thất bại')
+    } catch (error) {
+      toast.error(
+        messageForCode(getApiErrorBody(error)?.code) ??
+          (isEdit ? 'Cập nhật phiên bản thất bại' : 'Thêm phiên bản thất bại'),
+      )
     }
   }
 
@@ -181,7 +204,6 @@ export function ProductsItemMutateDialog(props: Props) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* === Tên phiên bản: dùng tên hàng hóa hoặc đặt tên riêng === */}
             {!isEdit && (
               <>
                 <FormField
@@ -247,55 +269,17 @@ export function ProductsItemMutateDialog(props: Props) {
               />
             )}
 
-            {/* === Tải ảnh phiên bản === */}
-            <div className="space-y-2">
-              <FormLabel>Hình ảnh phiên bản</FormLabel>
-              <div className="flex items-center gap-4">
-                <div className="size-20 rounded-lg border bg-muted flex items-center justify-center overflow-hidden relative shrink-0">
-                  {form.watch('images')?.[0]?.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={form.watch('images')?.[0]?.url}
-                      alt="Variant preview"
-                      className="object-cover size-full"
-                    />
-                  ) : (
-                    <ShoppingBag className="size-8 text-muted-foreground" />
-                  )}
-                  {uploading && (
-                    <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                      <span className="animate-spin size-4 border-2 border-primary border-t-transparent rounded-full" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="cursor-pointer max-w-xs"
-                    />
-                    {form.watch('images')?.[0]?.url && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => form.setValue('images', [])}
-                        disabled={uploading}
-                        className="cursor-pointer text-destructive border-destructive/20 hover:bg-destructive/10"
-                      >
-                        Xóa ảnh
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Hỗ trợ định dạng JPG, PNG. Dung lượng tối đa 5MB.
-                  </p>
-                </div>
-              </div>
-            </div>
+            {/* === Thành phần combo (phiên bản của combo luôn là combo) === */}
+            {isCombo && (
+              <ComboComponentsField value={comboRows} onChange={setComboRows} selfId={existingItem?.id} />
+            )}
+
+            <ProductItemImagesField
+              value={form.watch('images') ?? []}
+              onChange={(images) => form.setValue('images', images, { shouldDirty: true })}
+              getLatest={() => form.getValues('images') ?? []}
+              onBusyChange={setUploading}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -303,11 +287,9 @@ export function ProductsItemMutateDialog(props: Props) {
                 name="productCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Mã hàng <span className="text-destructive">*</span>
-                    </FormLabel>
+                    <FormLabel>Mã hàng</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: HH-001" {...field} />
+                      <Input placeholder="Để trống để tự sinh (SP000001...)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -318,11 +300,9 @@ export function ProductsItemMutateDialog(props: Props) {
                 name="sku"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      SKU <span className="text-destructive">*</span>
-                    </FormLabel>
+                    <FormLabel>SKU</FormLabel>
                     <FormControl>
-                      <Input placeholder="VD: SKU-HH001-001" {...field} />
+                      <Input placeholder="Để trống để lấy theo mã hàng" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -331,30 +311,37 @@ export function ProductsItemMutateDialog(props: Props) {
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="costPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Giá vốn (đ) <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        inputMode="numeric"
-                        placeholder="0"
-                        className="tabular-nums"
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, '')
-                          field.onChange(digits ? formatPriceAmount(digits) : '')
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              {isCombo ? (
+                <ComboCostField rows={comboRows} />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="costPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Giá vốn (đ) <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                        <Input
+                          inputMode="numeric"
+                          placeholder="0"
+                          className="tabular-nums pr-7"
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '')
+                            field.onChange(digits ? formatPriceAmount(digits) : '')
+                          }}
+                        />
+                        </FormControl>
+                        <CurrencySuffix />
+                      </div>
+                      <FormMessage />
+                    </FormItem>
                 )}
               />
+              )}
               <FormField
                 control={form.control}
                 name="retailPrice"
@@ -363,18 +350,21 @@ export function ProductsItemMutateDialog(props: Props) {
                     <FormLabel>
                       Giá bán (đ) <span className="text-destructive">*</span>
                     </FormLabel>
-                    <FormControl>
+                    <div className="relative">
+                      <FormControl>
                       <Input
                         inputMode="numeric"
                         placeholder="0"
-                        className="tabular-nums"
+                        className="tabular-nums pr-7"
                         value={field.value ?? ''}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, '')
                           field.onChange(digits ? formatPriceAmount(digits) : '')
                         }}
                       />
-                    </FormControl>
+                      </FormControl>
+                      <CurrencySuffix />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -453,7 +443,6 @@ export function ProductsItemMutateDialog(props: Props) {
               )}
             />
 
-            {/* === Thuộc tính sản phẩm === */}
             <Separator />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -510,7 +499,7 @@ export function ProductsItemMutateDialog(props: Props) {
               >
                 Hủy
               </Button>
-              <Button type="submit" className="cursor-pointer">
+              <Button type="submit" disabled={uploading} className="cursor-pointer">
                 {isEdit ? (
                   <>
                     <Pencil className="mr-2 h-4 w-4" />

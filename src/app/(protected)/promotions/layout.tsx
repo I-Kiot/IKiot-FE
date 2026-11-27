@@ -1,4 +1,3 @@
-// [Layout – Promotions]
 import { PromotionsProvider } from './_context/promotions-provider'
 import { PromotionsDialogs } from './_components/dialogs/promotions-dialogs'
 

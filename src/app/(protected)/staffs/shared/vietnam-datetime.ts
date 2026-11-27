@@ -1,8 +1,4 @@
-/**
- * Đồng bộ với BE WorkingScheduleDateUtils - múi giờ Việt Nam (UTC+7).
- * BE lưu startAt/endAt dạng UTC nhưng biểu diễn giờ địa phương VN
- * (vd. 08:00 VN → 2026-07-01T01:00:00.000Z).
- */
+/** Ngày giờ theo múi giờ Việt Nam, khớp BE. */
 export const VIETNAM_TIMEZONE = "Asia/Ho_Chi_Minh";
 
 /** YYYY-MM-DD theo giờ Việt Nam. */
@@ -31,10 +27,7 @@ export function extractVietnamDateFromIso(iso?: string | null): string {
   }).format(new Date(iso));
 }
 
-/**
- * workDate từ BE được neo ở UTC 00:00 cho ngày làm việc - lấy YYYY-MM-DD trực tiếp.
- * Nếu thiếu workDate, suy ra từ startAt theo giờ VN.
- */
+/** Lấy ngày làm việc YYYY-MM-DD. */
 export function resolveWorkDateText(
   workDate?: string | null,
   startAt?: string | null,
@@ -64,7 +57,7 @@ export function formatVietnamWorkDate(dateText?: string | null): string {
   }).format(utcAnchor);
 }
 
-/** Hiển thị ngày giờ thực tế (check-in/out, createdAt...) theo giờ VN. */
+/** Hiển thị ngày giờ thực tế (createdAt, updatedAt...) theo giờ VN. */
 export function formatVietnamDateTime(iso?: string | null): string {
   if (!iso) return "-";
   try {

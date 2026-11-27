@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { getSocket } from "@/lib/socket";
+import { rememberNotified } from "@/lib/live-refresh";
 import { onForegroundMessage } from "@/lib/fcm";
+import { playNotificationSound } from "@/lib/notification-sound";
 import { useNotificationInboxStore } from "@/store/notification-inbox-store";
 import type { AppNotification } from "@/lib/api/notification";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,6 +23,9 @@ export function useNotificationSocket() {
 
     const handle = (notification: AppNotification) => {
       receive(notification);
+      // Cùng chứng từ vừa đổi thì không cần thêm toast "thay đổi" (xem live-refresh).
+      rememberNotified(notification.referenceId);
+      playNotificationSound();
       toast.success(notification.title, {
         description: notification.description,
       });
@@ -33,10 +38,9 @@ export function useNotificationSocket() {
   }, [user?.id, receive]);
 
   useEffect(() => {
-    // Khi tab đang focus, service worker KHÔNG tự hiện popup (trình duyệt cố ý
-    // nhường app tự quyết) → bắn toast. Nếu bỏ đoạn này, user đang mở app sẽ
-    // không thấy gì cả.
+    // Tab đang focus thì tự bắn toast.
     return onForegroundMessage((payload) => {
+      playNotificationSound();
       toast.success(payload.notification?.title ?? "Thông báo", {
         description: payload.notification?.body,
       });

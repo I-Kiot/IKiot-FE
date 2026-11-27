@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert } from "lucide-react";
+import { getHomeRoute } from "@/components/sidebar/utils/get-sidebar";
 
 export function UnauthorizedPage() {
   const router = useRouter();
@@ -14,13 +15,7 @@ export function UnauthorizedPage() {
       router.push("/sign-in");
       return;
     }
-    if (user.role === "ADMIN") {
-      router.push("/admin/dashboard");
-    } else if (user.role === "STAFF") {
-      router.push("/check-out");
-    } else {
-      router.push("/dashboard");
-    }
+    router.push(getHomeRoute(user.role));
   };
 
   return (

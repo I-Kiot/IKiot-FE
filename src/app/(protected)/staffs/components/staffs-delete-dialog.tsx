@@ -20,19 +20,7 @@ type StaffsDeleteDialogProps = {
   currentRow: Staff | null;
 };
 
-/**
- * Xóa nhân viên.
- *
- * This dialog used to ask for a replacement manager first, because the old backend took a
- * `replacementManagerId` and swapped the outgoing manager out in the same call. That flow
- * is gone: running a location is `Branch.managerId` / `Warehouse.managerId`, appointed
- * through its own endpoint, and `DELETE /users/:id` now takes **no body** - anything sent
- * would be dropped silently.
- *
- * So the check moved to where it is actually enforced. The backend refuses while the
- * account still runs a location or is named as the handover contact on a leave request in
- * force, and says which; that message is what the toast shows.
- */
+/** Xoá nhân viên. */
 export function StaffsDeleteDialog({
   open,
   onOpenChange,
@@ -56,8 +44,7 @@ export function StaffsDeleteDialog({
       await handleDelete(currentRow.id);
       onOpenChange(false);
     } catch {
-      // The provider toasts the backend's reason - including "reassign the branch this
-      // person runs first", which is the case this dialog used to try to handle itself.
+      // Provider đã toast lý do từ backend (ví dụ: phải bàn giao chi nhánh trước).
     } finally {
       setIsSubmitting(false);
     }

@@ -23,25 +23,22 @@ async function fetchMovement(id: string, fallback: StockMovement) {
   }
 }
 
-/** Load chi tiết phiếu khi expand row (GET-by-id để có đủ tên SP). */
+/** Tải chi tiết phiếu khi mở rộng dòng. */
 export function useStockMovementDetail(
   request: StockMovement,
   isExpanded: boolean,
 ) {
-  const [detail, setDetail] = useState(request);
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<{ id: string; detail: StockMovement } | null>(null);
+  const loading = isExpanded && state?.id !== request.id;
+  const detail = state?.id === request.id ? state.detail : request;
 
   useEffect(() => {
     if (!isExpanded) return;
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
       const next = await fetchMovement(request.id, request);
-      if (!cancelled) {
-        setDetail(next);
-        setLoading(false);
-      }
+      if (!cancelled) setState({ id: request.id, detail: next });
     }
 
     void load();
@@ -50,10 +47,9 @@ export function useStockMovementDetail(
     };
   }, [isExpanded, request]);
 
+  // Tải lại im lặng (giữ chi tiết đang hiện cho tới khi có bản mới).
   const refreshDetail = useCallback(async () => {
-    setLoading(true);
-    setDetail(await fetchMovement(request.id, request));
-    setLoading(false);
+    setState({ id: request.id, detail: await fetchMovement(request.id, request) });
   }, [request]);
 
   return { detail, loading, refreshDetail };
@@ -93,6 +89,14 @@ export function useOpeningEditor({
   const [receivedQtys, setReceivedQtys] = useState<Record<string, number>>({});
   const [showReceiveForm, setShowReceiveForm] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  /** Bỏ phần đang sửa để nạp lại chi tiết mới. */
+  const reset = useCallback(() => {
+    setOpeningDetails([]);
+    setReceivedQtys({});
+    setOpeningRowErrors([]);
+    setShowReceiveForm(false);
+  }, []);
 
   useEffect(() => {
     if (!isExpanded) {
@@ -145,7 +149,7 @@ export function useOpeningEditor({
 
     let cancelled = false;
 
-    // EXPORT/RETURN OPENING: products at source
+    // Phiếu XUẤT / TRẢ: sản phẩm lấy ở nơi gửi.
     if (
       enabled &&
       detail.status === "OPENING" &&
@@ -165,9 +169,7 @@ export function useOpeningEditor({
       };
     }
 
-    // IMPORT: dropdown = toàn catalog. NCC chỉ là thông tin trên giấy tờ, không ràng buộc
-    // hàng hóa - trước đây dropdown chỉ liệt kê SP đã gắn NCC nên hàng mới nhập lần đầu
-    // của một NCC không bao giờ chọn được.
+    // Phiếu nhập: dropdown là toàn bộ danh mục.
     if (detail.movementType === "IMPORT") {
       stockMovementApi
         .getCatalogProductItems()
@@ -350,5 +352,6 @@ export function useOpeningEditor({
     removeOpeningRow,
     validateOpening,
     runAction,
+    reset,
   };
 }

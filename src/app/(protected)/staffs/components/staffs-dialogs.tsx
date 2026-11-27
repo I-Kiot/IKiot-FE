@@ -5,7 +5,6 @@ import { AssignBranchManagerDialog } from "./assign-branch-manager-dialog";
 import { AssignWarehouseManagerDialog } from "./assign-warehouse-manager-dialog";
 import { StaffsDeactivateDialog } from "./staffs-deactivate-dialog";
 import { StaffsDeleteDialog } from "./staffs-delete-dialog";
-import { StaffsLeaveBalanceDialog } from "./staffs-leave-balance-dialog";
 import { StaffsMutateDialog } from "./staffs-mutate-dialog";
 import { useStaffs } from "./staffs-provider";
 
@@ -79,13 +78,6 @@ export function StaffsDialogs() {
         }}
         currentRow={currentRow}
         mode="password"
-      />
-      <StaffsLeaveBalanceDialog
-        open={open === "leaveBalance"}
-        onOpenChange={(value) => {
-          if (!value) closeDialog();
-        }}
-        currentRow={currentRow}
       />
       <AssignBranchManagerDialog
         open={assignManagerOpen}

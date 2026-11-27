@@ -5,6 +5,7 @@ import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -23,8 +24,10 @@ import { productApi } from "@/lib/api/product";
 import { inventoryApi } from "@/lib/api/inventory";
 import Image from "next/image";
 import { ProductsEmpty } from "../products-empty";
+import { ComboStockList } from "../combo-stock-list";
 import { ProductsItemMutateDialog } from "../dialogs/products-item-mutate-dialog";
 import { ProductsItemDetailSheet } from "../dialogs/products-item-detail-sheet";
+import { ImageGalleryDialog } from "../image-gallery-dialog";
 import { getCachedUser } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -44,7 +47,10 @@ export function ProductsExpandedPanel({
   isExpanded,
   isLastRow,
 }: ProductsExpandedPanelProps) {
-  const { setOpen, setCurrentRow } = useProducts();
+  const { setOpen, setCurrentRow, screen, detailVersionOf, reloadProducts } =
+    useProducts();
+  // Tăng sau mỗi lần sửa hàng hoá thành công (xem handleEditWrapper trong provider).
+  const detailVersion = detailVersionOf(product.id);
   const locationKey = useAuthStore((s) => s.locationKey);
   const role = getCachedUser()?.role;
   const canEdit = canUpdateProduct(role);
@@ -57,17 +63,27 @@ export function ProductsExpandedPanel({
   const [addOpen, setAddOpen] = useState(false);
   const [viewingItem, setViewingItem] = useState<ProductItem | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
-  const fetchedKeyRef = useRef<string | null>(null);
+  // Phiên bản đang xem ảnh trong lightbox; null = đóng.
+  const [galleryItem, setGalleryItem] = useState<ProductItem | null>(null);
+  // Lần nạp chi tiết gần nhất.
+  const fetchedRef = useRef<{
+    productId: string;
+    locationKey: string | null;
+    version: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!isExpanded) return;
 
-    const key = `${product.id}:${locationKey}`;
-    if (fetchedKeyRef.current === key) return;
-    const isLocationChange =
-      fetchedKeyRef.current !== null &&
-      fetchedKeyRef.current.split(":")[1] !== locationKey;
-    fetchedKeyRef.current = key;
+    const previous = fetchedRef.current;
+    const isSameProduct = previous !== null && previous.productId === product.id;
+    const isSameLocation = isSameProduct && previous.locationKey === locationKey;
+    if (isSameLocation && previous.version === detailVersion) return;
+
+    const isLocationChange = previous !== null && previous.locationKey !== locationKey;
+    // Nạp lại ngầm khi chỉ đổi phiên bản.
+    const isRefreshOnly = isSameLocation;
+    fetchedRef.current = { productId: product.id, locationKey, version: detailVersion };
 
     let cancelled = false;
     const fetchDetail = async () => {
@@ -77,12 +93,14 @@ export function ProductsExpandedPanel({
         setEditOpen(false);
         setEditingItem(null);
       }
-      setLoading(true);
+      if (!isRefreshOnly) setLoading(true);
       try {
         const res = await productApi.getById(product.id);
         if (!cancelled) setDetail({ ...res, items: res.items ?? [] });
+      } catch {
+        if (!cancelled) toast.error("Không tải được chi tiết hàng hoá");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !isRefreshOnly) setLoading(false);
       }
     };
 
@@ -90,7 +108,7 @@ export function ProductsExpandedPanel({
     return () => {
       cancelled = true;
     };
-  }, [isExpanded, product.id, locationKey]);
+  }, [isExpanded, product.id, locationKey, detailVersion]);
 
   function handleItemAdded(newItem: ProductItem) {
     setDetail((prev) => {
@@ -104,8 +122,7 @@ export function ProductsExpandedPanel({
       if (!prev) return prev;
       return {
         ...prev,
-        // PATCH /products/items/:id doesn't populate `suppliers`, so keep the
-        // previously-populated list instead of clobbering it with raw ObjectIds.
+        // Giữ danh sách NCC đã có.
         items: prev.items.map((i) =>
           i.id === updated.id ? { ...updated, suppliers: i.suppliers } : i,
         ),
@@ -149,6 +166,21 @@ export function ProductsExpandedPanel({
           ?.data?.message || "Gỡ vị trí thất bại";
       toast.error(message);
     }
+  }
+
+  /** Nạp lại sau khi xử lý hàng hỏng. */
+  async function handleDamagedChanged() {
+    try {
+      const res = await productApi.getById(product.id);
+      const items = res.items ?? [];
+      setDetail({ ...res, items });
+      setViewingItem((prev) =>
+        prev ? (items.find((i) => i.id === prev.id) ?? prev) : prev,
+      );
+    } catch {
+      toast.error("Không tải lại được tồn kho");
+    }
+    reloadProducts();
   }
 
   if (loading || (isExpanded && !detail)) {
@@ -202,17 +234,10 @@ export function ProductsExpandedPanel({
                     </Button>
                   </div>
 
-                  <Image
-                    src={safeImageSrc(
-                      (
-                        item.images?.find((i) => i.isThumbnail) ??
-                        item.images?.[0]
-                      )?.url,
-                    )}
+                  <ItemThumbnailButton
+                    item={item}
                     alt={product.name}
-                    width={96}
-                    height={96}
-                    className="w-24 h-24 rounded-lg object-contain border shrink-0"
+                    onOpen={() => setGalleryItem(item)}
                   />
 
                   <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 auto-rows-min">
@@ -247,13 +272,27 @@ export function ProductsExpandedPanel({
                       <span className="text-xs text-muted-foreground">
                         Tên phiên bản
                       </span>
-                      <span className="block min-w-0 truncate font-medium">
-                        {item.productName}
+                      <span className="flex min-w-0 items-center gap-2 font-medium">
+                        <span className="truncate">{item.productName}</span>
+                        {item.itemType === "COMBO" && (
+                          <Badge variant="secondary">Combo</Badge>
+                        )}
                       </span>
                     </div>
+                    {/* Số bộ combo bán được. */}
+                    {item.itemType === "COMBO" && (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-muted-foreground">
+                          Thành phần
+                        </span>
+                        <span className="font-semibold">
+                          {item.comboComponents?.length ?? 0} món
+                        </span>
+                      </div>
+                    )}
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs text-muted-foreground">
-                        Tồn kho
+                        {item.itemType === "COMBO" ? "Tồn kho (số bộ)" : "Tồn kho"}
                       </span>
                       <span
                         className={cn(
@@ -295,6 +334,14 @@ export function ProductsExpandedPanel({
                         </div>
                       </div>
                     )}
+                    {item.itemType === "COMBO" && item.comboComponents?.length ? (
+                      <div className="col-span-full flex flex-col gap-1.5">
+                        <span className="text-xs text-muted-foreground">
+                          Tồn kho thành phần
+                        </span>
+                        <ComboStockList components={item.comboComponents} />
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 <Separator />
@@ -308,8 +355,10 @@ export function ProductsExpandedPanel({
         )}
 
         <div className="flex items-center justify-between mt-3">
-          {canDelete && product.status !== "DISCONTINUED" ? (
-            <Button
+          {product.status !== "DISCONTINUED" ? (
+            <PermissionButton
+              allowed={canDelete}
+              permission="products:delete"
               variant="destructive"
               size="sm"
               className="cursor-pointer"
@@ -320,15 +369,16 @@ export function ProductsExpandedPanel({
               }}
             >
               <Trash2 className="mr-2 size-4" />
-              Xóa hàng hóa
-            </Button>
+              Xóa {screen.noun}
+            </PermissionButton>
           ) : (
             <span />
           )}
 
           <div className="flex items-center gap-2">
-            {canAdd && (
-              <Button
+            <PermissionButton
+                allowed={canAdd}
+                permission="products:create"
                 size="sm"
                 variant="outline"
                 className="cursor-pointer"
@@ -339,10 +389,10 @@ export function ProductsExpandedPanel({
               >
                 <Plus className="mr-2 size-4" />
                 Thêm phiên bản
-              </Button>
-            )}
-            {canEdit && (
-              <Button
+              </PermissionButton>
+              <PermissionButton
+                allowed={canEdit}
+                permission="products:update"
                 size="sm"
                 className="cursor-pointer"
                 onClick={(e) => {
@@ -353,8 +403,7 @@ export function ProductsExpandedPanel({
               >
                 <Pencil className="mr-2 size-4" />
                 Chỉnh sửa
-              </Button>
-            )}
+              </PermissionButton>
           </div>
         </div>
       </div>
@@ -383,12 +432,14 @@ export function ProductsExpandedPanel({
             handleLocationRemove(viewingItem.id, inventoryId);
           }
         }}
+        onDamagedChanged={handleDamagedChanged}
       />
 
       <ProductsItemMutateDialog
         mode="create"
         productId={product.id}
         productName={product.name}
+        productType={product.productType ?? 'PRODUCT'}
         open={addOpen}
         onOpenChange={setAddOpen}
         onSuccess={handleItemAdded}
@@ -412,6 +463,62 @@ export function ProductsExpandedPanel({
           }}
         />
       )}
+
+      {galleryItem && (
+        <ImageGalleryDialog
+          key={galleryItem.id}
+          images={galleryItem.images ?? []}
+          open
+          onOpenChange={(v) => {
+            if (!v) setGalleryItem(null);
+          }}
+          alt={galleryItem.productName || product.name}
+        />
+      )}
     </>
+  );
+}
+
+// Ảnh đại diện của phiên bản, bấm mở lightbox.
+function ItemThumbnailButton({
+  item,
+  alt,
+  onOpen,
+}: {
+  item: ProductItem;
+  alt: string;
+  onOpen: () => void;
+}) {
+  const images = item.images ?? [];
+  const hasImages = images.length > 0;
+  const extraCount = images.length - 1;
+
+  return (
+    <button
+      type="button"
+      disabled={!hasImages}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen();
+      }}
+      aria-label="Xem ảnh phiên bản"
+      className={cn(
+        "relative w-24 h-24 shrink-0 rounded-lg border overflow-hidden",
+        hasImages && "cursor-zoom-in hover:opacity-90",
+      )}
+    >
+      <Image
+        src={safeImageSrc(images[0]?.url)}
+        alt={alt}
+        width={96}
+        height={96}
+        className="w-24 h-24 object-contain"
+      />
+      {extraCount > 0 && (
+        <span className="absolute bottom-1 right-1 rounded bg-background/90 px-1.5 text-xs font-medium shadow">
+          +{extraCount}
+        </span>
+      )}
+    </button>
   );
 }

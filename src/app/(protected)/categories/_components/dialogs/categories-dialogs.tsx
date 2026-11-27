@@ -1,4 +1,3 @@
-// [Dialog – Orchestrator Category]
 'use client'
 
 import { useCategories } from '../../_context/categories-provider'

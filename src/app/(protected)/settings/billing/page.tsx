@@ -12,9 +12,7 @@ import { canManageBilling } from "@/components/sidebar/constants/role-permission
 
 export default function BillingSettings() {
   const user = useAuthStore((state) => state.user)
-  // The plan comes from `GET /subscription/current`, not from the session user: `/auth/me`
-  // carries no `subscription` (see `getCurrentSubscription`), and a value this page can
-  // refetch is what lets it redraw itself the moment a payment is confirmed.
+  // Gói lấy từ GET /subscription/current.
   const { subscription, invoices, isLoading, refresh } = useBilling()
 
   return (
@@ -34,17 +32,14 @@ export default function BillingSettings() {
         <BillingHistoryCard invoices={invoices} isLoading={isLoading} />
       </div>
 
-      {canManageBilling(user?.role) && (
-        <>
-          <Separator />
-          <Suspense fallback={null}>
-            <UpgradePlanSection
-              subscription={subscription}
-              onActivated={refresh}
-            />
-          </Suspense>
-        </>
-      )}
+      <Separator />
+      <Suspense fallback={null}>
+        <UpgradePlanSection
+          subscription={subscription}
+          onActivated={refresh}
+          canManage={canManageBilling(user?.role)}
+        />
+      </Suspense>
     </div>
   )
 }

@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getSocket } from "@/lib/socket";
+import { PageFooter } from "@/components/layouts/page-footer";
 import { toast } from "sonner";
 import {
   LifeBuoy,
@@ -51,7 +52,6 @@ export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Pagination state
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [pagination, setPagination] = useState({
@@ -61,7 +61,6 @@ export default function AdminTicketsPage() {
     totalPages: 1,
   });
 
-  // Active ticket selection details modal
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
@@ -81,7 +80,6 @@ export default function AdminTicketsPage() {
     }
   };
 
-  // Load all support tickets initially
   const fetchTickets = (p = page, l = limit) => {
     setLoading(true);
     listAllTickets({ page: p, limit: l })
@@ -102,7 +100,6 @@ export default function AdminTicketsPage() {
     fetchTickets(page, limit);
   }, [page, limit]);
 
-  // Auto-open ticket from URL query parameter (ticketId or id)
   useEffect(() => {
     if (tickets.length > 0) {
       const searchParams = new URLSearchParams(window.location.search);
@@ -118,7 +115,7 @@ export default function AdminTicketsPage() {
     }
   }, [tickets]);
 
-  // Listen to custom 'open-item' event for instant opening when already on this page
+  // Lắng nghe event 'open-item' để mở ticket ngay khi đang ở trang này.
   useEffect(() => {
     const handleOpenItem = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -137,13 +134,11 @@ export default function AdminTicketsPage() {
     return () => window.removeEventListener("open-item", handleOpenItem);
   }, [tickets]);
 
-  // Listen to ticket-update real-time events
   useEffect(() => {
     try {
       const socket = getSocket();
 
       const handleTicketUpdate = (updatedTicket: Ticket) => {
-        // Update list
         setTickets((prev) => {
           const index = prev.findIndex((t) => t.id === updatedTicket.id);
           if (index !== -1) {
@@ -155,7 +150,6 @@ export default function AdminTicketsPage() {
           }
         });
 
-        // Notify active drawer/dialog
         setSelectedTicket((current) => {
           if (current?.id === updatedTicket.id) {
             return updatedTicket;
@@ -177,7 +171,6 @@ export default function AdminTicketsPage() {
     }
   }, []);
 
-  // Scroll to bottom of chat
   useEffect(() => {
     if (selectedTicket) {
       const timer = setTimeout(() => {
@@ -187,7 +180,6 @@ export default function AdminTicketsPage() {
     }
   }, [selectedTicket, selectedTicket?.messages]);
 
-  // Reply submit action
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTicket || !replyMessage.trim()) return;
@@ -211,7 +203,6 @@ export default function AdminTicketsPage() {
     }
   };
 
-  // Close ticket action
   const handleCloseTicket = async () => {
     if (!selectedTicket) return;
 
@@ -275,7 +266,6 @@ export default function AdminTicketsPage() {
         description="Tiếp nhận, phản hồi và đóng các yêu cầu hỗ trợ (tickets) từ các cửa hàng gửi lên hệ thống."
       />
 
-      {/* Tickets List Table */}
       <div className="rounded-xl border bg-card overflow-hidden shadow-xs">
         <Table>
           <TableHeader className="bg-muted/40">
@@ -400,8 +390,8 @@ export default function AdminTicketsPage() {
           </TableBody>
         </Table>
 
-        {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t bg-muted/20">
+        <PageFooter>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Hiển thị:</span>
             <Select
@@ -427,7 +417,7 @@ export default function AdminTicketsPage() {
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground mr-2 font-medium">
-              Trang {pagination.page} / {pagination.totalPages}
+              Trang {pagination.page} / {Math.max(pagination.totalPages, 1)}
             </span>
             <Button
               variant="outline"
@@ -449,9 +439,9 @@ export default function AdminTicketsPage() {
             </Button>
           </div>
         </div>
+        </PageFooter>
       </div>
 
-      {/* Ticket Dialogue Dialogue / Conversation Modal */}
       <Dialog
         open={!!selectedTicket}
         onOpenChange={() => setSelectedTicket(null)}
@@ -459,7 +449,6 @@ export default function AdminTicketsPage() {
         <DialogContent className="sm:max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden border">
           {selectedTicket && (
             <>
-               {/* Header */}
               <DialogHeader className="p-6 pb-4 border-b flex flex-row items-center justify-between space-y-0 shrink-0">
                 <div className="space-y-1 pr-6 flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -501,7 +490,6 @@ export default function AdminTicketsPage() {
                 )}
               </DialogHeader>
 
-              {/* Chat Thread */}
               <ScrollArea className="flex-1 min-h-0 bg-background">
                 <div className="p-6 pr-10 space-y-4">
                   {selectedTicket.messages.map((msg, index) => {
@@ -538,9 +526,7 @@ export default function AdminTicketsPage() {
                 </div>
               </ScrollArea>
 
-              {/* Footer controls / Input */}
               <div className="pb-6 pt-1 relative px-6 bg-background flex flex-col gap-3 shrink-0 z-20">
-                {/* Top fade gradient overlay */}
                 <div className="absolute top-0 left-0 right-0 h-10 -translate-y-full bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
                 {selectedTicket.status !== "CLOSED" ? (
                   <form

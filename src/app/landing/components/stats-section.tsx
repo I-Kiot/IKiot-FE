@@ -40,12 +40,10 @@ const stats = [
 export function StatsSection() {
   return (
     <section className="py-12 sm:py-16 relative">
-      {/* Background with transparency */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/8 via-transparent to-secondary/20" />
       <DotPattern className="opacity-75" size="md" fadeStyle="circle" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {stats.map((stat, index) => (
             <Card

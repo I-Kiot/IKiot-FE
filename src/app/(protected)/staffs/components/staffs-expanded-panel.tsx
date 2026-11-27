@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   Building2,
@@ -18,13 +17,11 @@ import {
   UserCheck,
   UserCog,
   Warehouse,
-  Wallet,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   formatStaffDate,
   formatStaffDateTime,
@@ -49,10 +46,8 @@ import {
 import {
   getStaffGenderLabel,
 } from "@/lib/api/staff-mapper";
-import { describeBasicPay, paySheetApi } from "@/lib/api/paysheet";
 import { formatIdentificationId } from "@/app/(protected)/staffs/shared/identification-format";
 import type { Staff } from "@/types/staff";
-import type { PaySheetDetail } from "@/types/paysheet";
 import { useStaffs } from "./staffs-provider";
 
 function InfoItem({
@@ -87,66 +82,22 @@ export function StaffsExpandedPanel({
   const { setOpen, setCurrentRow, openAssignBranchManager, openAssignWarehouseManager } =
     useStaffs();
   const userRole = getSessionRole();
-  const [paySheetDetail, setPaySheetDetail] = useState<PaySheetDetail | null>(
-    null,
-  );
-  const [paySheetLoading, setPaySheetLoading] = useState(false);
 
   const showDelete =
     canDeleteStaff(userRole) &&
     canDeleteStaffRow(userRole);
   const showEdit = canUpdateStaff(userRole);
   const showAccountActions = canManageStaffAccount(userRole);
-  const showAssignBranchManager =
-    canAssignBranchManager(userRole) && Boolean(staff.branchId);
-  const showAssignWarehouseManager =
-    canAssignWarehouseManager(userRole) && Boolean(staff.warehouseId);
-
-  useEffect(() => {
-    if (!isExpanded || !staff.paySheetId) {
-      setPaySheetDetail(null);
-      setPaySheetLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setPaySheetLoading(true);
-    void paySheetApi
-      .getById(staff.paySheetId)
-      .then((detail) => {
-        if (!cancelled) setPaySheetDetail(detail);
-      })
-      .catch(() => {
-        if (!cancelled) setPaySheetDetail(null);
-      })
-      .finally(() => {
-        if (!cancelled) setPaySheetLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isExpanded, staff.paySheetId]);
+  const showAssignBranchManager = Boolean(staff.branchId);
+  const showAssignWarehouseManager = Boolean(staff.warehouseId);
 
   if (!isExpanded) return null;
 
   const status = getStaffStatusDisplay(staff.status);
   const role = { label: staff.roleName, variant: STAFF_ROLE_BADGE_VARIANT };
-  const canActivate = showAccountActions && staff.status !== "ACTIVE";
-  const canDeactivate =
-    showAccountActions &&
-    staff.status === "ACTIVE" &&
-    canDeactivateStaffRow(userRole);
-  const canChangePassword =
-    showAccountActions && staff.status === "ACTIVE";
-
-  const paySheetName =
-    paySheetDetail?.name ||
-    staff.paySheetName ||
-    (staff.paySheetId
-      ? `#${String(staff.paySheetId).slice(-6).toUpperCase()}`
-      : null);
-  const paySheetSummary = describeBasicPay(paySheetDetail?.basicPay);
+  const canActivate = staff.status !== "ACTIVE";
+  const canDeactivate = staff.status === "ACTIVE";
+  const canChangePassword = staff.status === "ACTIVE";
 
   return (
     <div
@@ -173,34 +124,6 @@ export function StaffsExpandedPanel({
         </div>
       </div>
 
-      <div className="mb-4 rounded-lg border bg-muted/30 px-4 py-3">
-        <div className="flex items-start gap-2">
-          <Wallet className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-xs text-muted-foreground">Bảng lương</p>
-            {paySheetLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-56" />
-                <Skeleton className="h-3 w-40" />
-              </div>
-            ) : paySheetName ? (
-              <>
-                <p className="text-sm font-semibold break-words">
-                  {paySheetName}
-                </p>
-                {paySheetSummary ? (
-                  <p className="text-sm text-foreground/80">{paySheetSummary}</p>
-                ) : null}
-              </>
-            ) : (
-              <p className="text-sm font-medium text-muted-foreground">
-                Chưa gán bảng lương
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 mb-4">
         <InfoItem
           icon={<User className="size-4" />}
@@ -215,7 +138,11 @@ export function StaffsExpandedPanel({
         <InfoItem
           icon={<Mail className="size-4" />}
           label="Email"
-          value={staff.email || "Chưa có email"}
+          value={
+            staff.email
+              ? `${staff.email}${staff.emailVerifiedAt ? "" : " (chưa xác minh)"}`
+              : "Chưa có email"
+          }
         />
         <InfoItem
           icon={<Building2 className="size-4" />}
@@ -238,13 +165,6 @@ export function StaffsExpandedPanel({
           label="Ngày vào làm"
           value={formatStaffDate(staff.joinedAt)}
         />
-        {staff.leaveBalance && (
-          <InfoItem
-            icon={<CalendarDays className="size-4" />}
-            label="Phép năm"
-            value={`${staff.leaveBalance.remainingDays}/${staff.leaveBalance.annualLeaveDays} ngày`}
-          />
-        )}
         {staff.profile?.identificationId && (
           <InfoItem
             icon={<CreditCard className="size-4" />}
@@ -306,8 +226,9 @@ export function StaffsExpandedPanel({
 
       <Separator className="mt-4" />
       <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
-        {showDelete ? (
-          <Button
+        <PermissionButton
+            allowed={showDelete}
+            permission="users:delete"
             variant="destructive"
             size="sm"
             className="cursor-pointer"
@@ -319,14 +240,13 @@ export function StaffsExpandedPanel({
           >
             <Trash2 className="mr-2 size-4" />
             Xóa nhân viên
-          </Button>
-        ) : (
-          <div />
-        )}
+          </PermissionButton>
 
         <div className="flex flex-wrap items-center gap-2">
           {showAssignBranchManager && (
-            <Button
+            <PermissionButton
+              allowed={canAssignBranchManager(userRole)}
+              permission="branches:assign_manager"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -337,10 +257,12 @@ export function StaffsExpandedPanel({
             >
               <UserCog className="mr-2 size-4" />
               Thay quản lý chi nhánh
-            </Button>
+            </PermissionButton>
           )}
           {showAssignWarehouseManager && (
-            <Button
+            <PermissionButton
+              allowed={canAssignWarehouseManager(userRole)}
+              permission="warehouses:assign_manager"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -354,10 +276,12 @@ export function StaffsExpandedPanel({
             >
               <Warehouse className="mr-2 size-4" />
               Thay quản lý kho
-            </Button>
+            </PermissionButton>
           )}
-          {showAccountActions && canActivate && (
-            <Button
+          {canActivate && (
+            <PermissionButton
+              allowed={showAccountActions}
+              permission="users:update"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -369,10 +293,12 @@ export function StaffsExpandedPanel({
             >
               <UserCheck className="mr-2 size-4" />
               Kích hoạt tài khoản
-            </Button>
+            </PermissionButton>
           )}
-          {showAccountActions && canDeactivate && (
-            <Button
+          {canDeactivate && (
+            <PermissionButton
+              allowed={showAccountActions && canDeactivateStaffRow(userRole)}
+              permission="users:update"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -384,10 +310,12 @@ export function StaffsExpandedPanel({
             >
               <Lock className="mr-2 size-4" />
               Khóa tài khoản
-            </Button>
+            </PermissionButton>
           )}
-          {showAccountActions && canChangePassword && (
-            <Button
+          {canChangePassword && (
+            <PermissionButton
+              allowed={showAccountActions}
+              permission="users:update"
               variant="outline"
               size="sm"
               className="cursor-pointer"
@@ -399,25 +327,11 @@ export function StaffsExpandedPanel({
             >
               <KeyRound className="mr-2 size-4" />
               Đổi mật khẩu
-            </Button>
+            </PermissionButton>
           )}
-          {showEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                setCurrentRow(staff);
-                setOpen("leaveBalance");
-              }}
-            >
-              <CalendarDays className="mr-2 size-4" />
-              {staff.leaveBalance ? "Sửa ngày phép" : "Tạo ngày phép"}
-            </Button>
-          )}
-          {showEdit && (
-            <Button
+          <PermissionButton
+              allowed={showEdit}
+              permission="users:update"
               size="sm"
               className="cursor-pointer"
               onClick={(e) => {
@@ -428,8 +342,7 @@ export function StaffsExpandedPanel({
             >
               <Pencil className="mr-2 size-4" />
               Chỉnh sửa
-            </Button>
-          )}
+            </PermissionButton>
         </div>
       </div>
     </div>

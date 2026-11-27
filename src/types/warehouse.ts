@@ -5,8 +5,9 @@ export interface Warehouse {
   name: string;
   address?: string;
   status: WarehouseStatus;
-  /** Who runs this location. Appointed through `PATCH /:id/manager`, not by holding a
-   *  particular role - the rewrite moved that from `User.role` onto the location itself. */
+  phoneNumber?: string[];
+  email?: string | null;
+  /** Người quản lý địa điểm, gán qua `PATCH /:id/manager` chứ không theo vai trò tài khoản. */
   managerId?: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -33,11 +34,7 @@ export interface WarehouseListResponse {
 
 export interface WarehouseCreatePayload {
   name: string;
-  /**
-   * **Required** - `CreateWarehouseDto` declares `@IsArray() @ArrayNotEmpty()`, the same
-   * rule a branch has carried since warehouses gained contact details. This type omitted
-   * it, so `POST /warehouses` was a 400 the UI had no field to satisfy.
-   */
+  /** Bắt buộc, không rỗng. */
   phoneNumber: string[];
   address?: string;
   email?: string;

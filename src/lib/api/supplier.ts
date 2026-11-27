@@ -1,4 +1,3 @@
-// [API – Supplier]
 import client from '@/lib/api/client'
 import type {
   Supplier,
@@ -8,9 +7,11 @@ import type {
   SupplierCreatePayload,
   SupplierUpdatePayload,
   SupplierPayDebtPayload,
+  SupplierDebtEntryQuery,
+  SupplierDebtEntriesResponse,
 } from '@/types/supplier'
 
-// Backend trả về document Mongoose với `id`; FE dùng `id`.
+// Backend trả `id`; FE giữ nguyên.
 type SupplierDoc = Omit<Supplier, 'id'> & { id: string }
 
 function mapSupplier(doc: SupplierDoc): Supplier {
@@ -57,5 +58,19 @@ export const supplierApi = {
       payload,
     )
     return mapSupplier(res.data.data.supplier)
+  },
+
+  // Sổ công nợ một NCC, mới nhất trước (suppliers:read).
+  getDebtEntries: async (
+    id: string,
+    params?: SupplierDebtEntryQuery,
+  ): Promise<SupplierDebtEntriesResponse> => {
+    const res = await client.get<SupplierDebtEntriesResponse>(`/suppliers/${id}/debt-entries`, { params })
+    const body = res.data
+    return {
+      ...body,
+      data: body.data.map((e) => ({ ...e, amount: Number(e.amount), balanceAfter: Number(e.balanceAfter) })),
+      supplier: { ...body.supplier, outstandingDebt: Number(body.supplier.outstandingDebt) },
+    }
   },
 }

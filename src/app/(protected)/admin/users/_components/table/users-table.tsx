@@ -15,6 +15,7 @@ import { UsersRow } from "./users-row"
 import { UsersPagination } from "./users-pagination"
 import { listTenants, type Tenant } from "@/lib/api/tenant"
 import { toast } from "sonner"
+import { ownerName, tenantPlanTier } from "./tenant-display"
 
 export function UsersTable() {
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -23,7 +24,6 @@ export function UsersTable() {
   const [planFilter, setPlanFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -62,27 +62,22 @@ export function UsersTable() {
     }
   }, [tenants, pageSize])
 
-  // Reset page index when search or filter values change
   React.useEffect(() => {
     setCurrentPage(1)
   }, [globalFilter, planFilter, statusFilter])
 
   const filteredTenants = useMemo(() => {
     return tenants.filter((tenant) => {
-      const ownerName = [tenant.tenantOwnerId?.profile?.lastName, tenant.tenantOwnerId?.profile?.firstName]
-        .filter(Boolean)
-        .join(" ")
-        .trim()
-      const searchStr = `${ownerName} ${tenant.tenantOwnerId?.email || ""} ${tenant.name || ""} ${tenant.id}`.toLowerCase()
+      const owner = tenant.tenantOwner
+      const searchStr = `${ownerName(tenant)} ${owner?.email || ""} ${owner?.phoneNumber || ""} ${tenant.name || ""} ${tenant.id}`.toLowerCase()
       if (globalFilter && !searchStr.includes(globalFilter.toLowerCase())) {
         return false
       }
-      
-      const planCode = tenant.activeSubscription?.planId?.planCode || "TRIAL"
-      if (planFilter !== "all" && planCode !== planFilter) {
+
+      if (planFilter !== "all" && tenantPlanTier(tenant) !== planFilter) {
         return false
       }
-      
+
       if (statusFilter !== "all" && tenant.status !== statusFilter) {
         return false
       }
@@ -119,7 +114,6 @@ export function UsersTable() {
         onStatusFilterChange={setStatusFilter}
       />
 
-      {/* Tenant list table */}
       <div className="rounded-xl border bg-card overflow-hidden shadow-xs">
         <Table>
           <TableHeader className="bg-muted/40">

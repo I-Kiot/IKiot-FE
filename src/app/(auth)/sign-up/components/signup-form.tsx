@@ -13,16 +13,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { signupSchema, SignupInput } from "@/lib/validation";
 import {
   registerUser,
-  loginUser,
+  resendOtp,
+  verifyLoginOtp,
   checkRegistrationAvailability,
+  type OtpChallenge,
 } from "@/lib/api/auth";
+import { OtpStep } from "@/components/otp-step";
 import { setTokens } from "@/lib/auth";
 import { assignFreeTrial } from "@/lib/api/subscription";
 import { useAuthStore } from "@/store/auth-store";
-import { usePhoneOtp } from "./hooks/use-phone-otp";
-
-// Skip SMS OTP entirely in local dev (sends "DEV_BYPASS" to the backend).
-const OTP_BYPASS = process.env.NEXT_PUBLIC_OTP_BYPASS === "true";
 
 export function SignupForm2({
   className,
@@ -30,13 +29,10 @@ export function SignupForm2({
 }: React.ComponentProps<"form">) {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [otpPhase, setOtpPhase] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [pendingData, setPendingData] = useState<SignupInput | null>(null);
+  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const router = useRouter();
   const planParam = useSearchParams().get("plan");
   const pendingPlan = planParam && planParam !== "TRIAL" ? planParam : null;
-  const { sendOtp, isSending } = usePhoneOtp();
 
   const {
     register,
@@ -50,6 +46,7 @@ export function SignupForm2({
       firstName: "",
       lastName: "",
       phoneNumber: "",
+      email: "",
       password: "",
       confirmPassword: "",
       tenantName: "",
@@ -57,77 +54,65 @@ export function SignupForm2({
     },
   });
 
-  // Final step: create the account. `otpCode` is verified by the backend.
-  const completeSignup = async (data: SignupInput, otpCode: string) => {
-    setIsLoading(true);
+  // Bước cuối: nhập đúng mã OTP gửi qua email thì backend kích hoạt tài khoản và cấp phiên.
+  const completeSignup = async (otpCode: string) => {
+    if (!challenge) return;
+    const { accessToken, refreshToken } = await verifyLoginOtp(
+      challenge.challengeToken,
+      otpCode,
+    );
+
+    if (!accessToken) {
+      toast.success("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
+      router.push("/sign-in");
+      return;
+    }
+
+    setTokens({ accessToken, refreshToken });
+    // Lấy thông tin profile chi tiết của user
+    await useAuthStore.getState().fetchMe();
+
+    // Gọi API đăng ký gói dùng thử
     try {
-      // 1. Register the tenant and user account
-      await registerUser(data, otpCode);
+      await assignFreeTrial();
+      toast.success(
+        "Đăng ký tài khoản và kích hoạt dùng thử 7 ngày thành công!",
+      );
+    } catch (subError) {
+      console.error("Failed to assign free trial:", subError);
+      toast.warning(
+        "Đăng ký thành công nhưng không thể kích hoạt dùng thử tự động.",
+      );
+    }
 
-      // 2. Programmatically login to obtain access/refresh tokens
-      const { accessToken, refreshToken } = await loginUser({
-        phone: data.phoneNumber,
-        password: data.password,
-      });
-
-      if (accessToken) {
-        setTokens({ accessToken, refreshToken });
-        // Fetch detailed user profile
-        await useAuthStore.getState().fetchMe();
-
-        // 3. Post to the subscription free trial endpoint
-        try {
-          await assignFreeTrial();
-          toast.success(
-            "Đăng ký tài khoản và kích hoạt dùng thử 7 ngày thành công!",
-          );
-        } catch (subError) {
-          console.error("Failed to assign free trial:", subError);
-          toast.warning(
-            "Đăng ký thành công nhưng không thể kích hoạt dùng thử tự động.",
-          );
-        }
-
-        // Chọn gói trả phí từ landing → sang thẳng trang thanh toán để nâng cấp.
-        if (pendingPlan) {
-          router.push(
-            `/settings/billing?plan=${encodeURIComponent(pendingPlan)}`,
-          );
-        } else {
-          router.push("/dashboard");
-          router.refresh();
-        }
-      } else {
-        toast.success("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
-        router.push("/sign-in");
-      }
-    } catch (error) {
-      console.error("Signup error:", error);
-      const err = error as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      const message =
-        err.response?.data?.message ||
-        err.message ||
-        "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.";
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
+    // Chọn gói trả phí từ landing → sang thẳng trang thanh toán để nâng cấp.
+    if (pendingPlan) {
+      router.push(`/settings/billing?plan=${encodeURIComponent(pendingPlan)}`);
+    } else {
+      router.push("/dashboard");
+      router.refresh();
     }
   };
 
   const checkAvailability = async (data: SignupInput): Promise<boolean> => {
     setIsChecking(true);
     try {
-      const { phoneNumberTaken, tenantNameTaken } =
-        await checkRegistrationAvailability(data.phoneNumber, data.tenantName);
+      const { phoneNumberTaken, emailTaken, tenantNameTaken } =
+        await checkRegistrationAvailability({
+          phoneNumber: data.phoneNumber,
+          email: data.email,
+          tenantName: data.tenantName,
+        });
 
       if (phoneNumberTaken) {
         setError("phoneNumber", {
           message: "Số điện thoại đã được sử dụng.",
         });
         toast.error("Số điện thoại đã được sử dụng.");
+      }
+      if (emailTaken) {
+        setError("email", { message: "Email đã được sử dụng." });
+        toast.error("Email đã được sử dụng.");
       }
       if (tenantNameTaken) {
         setError("tenantName", {
@@ -136,7 +121,7 @@ export function SignupForm2({
         toast.error("Tên cửa hàng đã tồn tại. Vui lòng chọn tên khác.");
       }
 
-      return !phoneNumberTaken && !tenantNameTaken;
+      return !phoneNumberTaken && !emailTaken && !tenantNameTaken;
     } catch (error) {
       console.error("Availability check error:", error);
       toast.error("Không kiểm tra được thông tin. Vui lòng thử lại.");
@@ -146,127 +131,42 @@ export function SignupForm2({
     }
   };
 
-  // First step: validate the form, then send the OTP (or bypass in dev).
+  // Bước 1: kiểm tra trùng, tạo tài khoản (chưa kích hoạt) rồi chuyển sang bước nhập OTP.
   const onSubmit = async (data: SignupInput) => {
-    // Pre-check uniqueness first - stop early (and keep the SMS) if taken.
     const isAvailable = await checkAvailability(data);
     if (!isAvailable) return;
 
-    if (OTP_BYPASS) {
-      await completeSignup(data, "DEV_BYPASS");
-      return;
-    }
+    setIsLoading(true);
     try {
-      await sendOtp(data.phoneNumber);
-      setPendingData(data);
-      setOtpPhase(true);
-      setOtpCode("");
-      toast.success(`Đã gửi mã OTP đến ${data.phoneNumber}.`);
+      const result = await registerUser(data);
+      setChallenge(result);
     } catch (error) {
-      console.error("Send OTP error:", error);
+      console.error("Signup error:", error);
       const err = error as {
         response?: { data?: { message?: string } };
         message?: string;
       };
       toast.error(
         err.response?.data?.message ||
-          "Không gửi được mã OTP. Vui lòng kiểm tra số điện thoại.",
+          err.message ||
+          "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.",
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleVerifyOtp = async () => {
-    if (!pendingData) return;
-    if (otpCode.trim().length < 6) {
-      toast.error("Vui lòng nhập đủ 6 chữ số mã OTP.");
-      return;
-    }
-    // The backend verifies the code as part of registration.
-    await completeSignup(pendingData, otpCode.trim());
-  };
-
-  const handleBackToForm = () => {
-    setOtpPhase(false);
-    setOtpCode("");
-  };
-
-  const handleResendOtp = async () => {
-    if (!pendingData) return;
-    try {
-      await sendOtp(pendingData.phoneNumber);
-      setOtpCode("");
-      toast.success("Đã gửi lại mã OTP.");
-    } catch (error) {
-      console.error("Resend OTP error:", error);
-      const err = error as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      toast.error(
-        err.response?.data?.message ||
-          "Không gửi lại được mã OTP. Vui lòng thử lại.",
-      );
-    }
-  };
-
-  if (otpPhase) {
+  if (challenge) {
     return (
-      <div className={cn("flex flex-col gap-6", className)}>
-        <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-2xl font-bold">Xác thực số điện thoại</h1>
-          <p className="text-muted-foreground text-sm text-balance">
-            Nhập mã OTP gồm 6 chữ số đã gửi đến{" "}
-            <span className="font-medium text-foreground">
-              {pendingData?.phoneNumber}
-            </span>
-          </p>
-        </div>
-
-        <div className="grid gap-1.5">
-          <Label htmlFor="otpCode">Mã OTP</Label>
-          <Input
-            id="otpCode"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="000000"
-            className="text-center text-lg tracking-[0.5em]"
-            value={otpCode}
-            onChange={(e) =>
-              setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-            }
-            disabled={isLoading}
-          />
-        </div>
-
-        <Button
-          type="button"
-          className="w-full cursor-pointer"
-          onClick={handleVerifyOtp}
-          disabled={isLoading || otpCode.length < 6}
-        >
-          {isLoading ? "Đang xác thực..." : "Xác nhận & Đăng ký"}
-        </Button>
-
-        <div className="flex items-center justify-between text-sm">
-          <button
-            type="button"
-            onClick={handleBackToForm}
-            disabled={isLoading}
-            className="underline underline-offset-4 hover:text-primary disabled:opacity-50"
-          >
-            Quay lại
-          </button>
-          <button
-            type="button"
-            onClick={handleResendOtp}
-            disabled={isSending || isLoading}
-            className="underline underline-offset-4 hover:text-primary disabled:opacity-50"
-          >
-            {isSending ? "Đang gửi lại..." : "Gửi lại mã"}
-          </button>
-        </div>
-      </div>
+      <OtpStep
+        className={className}
+        title="Xác minh email"
+        submitLabel="Xác nhận & Đăng ký"
+        delivery={challenge}
+        onSubmit={completeSignup}
+        onResend={() => resendOtp(challenge.challengeToken)}
+        onBack={() => setChallenge(null)}
+      />
     );
   }
 
@@ -284,7 +184,6 @@ export function SignupForm2({
       </div>
 
       <div className="grid gap-5">
-        {/* SECTION 1: Personal Info */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-foreground border-b pb-1">
             1. Thông tin cá nhân
@@ -334,6 +233,22 @@ export function SignupForm2({
               </p>
             )}
           </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="email">Email (nhận mã xác minh)</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="ten@congty.vn"
+              disabled={isLoading}
+              {...register("email")}
+            />
+            {errors.email && (
+              <p className="text-xs font-medium text-destructive">
+                {errors.email.message}
+              </p>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="password">Mật khẩu</Label>
@@ -368,7 +283,6 @@ export function SignupForm2({
           </div>
         </div>
 
-        {/* SECTION 2: Shop/Tenant Info */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-foreground border-b pb-1">
             2. Thông tin cửa hàng / doanh nghiệp
@@ -441,17 +355,13 @@ export function SignupForm2({
         <Button
           type="submit"
           className="w-full cursor-pointer mt-1"
-          disabled={isChecking || isLoading || isSending}
+          disabled={isChecking || isLoading}
         >
           {isChecking
             ? "Đang kiểm tra thông tin..."
-            : isSending
-              ? "Đang gửi mã OTP..."
-              : isLoading
-                ? "Đang xử lý..."
-                : OTP_BYPASS
-                  ? "Đăng ký cửa hàng"
-                  : "Tiếp tục & nhận mã OTP"}
+            : isLoading
+              ? "Đang xử lý..."
+              : "Tiếp tục & nhận mã OTP"}
         </Button>
       </div>
 

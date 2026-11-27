@@ -73,7 +73,7 @@ function Typewriter({ text, speed = 8, onComplete }: TypewriterProps) {
       const char = text.charAt(index);
       setDisplayedText((prev) => prev + char);
 
-      // Smooth auto-scroll to the bottom as character by character is typed
+      // Cuộn mượt xuống cuối khi nội dung đang được gõ từng ký tự
       if (window.requestAnimationFrame) {
         window.requestAnimationFrame(() => {
           const chatViewport = document.querySelector('[data-slot="scroll-area-viewport"]');
@@ -104,7 +104,7 @@ export function MessageList({
   const prevIsSendingRef = useRef(isSending);
   const [animatingMessageKey, setAnimatingMessageKey] = useState<string | null>(null);
 
-  // Track transition of isSending to detect newly completed AI responses
+  // Theo dõi isSending chuyển trạng thái để phát hiện phản hồi AI vừa hoàn tất
   useEffect(() => {
     if (prevIsSendingRef.current && !isSending && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
@@ -116,7 +116,7 @@ export function MessageList({
     prevIsSendingRef.current = isSending;
   }, [isSending, messages]);
 
-  // Auto-scroll to bottom on new messages (with a short timeout to ensure DOM is fully rendered)
+  // Tự cuộn xuống khi có tin mới (trễ ngắn để DOM render xong)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (bottomRef.current) {
@@ -170,7 +170,6 @@ export function MessageList({
       <div className="space-y-6 py-6 max-w-4xl mx-auto w-full">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            {/* AI Welcome Icon */}
             <div className="p-4 rounded-full bg-primary/10 text-primary border border-primary/20 shadow-inner mb-5 select-none animate-pulse">
               <Sparkles className="h-8 w-8" />
             </div>
@@ -180,8 +179,6 @@ export function MessageList({
             <p className="text-xs text-muted-foreground max-w-md leading-relaxed mb-8">
               Tôi là trợ lý AI của cửa hàng, được kết nối trực tiếp với dữ liệu doanh thu, sản phẩm và ca làm việc của bạn. Hãy chọn một câu hỏi gợi ý bên dưới hoặc tự nhập câu hỏi.
             </p>
-
-            {/* Suggestions Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl px-4">
               {SUGGESTIONS.map((sug, i) => {
                 const Icon = sug.icon;
@@ -224,7 +221,6 @@ export function MessageList({
                   isUser ? "flex-row-reverse" : "flex-row"
                 )}
               >
-                {/* Avatar */}
                 <Avatar className={cn(
                   "h-8 w-8 shrink-0 select-none border shadow-sm",
                   isUser ? "bg-primary border-primary/20 text-primary-foreground" : "bg-card border-border text-foreground"
@@ -233,8 +229,6 @@ export function MessageList({
                     {isUser ? <User className="h-4 w-4" /> : <Sparkles className="h-4 w-4 text-primary animate-pulse" />}
                   </AvatarFallback>
                 </Avatar>
-
-                {/* Message Bubble or Edit Form */}
                 {editingIndex === idx ? (
                   <div className="flex flex-col gap-2 w-full max-w-[80%] items-end">
                     <textarea
@@ -284,15 +278,12 @@ export function MessageList({
                         )
                       )}
                     </div>
-
-                    {/* Toolbar & Timestamp */}
                     <div className={cn(
                       "flex items-center gap-2 mt-1.5 px-1 select-none",
                       isUser ? "justify-end" : "justify-start"
                     )}>
                       {isUser ? (
                         <>
-                          {/* Floating Action Buttons */}
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1">
                             <button
                               onClick={() => handleCopy(textContent)}
@@ -319,8 +310,6 @@ export function MessageList({
                           <span className="text-[10px] text-muted-foreground block">
                             {formatMessageTime(message.createdAt)}
                           </span>
-
-                          {/* Floating Action Buttons */}
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1">
                             <button
                               onClick={() => handleCopy(textContent)}
@@ -346,8 +335,6 @@ export function MessageList({
             );
           })
         )}
-
-        {/* Typing indicator */}
         {isSending && (
           <div className="flex gap-4 items-start animate-in fade-in duration-200">
             <Avatar className="h-8 w-8 shrink-0 bg-card border border-border text-foreground select-none shadow-sm">

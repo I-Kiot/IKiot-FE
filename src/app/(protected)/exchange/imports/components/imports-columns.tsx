@@ -123,7 +123,7 @@ export const importsColumns: ColumnDef<StockMovement>[] = [
         <div className="flex flex-col">
           <span className="text-sm font-medium">{record.toLocationName}</span>
           <span className="text-xs text-muted-foreground capitalize">
-            {record.toLocationType === "warehouse" ? "Kho" : "Chi nhánh"}
+            {record.toLocationType === "WAREHOUSE" ? "Kho" : "Chi nhánh"}
           </span>
         </div>
       );
@@ -157,7 +157,16 @@ export const importsColumns: ColumnDef<StockMovement>[] = [
     accessorKey: "requestedByName",
     header: "Người tạo",
     cell: ({ row }) => (
-      <span className="text-sm">{row.getValue("requestedByName")}</span>
+      <span className="text-sm">{row.getValue("requestedByName") || "-"}</span>
+    ),
+  },
+  {
+    accessorKey: "requestedByPhone",
+    header: "SĐT người tạo",
+    cell: ({ row }) => (
+      <span className="text-sm tabular-nums text-muted-foreground">
+        {row.getValue("requestedByPhone") || "-"}
+      </span>
     ),
   },
   {

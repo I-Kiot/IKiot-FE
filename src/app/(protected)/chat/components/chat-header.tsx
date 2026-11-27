@@ -7,7 +7,7 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ onToggleSidebar }: ChatHeaderProps) {
-  // Completely hide on desktop (lg:hidden) as requested, but preserve menu trigger on mobile
+  // Ẩn hoàn toàn trên desktop (lg:hidden), nhưng giữ nút mở menu trên mobile
   return (
     <div className="lg:hidden flex items-center px-4 py-3 border-b bg-card">
       <Button

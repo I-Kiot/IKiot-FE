@@ -1,12 +1,12 @@
 import { AxiosError } from "axios";
-import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
+import { toast } from "sonner";
+import {
+  getApiErrorBody,
+  isStockMovementConflict,
+  messageForCode,
+} from "@/lib/api/error-codes";
 
-/**
- * Map thông báo BE (EN) → VN, đặc biệt rule importPrice ≤ retailPrice.
- *
- * Chỉ còn là đường lùi cho backend cũ: backend mới gửi `code`, và bảng
- * `ERROR_MESSAGES` là nơi tra câu chữ.
- */
+/** Dịch lỗi tiếng Anh của BE cũ sang tiếng Việt. */
 function localizeStockMovementMessage(message: string): string {
   const importOverRetail = message.match(
     /Import price cannot be greater than retail price \(([\d.]+)\)(?: for product item (.+))?/i,
@@ -52,4 +52,20 @@ export function getStockMovementErrorMessage(
     return localizeStockMovementMessage(error.message.trim());
   }
   return fallback;
+}
+
+/** Báo lỗi thao tác phiếu kho; xung đột thì tải lại. */
+export async function reportMovementError(
+  error: unknown,
+  fallback: string,
+  refetch: () => void | Promise<void>,
+): Promise<void> {
+  toast.error(getStockMovementErrorMessage(error, fallback));
+  if (isStockMovementConflict(error)) {
+    try {
+      await refetch();
+    } catch {
+      // tải lại lỗi thì giữ nguyên màn hình hiện tại
+    }
+  }
 }

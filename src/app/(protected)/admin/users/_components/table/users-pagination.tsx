@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { PageFooter } from "@/components/layouts/page-footer"
 import {
   Select,
   SelectContent,
@@ -27,7 +28,8 @@ export function UsersPagination({
   totalPages,
 }: UsersPaginationProps) {
   return (
-    <div className="flex items-center justify-between space-x-2 py-4">
+    <PageFooter>
+    <div className="flex items-center justify-between space-x-2 py-3">
       <div className="flex items-center space-x-2">
         <Label htmlFor="page-size" className="text-sm font-medium">
           Hiển thị
@@ -81,5 +83,6 @@ export function UsersPagination({
         </div>
       </div>
     </div>
+    </PageFooter>
   )
 }

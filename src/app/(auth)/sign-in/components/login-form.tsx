@@ -1,67 +1,89 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginSchema, LoginInput } from "@/lib/validation";
-import { loginUser, loginWithGoogle } from "@/lib/api/auth";
+import {
+  isOtpChallenge,
+  loginUser,
+  loginWithGoogle,
+  resendOtp,
+  verifyLoginOtp,
+  type OtpChallenge,
+  type SessionResult,
+} from "@/lib/api/auth";
+import { OtpStep } from "@/components/otp-step";
 import { setTokens, setCachedUser } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth-store";
+import { getHomeRoute } from "@/components/sidebar/utils/get-sidebar";
 
 export function LoginForm2({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const router = useRouter();
 
-  // Send each role to its home screen after a successful login.
+  // Đưa về trang chủ theo quyền (`getHomeRoute`).
   const routeByRole = (role?: string) => {
-    if (role === "STAFF") {
-      router.push("/check-out");
-    } else if (role === "ADMIN") {
-      router.push("/admin/dashboard");
-    } else {
-      router.push("/dashboard");
-    }
+    router.push(getHomeRoute(role));
     router.refresh();
   };
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      phone: "",
+      identifier: "",
       password: "",
     },
   });
 
+  // Điền sẵn email khi quay về từ Quên mật khẩu; đọc `window.location` thay vì `useSearchParams` để trang không phải bọc Suspense.
+  useEffect(() => {
+    const identifier = new URLSearchParams(window.location.search).get("identifier");
+    if (identifier) setValue("identifier", identifier);
+  }, [setValue]);
+
+  // Lưu token, nạp hồ sơ rồi chuyển về trang chủ.
+  const startSession = async ({ accessToken, refreshToken }: SessionResult) => {
+    if (!accessToken) {
+      throw new Error("Không nhận được mã xác thực từ hệ thống.");
+    }
+    setTokens({ accessToken, refreshToken });
+    // Lấy thông tin profile chi tiết của user
+    await useAuthStore.getState().fetchMe();
+    const role = useAuthStore.getState().user?.role;
+
+    toast.success("Đăng nhập thành công!");
+    routeByRole(role);
+  };
+
   const onSubmit = async (data: LoginInput) => {
     setIsLoading(true);
     try {
-      const { accessToken, refreshToken, user } = await loginUser(data);
-
-      if (accessToken) {
-        setTokens({ accessToken, refreshToken });
-        // Fetch detailed user profile
-        await useAuthStore.getState().fetchMe();
-        const role = useAuthStore.getState().user?.role;
-
-        toast.success("Đăng nhập thành công!");
-        routeByRole(role);
-      } else {
-        throw new Error("Không nhận được mã xác thực từ hệ thống.");
+      const result = await loginUser(data);
+      // Tài khoản chưa xác minh email: backend gửi OTP và chờ nhập mã trước khi cấp phiên.
+      if (isOtpChallenge(result)) {
+        setChallenge(result);
+        return;
       }
+      await startSession(result);
     } catch (error) {
       console.error("Login error:", error);
       const err = error as {
@@ -76,6 +98,11 @@ export function LoginForm2({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onVerifyOtp = async (otpCode: string) => {
+    if (!challenge) return;
+    await startSession(await verifyLoginOtp(challenge.challengeToken, otpCode));
   };
 
   const onGoogleLogin = async () => {
@@ -101,7 +128,7 @@ export function LoginForm2({
         response?: { data?: { message?: string } };
         message?: string;
       };
-      // The user closing the Google popup isn't an error worth shouting about.
+      // Người dùng tự đóng popup Google thì không phải lỗi cần báo.
       if (
         err.code === "auth/popup-closed-by-user" ||
         err.code === "auth/cancelled-popup-request"
@@ -118,6 +145,20 @@ export function LoginForm2({
     }
   };
 
+  if (challenge) {
+    return (
+      <OtpStep
+        className={className}
+        title="Xác minh email"
+        submitLabel="Xác nhận & Đăng nhập"
+        delivery={challenge}
+        onSubmit={onVerifyOtp}
+        onResend={() => resendOtp(challenge.challengeToken)}
+        onBack={() => setChallenge(null)}
+      />
+    );
+  }
+
   return (
     <form
       className={cn("flex flex-col gap-6", className)}
@@ -127,22 +168,23 @@ export function LoginForm2({
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Đăng nhập tài khoản</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Nhập số điện thoại của bạn dưới đây để đăng nhập vào hệ thống
+          Nhập số điện thoại hoặc email của bạn dưới đây để đăng nhập vào hệ thống
         </p>
       </div>
       <div className="grid gap-6">
         <div className="grid gap-3">
-          <Label htmlFor="phone">Số điện thoại</Label>
+          <Label htmlFor="identifier">Số điện thoại hoặc email</Label>
           <Input
-            id="phone"
-            type="tel"
-            placeholder="Nhập số điện thoại"
+            id="identifier"
+            type="text"
+            autoComplete="username"
+            placeholder="Nhập số điện thoại hoặc email"
             disabled={isLoading}
-            {...register("phone")}
+            {...register("identifier")}
           />
-          {errors.phone && (
+          {errors.identifier && (
             <p className="text-xs font-medium text-destructive">
-              {errors.phone.message}
+              {errors.identifier.message}
             </p>
           )}
         </div>
@@ -150,23 +192,35 @@ export function LoginForm2({
           <div className="flex items-center">
             <Label htmlFor="password">Mật khẩu</Label>
             <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                toast.info("Tính năng đang được phát triển.");
-              }}
+              href="/forgot-password"
               className="ml-auto text-sm underline-offset-4 hover:underline"
             >
               Quên mật khẩu?
             </a>
           </div>
-          <Input
-            id="password"
-            type="password"
-            disabled={isLoading}
-            placeholder="Nhập mật khẩu"
-            {...register("password")}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              disabled={isLoading}
+              placeholder="Nhập mật khẩu"
+              className="pr-10"
+              {...register("password")}
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? (
+                <EyeOff className="size-4" />
+              ) : (
+                <Eye className="size-4" />
+              )}
+            </button>
+          </div>
           {errors.password && (
             <p className="text-xs font-medium text-destructive">
               {errors.password.message}

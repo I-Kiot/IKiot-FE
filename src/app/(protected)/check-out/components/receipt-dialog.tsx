@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useShopProfileStore } from "@/store/shop-profile-store";
 
 interface ReceiptDialogProps {
   open: boolean;
@@ -58,6 +59,7 @@ export function ReceiptDialog({
   order,
 }: ReceiptDialogProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const shop = useShopProfileStore((s) => s.profile);
 
   if (!order) return null;
 
@@ -66,7 +68,7 @@ export function ReceiptDialog({
       const printContents = receiptRef.current.innerHTML;
       const originalContents = document.body.innerHTML;
 
-      // Basic print styling wrapper
+      // Style in cơ bản cho bản in.
       const printWindow = window.open("", "_blank");
       if (printWindow) {
         printWindow.document.write(`
@@ -128,13 +130,28 @@ export function ReceiptDialog({
           </p>
         </DialogHeader>
 
-        {/* Scrollable Receipt Content */}
         <div className="flex-1 overflow-y-auto py-4 px-2 my-2 border border-dashed rounded bg-slate-50/50 dark:bg-slate-900/30">
           <div
             ref={receiptRef}
             className="text-sm space-y-4 font-sans text-foreground"
           >
-            {/* Header info */}
+            {/* Bản in chép `innerHTML` sang cửa sổ không có Tailwind, nên phần đầu này dùng style inline. */}
+            {shop && (
+              <div style={{ textAlign: "center", lineHeight: 1.5 }}>
+                {shop.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary tuỳ ý, và bản in cần thẻ img thường.
+                  <img
+                    src={shop.logoUrl}
+                    alt="Logo cửa hàng"
+                    style={{ maxHeight: 56, maxWidth: 160, margin: "0 auto 4px", display: "block" }}
+                  />
+                )}
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{shop.name}</div>
+                {shop.address && <div style={{ fontSize: 11 }}>{shop.address}</div>}
+                {shop.phoneNumber && <div style={{ fontSize: 11 }}>ĐT: {shop.phoneNumber}</div>}
+              </div>
+            )}
+
             <div className="text-center space-y-1">
               <h2 className="text-lg font-bold tracking-tight text-foreground uppercase">
                 HÓA ĐƠN BÁN HÀNG
@@ -149,7 +166,6 @@ export function ReceiptDialog({
 
             <hr className="border-t border-dashed" />
 
-            {/* Meta details */}
             <div className="grid grid-cols-2 gap-y-1 text-xs">
               <span className="text-muted-foreground">Chi nhánh:</span>
               <span className="text-right font-medium">{order.branchName}</span>
@@ -172,7 +188,6 @@ export function ReceiptDialog({
               )}
             </div>
 
-            {/* Items Table */}
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-dashed text-muted-foreground">
@@ -217,7 +232,6 @@ export function ReceiptDialog({
               </tbody>
             </table>
 
-            {/* Checkout Totals */}
             <div className="space-y-1.5 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tổng tiền hàng:</span>

@@ -1,5 +1,9 @@
+import type { HistoryPage, HistoryPerson } from './history'
+import type { LocationRef, LocationType } from "./location";
+
+export type { LocationRef, LocationType } from "./location";
+
 export type ProductStatus = "ACTIVE" | "INACTIVE" | "DISCONTINUED";
-export type LocationType = "branch" | "warehouse";
 
 export interface ProductImage {
   id?: string;
@@ -9,24 +13,83 @@ export interface ProductImage {
 
 export interface ProductDetail {
   id?: string;
+  /** Thuộc tính của sản phẩm mà giá trị này thuộc về (null = dòng ghi tự do). */
+  attributeId?: string | null;
   name: string;
   value: string;
 }
 
-export interface StockDetail {
-  inventoryId: string;
-  locationId: string;
-  locationType: LocationType;
-  stock: number;
+/** Thuộc tính định nghĩa ở sản phẩm (2026-10-16); mỗi SKU giữ giá trị trong `productDetails`. */
+export interface ProductAttribute {
+  id?: string;
+  name: string;
+  /** Đơn vị của giá trị (cm, kg...). */
+  unit?: string | null;
+  position?: number;
 }
 
-// Populated subset of Supplier as returned on ProductItem.suppliers
-// (BE populates only these fields - see ProductService.getProductById/addSupplierToItem).
+/** Loại SKU. */
+export type ProductItemType = "PRODUCT" | "COMBO" | "SERVICE";
+
+/** Loại sản phẩm, cố định lúc tạo. */
+export type ProductType = "PRODUCT" | "COMBO" | "SERVICE";
+
+/** Một thành phần của combo. */
+export interface ComboComponent {
+  quantity: number;
+  componentItem: {
+    id: string;
+    productId: string;
+    sku: string;
+    productName: string;
+    itemType: ProductItemType;
+    retailPrice: number;
+    costPrice: number;
+    /** Ảnh của phiên bản, không có thì ảnh hàng hoá; null = chưa có ảnh nào. */
+    thumbnailUrl: string | null;
+    /** Tồn của thành phần tại địa điểm đang xem (combo lồng: số bộ). Dịch vụ luôn 0. */
+    stock?: number;
+    /** Số bán được ngay = tồn trên kệ. Combo lồng: số bộ combo con còn bán được. */
+    availableStock?: number;
+    /** Tồn toàn chuỗi (cùng nghĩa với `availableStock` nhưng qua mọi chi nhánh/kho). */
+    stockAllLocations?: number;
+  };
+}
+
+/** Thành phần gửi lên khi tạo / sửa combo - luôn là toàn bộ danh sách. */
+export interface ComboComponentPayload {
+  componentItemId: string;
+  quantity: number;
+}
+
+export interface StockDetail {
+  inventoryId: string;
+  /** Hàng bán được tại đây (kể cả đã đóng gói cho đơn). Không gồm hàng hỏng. */
+  stock: number;
+  /** Trên kệ (`stock − đã đóng gói`): phần đánh dấu hỏng được. */
+  shelf?: number;
+  /** Hàng hỏng tại đây, nằm ngoài `stock` (2026-11-26). */
+  damagedQuantity?: number;
+  /** Chiếc may riêng còn tốt tại đây, theo dòng đơn - chọn đúng chiếc khi đánh dấu hỏng. */
+  customUnits?: { orderItemId: string; orderCode: string; quantity: number }[];
+  location: LocationRef;
+}
+
+// Các trường NCC gắn với phiên bản.
 export interface ProductItemSupplier {
   id: string;
   supplierName: string;
   email?: string;
   phoneNumber?: string;
+}
+
+/** Món lá của combo làm riêng được (PRODUCT, sản phẩm bật "Có thể sản xuất"). */
+export interface MadeToOrderComponent {
+  productItemId: string;
+  sku: string | null;
+  productName: string;
+  /** Số chiếc trong một bộ. */
+  quantity: number;
 }
 
 export interface ProductItem {
@@ -45,12 +108,16 @@ export interface ProductItem {
   images?: ProductImage[];
   productDetails?: ProductDetail[];
   suppliers?: ProductItemSupplier[];
-  // Tồn tại địa điểm đang xem (tổng của stockDetails). Khi không lọc địa điểm thì bằng
-  // stockAllLocations.
+  itemType?: ProductItemType;
+  comboComponents?: ComboComponent[];
+  /** Chỉ combo, chỉ trong `GET /products/search`: các món lá làm riêng được khi tạo đơn. Rỗng = không có nút làm riêng. */
+  madeToOrderComponents?: MadeToOrderComponent[];
+  // Tồn tại địa điểm đang xem (tổng stockDetails); không lọc địa điểm thì bằng stockAllLocations.
   stock?: number;
-  // Tồn của biến thể này ở TẤT CẢ chi nhánh/kho, không phụ thuộc bộ lọc địa điểm. BE luôn
-  // trả về số - 0 nghĩa là cả chuỗi chưa có, không phải "chưa nạp".
+  // Tồn ở mọi chi nhánh / kho.
   stockAllLocations?: number;
+  // Số bán được tại nơi đang xem.
+  availableStock?: number;
   stockDetails?: StockDetail[];
   createdAt?: string;
   updatedAt?: string;
@@ -64,14 +131,18 @@ export interface Product {
   name: string;
   status: ProductStatus;
   categoryName?: string;
+  /** Đặt xưởng sản xuất được; false = chỉ nhập từ NCC. */
+  isManufacturable?: boolean;
+  productType?: ProductType;
   images?: ProductImage[];
+  attributes?: ProductAttribute[];
   items?: ProductItem[];
-  // Tồn tại địa điểm đang xem. Khi danh sách không lọc địa điểm thì bằng
-  // totalStockAllLocations.
+  // Tồn tại địa điểm đang xem; không lọc địa điểm thì bằng totalStockAllLocations.
   totalStock?: number;
-  // Tồn toàn chuỗi (mọi chi nhánh + kho). Dùng để trả lời "cửa hàng có mặt hàng này không"
-  // khi chi nhánh đang xem chưa nhập về - lúc đó totalStock là 0 còn số này thì không.
+  // Tồn toàn chuỗi.
   totalStockAllLocations?: number;
+  /** Hàng hỏng cùng phạm vi địa điểm với totalStock, nằm ngoài totalStock (2026-11-26). */
+  damagedStock?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -88,6 +159,8 @@ export interface ProductQueryParams {
   supplierId?: string;
   locationId?: string;
   locationType?: LocationType;
+  /** Không gửi = mọi loại. BE không có mặc định - mỗi màn tự nói nó liệt kê loại nào. */
+  productType?: ProductType[];
   page?: number;
   limit?: number;
 }
@@ -111,18 +184,23 @@ export interface ProductSearchParams {
   supplierId?: string;
   locationId?: string;
   locationType?: LocationType;
+  /** Chỉ lấy sản phẩm chứa các phiên bản này. */
+  itemIds?: string;
   page?: number;
   limit?: number;
 }
 
-// GET /products/items - flat SKU list for pickers (e.g. promotion product-scope selector).
-// Unlike Product.items, this doesn't require fetching every product's detail.
+// Danh sách SKU phẳng.
 export interface ProductItemListEntry {
   id: string;
   productId: string;
   productName: string;
   productCode: string;
   sku: string;
+  itemType: ProductItemType;
+  costPrice: number;
+  /** Ảnh của phiên bản, không có thì ảnh hàng hoá; null = chưa có ảnh nào. */
+  thumbnailUrl: string | null;
   // Chỉ có khi request kèm `branchIds`; 0 = chi nhánh chưa có hàng, không phải không bán.
   stock?: number;
 }
@@ -130,9 +208,12 @@ export interface ProductItemListEntry {
 export interface ProductItemListParams {
   limit?: number;
   search?: string;
-  // Comma-separated branch IDs. Không lọc danh sách - chỉ gắn thêm `stock` của (các) chi
-  // nhánh đó vào từng biến thể, 0 khi chi nhánh chưa từng nhập mặt hàng.
+  // Gắn tồn của các chi nhánh này.
   branchIds?: string;
+  /** true = bỏ phiên bản của hàng đã ngừng kinh doanh (lọc ở BE, trước `limit`). */
+  excludeDiscontinued?: boolean;
+  /** Chỉ phiên bản của sản phẩm thuộc các loại này; không gửi = mọi loại. */
+  productType?: ProductType[];
 }
 
 export interface InitialStock {
@@ -142,17 +223,21 @@ export interface InitialStock {
 
 export interface ProductItemCreatePayload {
   productName: string;
-  productCode: string;
-  sku: string;
+  productCode?: string;
+  sku?: string;
   barcode?: string;
   description?: string;
   retailPrice: number;
-  costPrice: number;
+  /** Bắt buộc với hàng thường; combo không gửi - BE tự tính từ giá vốn các món. */
+  costPrice?: number;
   vat?: number;
   warrantyPeriod?: string;
   images?: ProductImage[];
   productDetails?: ProductDetail[];
   initialStock?: InitialStock[];
+  itemType?: ProductItemType;
+  /** Bắt buộc khi itemType = COMBO, không được gửi với loại khác. */
+  comboComponents?: ComboComponentPayload[];
 }
 
 export interface ProductItemUpdatePayload {
@@ -167,6 +252,8 @@ export interface ProductItemUpdatePayload {
   warrantyPeriod?: string;
   images?: ProductImage[];
   productDetails?: ProductDetail[];
+  /** Chỉ với combo; thay toàn bộ danh sách thành phần. Loại (itemType) không đổi được sau khi tạo. */
+  comboComponents?: ComboComponentPayload[];
 }
 
 export interface ProductCreatePayload {
@@ -174,7 +261,11 @@ export interface ProductCreatePayload {
   brandId?: string | null;
   categoryId?: string | null;
   status: ProductStatus;
+  isManufacturable?: boolean;
+  /** Mặc định PRODUCT. Phiên bản lấy itemType theo đây, nên không cần gửi itemType. */
+  productType?: ProductType;
   images?: ProductImage[];
+  attributes?: ProductAttribute[];
   items: ProductItemCreatePayload[];
 }
 
@@ -183,5 +274,25 @@ export interface ProductUpdatePayload {
   brandId?: string | null;
   categoryId?: string | null;
   status?: ProductStatus;
+  isManufacturable?: boolean;
   images?: ProductImage[];
+  /** Thay toàn bộ thuộc tính. */
+  attributes?: ProductAttribute[];
+}
+
+export type PriceHistoryField = 'RETAIL_PRICE' | 'COST_PRICE'
+
+/** Một lần đổi giá của phiên bản. */
+export interface ProductPriceChange {
+  id: string
+  productItemId: string
+  field: PriceHistoryField
+  fromValue: number | null
+  toValue: number
+  changedBy: HistoryPerson | null
+  createdAt: string
+}
+
+export interface ProductPriceHistoryResponse extends HistoryPage<ProductPriceChange> {
+  item: { id: string; productName: string; sku: string; retailPrice: number; costPrice: number }
 }

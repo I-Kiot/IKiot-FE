@@ -1,6 +1,6 @@
 import { Inter } from 'next/font/google'
 
-// Configure Inter font to match exactly what Next.js optimizes for
+// Cấu hình Inter khớp đúng với font mà Next.js tối ưu sẵn.
 export const inter = Inter({
   subsets: ['latin'],
   display: 'swap',

@@ -9,6 +9,7 @@ import {
   Edit2,
   Trash2,
   UserCog,
+  Building2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,7 +36,29 @@ import {
 import { BranchFormDialog } from "./branch-form-dialog";
 import { WarehouseFormDialog } from "./warehouse-form-dialog";
 import { AssignBranchManagerDialog } from "@/components/branch/assign-branch-manager-dialog";
-import { useBranchSwitcher } from "./hooks/use-branch-switcher";
+import {
+  ALL_LOCATIONS_ITEM,
+  useBranchSwitcher,
+} from "./hooks/use-branch-switcher";
+import { useShopProfileStore } from "@/store/shop-profile-store";
+
+/** Ô vuông đầu khung chọn: logo shop nếu đã đặt, không thì icon của địa điểm đang xem. */
+function LocationMark({ children }: { children: React.ReactNode }) {
+  const logoUrl = useShopProfileStore((s) => s.profile?.logoUrl);
+  if (logoUrl) {
+    return (
+      <div className="flex aspect-square size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-background">
+        {/* eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary tuỳ ý, không khai báo trong `images.remotePatterns`. */}
+        <img src={logoUrl} alt="Logo cửa hàng" className="size-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+      {children}
+    </div>
+  );
+}
 
 export function BranchSwitcher() {
   const {
@@ -93,7 +116,7 @@ export function BranchSwitcher() {
     );
   }
 
-  // Non-TENANT_OWNER user: Show static branch/warehouse info without dropdown trigger
+  // Không phải TENANT_OWNER: chỉ hiện tên chi nhánh/kho, không có dropdown
   if (role !== "TENANT_OWNER") {
     return (
       <SidebarMenu>
@@ -102,13 +125,13 @@ export function BranchSwitcher() {
             size="lg"
             className="cursor-default hover:bg-transparent active:bg-transparent group"
           >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <LocationMark>
               {activeItem.type === "branch" ? (
                 <Store className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
               ) : (
                 <Warehouse className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
               )}
-            </div>
+            </LocationMark>
             <div className="grid flex-1 text-start text-sm leading-tight">
               {activeItem.status === "INACTIVE" ? (
                 <>
@@ -130,7 +153,7 @@ export function BranchSwitcher() {
     );
   }
 
-  // TENANT_OWNER user: Show full interactive dropdown switcher
+  // TENANT_OWNER: hiện dropdown chuyển đổi đầy đủ
   return (
     <>
       <SidebarMenu>
@@ -141,13 +164,15 @@ export function BranchSwitcher() {
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group"
               >
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  {activeItem.type === "branch" ? (
+                <LocationMark>
+                  {activeItem.id === ALL_LOCATIONS_ITEM.id ? (
+                    <Building2 className="size-4" />
+                  ) : activeItem.type === "branch" ? (
                     <Store className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
                   ) : (
                     <Warehouse className={activeItem.status === "INACTIVE" ? "size-4 text-destructive" : "size-4"} />
                   )}
-                </div>
+                </LocationMark>
                 <div className="grid flex-1 text-start text-sm leading-tight">
                   {activeItem.status === "INACTIVE" ? (
                     <>
@@ -174,28 +199,27 @@ export function BranchSwitcher() {
               side={isMobile ? "bottom" : "right"}
               sideOffset={4}
             >
-              <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Chi nhánh
-              </DropdownMenuLabel>
               <DropdownMenuItem
-                key="all-branches"
-                onClick={() =>
-                  handleSelect({
-                    id: "all-branches",
-                    name: "Tổng",
-                    address: "all",
-                    type: "branch",
-                  })
-                }
+                key={ALL_LOCATIONS_ITEM.id}
+                onClick={() => handleSelect(ALL_LOCATIONS_ITEM)}
                 className="gap-2 p-2 cursor-pointer flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
                   <div className="flex size-6 items-center justify-center rounded-sm border">
-                    <Store className="size-4 shrink-0" />
+                    <Building2 className="size-4 shrink-0" />
                   </div>
-                  Tổng
+                  <div className="grid leading-tight">
+                    <span>{ALL_LOCATIONS_ITEM.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {ALL_LOCATIONS_ITEM.address}
+                    </span>
+                  </div>
                 </div>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Chi nhánh
+              </DropdownMenuLabel>
               {dbBranches.map((item) => (
                 <DropdownMenuItem
                   key={item.id}
@@ -356,14 +380,12 @@ export function BranchSwitcher() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      {/* Dialog for creating a new branch */}
       <BranchFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleCreateBranch}
       />
 
-      {/* Dialog for editing a branch */}
       <BranchFormDialog
         open={isEditBranchDialogOpen}
         onOpenChange={setIsEditBranchDialogOpen}
@@ -392,14 +414,12 @@ export function BranchSwitcher() {
         onSuccess={handleAssignManagerSuccess}
       />
 
-      {/* Dialog for creating a new warehouse */}
       <WarehouseFormDialog
         open={isWarehouseDialogOpen}
         onOpenChange={setIsWarehouseDialogOpen}
         onSubmit={handleCreateWarehouse}
       />
 
-      {/* Dialog for editing a warehouse */}
       <WarehouseFormDialog
         open={isEditWarehouseDialogOpen}
         onOpenChange={setIsEditWarehouseDialogOpen}
@@ -411,12 +431,13 @@ export function BranchSwitcher() {
                 name: editingWarehouse.name,
                 status: editingWarehouse.status,
                 address: editingWarehouse.address || "",
+                phoneNumber: editingWarehouse.phoneNumber?.[0] || "",
+                email: editingWarehouse.email || "",
               }
             : undefined
         }
       />
 
-      {/* Confirmation Dialog for deletion */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

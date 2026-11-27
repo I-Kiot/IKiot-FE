@@ -1,4 +1,3 @@
-// [Context – UI State]
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
@@ -14,18 +13,31 @@ import { productApi } from '@/lib/api/product'
 import type { Brand } from '@/types/brand'
 import type { Category } from '@/types/category'
 import type { Supplier } from '@/types/supplier'
+import type { ProductScreen } from '../_constants/product-screen'
+import { useLiveRefresh } from '@/hooks/use-live-refresh'
+import { CHANGE_RESOURCES } from '@/types/change-feed'
+
+// Tải lại tồn khi có thay đổi.
+const LIVE_RESOURCES = [CHANGE_RESOURCES.INVENTORIES] as const
 
 type LocationOption = { value: string; label: string }
 
 type ProductsContextType = {
+  screen: ProductScreen
   products: Product[]
   isLoading: boolean
+  /** Tải lại danh sách từ BE - sau khi nhập file, khi hàng mới không đi qua handleAdd. */
+  reloadProducts: () => Promise<void>
   open: ProductsDialogType | null
   setOpen: (str: ProductsDialogType | null) => void
   currentRow: Product | null
   setCurrentRow: React.Dispatch<React.SetStateAction<Product | null>>
-  handleAdd: (data: ProductFormValues) => Promise<boolean>
-  handleEdit: (id: string, data: ProductFormValues) => Promise<boolean>
+  handleAdd: (data: ProductFormValues, onDuplicateCode?: (message: string) => void) => Promise<boolean>
+  handleEdit: (
+    id: string,
+    data: ProductFormValues,
+    onDuplicateCode?: (message: string) => void,
+  ) => Promise<boolean>
   handleDelete: (id: string) => Promise<boolean>
   selectedIds: string[]
   setSelectedIds: (ids: string[]) => void
@@ -38,16 +50,23 @@ type ProductsContextType = {
   categories: Category[]
   suppliers: Supplier[]
   ensureSuppliersLoaded: () => void
-  // productId -> lowercased "sku productCode" text, for the toolbar search box
-  // (GET /products doesn't include item-level fields on each product; see products-table.tsx).
+  // Index SKU + mã hàng theo productId.
   skuSearchIndex: Map<string, string>
+  /** Số lần hàng hoá này được sửa thành công; panel mở rộng nạp lại chi tiết khi số này đổi. */
+  detailVersionOf: (productId: string) => number
 }
 
 const ProductsContext = React.createContext<ProductsContextType | null>(null)
 
-export function ProductsProvider({ children }: { children: React.ReactNode }) {
-  const { products, isLoading, handleAdd, handleEdit, handleDelete, handleDeleteMany } =
-    useProductsMutations()
+export function ProductsProvider({
+  screen,
+  children,
+}: {
+  screen: ProductScreen
+  children: React.ReactNode
+}) {
+  const { products, isLoading, reload, handleAdd, handleEdit, handleDelete, handleDeleteMany } =
+    useProductsMutations(screen)
   const [open, setOpen] = useState<ProductsDialogType | null>(null)
   const [currentRow, setCurrentRow] = useState<Product | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -58,6 +77,10 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [skuSearchIndex, setSkuSearchIndex] = useState<Map<string, string>>(new Map())
+  // Theo từng productId, để sửa một hàng hoá chỉ nạp lại panel của đúng hàng đó.
+  const [detailVersions, setDetailVersions] = useState<Record<string, number>>({})
+  // Tăng mỗi lần tồn kho đổi ở tab khác: mọi panel đang mở nạp lại ngầm (không skeleton).
+  const [liveVersion, setLiveVersion] = useState(0)
   const locationOptionsLoadedRef = useRef(false)
   const suppliersLoadedRef = useRef(false)
 
@@ -71,12 +94,10 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
-  // Powers the toolbar search box's SKU/product-code matching (see products-table.tsx) -
-  // GET /products doesn't attach item-level fields per product, so build the index from
-  // the flat item list instead.
+  // Dựng index tìm theo SKU / mã hàng.
   useEffect(() => {
     productApi
-      .listItems({ limit: 500 })
+      .listItems({ limit: 500, productType: screen.listTypes })
       .then((items) => {
         const index = new Map<string, string>()
         for (const item of items) {
@@ -87,10 +108,9 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         setSkuSearchIndex(index)
       })
       .catch(() => setSkuSearchIndex(new Map()))
-  }, [])
+  }, [screen.listTypes])
 
-  // Only needed inside stock-location pickers/labels (mutate dialog, item dialogs,
-  // detail sheet) - fetched on first open instead of on every products page mount.
+  // Tải địa điểm khi mở lần đầu.
   function ensureLocationOptionsLoaded() {
     if (locationOptionsLoadedRef.current) return
     locationOptionsLoadedRef.current = true
@@ -104,7 +124,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       .catch(() => setWarehouseOptions([]))
   }
 
-  // Only needed inside the Supplier dropdown/detail row - fetched on first open.
+  // Chỉ cần trong dropdown/dòng chi tiết nhà cung cấp: tải khi mở lần đầu.
   function ensureSuppliersLoaded() {
     if (suppliersLoadedRef.current) return
     suppliersLoadedRef.current = true
@@ -113,6 +133,32 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
       .then((res) => setSuppliers(res.data))
       .catch(() => setSuppliers([]))
   }
+
+  // Tăng phiên bản để panel nạp lại chi tiết.
+  async function handleEditWrapper(
+    id: string,
+    data: ProductFormValues,
+    onDuplicateCode?: (message: string) => void,
+  ): Promise<boolean> {
+    const success = await handleEdit(id, data, onDuplicateCode)
+    if (success) {
+      setDetailVersions((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
+    }
+    return success
+  }
+
+  function detailVersionOf(productId: string): number {
+    return (detailVersions[productId] ?? 0) + liveVersion
+  }
+
+  // Không truyền visibleIds: tải lại im lặng, không toast.
+  useLiveRefresh({
+    resources: LIVE_RESOURCES,
+    onChange: () => {
+      void reload()
+      setLiveVersion((v) => v + 1)
+    },
+  })
 
   async function handleDeleteManyWrapper(ids: string[]): Promise<boolean> {
     const success = await handleDeleteMany(ids)
@@ -126,14 +172,16 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
   return (
     <ProductsContext.Provider
       value={{
+        screen,
         products,
         isLoading,
+        reloadProducts: reload,
         open,
         setOpen,
         currentRow,
         setCurrentRow,
         handleAdd,
-        handleEdit,
+        handleEdit: handleEditWrapper,
         handleDelete,
         selectedIds,
         setSelectedIds,
@@ -147,6 +195,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
         suppliers,
         ensureSuppliersLoaded,
         skuSearchIndex,
+        detailVersionOf,
       }}
     >
       {children}

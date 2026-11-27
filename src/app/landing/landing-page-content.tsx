@@ -25,17 +25,13 @@ export function LandingPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
       <LandingNavbar />
 
-      {/* Main Content */}
       <main>
         <HeroSection />
-        {/* <LogoCarousel /> */}
         <StatsSection />
         <AboutSection />
         <FeaturesSection />
-        {/* <TeamSection /> */}
         <PricingSection />
         <TestimonialsSection />
         <BlogSection />
@@ -44,7 +40,6 @@ export function LandingPageContent() {
         <ContactSection />
       </main>
 
-      {/* Footer */}
       <LandingFooter />
     </div>
   );

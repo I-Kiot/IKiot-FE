@@ -26,8 +26,6 @@ import {
 import { safeImageSrc } from "@/app/(protected)/products/_constants/product.constants";
 import type { StockMovementProductItemOption } from "@/types/stock-movement";
 
-/* ─── atoms dùng chung dialog / expanded panel ─── */
-
 export function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="mt-1 text-xs text-destructive">{message}</p>;
@@ -103,41 +101,158 @@ export function DetailLineCard({
   );
 }
 
+/** Đơn vị ghi cạnh mọi ô tiền. */
+export const CURRENCY_SYMBOL = "đ";
+
+const WIDTH_CLASS = /^(w|min-w|max-w)-|^flex-1$/;
+
+/** Ký hiệu tiền ở mép phải ô nhập. */
+function splitMoneyClasses(className?: string) {
+  const tokens = (className ?? "").split(/\s+/).filter(Boolean);
+  return {
+    wrapper: tokens.filter((t) => WIDTH_CLASS.test(t)).join(" "),
+    input: tokens.filter((t) => !WIDTH_CLASS.test(t)).join(" "),
+  };
+}
+
+export function CurrencySuffix({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground",
+        className,
+      )}
+    >
+      {CURRENCY_SYMBOL}
+    </span>
+  );
+}
+
 type MoneyInputProps = {
   value: number | undefined;
   onChange: (value: number) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  max?: number;
+  id?: string;
+  title?: string;
+  autoFocus?: boolean;
+  "aria-label"?: string;
 };
 
 export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
   function MoneyInput(
-    { value, onChange, placeholder = "0", className, disabled },
+    { value, onChange, placeholder = "0", className, disabled, max, id, title, autoFocus, "aria-label": ariaLabel },
     ref,
   ) {
+    const classes = splitMoneyClasses(className);
     return (
+      <div className={cn("relative w-full", classes.wrapper)}>
+        <Input
+          ref={ref}
+          id={id}
+          aria-label={ariaLabel}
+          title={title}
+          autoFocus={autoFocus}
+          type="text"
+          inputMode="numeric"
+          placeholder={placeholder}
+          disabled={disabled}
+          className={cn("h-9 w-full text-sm tabular-nums tracking-tight", classes.input, "pr-7")}
+          value={
+            Number.isFinite(value) && (value ?? 0) > 0
+              ? value!.toLocaleString("vi-VN")
+              : ""
+          }
+          onChange={(e) => {
+            const next = parseImportPriceInput(e.target.value);
+            onChange(typeof max === "number" ? Math.min(next, max) : next);
+          }}
+        />
+        <CurrencySuffix />
+      </div>
+    );
+  },
+);
+
+type NullableMoneyInputProps = {
+  value: number | null | undefined;
+  onChange: (value: number | null) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+};
+
+export const NullableMoneyInput = React.forwardRef<
+  HTMLInputElement,
+  NullableMoneyInputProps
+>(function NullableMoneyInput(
+  { value, onChange, placeholder = "0", className, disabled },
+  ref,
+) {
+  const classes = splitMoneyClasses(className);
+  return (
+    <div className={cn("relative w-full", classes.wrapper)}>
       <Input
         ref={ref}
         type="text"
         inputMode="numeric"
         placeholder={placeholder}
         disabled={disabled}
-        className={cn("h-9 w-full text-sm tabular-nums tracking-tight", className)}
+        className={cn("h-9 w-full text-sm tabular-nums tracking-tight", classes.input, "pr-7")}
         value={
-          Number.isFinite(value) && (value ?? 0) > 0
-            ? value!.toLocaleString("vi-VN")
+          Number.isFinite(value) && (value as number) > 0
+            ? (value as number).toLocaleString("vi-VN")
             : ""
         }
         onChange={(e) => {
-          onChange(parseImportPriceInput(e.target.value));
+          const digits = e.target.value.replace(/[^\d]/g, "");
+          onChange(digits === "" ? null : parseImportPriceInput(digits));
         }}
       />
-    );
-  },
-);
+      <CurrencySuffix />
+    </div>
+  );
+});
 
-/* ─── Product picker ─── */
+type NullableCountInputProps = {
+  value: number | null | undefined;
+  onChange: (value: number | null) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+};
+
+/** Ô nhập số lượng nguyên dương (lượt dùng, số lần...) - không có ký hiệu tiền; để trống = null. */
+export const NullableCountInput = React.forwardRef<
+  HTMLInputElement,
+  NullableCountInputProps
+>(function NullableCountInput(
+  { value, onChange, placeholder = "0", className, disabled },
+  ref,
+) {
+  return (
+    <Input
+      ref={ref}
+      type="text"
+      inputMode="numeric"
+      placeholder={placeholder}
+      disabled={disabled}
+      className={cn("h-9 w-full text-sm tabular-nums tracking-tight", className)}
+      value={
+        Number.isFinite(value) && (value as number) > 0
+          ? (value as number).toLocaleString("vi-VN")
+          : ""
+      }
+      onChange={(e) => {
+        const digits = e.target.value.replace(/[^\d]/g, "");
+        onChange(digits === "" ? null : Number(digits));
+      }}
+    />
+  );
+});
 
 const PRODUCT_TRIGGER_CLASS =
   "!h-auto min-h-11 w-full min-w-0 items-start justify-between gap-2 overflow-hidden px-3 py-2.5 text-left text-sm !whitespace-normal " +

@@ -13,6 +13,7 @@ import type {
   StockMovementProductItemOption,
   StockMovementSupplierOption,
 } from "@/types/stock-movement";
+import type { LocationRef } from "@/types/location";
 
 type ApiRef =
   | string
@@ -27,41 +28,39 @@ type ApiRef =
 
 type ApiMovementDetail = {
   productItemId?: string | { id?: string; sku?: string; productName?: string };
+  /** BE trả kèm dòng hàng, nên không cần tải cả catalog chỉ để lấy tên. */
+  productItem?: { sku?: string | null; productName?: string | null };
   quantity?: number;
-  importPrice?: number;
-  receivedQuantity?: number;
-  note?: string;
+  importPrice?: number | null;
+  receivedQuantity?: number | null;
+  defectQuantity?: number | null;
+  note?: string | null;
 };
 
-/**
- * "A branch or a warehouse", the shape the API speaks on both sides of the wire.
- *
- * Postgres stores it as a pair of nullable foreign keys, and `location-ref.dto.ts` is the
- * one place on the server that maps between the two - so requests carry `fromLocation:
- * { locationId, locationType }` and responses answer the same object plus a separate
- * `*LocationName`. This file used to send and read the pair **flat**
- * (`fromLocationId` + `fromLocationType`), which is neither: `whitelist: true` dropped the
- * flat keys off every create, and every response read them back as `undefined`. The
- * exchange screens have been showing "warehouse" for every destination because that is the
- * fallback three lines below.
- */
-type ApiLocationRef = {
-  locationId: string;
-  locationType: LocationType;
-};
+/** Một đầu của phiếu kho. */
+type ApiLocationRef = LocationRef;
 
 type ApiMovement = {
   id: string;
   tenantId?: string;
   movementType?: StockMovement["movementType"];
   status?: StockMovement["status"];
+  totalPrice?: number;
   fromSupplierId?: ApiRef;
+  /** BE trả kèm tên, nên người không có `suppliers:read` vẫn thấy nguồn hàng. */
+  fromSupplier?: { supplierName?: string } | null;
   fromLocation?: ApiLocationRef | null;
-  fromLocationName?: string | null;
   toLocation?: ApiLocationRef | null;
-  toLocationName?: string | null;
   createdBy?: ApiRef;
   requestedBy?: ApiRef;
+  shippedBy?: ApiRef | null;
+  shippedAt?: string | null;
+  receivedBy?: ApiRef | null;
+  receivedAt?: string | null;
+  approvedBy?: ApiRef | null;
+  approvedAt?: string | null;
+  cancelledBy?: ApiRef | null;
+  cancelledAt?: string | null;
   note?: string;
   details?: ApiMovementDetail[];
   createdAt?: string;
@@ -72,6 +71,7 @@ type ApiSupplier = {
   id: string;
   supplierName?: string;
   name?: string;
+  type?: "GOODS" | "WORKSHOP";
 };
 
 type ApiLocation = {
@@ -95,6 +95,8 @@ type ApiProductItem = {
   images?: ApiProductImage[];
   productDetails?: Array<{ name?: string; value?: string }>;
   suppliers?: Array<string | { id?: string }>;
+  /** PRODUCT | COMBO | SERVICE - chỉ PRODUCT có tồn kho. */
+  itemType?: string;
 };
 
 type ApiProduct = {
@@ -134,6 +136,11 @@ function resolveUserName(value?: ApiRef): string {
   return value.phoneNumber ?? value.email ?? "";
 }
 
+function resolveUserPhone(value?: ApiRef): string {
+  if (!value || typeof value === "string") return "";
+  return value.phoneNumber ?? "";
+}
+
 function normalizeNote(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
@@ -146,11 +153,16 @@ function mapDetail(raw: ApiMovementDetail) {
 
   return {
     productItemId,
-    productName: typeof productRef === "string" ? "" : (productRef?.productName ?? ""),
-    sku: typeof productRef === "string" ? "" : (productRef?.sku ?? ""),
+    productName:
+      raw.productItem?.productName ??
+      (typeof productRef === "string" ? "" : (productRef?.productName ?? "")),
+    sku:
+      raw.productItem?.sku ??
+      (typeof productRef === "string" ? "" : (productRef?.sku ?? "")),
     quantity: raw.quantity ?? 0,
     importPrice: raw.importPrice ?? 0,
     receivedQuantity: raw.receivedQuantity ?? 0,
+    defectQuantity: raw.defectQuantity ?? 0,
     note: normalizeNote(raw.note),
   };
 }
@@ -162,35 +174,35 @@ function mapMovement(raw: ApiMovement): StockMovement {
     tenantId: String(raw.tenantId ?? ""),
     movementType: raw.movementType ?? "IMPORT",
     status: raw.status ?? "PENDING",
+    totalPrice: raw.totalPrice ?? 0,
     fromSupplierId: resolveRefId(raw.fromSupplierId),
-    supplierName: resolveSupplierName(raw.fromSupplierId),
-    fromLocationId: raw.fromLocation?.locationId,
-    fromLocationName: raw.fromLocationName ?? undefined,
-    fromLocationType: raw.fromLocation?.locationType,
-    toLocationId: raw.toLocation?.locationId ?? "",
-    toLocationName: raw.toLocationName ?? raw.toLocation?.locationId ?? "",
-    toLocationType: raw.toLocation?.locationType ?? "warehouse",
+    supplierName:
+      raw.fromSupplier?.supplierName ?? resolveSupplierName(raw.fromSupplierId),
+    fromLocationId: raw.fromLocation?.id,
+    fromLocationName: raw.fromLocation?.name,
+    fromLocationType: raw.fromLocation?.type,
+    toLocationId: raw.toLocation?.id ?? "",
+    toLocationName: raw.toLocation?.name ?? "",
+    toLocationType: raw.toLocation?.type ?? "WAREHOUSE",
     requestedBy: resolveRefId(creator),
     requestedByName: resolveUserName(creator),
+    requestedByPhone: resolveUserPhone(creator),
     note: normalizeNote(raw.note),
     details: (raw.details ?? []).map(mapDetail),
+    shippedByName: resolveUserName(raw.shippedBy ?? undefined) || undefined,
+    shippedAt: raw.shippedAt ?? undefined,
+    receivedByName: resolveUserName(raw.receivedBy ?? undefined) || undefined,
+    receivedAt: raw.receivedAt ?? undefined,
+    approvedByName: resolveUserName(raw.approvedBy ?? undefined) || undefined,
+    approvedAt: raw.approvedAt ?? undefined,
+    cancelledByName: resolveUserName(raw.cancelledBy ?? undefined) || undefined,
+    cancelledAt: raw.cancelledAt ?? undefined,
     createdAt: raw.createdAt ?? "",
     updatedAt: raw.updatedAt ?? "",
   };
 }
 
-/**
- * The create body `POST /stock-movements` actually accepts.
- *
- * The screens work in flat ids (that is what a `<Select>` binds to), and
- * `CreateStockMovementDto` takes the pair nested - so the conversion belongs here, once,
- * rather than at each of the four call sites that used to spread a flat payload straight
- * into the request and have both locations dropped in silence.
- *
- * A missing half is left off entirely rather than sent as `{ locationId: undefined }`:
- * IMPORT has no source and ADJUST no destination, and `assertEndpointsValid` decides which
- * of those is legal for the movement type.
- */
+/** Body tạo phiếu kho, chỉ gửi id địa điểm. */
 function toCreateBody<
   T extends {
     fromLocationId?: string;
@@ -199,23 +211,12 @@ function toCreateBody<
     toLocationType?: LocationType;
   },
 >(payload: T) {
-  const {
-    fromLocationId,
-    fromLocationType,
-    toLocationId,
-    toLocationType,
-    ...rest
-  } = payload;
-
-  return {
-    ...rest,
-    ...(fromLocationId && fromLocationType
-      ? { fromLocation: { locationId: fromLocationId, locationType: fromLocationType } }
-      : {}),
-    ...(toLocationId && toLocationType
-      ? { toLocation: { locationId: toLocationId, locationType: toLocationType } }
-      : {}),
-  };
+  const body: Record<string, unknown> = { ...payload };
+  delete body.fromLocationType;
+  delete body.toLocationType;
+  if (!payload.fromLocationId) delete body.fromLocationId;
+  if (!payload.toLocationId) delete body.toLocationId;
+  return body;
 }
 
 type ProductLookup = Map<string, StockMovementProductItemOption>;
@@ -234,13 +235,24 @@ function isCacheFresh(at: number) {
   return Date.now() - at < LOOKUP_TTL_MS;
 }
 
+/** Toàn bộ NCC (và xưởng), đọc hết mọi trang. */
 async function fetchSupplierOptions(): Promise<StockMovementSupplierOption[]> {
-  const response = await client.get("/suppliers", {
-    params: { page: 1, limit: 100 },
-  });
-  return asArray<ApiSupplier>(response.data?.data).map((supplier) => ({
+  const all: ApiSupplier[] = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const response = await client.get("/suppliers", {
+      params: { page, limit: 100 },
+    });
+    all.push(...asArray<ApiSupplier>(response.data?.data));
+    totalPages = Number(response.data?.pagination?.totalPages ?? 1);
+    page += 1;
+  } while (page <= totalPages);
+
+  return all.map((supplier) => ({
     id: supplier.id,
     name: supplier.supplierName ?? supplier.name ?? supplier.id,
+    type: supplier.type,
   }));
 }
 
@@ -254,14 +266,14 @@ async function fetchLocationOptions(): Promise<StockMovementLocationOption[]> {
     (warehouse) => ({
       id: warehouse.id,
       name: warehouse.name ?? warehouse.id,
-      type: "warehouse" as const,
+      type: "WAREHOUSE" as const,
     }),
   );
   const branches = asArray<ApiLocation>(branchesResponse.data?.data).map(
     (branch) => ({
       id: branch.id,
       name: branch.name ?? branch.id,
-      type: "branch" as const,
+      type: "BRANCH" as const,
     }),
   );
 
@@ -332,7 +344,10 @@ function mapApiProductsToItemOptions(
   products: ApiProduct[],
 ): StockMovementProductItemOption[] {
   return products.flatMap((product) =>
-    asArray<ApiProductItem>(product.items ?? product.productItems).map(
+    asArray<ApiProductItem>(product.items ?? product.productItems)
+      // Combo / dịch vụ không có tồn riêng (tồn đi theo từng món) - BE cũng từ chối chúng trên phiếu kho.
+      .filter((item) => !item.itemType || item.itemType === "PRODUCT")
+      .map(
       (item) => ({
         id: item.id,
         productId: product.id,
@@ -355,6 +370,8 @@ async function fetchProductSearch(params: {
   page?: number;
   limit?: number;
   status?: string;
+  /** true = chỉ hàng đặt xưởng được (form YCSX); bỏ trống = không lọc. */
+  isManufacturable?: boolean;
 }): Promise<{
   items: StockMovementProductItemOption[];
   totalPages: number;
@@ -365,6 +382,7 @@ async function fetchProductSearch(params: {
       page: params.page ?? 1,
       limit: Math.min(params.limit ?? 50, 50),
       status: params.status ?? "ACTIVE",
+      isManufacturable: params.isManufacturable,
     },
   });
   return {
@@ -375,10 +393,7 @@ async function fetchProductSearch(params: {
   };
 }
 
-/**
- * Catalog với giá: GET /products/search
- * (GET /products thường không gắn items nên không dùng cho giá).
- */
+/** Danh mục kèm giá. */
 async function fetchAllProductItemOptions(): Promise<
   StockMovementProductItemOption[]
 > {
@@ -497,7 +512,7 @@ function applyLookups(
       movement.toLocationName && movement.toLocationName !== movement.toLocationId
         ? movement.toLocationName
         : (toLocation?.name ?? movement.toLocationName),
-    toLocationType: movement.toLocationType || toLocation?.type || "warehouse",
+    toLocationType: movement.toLocationType || toLocation?.type || "WAREHOUSE",
     details: movement.details.map((detail) => {
       const product = products?.get(detail.productItemId);
       return {
@@ -639,10 +654,7 @@ export const stockMovementApi = {
     return safeEnrichMovement(mapMovement(response.data?.data as ApiMovement));
   },
 
-  /**
-   * Tạo phiếu trả ngược (đổi from/to) từ phiếu đã nhận, rồi open → close → ship
-   * để nơi gửi gốc chỉ cần xác nhận nhận hàng.
-   */
+  /** Tạo phiếu trả ngược từ phiếu đã nhận. */
   createAndShipReverseReturn: async (
     source: StockMovement,
     options?: { reason?: string },
@@ -681,7 +693,7 @@ export const stockMovementApi = {
     const toLocationType = source.fromLocationType;
 
     const movementType =
-      fromLocationType === "branch" && toLocationType === "warehouse"
+      fromLocationType === "BRANCH" && toLocationType === "WAREHOUSE"
         ? ("RETURN" as const)
         : ("EXPORT" as const);
 
@@ -740,12 +752,16 @@ export const stockMovementApi = {
 
   getSupplierOptions: fetchSupplierOptions,
   getLocationOptions: fetchLocationOptions,
-  searchProductItems: async (q: string) => {
+  searchProductItems: async (
+    q: string,
+    filter: { isManufacturable?: boolean } = {},
+  ) => {
     const res = await fetchProductSearch({
       q,
       page: 1,
       limit: 50,
       status: "ACTIVE",
+      isManufacturable: filter.isManufacturable,
     });
     return res.items;
   },
@@ -759,10 +775,7 @@ export const stockMovementApi = {
       getProductLookup(),
       fetchInventoryAtLocation(locationId, locationType),
     ]);
-    // "Has stock here", not "has a row here". A row appears the first time a movement
-    // delivers goods and stays afterwards, so its presence only says the location once had
-    // some - and the adjustment picker uses this flag to keep a branch manager to the goods
-    // actually sitting in their branch right now.
+    // Địa điểm có tồn không.
     return [...lookup.values()].map((item) => ({
       ...item,
       atLocation: (inventoryMap.get(item.id) ?? 0) > 0,

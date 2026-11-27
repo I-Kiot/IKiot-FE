@@ -71,7 +71,6 @@ export function InvoicesExpandedPanel({
     );
   }
 
-  // Calculated values
   const totalQuantity = invoice.items.reduce(
     (sum, item) => sum + item.quantity,
     0,
@@ -112,8 +111,7 @@ export function InvoicesExpandedPanel({
               </TableHeader>
               <TableBody>
                 {invoice.items.map((item, index) => {
-                  const itemTotal =
-                    item.quantity * item.unitPrice - item.discountAmount;
+                  const itemTotal = item.lineTotal;
                   return (
                     <TableRow
                       key={item.productItemId}
@@ -142,7 +140,6 @@ export function InvoicesExpandedPanel({
                     </TableRow>
                   );
                 })}
-                {/* Total Quantity Row */}
                 <TableRow className="bg-muted/20 font-medium hover:bg-muted/20">
                   <TableCell
                     colSpan={2}
@@ -158,7 +155,6 @@ export function InvoicesExpandedPanel({
                     {formatVND(invoice.discountValue && invoice.discountValue > 0 ? invoice.grandTotal + invoice.discountValue : invoice.grandTotal)}
                   </TableCell>
                 </TableRow>
-                {/* Discount Rows */}
                 {invoice.discountType && invoice.discountValue && invoice.discountValue > 0 && (
                   <>
                     <TableRow className="bg-red-50/50 dark:bg-red-950/10 hover:bg-red-50/50 dark:hover:bg-red-950/10">
@@ -205,7 +201,6 @@ export function InvoicesExpandedPanel({
             </Table>
           </div>
 
-          {/* Notes Card */}
           {invoice.note && (
             <div className="flex gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10 text-sm">
               <FileText className="size-4 mt-0.5 text-primary shrink-0" />
@@ -225,7 +220,6 @@ export function InvoicesExpandedPanel({
           value="details"
           className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start outline-none"
         >
-          {/* Customer & Seller Details Card */}
           <Card className="shadow-sm">
             <CardContent className="p-4 space-y-4 text-xs">
               <div className="flex items-center gap-2 font-semibold text-sm text-foreground pb-1 border-b">
@@ -292,7 +286,6 @@ export function InvoicesExpandedPanel({
             </CardContent>
           </Card>
 
-          {/* Payment Summary Card */}
           <Card className="shadow-sm border-primary/20 bg-primary/5">
             <CardContent className="p-4 space-y-3 text-xs">
               <div className="flex items-center gap-2 font-semibold text-sm text-primary pb-1 border-b border-primary/10">
@@ -303,7 +296,7 @@ export function InvoicesExpandedPanel({
                 <div className="flex justify-between text-muted-foreground">
                   <span>Hình thức mua hàng:</span>
                   <span className="text-foreground text-right font-semibold">
-                    {PAYMENT_METHOD_MAP[invoice.paymentMethod]}
+                    {invoice.paymentMethod ? PAYMENT_METHOD_MAP[invoice.paymentMethod] : "-"}
                   </span>
                 </div>
                 {invoice.discountValue && invoice.discountValue > 0 ? (
@@ -342,7 +335,7 @@ export function InvoicesExpandedPanel({
                 <div className="flex justify-between text-muted-foreground">
                   <span>Khách thanh toán:</span>
                   <span className="text-green-600 dark:text-green-400 font-bold tabular-nums">
-                    {formatVND(invoice.customerPay)}
+                    {invoice.customerPay === null ? "-" : formatVND(invoice.customerPay)}
                   </span>
                 </div>
                 <Separator className="my-1 bg-primary/10" />
@@ -351,7 +344,7 @@ export function InvoicesExpandedPanel({
                     Tiền thừa trả khách:
                   </span>
                   <span className="text-primary font-bold tabular-nums">
-                    {formatVND(invoice.change)}
+                    {invoice.change === null ? "-" : formatVND(invoice.change)}
                   </span>
                 </div>
               </div>

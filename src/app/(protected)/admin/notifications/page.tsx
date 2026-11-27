@@ -42,7 +42,6 @@ export default function NotificationsPage() {
   const [loadingTenants, setLoadingTenants] = useState(false);
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false);
 
-  // Form states
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<"Maintenance" | "New feature" | "Promotion" | "Security">("Maintenance");
@@ -50,16 +49,13 @@ export default function NotificationsPage() {
   const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
 
-  // Load initial data
   useEffect(() => {
-    // Fetch tenants
     setLoadingTenants(true);
     listTenants()
       .then((data) => setTenants(data || []))
       .catch((err) => console.error("Error loading tenants:", err))
       .finally(() => setLoadingTenants(false));
 
-    // Fetch announcements history
     setLoadingAnnouncements(true);
     listAnnouncements()
       .then((data) => setAnnouncements(data || []))
@@ -67,7 +63,6 @@ export default function NotificationsPage() {
       .finally(() => setLoadingAnnouncements(false));
   }, []);
 
-  // Send announcement action
   const handleSendAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description) {
@@ -94,7 +89,6 @@ export default function NotificationsPage() {
         setTitle("");
         setDescription("");
         setSelectedTenants([]);
-        // Refresh history
         setAnnouncements((prev) => [res.data, ...prev]);
       }
     } catch (error: any) {
@@ -158,7 +152,6 @@ export default function NotificationsPage() {
           <TabsTrigger value="history">Lịch Sử Tuyên Bố</TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Compose Announcement */}
         <TabsContent value="announcement">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2 border">
@@ -241,7 +234,6 @@ export default function NotificationsPage() {
               </CardContent>
             </Card>
 
-            {/* Target selection side panel */}
             <Card className="border">
               <CardHeader>
                 <CardTitle>Chọn cửa hàng nhắm mục tiêu</CardTitle>
@@ -286,7 +278,6 @@ export default function NotificationsPage() {
           </div>
         </TabsContent>
 
-        {/* Tab 2: Announcements History */}
         <TabsContent value="history">
           <Card className="border">
             <CardHeader>

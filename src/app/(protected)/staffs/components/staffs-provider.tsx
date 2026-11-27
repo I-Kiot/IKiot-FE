@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { staffApi } from "@/lib/api/staff";
 import { parseLocationKey } from "@/lib/location-key";
 import { branchApi } from "@/lib/api/branch";
 import { warehouseApi } from "@/lib/api/warehouse";
-import { paySheetApi } from "@/lib/api/paysheet";
+import { supplierApi } from "@/lib/api/supplier";
 import { getSessionRole } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -29,8 +29,7 @@ type StaffsDialogType =
   | "delete"
   | "deactivate"
   | "activate"
-  | "password"
-  | "leaveBalance";
+  | "password";
 
 const DEFAULT_LIST_QUERY: StaffListQuery = {
   page: 1,
@@ -56,7 +55,11 @@ type StaffsContextType = {
   branchOptions: { value: string; label: string }[];
   warehouseOptions: { value: string; label: string }[];
   warehouseOptionsFailed: boolean;
-  /** The global branch/warehouse switcher's current key ("all" | "branch-<id>" | "warehouse-<id>") - takes precedence over the manual filters below. */
+  /** Danh sách xưởng để gắn nhân viên xưởng. */
+  workshopOptions: { value: string; label: string }[];
+  /** Tải lại chi nhánh / kho / xưởng. */
+  reloadWorkplaceOptions: () => Promise<void>;
+  /** Key địa điểm toàn cục. */
   locationKey: string;
   open: StaffsDialogType | null;
   setOpen: (value: StaffsDialogType | null) => void;
@@ -101,14 +104,7 @@ type StaffsContextType = {
 
 const StaffsContext = React.createContext<StaffsContextType | null>(null);
 
-/**
- * Empty, and that is the correct default.
- *
- * This used to hold the three roles the old backend had built in. Sending one of those
- * names as a `roleId` would now be rejected - a role is a row this shop created, and a
- * brand-new tenant has none until somebody defines them. Falling back to a made-up list
- * would turn "you have not set up roles yet" into a 400 at the end of the hiring form.
- */
+/** Danh sách role của shop. */
 const DEFAULT_ROLE_OPTIONS: StaffRoleOption[] = [];
 
 type StaffsProviderProps = {
@@ -139,6 +135,9 @@ export function StaffsProvider({
     { value: string; label: string }[]
   >([]);
   const [warehouseOptionsFailed, setWarehouseOptionsFailed] = useState(false);
+  const [workshopOptions, setWorkshopOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
   const [open, setOpen] = useState<StaffsDialogType | null>(null);
   const [currentRow, setCurrentRow] = useState<Staff | null>(null);
   const [assignManagerOpen, setAssignManagerOpen] = useState(false);
@@ -157,14 +156,8 @@ export function StaffsProvider({
     string | undefined
   >();
   const locationKey = useAuthStore((state) => state.locationKey);
-  const paySheetNameByIdRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
-    // if (!canFetch) {
-    //   setIsInitialLoading(false);
-    //   return;
-    // }
-
     const timer = setTimeout(() => {
       setListQuery((prev) => {
         if (prev.search === keywordInput) return prev;
@@ -175,10 +168,8 @@ export function StaffsProvider({
     return () => clearTimeout(timer);
   }, [keywordInput, canFetch]);
 
-  useEffect(() => {
+  const reloadWorkplaceOptions = useCallback(async () => {
     if (!canFetch) return;
-
-    async function loadFilterOptions() {
       try {
         const response = await branchApi.getList({ limit: 100 });
         setBranchOptions(
@@ -204,56 +195,42 @@ export function StaffsProvider({
         setWarehouseOptions([]);
         setWarehouseOptionsFailed(true);
       }
-    }
 
-    loadFilterOptions();
+      try {
+        const response = await supplierApi.getList({ type: "WORKSHOP", limit: 100 });
+        setWorkshopOptions(
+          (response.data ?? []).map((workshop) => ({
+            value: workshop.id,
+            label: workshop.supplierName,
+          })),
+        );
+      } catch {
+        setWorkshopOptions([]);
+      }
   }, [canFetch]);
 
   useEffect(() => {
-    if (!canFetch) return;
-    let cancelled = false;
-    void paySheetApi
-      .getAllForOptions()
-      .then((options) => {
-        if (cancelled) return;
-        paySheetNameByIdRef.current = new Map(
-          options.map((option) => [option.value, option.label]),
-        );
-        // Refresh labels nếu staff list đã load trước.
-        setStaffs((prev) =>
-          prev.map((staff) => {
-            if (!staff.paySheetId) return staff;
-            const name = paySheetNameByIdRef.current.get(staff.paySheetId);
-            if (!name || staff.paySheetName === name) return staff;
-            return { ...staff, paySheetName: name };
-          }),
-        );
-      })
-      .catch(() => {
-        // Không chặn list nhân viên nếu thiếu quyền paysheets.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [canFetch]);
+    async function loadWorkplaceOptions() {
+      await reloadWorkplaceOptions();
+    }
+    loadWorkplaceOptions();
+  }, [reloadWorkplaceOptions]);
 
   const fetchStaffs = useCallback(async () => {
     if (!canFetch) return;
 
     setIsFetching(true);
     try {
-      // The global branch/warehouse switcher takes precedence over the page's own
-      // filter dropdowns - same reactive scoping products/checkout apply via
-      // locationKey - so switching branch immediately scopes the staff list.
+      // Lọc theo địa điểm toàn cục.
       const scope = parseLocationKey(locationKey);
       const branchId =
-        scope?.locationType === "branch"
+        scope?.locationType === "BRANCH"
           ? scope.locationId
           : listQuery.branchId === "all"
             ? undefined
             : listQuery.branchId;
       const warehouseId =
-        scope?.locationType === "warehouse"
+        scope?.locationType === "WAREHOUSE"
           ? scope.locationId
           : listQuery.warehouseId === "all"
             ? undefined
@@ -268,13 +245,7 @@ export function StaffsProvider({
         branchId,
         warehouseId,
       });
-      const withPaySheetNames = response.data.map((staff) => {
-        if (!staff.paySheetId) return staff;
-        if (staff.paySheetName) return staff;
-        const name = paySheetNameByIdRef.current.get(staff.paySheetId);
-        return name ? { ...staff, paySheetName: name } : staff;
-      });
-      setStaffs(withPaySheetNames);
+      setStaffs(response.data);
       setTotal(response.total);
       setTotalPages(response.totalPages);
     } catch (error) {
@@ -294,7 +265,7 @@ export function StaffsProvider({
     try {
       const roles = await staffApi.getRoles();
       if (roles.length > 0) {
-        // `getRoles` already returns { value: role id, label: role name }.
+        // getRoles đã trả về { value: id role, label: tên role }.
         setRoleOptions(roles);
       }
     } catch {
@@ -479,6 +450,8 @@ useEffect(() => {
         branchOptions,
         warehouseOptions,
         warehouseOptionsFailed,
+        workshopOptions,
+        reloadWorkplaceOptions,
         locationKey,
         open,
         setOpen,

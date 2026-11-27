@@ -9,7 +9,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Reuse the app across HMR reloads / multiple imports.
+// Dùng lại app khi HMR reload hoặc import nhiều lần.
 export const firebaseApp = getApps().length
   ? getApp()
   : initializeApp(firebaseConfig);

@@ -1,26 +1,19 @@
-/**
- * Which top-level (no submenu) entries to draw.
- *
- * `sidebarRoleConfig` lists what an account kind *can* reach and the filters decide what
- * this particular role may - but until now only submenus were filtered, so a leaf could
- * only be all-or-nothing. That is why "Tổng quan", "Trợ lý AI" and "Sổ thu chi" were left
- * out of the `STAFF` block entirely: the same mistake `giaoDich` carried until 2026-09-09,
- * an entry no permission could ever reveal.
- *
- * Each key names the permission its screen is gated on server-side. A URL that is absent
- * from the map is drawn for everyone - the leaves that need no permission beyond an
- * account, and the ones nothing has been decided for yet.
- */
+/** Quyền cần có của các mục sidebar; URL không có trong map thì ai cũng thấy. */
 import { allows } from "./role-permissions";
 
 const LEAF_NAV_PERMISSION: Record<string, readonly [string, string]> = {
-  // Both screens read the `/stats/*` aggregations - `reports:read` in `StatsController`.
-  // "Sổ thu chi" is one of them (`/stats/cashflow` + `/stats/cashflow/transactions`), not
-  // the `cash_flows` module, so `cash_flows:read` is the wrong gate for it.
+  // Cần `reports:read`.
   "/dashboard": ["reports", "read"],
+  "/reports": ["reports", "read"],
+  // Các mục báo cáo và thống kê cần `reports:read`.
+  "/reports/staff": ["reports", "read"],
+  "/reports/sales-journal": ["reports", "read"],
+  "/reports/unreconciled": ["reports", "read"],
+  "/statistics": ["reports", "read"],
   "/cashflow": ["reports", "read"],
-  // Listing conversations; sending a message additionally needs `ai_chat:create`.
-  "/chat": ["ai_chat", "read"],
+  // `/workshop/*` cần `production:deliver`, BE tự cấp cho tài khoản gắn xưởng.
+  "/workshop": ["production", "deliver"],
+  // "/shipper" ai cũng mở được, chỉ thấy lần giao của mình.
 };
 
 export function canAccessLeafNavItem(

@@ -11,16 +11,16 @@ export function useAIChat() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  // 1. Fetch all conversations list
+  // 1. Lấy toàn bộ danh sách hội thoại
   const fetchConversations = useCallback(async (selectId?: string) => {
     setIsLoadingConversations(true);
     try {
       const response = await aiApi.listConversations();
       if (response.success) {
         setConversations(response.data);
-        // Automatically select the first conversation if we don't have an active one
+        // Tự chọn hội thoại đầu tiên nếu chưa có hội thoại đang chọn
         if (response.data.length > 0 && !activeConversationId && !selectId) {
-          // By default select the most recent one
+          // Mặc định chọn hội thoại mới nhất
           setActiveConversationId(response.data[0].id);
         } else if (selectId) {
           setActiveConversationId(selectId);
@@ -34,12 +34,12 @@ export function useAIChat() {
     }
   }, [activeConversationId]);
 
-  // Load conversations on mount
+  // Tải hội thoại khi mount
   useEffect(() => {
     fetchConversations();
   }, []);
 
-  // 2. Fetch messages for active conversation
+  // 2. Lấy tin nhắn của hội thoại đang chọn
   const fetchActiveMessages = useCallback(async () => {
     if (!activeConversationId) {
       setMessages([]);
@@ -59,12 +59,12 @@ export function useAIChat() {
     }
   }, [activeConversationId]);
 
-  // Load messages whenever active conversation changes
+  // Tải lại tin nhắn mỗi khi hội thoại đang chọn đổi
   useEffect(() => {
     fetchActiveMessages();
   }, [activeConversationId, fetchActiveMessages]);
 
-  // 3. Send message
+  // 3. Gửi tin nhắn
   const sendMessage = async (content: string) => {
     if (!content.trim() || isSending) return;
 
@@ -74,12 +74,12 @@ export function useAIChat() {
       createdAt: new Date().toISOString(),
     };
 
-    // Optimistically add user message to list
+    // Thêm tin nhắn người dùng vào danh sách trước (optimistic)
     setMessages((prev) => [...prev, userMsg]);
     setIsSending(true);
 
     try {
-      // If activeConversationId is null, we create a new session
+      // Nếu activeConversationId là null thì tạo phiên mới
       const response = await aiApi.sendChatMessage(content, activeConversationId || undefined);
       if (response.success) {
         const modelMsg: ChatMessage = {
@@ -89,11 +89,11 @@ export function useAIChat() {
         };
         setMessages((prev) => [...prev, modelMsg]);
 
-        // Refresh list and make sure we select the newly created session
+        // Làm mới danh sách và chọn phiên vừa tạo
         if (!activeConversationId) {
           await fetchConversations(response.data.conversationId);
         } else {
-          // Just refresh list to keep order/titles updated
+          // Chỉ làm mới danh sách để cập nhật thứ tự/tiêu đề
           await fetchConversations(activeConversationId);
         }
       }
@@ -107,7 +107,7 @@ export function useAIChat() {
         createdAt: new Date().toISOString(),
       };
       
-      // Keep user message and append the default model message on error
+      // Giữ tin nhắn người dùng và thêm tin nhắn mặc định của model khi lỗi
       setMessages((prev) => [...prev, modelMsg]);
       
       toast.error(error?.response?.data?.message || "Có lỗi xảy ra khi gửi tin nhắn.");
@@ -116,20 +116,20 @@ export function useAIChat() {
     }
   };
 
-  // 4. Create new clean session
+  // 4. Tạo phiên mới trống
   const startNewSession = () => {
     setActiveConversationId(null);
     setMessages([]);
   };
 
-  // 5. Delete session
+  // 5. Xoá phiên
   const deleteSession = async (id: string) => {
     try {
       const response = await aiApi.deleteConversation(id);
       if (response.success) {
         toast.success("Đã xóa cuộc hội thoại.");
         
-        // If we deleted the active conversation, select another or start new
+        // Nếu xoá hội thoại đang chọn thì chọn hội thoại khác hoặc tạo mới
         if (activeConversationId === id) {
           const remaining = conversations.filter((c) => c.id !== id);
           if (remaining.length > 0) {
@@ -149,7 +149,7 @@ export function useAIChat() {
     }
   };
 
-  // 6. Rename session
+  // 6. Đổi tên phiên
   const renameSession = async (id: string, newTitle: string) => {
     if (!newTitle.trim()) return;
     try {

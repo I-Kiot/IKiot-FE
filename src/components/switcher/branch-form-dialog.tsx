@@ -39,9 +39,11 @@ const branchFormSchema = z.object({
     message: "Trạng thái là bắt buộc.",
   }),
   address: z.string().optional(),
-  phoneNumber: z.string().min(10, {
-    message: "Số điện thoại là bắt buộc và phải có ít nhất 10 số.",
-  }),
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(1, { message: "Số điện thoại là bắt buộc." })
+    .regex(/^0\d{9}$/, { message: "Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0." }),
   email: z.string().email({
     message: "Email không hợp lệ.",
   }).optional().or(z.literal("")),
@@ -160,7 +162,7 @@ export function BranchFormDialog({
               name="phoneNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Số điện thoại</FormLabel>
+                  <FormLabel>Số điện thoại <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input placeholder="Nhập số điện thoại (ví dụ: 0987654321)" {...field} />
                   </FormControl>

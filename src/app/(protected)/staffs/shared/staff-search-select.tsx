@@ -23,9 +23,7 @@ type StaffSearchSelectProps = {
   className?: string;
 };
 
-/**
- * Chọn nhân viên trong dialog: ô search + list cố định trong form.
- */
+/** Chọn nhân viên trong dialog. */
 export function StaffSearchSelect({
   staff,
   value,

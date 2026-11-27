@@ -14,7 +14,6 @@ import type {
   CreateStaffAccountPayload,
   CreateStaffPayload,
   Staff,
-  StaffLeaveBalance,
   StaffListResponse,
   StaffQueryParams,
   StaffRoleOption,
@@ -29,40 +28,6 @@ interface StaffListApiResponse {
     page: number;
     limit: number;
     totalPages: number;
-  };
-}
-
-/** Response shape from POST/PATCH /staff/:staffId/leave-balance */
-type LeaveBalanceApiResponse = {
-  success?: boolean;
-  message?: string;
-  leaveBalance?: StaffLeaveBalance & { usedDays?: number };
-};
-
-export type StaffLeaveBalanceResult = {
-  message?: string;
-  leaveBalance: StaffLeaveBalance & { usedDays?: number };
-};
-
-function mapLeaveBalanceResult(
-  payload: LeaveBalanceApiResponse | undefined,
-): StaffLeaveBalanceResult {
-  const leaveBalance = payload?.leaveBalance;
-  const annual = Number(leaveBalance?.annualLeaveDays);
-  const remaining = Number(leaveBalance?.remainingDays);
-  if (!leaveBalance || !Number.isFinite(annual) || !Number.isFinite(remaining)) {
-    throw new Error("Không nhận được leaveBalance từ máy chủ");
-  }
-
-  return {
-    message: payload?.message,
-    leaveBalance: {
-      annualLeaveDays: annual,
-      remainingDays: remaining,
-      ...(leaveBalance.usedDays != null
-        ? { usedDays: Number(leaveBalance.usedDays) }
-        : {}),
-    },
   };
 }
 
@@ -87,20 +52,7 @@ function buildProfileBody(
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-/**
- * The body of `POST /users` - hiring somebody, without a login.
- *
- * `newPassword`/`reEnterPassword` ride along on `CreateStaffPayload` but are deliberately
- * **not** in here: switching the login on is `POST /users/:id/account`, a second call the
- * provider makes right after this one.
- *
- * Two things this used to get wrong, both invisible because `whitelist: true` drops
- * unknown keys without complaining. `paySheetId` is `paysheetId` on the wire (lowercase
- * `s`), so nobody was ever hired onto a pay scheme. And `avatarUrl`/`taxNumber`/`dob` were
- * repeated flat beside `profile`, which `CreateUserDto` has never accepted at the top
- * level - the nested copy is the one that counts, so the flat trio is gone rather than
- * left there implying the server reads it.
- */
+/** Body tuyển nhân viên (`POST /users`), chưa có đăng nhập. */
 function buildCreateBody(payload: CreateStaffPayload) {
   const profile = buildProfileBody(
     payload.firstName,
@@ -117,36 +69,15 @@ function buildCreateBody(payload: CreateStaffPayload) {
       : payload.warehouseId
         ? { warehouseId: payload.warehouseId }
         : {}),
+    ...(payload.workshopId ? { workshopId: payload.workshopId } : {}),
     hireDate: normalizeDateInput(payload.hireDate),
     firstName: payload.firstName,
     lastName: payload.lastName,
     profile,
-    ...(payload.paySheetId ? { paysheetId: payload.paySheetId } : {}),
   };
 }
 
-/**
- * The body of `PATCH /users/:id`.
- *
- * Three things about it were wrong at once, and the first one hid the other two:
- *
- * 1. It used to `return { data }`. The server's global `ValidationPipe({ whitelist: true })`
- *    **drops unknown keys silently** rather than erroring, so the whole edit arrived as an
- *    empty object: HTTP 200, nothing saved, no complaint anywhere. Return the fields flat.
- * 2. `paySheetId` is `paysheetId` on the wire (lowercase `s`) - `UpdateUserDto` spells it
- *    that way, and the misspelt key was being whitelisted away with everything else.
- *    `null` still removes the assignment.
- * 3. **At most one posting may be sent.** `UserService.resolvePosting` throws 400 the
- *    moment `branchId` *and* `warehouseId` are both present - `undefined` is the only
- *    "leave it alone", and naming one already clears the other server-side. The edit
- *    dialog sends `warehouseId: null` alongside a real `branchId`, which would have been
- *    a 400 on the first edit after this function started sending anything at all.
- *
- * `roleId` is sent too. The old comment here said role changes went through the
- * branch/warehouse manager assignment instead - that stopped being true when appointing a
- * manager became `PATCH /branches/:id/manager` and the role became an ordinary field; the
- * dialog has been putting `roleId` in the payload since, and this dropped it on the floor.
- */
+/** Body sửa nhân viên (`PATCH /users/:id`): trường phẳng, tối đa một nơi làm việc. */
 function buildUpdateBody(payload: UpdateStaffPayload) {
   const data: Record<string, unknown> = {};
 
@@ -158,16 +89,17 @@ function buildUpdateBody(payload: UpdateStaffPayload) {
   if (payload.accountNote !== undefined) {
     data.accountNote = payload.accountNote.trim();
   }
-  if (payload.paySheetId !== undefined) {
-    data.paysheetId = payload.paySheetId;
-  }
+  // Khác nơi làm việc: `null` là trạng thái thật (bỏ gắn xưởng), BE nhận `workshopId: null`.
+  if (payload.workshopId !== undefined) data.workshopId = payload.workshopId;
 
-  // Exactly one, never both. A form that clears the posting sends null for both, and the
-  // server has no "unposted" state to move someone into - so that case sends neither.
+  // Chỉ gửi một trong hai.
   if (payload.branchId) {
     data.branchId = payload.branchId;
   } else if (payload.warehouseId) {
     data.warehouseId = payload.warehouseId;
+  } else if (payload.clearLocation) {
+    // `branchId: null` là xoá nơi làm việc.
+    data.branchId = null;
   }
 
   const profile = buildProfileBody(
@@ -180,7 +112,7 @@ function buildUpdateBody(payload: UpdateStaffPayload) {
   return data;
 }
 
-/** One row of `GET /roles`. `_count.users` is how many accounts hold it. */
+/** Một dòng của `GET /roles`. `_count.users` là số tài khoản đang giữ vai trò. */
 interface StaffRoleRow {
   id: string;
   name: string;
@@ -230,7 +162,7 @@ export const staffApi = {
     return all.filter((staff) => staff.status === "ACTIVE");
   },
 
-  /** Paginate GET /staff to collect all staff records across pages. */
+  /** Phân trang GET /staff để lấy hết nhân viên qua mọi trang. */
   getAllForOptions: async (): Promise<Staff[]> => {
     const merged: Staff[] = [];
     let page = 1;
@@ -272,7 +204,7 @@ export const staffApi = {
     await client.patch(`/users/${id}/account/password`, payload);
   },
 
-  /** Takes no body: the rewrite dropped `replacementManagerId` (see staff-manager-utils). */
+  /** Không có body: bản viết lại đã bỏ `replacementManagerId` (xem staff-manager-utils). */
   deactivateAccount: async (id: string): Promise<void> => {
     await client.patch(`/users/${id}/account/deactivate`);
   },
@@ -281,43 +213,12 @@ export const staffApi = {
     await client.delete(`/users/${id}`);
   },
 
-  /**
-   * The roles this shop has defined.
-   *
-   * `GET /staff/roles` used to answer with the fixed three-value enum the old backend
-   * shipped. Roles are tenant-owned rows now (`GET /roles`), so an empty list means the
-   * owner has not created any yet - which is a real state, not a failure: `POST /users`
-   * requires a `roleId`, so nobody can be hired until at least one role exists.
-   */
+  /** Danh sách vai trò của shop. */
   getRoles: async (): Promise<StaffRoleOption[]> => {
     const response = await client.get<{ data: StaffRoleRow[] }>("/roles");
     return (response.data?.data ?? []).map((role) => ({
       value: role.id,
       label: role.name,
     }));
-  },
-
-  /** POST /staff/:staffId/leave-balance - body: { annualLeaveDays } */
-  createLeaveBalance: async (
-    staffId: string,
-    annualLeaveDays: number,
-  ): Promise<StaffLeaveBalanceResult> => {
-    const response = await client.post<LeaveBalanceApiResponse>(
-      `/users/${staffId}/leave-balance`,
-      { annualLeaveDays },
-    );
-    return mapLeaveBalanceResult(response.data);
-  },
-
-  /** PATCH /staff/:staffId/leave-balance - body: { annualLeaveDays } */
-  updateAnnualLeaveDays: async (
-    staffId: string,
-    annualLeaveDays: number,
-  ): Promise<StaffLeaveBalanceResult> => {
-    const response = await client.patch<LeaveBalanceApiResponse>(
-      `/users/${staffId}/leave-balance`,
-      { annualLeaveDays },
-    );
-    return mapLeaveBalanceResult(response.data);
   },
 };

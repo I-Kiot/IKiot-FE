@@ -33,7 +33,7 @@ export function ScheduleDeleteDialog({
       await handleDelete(currentRow.id);
       onOpenChange(false);
     } catch {
-      // Toast handled in provider
+      // Provider đã toast lỗi.
     }
   }
 

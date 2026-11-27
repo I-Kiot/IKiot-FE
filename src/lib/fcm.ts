@@ -7,26 +7,37 @@ const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
 // Token đang giữ, để logout còn biết đường gỡ khỏi backend.
 let currentToken: string | null = null
 
-/**
- * FCM không chạy được ở mọi nơi: cần trình duyệt (không phải SSR), cần
- * ServiceWorker + Push API. Safari trên iOS chỉ hỗ trợ khi web app đã được
- * "Add to Home Screen". Luôn kiểm tra trước khi gọi bất cứ hàm nào bên dưới.
- */
+// Cờ ghi user đã bật thông báo trên thiết bị này.
+const ENABLED_FLAG = 'ikiot:push-enabled'
+
+function setEnabledFlag(on: boolean) {
+  try {
+    if (on) localStorage.setItem(ENABLED_FLAG, '1')
+    else localStorage.removeItem(ENABLED_FLAG)
+  } catch {
+    // storage bị chặn: công tắc sẽ về trạng thái tắt sau khi tải lại
+  }
+}
+
+/** Thiết bị này đang được user bật push (và trình duyệt vẫn cho phép). Đọc đồng bộ, không gọi mạng. */
+export function isPushEnabledHere(): boolean {
+  if (typeof window === 'undefined' || !('Notification' in window)) return false
+  if (Notification.permission !== 'granted') return false
+  try {
+    return localStorage.getItem(ENABLED_FLAG) === '1'
+  } catch {
+    return false
+  }
+}
+
+/** Trình duyệt có hỗ trợ FCM không. */
 export async function isPushSupported(): Promise<boolean> {
   if (typeof window === 'undefined') return false
   if (!('serviceWorker' in navigator) || !('Notification' in window)) return false
   return isSupported()
 }
 
-/**
- * Xin quyền, lấy FCM token, gửi về backend để lưu vào User.fcmTokens.
- *
- * Gọi hàm này từ một hành động có chủ đích của user (bấm nút "Bật thông báo"),
- * đừng gọi tự động lúc load trang: trình duyệt sẽ phạt nếu prompt quyền xuất
- * hiện mà không có tương tác, và user lỡ bấm "Chặn" thì không hỏi lại được nữa.
- *
- * @returns token nếu thành công, null nếu user từ chối hoặc trình duyệt không hỗ trợ
- */
+/** Xin quyền, lấy FCM token rồi gửi về backend; chỉ gọi khi user bấm. */
 export async function enablePushNotifications(): Promise<string | null> {
   if (!(await isPushSupported())) return null
 
@@ -38,8 +49,7 @@ export async function enablePushNotifications(): Promise<string | null> {
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return null
 
-  // Service worker phải đăng ký thủ công rồi truyền vào getToken. Nếu để Firebase
-  // tự tìm, nó chỉ dò đúng đường dẫn mặc định /firebase-messaging-sw.js.
+  // Tự đăng ký service worker rồi truyền vào getToken.
   const registration = await navigator.serviceWorker.register(
     '/firebase-messaging-sw.js',
   )
@@ -53,27 +63,32 @@ export async function enablePushNotifications(): Promise<string | null> {
 
   await notificationApi.registerDevice(token)
   currentToken = token
+  setEnabledFlag(true)
   return token
 }
 
 /** Gỡ device khỏi backend. Gọi khi logout, nếu không user sau vẫn nhận push của user trước. */
 export async function disablePushNotifications(): Promise<void> {
-  if (!currentToken) return
   try {
-    await notificationApi.removeDevice(currentToken)
+    // Lấy lại token sau khi tải lại trang.
+    let token = currentToken
+    if (!token && isPushEnabledHere() && VAPID_KEY && (await isPushSupported())) {
+      const registration = await navigator.serviceWorker.register(
+        '/firebase-messaging-sw.js',
+      )
+      token = await getToken(getMessaging(firebaseApp), {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: registration,
+      })
+    }
+    if (token) await notificationApi.removeDevice(token)
   } finally {
     currentToken = null
+    setEnabledFlag(false)
   }
 }
 
-/**
- * Nhận push khi tab đang mở và đang được focus.
- *
- * Lưu ý: lúc này service worker KHÔNG tự hiện popup - trình duyệt cố tình để
- * app tự quyết. Đó là chỗ nên bắn toast thay vì notification hệ thống.
- *
- * @returns hàm unsubscribe
- */
+/** Nhận push khi tab đang mở, hiện toast; trả hàm huỷ. */
 export function onForegroundMessage(
   handler: (payload: MessagePayload) => void,
 ): () => void {

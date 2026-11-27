@@ -2,7 +2,6 @@ import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
 import type {
   Staff,
   StaffGender,
-  StaffLeaveBalance,
   StaffProfile,
   StaffStatus,
 } from "@/types/staff";
@@ -17,6 +16,7 @@ export interface ApiStaffUser {
   id?: string;
   tenantId?: string;
   email?: string;
+  emailVerifiedAt?: string | null;
   phoneNumber: string;
   roleId?: string | null;
   role?: { id: string; name: string } | null;
@@ -25,24 +25,14 @@ export interface ApiStaffUser {
   warehouseId?: string | { id: string; name?: string } | null;
   branch?: string | ApiBranchRef | null;
   warehouse?: string | { id: string; name?: string } | null;
+  workshopId?: string | null;
+  workshop?: { id: string; supplierName: string } | null;
   profile?: StaffProfile & {
     firstName?: string;
     lastName?: string;
   };
   hireDate?: string;
   accountNote?: string;
-  /**
-   * `paysheetId` with a lowercase `s` - that is how the column, `UpdateUserDto` and the
-   * response all spell it. This interface said `paySheetId`, so every staff row read the
-   * pay scheme as `undefined` and the column rendered empty. `paysheet` carries the name
-   * beside it, which is what the list actually displays.
-   */
-  paysheetId?: string | null;
-  paysheet?: { id?: string; name?: string } | null;
-  leaveBalance?: {
-    annualLeaveDays?: number;
-    remainingDays?: number;
-  };
   createdAt: string;
   updatedAt: string;
 }
@@ -53,13 +43,7 @@ const GENDER_LABELS: Record<StaffGender, string> = {
   OTHER: "Khác",
 };
 
-/**
- * A role's display name.
- *
- * There used to be a fixed table of three here, because the old backend had exactly three
- * roles. Roles are rows the shop owner creates now, so the name comes with the data and
- * the only thing left to decide is what to show when a staff member has no role yet.
- */
+/** Tên hiển thị của vai trò. */
 export function getStaffRoleLabel(roleName?: string | null): string {
   return roleName?.trim() || "Chưa phân quyền";
 }
@@ -104,32 +88,6 @@ function mapProfile(profile?: ApiStaffUser["profile"]): StaffProfile | undefined
   return Object.keys(mapped).length > 0 ? mapped : undefined;
 }
 
-function mapLeaveBalance(
-  balance?: ApiStaffUser["leaveBalance"],
-): StaffLeaveBalance | undefined {
-  if (!balance) return undefined;
-  const annual = Number(balance.annualLeaveDays);
-  const remaining = Number(balance.remainingDays);
-  if (!Number.isFinite(annual) || !Number.isFinite(remaining)) return undefined;
-  return { annualLeaveDays: annual, remainingDays: remaining };
-}
-
-function resolvePaySheetId(
-  ref?: string | { id?: string; name?: string } | null,
-): string | null | undefined {
-  if (ref === null) return null;
-  if (ref === undefined) return undefined;
-  if (typeof ref === "string") return ref || null;
-  return ref.id ?? null;
-}
-
-function resolvePaySheetName(
-  ref?: string | { id?: string; name?: string } | null,
-): string | undefined {
-  if (!ref || typeof ref === "string") return undefined;
-  return ref.name?.trim() || undefined;
-}
-
 export function isDeletedStaff(user: ApiStaffUser): boolean {
   return user.status === "DELETED";
 }
@@ -158,8 +116,8 @@ export function unwrapStaffPayload(payload: unknown): ApiStaffUser | null {
 export function mapStaffFromApi(user: ApiStaffUser): Staff {
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
-  const branchRef = user.branchId ?? user.branch;
-  const warehouseRef = user.warehouseId ?? user.warehouse;
+  const branchRef = user.branch ?? user.branchId;
+  const warehouseRef = user.warehouse ?? user.warehouseId;
   const id = user.id ?? "";
 
   return {
@@ -169,20 +127,20 @@ export function mapStaffFromApi(user: ApiStaffUser): Staff {
     branchName: resolveRefName(branchRef),
     warehouseId: resolveRefId(warehouseRef) || undefined,
     warehouseName: warehouseRef ? resolveRefName(warehouseRef) : undefined,
+    workshopId: user.workshop?.id ?? user.workshopId ?? undefined,
+    workshopName: user.workshop?.supplierName,
     firstName,
     lastName,
     fullName: `${lastName} ${firstName}`.trim() || user.phoneNumber,
     phoneNumber: user.phoneNumber,
     email: user.email,
+    emailVerifiedAt: user.emailVerifiedAt ?? null,
     roleId: user.role?.id ?? user.roleId ?? null,
     roleName: getStaffRoleLabel(user.role?.name),
     status: mapStatus(user.status),
     joinedAt: user.hireDate ?? user.createdAt,
-    paySheetId: resolvePaySheetId(user.paysheetId),
-    paySheetName: resolvePaySheetName(user.paysheet),
     profile: mapProfile(user.profile),
     accountNote: user.accountNote,
-    leaveBalance: mapLeaveBalance(user.leaveBalance),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -216,8 +174,7 @@ export function getApiFieldErrors(
 }
 
 export function getApiErrorMessage(error: unknown): string {
-  // `code` trước tiên: nó không đổi khi backend sửa câu chữ hoặc dịch sang tiếng Anh.
-  // Phần dưới là đường lùi cho backend cũ, vốn chỉ trả `message`.
+  // Đọc `code` trước, `message` là dự phòng.
   const mapped = messageForCode(getApiErrorBody(error)?.code);
   if (mapped) return mapped;
 

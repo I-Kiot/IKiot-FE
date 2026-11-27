@@ -1,4 +1,4 @@
-/** Align with BE StaffPhoneNumberValidator */
+/** Khớp với StaffPhoneNumberValidator ở BE. */
 
 const VIETNAM_MOBILE_PHONE_REGEX =
   /^(?:03[2-9]|05[25689]|07[06789]|08[1-9]|09\d)\d{7}$/;

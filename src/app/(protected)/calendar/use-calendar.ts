@@ -35,7 +35,7 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
 
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date)
-    // Auto-close mobile sheet when date is selected
+    // Đóng sheet mobile khi đã chọn ngày.
     setShowCalendarSheet(false)
   }, [])
 
@@ -46,19 +46,19 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
 
   const handleNewCalendar = useCallback(() => {
     console.log("Creating new calendar")
-    // In a real app, this would open a new calendar form
+    // Mock: chưa có form tạo lịch.
   }, [])
 
   const handleSaveEvent = useCallback((eventData: Partial<CalendarEvent>) => {
     console.log("Saving event:", eventData)
-    // In a real app, this would save to a backend
+    // Mock: chưa lưu vào backend.
     setShowEventForm(false)
     setEditingEvent(null)
   }, [])
 
   const handleDeleteEvent = useCallback((eventId: number) => {
     console.log("Deleting event:", eventId)
-    // In a real app, this would delete from backend
+    // Mock: chưa xoá trên backend.
     setShowEventForm(false)
     setEditingEvent(null)
   }, [])
@@ -69,13 +69,11 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
   }, [])
 
   return {
-    // State
     selectedDate,
     showEventForm,
     editingEvent,
     showCalendarSheet,
     events,
-    // Actions
     setSelectedDate,
     setShowEventForm,
     setEditingEvent,

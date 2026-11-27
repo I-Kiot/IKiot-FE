@@ -1,4 +1,3 @@
-// [Mutations – Customer]
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -25,7 +24,7 @@ export function useCustomersMutations() {
       })
       const customersData = res.data
 
-      // Map raw ISO date strings of orders into the formatDateTime string format
+      // Đổi chuỗi ngày ISO của đơn hàng sang định dạng formatDateTime.
       const enrichedCustomers = customersData.map((customer) => ({
         ...customer,
         orders: (customer.orders || []).map((o) => ({
@@ -54,6 +53,7 @@ export function useCustomersMutations() {
         customerCode: data.customerCode || undefined,
         name: data.name,
         phone: data.phone || undefined,
+        email: data.email || undefined,
         gender: data.gender,
         address: data.address || undefined,
         dob: data.dob || undefined,
@@ -76,6 +76,7 @@ export function useCustomersMutations() {
         customerCode: data.customerCode || undefined,
         name: data.name,
         phone: data.phone || undefined,
+        email: data.email || null,
         gender: data.gender,
         address: data.address || undefined,
         dob: data.dob || undefined,
@@ -85,7 +86,7 @@ export function useCustomersMutations() {
           c.id === id
             ? {
                 ...updated,
-                orders: c.orders, // Preserve existing orders/spending data
+                orders: c.orders, // Giữ dữ liệu đơn hàng/chi tiêu hiện có
               }
             : c,
         ),

@@ -70,7 +70,6 @@ interface ChatActions {
 }
 
 export const useChat = create<ChatState & ChatActions>((set, get) => ({
-  // State
   conversations: [],
   messages: {},
   users: [],
@@ -79,7 +78,6 @@ export const useChat = create<ChatState & ChatActions>((set, get) => ({
   isTyping: {},
   onlineUsers: [],
 
-  // Actions
   setConversations: (conversations) => set({ conversations }),
   
   setMessages: (conversationId, messages) => 

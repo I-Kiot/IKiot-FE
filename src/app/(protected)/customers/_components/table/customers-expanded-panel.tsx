@@ -1,4 +1,3 @@
-// [Table – Expanded Panel Customer]
 'use client'
 
 import { useLayoutEffect, useRef, useState } from 'react'
@@ -20,10 +19,10 @@ import { cn, formatDateTime } from '@/lib/utils'
 import type { Customer } from '@/types/customer'
 import {
   GENDER_MAP,
-  ORDER_STATUS_MAP,
   PAYMENT_LABEL,
 } from '../../_constants/customer.constants'
 import { useCustomers } from '../../_context/customers-provider'
+import { orderStatusDisplay } from '@/app/(protected)/sales/orders/shared/order-display'
 
 const formatVND = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
@@ -111,6 +110,10 @@ export function CustomersExpandedPanel({
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-muted-foreground">Số điện thoại</span>
               <span>{customer.phone || '-'}</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted-foreground">Email</span>
+              <span className="break-all">{customer.email || '-'}</span>
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-muted-foreground">Giới tính</span>
@@ -213,14 +216,11 @@ export function CustomersExpandedPanel({
                           </div>
                         </TableCell>
                         <TableCell className="text-xs">
-                          {PAYMENT_LABEL[order.paymentMethod]}
+                          {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant="secondary"
-                            className={cn('text-xs', ORDER_STATUS_MAP[order.status].className)}
-                          >
-                            {ORDER_STATUS_MAP[order.status].label}
+                          <Badge variant={orderStatusDisplay(order.status).variant} className="text-xs">
+                            {orderStatusDisplay(order.status).label}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums text-xs">

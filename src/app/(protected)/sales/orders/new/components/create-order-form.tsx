@@ -1,0 +1,1379 @@
+"use client";
+
+import * as React from "react";
+import { PAST_DATE_MESSAGE, isPastDate, todayIso } from "@/lib/date-input";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { Banknote, Check, FileText, QrCode, Tag, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { Customer, CustomerGender } from "@/types/customer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { CheckoutTabs } from "@/app/(protected)/check-out/components/checkout-tabs";
+import { SalesBranchSelect } from "@/app/(protected)/check-out/components/sales-branch-select";
+import type { SalesBranch } from "@/app/(protected)/check-out/_hooks/use-sales-branch";
+import { ProductSearch } from "@/app/(protected)/check-out/components/product-search";
+import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/app/(protected)/exchange/shared/form-fields";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { customerApi } from "@/lib/api/customer";
+import { promotionApi } from "@/lib/api/promotion";
+import { PromotionPickerDialog } from "@/components/promotion-picker-dialog";
+import type { PromotionCalculateResponse } from "@/types/promotion";
+import type { MadeToOrderComponent } from "@/types/product";
+import { orderReturnApi } from "@/lib/api/order-return";
+import { getApiErrorBody, messageForCode } from "@/lib/api/error-codes";
+import { orderJourneyApi } from "@/lib/api/order-journey";
+import { staffApi } from "@/lib/api/staff";
+import { getCachedUser } from "@/lib/auth";
+import {
+  ORDER_PRIORITY_LABELS,
+  type CreateOrderJourneyPayload,
+  type SourceLocation,
+} from "@/types/order-flow";
+import { priorityForDaysUntil } from "@/lib/order-priority";
+import { Badge } from "@/components/ui/badge";
+import {
+  daysUntilPlainDate,
+  priorityDisplay,
+} from "../../shared/order-display";
+import {
+  computeTotals,
+  formatVND,
+  type DepositType,
+} from "../shared/order-totals";
+import { CustomerPicker, type PickedCustomer } from "./customer-picker";
+import type { OrderLineDraft } from "./order-lines-editor";
+import { OrderCartLines } from "./order-cart-lines";
+import { useLineStockAt } from "../../shared/use-line-stock-at";
+
+type FulfillmentChoice = "HOME_DELIVERY" | "STORE_PICKUP";
+type DepositMethod = "CASH" | "BANK_TRANSFER";
+
+interface AssigneeOption {
+  id: string;
+  name: string;
+  /** Nơi làm việc; null là chủ shop, phụ trách được đơn ở mọi nơi. */
+  placeId: string | null;
+}
+
+const toNumber = (raw: string) => Math.max(0, Number(raw) || 0);
+
+/** Form tạo đơn tay, sinh ra ở CONFIRMED. */
+function OrderDraftForm({
+  sales,
+  withReplacement = true,
+  tabs,
+}: {
+  sales: SalesBranch;
+  /** Thanh tab hiện ở đầu thẻ sản phẩm, cùng vị trí với tab bán trực tiếp. */
+  tabs?: React.ReactNode;
+  /** Chỉ một tab được dùng `?replacementFor=`, nếu không mọi tab thêm sẽ điền cùng một đơn trả. */
+  withReplacement?: boolean;
+}) {
+  const { branches, branchId, setBranchId } = sales;
+  const router = useRouter();
+  // D-11: đơn mua lại cho hàng hỏng của đơn trả - điền sẵn, rồi liên kết với đơn trả khi tạo.
+  const replacementParam = useSearchParams().get("replacementFor");
+  const replacementFor = withReplacement ? replacementParam : null;
+  const [replacementOf, setReplacementOf] = React.useState<{
+    id: string;
+    code: string;
+  } | null>(null);
+
+  const [sourceOptions, setSourceOptions] = React.useState<SourceLocation[]>([]);
+  // Nguồn hàng người bán chọn.
+  const [pickedSource, setPickedSource] = React.useState<{
+    branchId: string;
+    id: string;
+  } | null>(null);
+  const [assignees, setAssignees] = React.useState<AssigneeOption[]>([]);
+  const [optionsReady, setOptionsReady] = React.useState(false);
+
+  const [customer, setCustomer] = React.useState<PickedCustomer | null>(null);
+  const [pickedAssigneeId, setAssigneeId] = React.useState("");
+  // Nhân viên bán hàng: mặc định là người tạo đơn, chốt khi tạo.
+  const [myId, setMyId] = React.useState("");
+  const [pickedSellerId, setSellerId] = React.useState("");
+  const [fulfillment, setFulfillment] =
+    React.useState<FulfillmentChoice>("HOME_DELIVERY");
+  const [requestedDate, setRequestedDate] = React.useState("");
+  const priority = priorityForDaysUntil(
+    requestedDate ? daysUntilPlainDate(requestedDate) : null,
+  );
+  const [recipientName, setRecipientName] = React.useState("");
+  const [recipientPhone, setRecipientPhone] = React.useState("");
+  const [recipientIsCustomer, setRecipientIsCustomer] = React.useState(true);
+  const [customerMode, setCustomerMode] = React.useState<"existing" | "new">("new");
+  const [newName, setNewName] = React.useState("");
+  const [newPhone, setNewPhone] = React.useState("");
+  const [newGender, setNewGender] = React.useState<CustomerGender>("MALE");
+  const [addedCustomer, setAddedCustomer] = React.useState<{
+    orderId: string;
+    customer: Customer;
+  } | null>(null);
+  const [deliveryAddress, setDeliveryAddress] = React.useState("");
+  const [lines, setLines] = React.useState<OrderLineDraft[]>([]);
+  const [shippingFee, setShippingFee] = React.useState(0);
+  const [orderDiscount, setOrderDiscount] = React.useState(0);
+  const [depositType, setDepositType] = React.useState<DepositType>("NONE");
+  const [depositValue, setDepositValue] = React.useState(0);
+  const [depositMethod, setDepositMethod] =
+    React.useState<DepositMethod>("CASH");
+  const [note, setNote] = React.useState("");
+  // Khuyến mãi đã chọn; kết quả tính kèm signature của giỏ lúc tính, như màn bán tại quầy.
+  const [promotionIds, setPromotionIds] = React.useState<string[]>([]);
+  const [promotionResult, setPromotionResult] = React.useState<
+    (PromotionCalculateResponse & { signature: string }) | null
+  >(null);
+  const [promotionPickerOpen, setPromotionPickerOpen] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [attempted, setAttempted] = React.useState(false);
+  const keySeq = React.useRef(0);
+
+  React.useEffect(() => {
+    let stale = false;
+    const me = getCachedUser() as {
+      id?: string;
+      role?: string;
+      branchId?: string | null;
+      warehouseId?: string | null;
+      fullName?: string;
+      firstName?: string;
+      lastName?: string;
+    } | null;
+    staffApi
+      .getActiveForScheduleOptions()
+      .catch(() => [])
+      .then((staffList) => {
+        if (stale) return;
+        const staff = staffList.map((s) => ({
+          id: s.id,
+          name: s.fullName || s.phoneNumber,
+          placeId: s.warehouseId || s.branchId || "",
+        }));
+        // Tài khoản tạo đơn cũng có thể là người phụ trách (chủ shop không có trong danh sách nhân viên).
+        const mine: AssigneeOption[] =
+          me?.id && !staff.some((s) => s.id === me.id)
+            ? [
+                {
+                  id: me.id,
+                  name: `${me.fullName || [me.lastName, me.firstName].filter(Boolean).join(" ") || "Tôi"} (tôi)`,
+                  placeId: me.role === "TENANT_OWNER" ? null : me.warehouseId || me.branchId || "",
+                },
+              ]
+            : [];
+        setAssignees([...mine, ...staff]);
+        setMyId(me?.id ?? "");
+        setOptionsReady(true);
+      });
+    return () => {
+      stale = true;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    let stale = false;
+    orderJourneyApi
+      .sourceLocations()
+      .then((locations) => {
+        if (!stale) setSourceOptions(locations);
+      })
+      .catch(() => {
+        // Không tải được thì đơn vẫn tạo được, lấy hàng từ nơi mặc định của chi nhánh.
+      });
+    return () => {
+      stale = true;
+    };
+  }, []);
+
+  const branch = branches.find((b) => b.id === branchId) ?? null;
+  // Chỉ người làm tại nơi bán mới phụ trách được đơn; đổi nơi bán thì người đã chọn ở nơi cũ bị bỏ chọn.
+  const assigneeOptions = assignees.filter(
+    (a) => a.placeId === null || a.placeId === branchId,
+  );
+  const assigneeId = assigneeOptions.some((a) => a.id === pickedAssigneeId)
+    ? pickedAssigneeId
+    : "";
+  // Nhân viên bán hàng chọn được ở mọi nơi làm việc.
+  const sellerId = pickedSellerId || myId;
+  // Nơi xuất hàng mặc định: kho xuất mặc định của nơi bán, không có thì lấy chính nơi bán.
+  const defaultFulfillment = branch?.defaultFulfillmentLocationId;
+  const defaultSource = branch
+    ? defaultFulfillment
+      ? {
+          id: defaultFulfillment,
+          type: sourceOptions.find((location) => location.id === defaultFulfillment)?.type ?? ("WAREHOUSE" as const),
+        }
+      : { id: branch.id, type: branch.type ?? ("BRANCH" as const) }
+    : null;
+  const picked =
+    pickedSource?.branchId === branchId
+      ? sourceOptions.find((location) => location.id === pickedSource.id)
+      : undefined;
+  // Cả đơn lấy từ một nơi vì đóng gói chỉ nhận đơn xuất từ một nơi. Tồn cũng đọc tại đây.
+  const stockLocation = picked ? { id: picked.id, type: picked.type } : defaultSource;
+  const stockLocationName = sourceOptions.find(
+    (location) => location.id === stockLocation?.id,
+  )?.name;
+
+  useLineStockAt(stockLocation, lines, setLines);
+
+  // Khách tới lấy không có phí giao hàng: ô nhập ẩn và phí tính bằng 0 dù trước đó đã nhập.
+  const pickup = fulfillment === "STORE_PICKUP";
+  const effectiveShippingFee = pickup ? 0 : shippingFee;
+
+  // Khuyến mãi tính theo giá niêm yết: BE từ chối giá thoả thuận và giảm cả đơn đi kèm khuyến mãi, và tự phân bổ
+  // giảm giá lên dòng. Giá / giảm tay vẫn giữ trong form, bỏ khuyến mãi là dùng lại.
+  // Khách mới chưa có id nhưng chưa dùng lượt nào; chưa chọn khách là khách vãng lai.
+  const promotionCustomerId =
+    customerMode === "existing" ? customer?.id : undefined;
+  const promotionNewCustomer = customerMode === "new";
+  const promotionItems = lines.map((line) => ({
+    productItemId: line.productItemId,
+    quantity: line.quantity,
+    unitPrice: line.retailPrice,
+  }));
+  const promotionSignature =
+    promotionIds.length > 0 && lines.length > 0 && branchId
+      ? [
+          branchId,
+          promotionCustomerId ?? (promotionNewCustomer ? "new" : ""),
+          promotionItems
+            .map((i) => `${i.productItemId}:${i.quantity}:${i.unitPrice}`)
+            .join(","),
+          [...promotionIds].sort().join(","),
+        ].join("|")
+      : null;
+
+  // Tính lại khi giỏ, khách hoặc nơi bán đổi (debounce); BE từ chối thì bỏ chọn, như màn bán tại quầy.
+  React.useEffect(() => {
+    if (!promotionSignature) return;
+    const signature = promotionSignature;
+    const payload = {
+      branchId,
+      customerId: promotionCustomerId,
+      newCustomer: promotionNewCustomer,
+      items: promotionItems,
+      promotionIds,
+    };
+    const handler = setTimeout(() => {
+      promotionApi
+        .calculate(payload)
+        .then((result) => setPromotionResult({ ...result, signature }))
+        .catch((error) => {
+          const body = getApiErrorBody(error);
+          toast.warning(
+            messageForCode(body?.code) ??
+              "Khuyến mãi đã chọn không còn đủ điều kiện, vui lòng chọn lại.",
+          );
+          setPromotionIds([]);
+        });
+    }, 300);
+    return () => clearTimeout(handler);
+    // Chỉ chạy lại theo signature: nó đã gồm mọi giá trị payload dùng.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promotionSignature]);
+
+  const promoted = promotionIds.length > 0;
+  const activePromotion =
+    promotionResult && promotionResult.signature === promotionSignature
+      ? promotionResult
+      : null;
+  // Engine trả phân bổ theo đúng thứ tự dòng gửi lên.
+  const promotionDiscounts: Record<string, number> | null = promoted
+    ? Object.fromEntries(
+        lines.map((line, index) => [
+          line.key,
+          activePromotion?.itemBreakdown[index]?.discountAmount ?? 0,
+        ]),
+      )
+    : null;
+
+  const totals = computeTotals({
+    lines: promotionDiscounts
+      ? lines.map((line) => ({
+          quantity: line.quantity,
+          unitPrice: line.retailPrice,
+          discountAmount: promotionDiscounts[line.key] ?? 0,
+        }))
+      : lines,
+    orderDiscount: promoted ? 0 : orderDiscount,
+    shippingFee: effectiveShippingFee,
+    depositType,
+    depositValue,
+  });
+  const hasManualPricing =
+    orderDiscount > 0 ||
+    lines.some(
+      (line) => line.unitPrice !== line.retailPrice || line.discountAmount > 0,
+    );
+
+  const isNewCustomer = customerMode === "new";
+  const customerError =
+    isNewCustomer || customer ? undefined : "Chọn một khách hàng hoặc nhập khách mới.";
+  const newNameError =
+    isNewCustomer && newName.trim().length < 2 ? "Tên khách hàng phải có ít nhất 2 ký tự." : undefined;
+  const newPhoneError =
+    isNewCustomer && !/^[0-9+]{9,15}$/.test(newPhone.replace(/\s/g, ""))
+      ? "Số điện thoại hợp lệ phải từ 9 đến 15 chữ số."
+      : undefined;
+  const isHomeDelivery = fulfillment === "HOME_DELIVERY";
+  const errors = {
+    customer: customerError,
+    newName: newNameError,
+    newPhone: newPhoneError,
+    branch: branchId ? undefined : "Chọn nơi bán.",
+    assignee: assigneeId ? undefined : "Chọn người phụ trách đơn.",
+    lines: lines.length > 0 ? undefined : "Đơn hàng cần ít nhất một mặt hàng.",
+    deposit: totals.depositError ?? undefined,
+    requestedDate: isPastDate(requestedDate) ? PAST_DATE_MESSAGE : undefined,
+    // Giao tận nơi phải đủ thông tin người nhận.
+    recipientName:
+      isHomeDelivery && !recipientName.trim() ? "Nhập tên người nhận." : undefined,
+    recipientPhone:
+      isHomeDelivery && !recipientPhone.trim() ? "Nhập SĐT người nhận." : undefined,
+    deliveryAddress:
+      isHomeDelivery && !deliveryAddress.trim() ? "Nhập địa chỉ giao hàng." : undefined,
+  };
+  const showRecipientFields =
+    !recipientIsCustomer ||
+    (attempted &&
+      !isNewCustomer &&
+      (!!errors.recipientName || !!errors.recipientPhone));
+  const valid =
+    !errors.customer &&
+    !errors.newName &&
+    !errors.newPhone &&
+    !errors.branch &&
+    !errors.assignee &&
+    !errors.lines &&
+    !errors.deposit &&
+    !errors.requestedDate &&
+    !errors.recipientName &&
+    !errors.recipientPhone &&
+    !errors.deliveryAddress;
+
+  // Điền người nhận từ hồ sơ khách; sao chép đơn trả nếu có.
+  React.useEffect(() => {
+    if (!replacementFor || !optionsReady) return;
+    let stale = false;
+    (async () => {
+      try {
+        const orderReturn = await orderReturnApi.getById(replacementFor);
+        const order = await orderJourneyApi.getById(orderReturn.order.id);
+        const original = await customerApi
+          .getById(order.customer.id)
+          .catch(() => null);
+        if (stale) return;
+        const byLine = new Map(order.items.map((line) => [line.id, line]));
+        const damaged = orderReturn.items.filter(
+          (item) => item.condition === "DAMAGED",
+        );
+        setReplacementOf({ id: orderReturn.id, code: orderReturn.code });
+        if (original) {
+          setCustomer(original);
+          setCustomerMode("existing");
+        }
+        setBranchId(order.branch.id);
+        if (order.assignee) {
+          const person = {
+            id: order.assignee.id,
+            name: order.assignee.name,
+            placeId: order.branch.id,
+          };
+          setAssignees((prev) =>
+            prev.some((a) => a.id === person.id) ? prev : [person, ...prev],
+          );
+          setAssigneeId(person.id);
+        }
+        if (
+          order.fulfillmentType === "HOME_DELIVERY" ||
+          order.fulfillmentType === "STORE_PICKUP"
+        ) {
+          setFulfillment(order.fulfillmentType);
+        }
+        setRecipientName(order.recipientName ?? "");
+        setRecipientPhone(order.recipientPhone ?? "");
+        setRecipientIsCustomer(
+          !!original &&
+            (order.recipientName ?? "") === original.name &&
+            (order.recipientPhone ?? "") === (original.phone ?? ""),
+        );
+        setDeliveryAddress(order.deliveryAddress ?? "");
+        setNote(`Mua lại hàng hỏng của đơn hoàn ${orderReturn.code}`);
+        setLines(
+          damaged.flatMap((item) => {
+            const line = byLine.get(item.orderItemId);
+            if (!line) return [];
+            return [
+              {
+                key: `${line.productItemId}-replace-${item.id}`,
+                productItemId: line.productItemId,
+                name: line.productName ?? line.sku ?? "",
+                sku: line.sku ?? "",
+                retailPrice: line.listUnitPrice,
+                stock: 0,
+                isManufacturable: line.isManufacturable,
+                quantity: item.quantity,
+                unitPrice: line.unitPrice,
+                discountAmount: 0,
+              },
+            ];
+          }),
+        );
+      } catch (error) {
+        if (!stale)
+          toast.error(
+            getApiErrorBody(error)?.message ?? "Không tải được đơn hoàn",
+          );
+      }
+    })();
+    return () => {
+      stale = true;
+    };
+  }, [replacementFor, optionsReady, setBranchId]);
+
+  const handleCustomer = (next: PickedCustomer | null) => {
+    setCustomer(next);
+    if (next && recipientIsCustomer) {
+      setRecipientName(next.name);
+      setRecipientPhone(next.phone || "");
+      setDeliveryAddress(next.address || "");
+    }
+  };
+
+  const handleRecipientIsCustomer = (checked: boolean) => {
+    setRecipientIsCustomer(checked);
+    const source = isNewCustomer ? { name: newName, phone: newPhone } : customer;
+    setRecipientName(checked && source ? source.name : "");
+    setRecipientPhone(checked && source ? source.phone || "" : "");
+  };
+
+  const handleCustomerMode = (mode: "existing" | "new") => {
+    if (mode === customerMode) return;
+    setCustomerMode(mode);
+    setCustomer(null);
+    if (recipientIsCustomer) {
+      setRecipientName(mode === "new" ? newName : "");
+      setRecipientPhone(mode === "new" ? newPhone : "");
+    }
+  };
+
+  const handleNewName = (value: string) => {
+    setNewName(value);
+    if (recipientIsCustomer) setRecipientName(value);
+  };
+
+  const handleNewPhone = (value: string) => {
+    setNewPhone(value);
+    if (recipientIsCustomer) setRecipientPhone(value);
+  };
+
+  async function submit() {
+    setAttempted(true);
+    if (!valid || (!isNewCustomer && !customer)) return;
+    if (promoted && !activePromotion) {
+      toast.info("Đang tính khuyến mãi, thử lại sau giây lát.");
+      return;
+    }
+    let customerId = customer?.id ?? "";
+    let newlyAdded: Customer | null = null;
+    if (isNewCustomer) {
+      setSubmitting(true);
+      try {
+        newlyAdded = await customerApi.create({
+          name: newName.trim(),
+          phone: newPhone.replace(/\s/g, ""),
+          gender: newGender,
+          ...(fulfillment === "HOME_DELIVERY" && deliveryAddress.trim()
+            ? { address: deliveryAddress.trim() }
+            : {}),
+        });
+        customerId = newlyAdded.id;
+        setCustomer(newlyAdded);
+        setCustomerMode("existing");
+      } catch (error) {
+        const body = getApiErrorBody(error);
+        toast.error(messageForCode(body?.code) ?? body?.message ?? "Không thêm được khách hàng");
+        setSubmitting(false);
+        return;
+      }
+    }
+    const payload: CreateOrderJourneyPayload = {
+      branchId,
+      assigneeId,
+      ...(sellerId && sellerId !== myId ? { sellerId } : {}),
+      fulfillmentType: fulfillment,
+      priority,
+      items: lines.map((line) => ({
+        productItemId: line.productItemId,
+        quantity: line.quantity,
+        // Áp khuyến mãi: giá niêm yết, không giảm tay - BE tự phân bổ khuyến mãi lên dòng.
+        unitPrice: promoted ? line.retailPrice : line.unitPrice,
+        ...(stockLocation ? { sourceLocationId: stockLocation.id } : {}),
+        ...(!promoted && line.discountAmount > 0
+          ? { discountAmount: line.discountAmount }
+          : {}),
+        ...(line.customization ? { customization: line.customization } : {}),
+        ...(line.componentCustomizations?.length
+          ? { componentCustomizations: line.componentCustomizations }
+          : {}),
+      })),
+      customerId,
+      ...(effectiveShippingFee > 0 ? { shippingFee: effectiveShippingFee } : {}),
+      ...(promoted
+        ? { appliedPromotions: promotionIds.map((promotionId) => ({ promotionId })) }
+        : orderDiscount > 0
+          ? { discountType: "ORDER" as const, discountValue: orderDiscount }
+          : {}),
+      ...(depositType !== "NONE" && depositValue > 0
+        ? {
+            deposit: {
+              type: depositType,
+              value: depositValue,
+              method: depositMethod,
+            },
+          }
+        : {}),
+      ...(recipientName.trim()
+        ? { recipientName: recipientName.trim() }
+        : {}),
+      ...(recipientPhone.trim()
+        ? { recipientPhone: recipientPhone.trim() }
+        : {}),
+      ...(fulfillment === "HOME_DELIVERY" && deliveryAddress.trim()
+        ? { deliveryAddress: deliveryAddress.trim() }
+        : {}),
+      ...(requestedDate ? { requestedDeliveryDate: requestedDate } : {}),
+      ...(note.trim() ? { note: note.trim() } : {}),
+    };
+
+    setSubmitting(true);
+    try {
+      const created = await orderJourneyApi.create(payload);
+      toast.success(`Đã tạo đơn ${created.code ?? ""}`.trim());
+      if (replacementOf) {
+        // Đơn đã được tạo; liên kết lỗi thì báo, không hoàn tác.
+        await orderReturnApi
+          .setReplacementOrder(replacementOf.id, created.id)
+          .catch(() =>
+            toast.warning(
+              `Đơn đã tạo nhưng chưa gắn được vào đơn hoàn ${replacementOf.code}`,
+            ),
+          );
+      }
+      if (newlyAdded) {
+        setAddedCustomer({ orderId: created.id, customer: newlyAdded });
+        return;
+      }
+      router.push(`/sales/orders/${created.id}`);
+    } catch (error) {
+      // Mã lỗi trước (câu tiếng Việt, không đổi khi BE sửa câu chữ), rồi mới tới message của BE.
+      const body = getApiErrorBody(error);
+      toast.error(messageForCode(body?.code) ?? body?.message ?? "Không tạo được đơn hàng");
+      setSubmitting(false);
+    }
+  }
+
+  /** Cùng quy tắc gộp như trình sửa dòng cũ: cùng SKU, cùng giá thì chỉ tăng số lượng. */
+  const addProduct = React.useCallback(
+    (product: {
+      id: string;
+      name: string;
+      sku: string;
+      retailPrice: number;
+      stock: number;
+      isManufacturable: boolean;
+      madeToOrderComponents?: MadeToOrderComponent[];
+    }) => {
+      setLines((current) => {
+        const existing = current.find(
+          (line) =>
+            line.productItemId === product.id &&
+            line.unitPrice === product.retailPrice &&
+            !line.customization &&
+            !line.componentCustomizations?.length,
+        );
+        if (existing) {
+          return current.map((line) =>
+            line.key === existing.key
+              ? { ...line, quantity: line.quantity + 1 }
+              : line,
+          );
+        }
+        return [
+          ...current,
+          {
+            key: `${product.id}-${++keySeq.current}`,
+            productItemId: product.id,
+            name: product.name.endsWith(` (${product.sku})`)
+              ? product.name.slice(0, -(product.sku.length + 3))
+              : product.name,
+            sku: product.sku,
+            retailPrice: product.retailPrice,
+            stock: product.stock,
+            isManufacturable: product.isManufacturable,
+            madeToOrderComponents: product.madeToOrderComponents,
+            quantity: 1,
+            unitPrice: product.retailPrice,
+            discountAmount: 0,
+          },
+        ];
+      });
+    },
+    [],
+  );
+
+  const show = (message: string | undefined) =>
+    attempted ? message : undefined;
+  const totalQuantity = lines.reduce((acc, line) => acc + line.quantity, 0);
+  const sectionLabel = "text-sm font-medium text-muted-foreground";
+
+  return (
+    // Bố cục cuộn dọc, thanh "Tạo đơn" ở đáy.
+    <div className="flex w-full flex-col gap-4 pb-24">
+      <Card className="gap-3 py-4">
+        <CardHeader className="px-4 pb-0">
+          <CardTitle className="flex items-center justify-between text-base">
+            <span>Sản phẩm</span>
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary">
+              {lines.length} dòng · {totalQuantity} món
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 px-4">
+          {tabs}
+          {replacementOf && (
+            <p className="text-sm text-muted-foreground">
+              Mua lại hàng hỏng của đơn hoàn{" "}
+              <span className="font-semibold">{replacementOf.code}</span>
+            </p>
+          )}
+          <ProductSearch
+            onProductSelect={(product) =>
+              addProduct({ ...product, id: product.id })
+            }
+            location={stockLocation}
+            allowOutOfStock
+            hideQuickItems
+          />
+          <p className="text-xs text-muted-foreground">
+            Tồn kho chỉ để tham khảo
+            {stockLocationName ? ` (tại ${stockLocationName})` : ""}: đơn
+            vẫn tạo được khi hết hàng, hàng thiếu sẽ được đặt xưởng sau.
+          </p>
+          <OrderCartLines
+            lines={lines}
+            onChange={setLines}
+            error={show(errors.lines)}
+            promotionDiscounts={promotionDiscounts}
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="gap-3 py-4">
+        <CardHeader className="px-4 pb-0">
+          <CardTitle className="text-base">Thông tin đơn hàng</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 px-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <Label className={sectionLabel}>Khách hàng</Label>
+                <div className="inline-flex rounded-md border p-0.5 text-xs">
+                  {(["new", "existing"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => handleCustomerMode(mode)}
+                      className={cn(
+                        "cursor-pointer rounded px-2.5 py-1 font-medium transition-colors",
+                        customerMode === mode
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {mode === "existing" ? "Khách có sẵn" : "Khách mới / vãng lai"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {isNewCustomer ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-customer-name" className={sectionLabel}>
+                      Họ và tên *
+                    </Label>
+                    <Input
+                      id="new-customer-name"
+                      value={newName}
+                      onChange={(event) => handleNewName(event.target.value)}
+                    />
+                    {show(errors.newName) && (
+                      <p className="text-sm text-destructive">{errors.newName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-customer-phone" className={sectionLabel}>
+                      Số điện thoại *
+                    </Label>
+                    <Input
+                      id="new-customer-phone"
+                      inputMode="tel"
+                      value={newPhone}
+                      onChange={(event) => handleNewPhone(event.target.value)}
+                    />
+                    {show(errors.newPhone) && (
+                      <p className="text-sm text-destructive">{errors.newPhone}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className={sectionLabel}>Giới tính</Label>
+                    <RadioGroup
+                      value={newGender}
+                      onValueChange={(value) => setNewGender(value as CustomerGender)}
+                      className="flex gap-6"
+                    >
+                      {(
+                        [
+                          ["MALE", "Nam"],
+                          ["FEMALE", "Nữ"],
+                          ["OTHER", "Khác"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <div key={value} className="flex items-center gap-2">
+                          <RadioGroupItem
+                            id={`new-customer-gender-${value}`}
+                            value={value}
+                            className="border-muted-foreground/60"
+                          />
+                          <Label
+                            htmlFor={`new-customer-gender-${value}`}
+                            className="cursor-pointer text-sm font-normal"
+                          >
+                            {label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  <p className="text-xs text-muted-foreground sm:col-span-2">
+                    Khách mới sẽ được thêm vào hệ thống khi tạo đơn.
+                  </p>
+                </div>
+              ) : (
+                <CustomerPicker
+                  value={customer}
+                  onChange={handleCustomer}
+                  error={show(errors.customer)}
+                />
+              )}
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="recipient-is-customer"
+                  checked={recipientIsCustomer}
+                  onCheckedChange={(checked) =>
+                    handleRecipientIsCustomer(checked === true)
+                  }
+                />
+                <Label
+                  htmlFor="recipient-is-customer"
+                  className="text-sm font-normal"
+                >
+                  {fulfillment === "STORE_PICKUP"
+                    ? "Người đến lấy là khách"
+                    : "Người nhận là khách"}
+                </Label>
+              </div>
+              {showRecipientFields ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipient-name" className={sectionLabel}>
+                      {fulfillment === "STORE_PICKUP" ? "Người đến lấy hàng" : "Người nhận *"}
+                    </Label>
+                    <Input
+                      id="recipient-name"
+                      value={recipientName}
+                      onChange={(event) => setRecipientName(event.target.value)}
+                    />
+                    {show(errors.recipientName) && (
+                      <p className="text-sm text-destructive">{errors.recipientName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipient-phone" className={sectionLabel}>
+                      {fulfillment === "STORE_PICKUP" ? "SĐT người đến lấy" : "SĐT người nhận *"}
+                    </Label>
+                    <Input
+                      id="recipient-phone"
+                      inputMode="tel"
+                      value={recipientPhone}
+                      onChange={(event) => setRecipientPhone(event.target.value)}
+                    />
+                    {show(errors.recipientPhone) && (
+                      <p className="text-sm text-destructive">{errors.recipientPhone}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {recipientName || recipientPhone
+                    ? [recipientName, recipientPhone].filter(Boolean).join(" · ")
+                    : "Chọn hoặc nhập khách hàng để điền sẵn người nhận."}
+                </p>
+              )}
+              {fulfillment === "HOME_DELIVERY" ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="delivery-address" className={sectionLabel}>
+                    Địa chỉ giao hàng *
+                  </Label>
+                  <Input
+                    id="delivery-address"
+                    value={deliveryAddress}
+                    onChange={(event) => setDeliveryAddress(event.target.value)}
+                  />
+                  {show(errors.deliveryAddress) && (
+                    <p className="text-sm text-destructive">{errors.deliveryAddress}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Khách tới cửa hàng nhận hàng: không có phí giao hàng, không cần địa chỉ. Đơn đóng gói xong sẽ nằm ở
+                  &quot;Chờ khách lấy&quot; cho tới khi thu đủ tiền và giao tại quầy.
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            <SalesBranchSelect sales={sales} error={show(errors.branch)} />
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>Nguồn hàng</Label>
+              <Select
+                value={stockLocation?.id ?? ""}
+                onValueChange={(id) => setPickedSource({ branchId, id })}
+                disabled={!branch || sourceOptions.length === 0}
+              >
+                <SelectTrigger className="w-full" aria-label="Nguồn hàng">
+                  <SelectValue placeholder="Chọn nơi bán trước" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sourceOptions.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                      {location.id === defaultSource?.id ? " (mặc định)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Cả đơn xuất từ một nơi, đổi được tới trước khi đóng gói.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>
+                Người phụ trách <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={assigneeId}
+                onValueChange={setAssigneeId}
+                disabled={!optionsReady || !branch}
+              >
+                <SelectTrigger className="w-full" aria-label="Người phụ trách">
+                  <SelectValue placeholder={branch ? "Chọn người" : "Chọn nơi bán trước"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {assigneeOptions.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {show(errors.assignee) && (
+                <p className="text-sm text-destructive">{errors.assignee}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>Nhân viên bán hàng</Label>
+              <Select value={sellerId} onValueChange={setSellerId} disabled={!optionsReady}>
+                <SelectTrigger className="w-full" aria-label="Nhân viên bán hàng">
+                  <SelectValue placeholder="Chọn người" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignees.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Mặc định là người tạo đơn; không sửa được sau khi tạo.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className={sectionLabel}>Hình thức giao</Label>
+                <Select
+                  value={fulfillment}
+                  onValueChange={(v) => setFulfillment(v as FulfillmentChoice)}
+                >
+                  <SelectTrigger className="w-full" aria-label="Hình thức giao hàng">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="HOME_DELIVERY">Giao tận nơi</SelectItem>
+                    <SelectItem value="STORE_PICKUP">Khách tới lấy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="requested-date" className={sectionLabel}>
+                  {fulfillment === "STORE_PICKUP" ? "Ngày khách hẹn lấy hàng" : "Thời gian khách hẹn giao"}
+                </Label>
+                <Input
+                  id="requested-date"
+                  type="date"
+                  min={todayIso()}
+                  value={requestedDate}
+                  onChange={(event) => setRequestedDate(event.target.value)}
+                />
+                {show(errors.requestedDate) && (
+                  <p className="text-sm text-destructive">{errors.requestedDate}</p>
+                )}
+              </div>
+            </div>
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+              Mức ưu tiên:
+              <Badge variant={priorityDisplay(priority).variant}>
+                {ORDER_PRIORITY_LABELS[priority]}
+              </Badge>
+              tự động theo ngày hẹn
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="gap-3 py-4">
+        <CardHeader className="px-4 pb-0">
+          <CardTitle className="text-base">Thanh toán</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4">
+          <div className="space-y-3 text-sm">
+            <div className="grid grid-cols-2 gap-3">
+              {!pickup && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="shipping-fee" className={sectionLabel}>
+                    Phí giao hàng
+                  </Label>
+                  <MoneyInput
+                    id="shipping-fee"
+                    className="text-right"
+                    value={shippingFee}
+                    onChange={setShippingFee}
+                  />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="order-discount" className={sectionLabel}>
+                  Giảm giá cả đơn
+                </Label>
+                <MoneyInput
+                  id="order-discount"
+                  className="text-right"
+                  value={promoted ? 0 : orderDiscount}
+                  onChange={setOrderDiscount}
+                  disabled={promoted}
+                  title={
+                    promoted
+                      ? "Không dùng chung với khuyến mãi - bỏ khuyến mãi để giảm tay"
+                      : undefined
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <Label className={sectionLabel}>Khuyến mãi</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                  disabled={lines.length === 0 || !branchId}
+                  onClick={() => setPromotionPickerOpen(true)}
+                >
+                  <Tag className="mr-1.5 size-4" />
+                  {promoted ? "Đổi khuyến mãi" : "Chọn khuyến mãi"}
+                </Button>
+              </div>
+              {promoted ? (
+                <div className="flex items-start justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="text-sm font-medium">
+                      {activePromotion
+                        ? activePromotion.appliedPromotions
+                            .map((p) => p.promoName)
+                            .join(" + ")
+                        : "Đang tính khuyến mãi..."}
+                    </p>
+                    {activePromotion && (
+                      <p className="text-xs text-muted-foreground">
+                        Giảm {formatVND(activePromotion.totalDiscount)}, phân
+                        bổ lên từng dòng.
+                        {hasManualPricing &&
+                          " Giá thoả thuận và giảm giá tay tạm bỏ khi áp khuyến mãi."}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0 cursor-pointer"
+                    aria-label="Bỏ khuyến mãi"
+                    onClick={() => setPromotionIds([])}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {lines.length === 0
+                    ? "Thêm mặt hàng để xem khuyến mãi áp dụng được."
+                    : "Chưa áp khuyến mãi. Khuyến mãi không dùng chung với giá thoả thuận và giảm giá tay."}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className={sectionLabel}>Tiền cọc</Label>
+              <div className="grid grid-cols-[1fr_1fr] gap-3">
+                <Select
+                  value={depositType}
+                  onValueChange={(v) => setDepositType(v as DepositType)}
+                >
+                  <SelectTrigger className="w-full" aria-label="Loại tiền cọc">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Không cọc</SelectItem>
+                    <SelectItem value="AMOUNT">Theo số tiền</SelectItem>
+                    <SelectItem value="PERCENT">Theo %</SelectItem>
+                  </SelectContent>
+                </Select>
+                {depositType === "AMOUNT" ? (
+                  <MoneyInput
+                    className="text-right"
+                    aria-label="Giá trị tiền cọc"
+                    value={depositValue}
+                    onChange={setDepositValue}
+                  />
+                ) : (
+                  // Theo % là một con số 0-100, không phải tiền: không chèn dấu chấm ngăn cách.
+                  <div className="relative w-full">
+                    <Input
+                      type="number"
+                      min={0}
+                      className="pr-7 text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      aria-label="Giá trị tiền cọc"
+                      disabled={depositType === "NONE"}
+                      value={depositType === "NONE" ? 0 : depositValue}
+                      onChange={(event) =>
+                        setDepositValue(toNumber(event.target.value))
+                      }
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground"
+                    >
+                      %
+                    </span>
+                  </div>
+                )}
+              </div>
+              {depositType !== "NONE" && (
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(
+                    [
+                      { method: "CASH", label: "Tiền mặt", Icon: Banknote },
+                      {
+                        method: "BANK_TRANSFER",
+                        label: "Chuyển khoản",
+                        Icon: QrCode,
+                      },
+                    ] as const
+                  ).map(({ method, label, Icon }) => {
+                    const isSelected = depositMethod === method;
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        aria-label={`Hình thức thu cọc: ${label}`}
+                        onClick={() => setDepositMethod(method)}
+                        className={cn(
+                          "flex items-center gap-2 p-3 rounded-lg border text-left cursor-pointer transition-all duration-200",
+                          isSelected
+                            ? "bg-primary/5 border-primary text-primary font-bold shadow-xs"
+                            : "bg-background border-border text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                        )}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        <span className="text-sm">{label}</span>
+                        {isSelected && (
+                          <Check className="size-3.5 text-primary shrink-0 ml-auto" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {depositType !== "NONE" &&
+                !totals.depositError &&
+                depositValue > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Quy đổi: {formatVND(totals.depositAmount)} (
+                    {totals.depositPercent}% tổng đơn)
+                  </p>
+                )}
+              {totals.depositError && (
+                <p className="text-sm text-destructive">
+                  {totals.depositError}
+                </p>
+              )}
+            </div>
+
+            <Separator className="my-2" />
+
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-medium">
+                  Tiền hàng
+                </span>
+                <span className="font-semibold tabular-nums">
+                  {formatVND(totals.goods)}
+                </span>
+              </div>
+              {promoted && activePromotion && activePromotion.totalDiscount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-medium">
+                    Khuyến mãi (đã trừ trong tiền hàng)
+                  </span>
+                  <span className="font-semibold tabular-nums text-red-500">
+                    -{formatVND(activePromotion.totalDiscount)}
+                  </span>
+                </div>
+              )}
+              {totals.orderDiscount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-medium">
+                    Giảm giá cả đơn
+                  </span>
+                  <span className="font-semibold tabular-nums text-red-500">
+                    -{formatVND(totals.orderDiscount)}
+                  </span>
+                </div>
+              )}
+              {totals.shippingFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-medium">
+                    Phí giao hàng
+                  </span>
+                  <span className="font-semibold tabular-nums">
+                    {formatVND(totals.shippingFee)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground font-medium">
+                  Đã cọc
+                </span>
+                <span className="font-semibold tabular-nums">
+                  {formatVND(totals.depositAmount)}
+                </span>
+              </div>
+              <div className="flex justify-between font-medium">
+                <span className="text-muted-foreground">Còn phải thu</span>
+                <span className="tabular-nums" data-testid="amount-due">
+                  {formatVND(totals.amountDue)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-muted-foreground font-bold text-base">
+                Tổng tiền
+              </span>
+              <span
+                className="text-xl font-bold text-primary tabular-nums"
+                data-testid="grand-total"
+              >
+                {formatVND(totals.grandTotal)}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Số tạm tính; hệ thống tính lại khi tạo đơn.
+            </p>
+
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="order-note"
+                className={`${sectionLabel} flex items-center gap-1`}
+              >
+                <FileText className="size-4" /> Ghi chú
+              </Label>
+              <Textarea
+                id="order-note"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Thanh đáy: luôn thấy tổng và nút tạo đơn, kể cả khi đang ở đầu trang chọn hàng. */}
+      <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-end gap-4 border-t bg-background/95 px-4 py-3 backdrop-blur lg:-mx-6 lg:px-6">
+        {attempted && !valid && (
+          <p className="mr-auto text-sm text-destructive">
+            Còn thông tin chưa hợp lệ ở trên.
+          </p>
+        )}
+        <div className="text-right text-sm">
+          <div className="text-muted-foreground">
+            {totalQuantity} món · Tổng đơn
+          </div>
+          <div className="text-base font-bold tabular-nums">
+            {formatVND(totals.grandTotal)}
+          </div>
+        </div>
+        <Button
+          type="button"
+          disabled={submitting}
+          onClick={submit}
+          className="h-10 min-w-36 cursor-pointer bg-emerald-600 text-base font-bold text-white shadow-md hover:bg-emerald-700"
+        >
+          Tạo đơn
+        </Button>
+      </div>
+      <PromotionPickerDialog
+        open={promotionPickerOpen}
+        onOpenChange={setPromotionPickerOpen}
+        branchId={branchId}
+        customerId={promotionCustomerId}
+        newCustomer={promotionNewCustomer}
+        items={promotionItems}
+        selectedPromotionIds={promotionIds}
+        onConfirm={setPromotionIds}
+      />
+      <Dialog
+        open={addedCustomer !== null}
+        onOpenChange={(open) => {
+          if (!open && addedCustomer) router.push(`/sales/orders/${addedCustomer.orderId}`);
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Đã thêm khách hàng mới</DialogTitle>
+            <DialogDescription>
+              Khách hàng được lưu vào hệ thống cùng với đơn vừa tạo.
+            </DialogDescription>
+          </DialogHeader>
+          {addedCustomer && (
+            <div className="rounded-lg border bg-primary/5 p-3">
+              <div className="text-base font-bold">{addedCustomer.customer.name}</div>
+              <div className="mt-0.5 font-mono text-sm text-muted-foreground">
+                {[
+                  addedCustomer.customer.phone && `SĐT: ${addedCustomer.customer.phone}`,
+                  addedCustomer.customer.customerCode,
+                ]
+                  .filter(Boolean)
+                  .join(" • ")}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              onClick={() => addedCustomer && router.push(`/sales/orders/${addedCustomer.orderId}`)}
+            >
+              Xem đơn hàng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+interface OrderTab {
+  id: string;
+  tabName: string;
+}
+
+/** Nhiều nháp đơn ở các tab. */
+export function CreateOrderForm({ sales }: { sales: SalesBranch }) {
+  const seq = React.useRef(1);
+  const [tabs, setTabs] = React.useState<OrderTab[]>([{ id: "order-1", tabName: "Đơn 1" }]);
+  const [activeId, setActiveId] = React.useState("order-1");
+
+  const add = () => {
+    seq.current += 1;
+    const tab = { id: `order-${seq.current}`, tabName: `Đơn ${seq.current}` };
+    setTabs((current) => [...current, tab]);
+    setActiveId(tab.id);
+  };
+
+  const close = (id: string) => {
+    if (tabs.length <= 1) return;
+    const index = tabs.findIndex((tab) => tab.id === id);
+    const remaining = tabs.filter((tab) => tab.id !== id);
+    setTabs(remaining);
+    if (activeId === id) setActiveId(remaining[Math.max(0, index - 1)].id);
+  };
+
+  const strip = (
+    <CheckoutTabs
+      tabs={tabs}
+      activeTabId={activeId}
+      onTabChange={setActiveId}
+      onTabAdd={add}
+      onTabClose={close}
+      addTitle="Thêm đơn hàng mới"
+    />
+  );
+
+  return (
+    <div className="h-full min-h-[40rem]">
+      {tabs.map((tab, index) => (
+        <div key={tab.id} className={cn("h-full", tab.id !== activeId && "hidden")}>
+          {/* Chỉ tab đầu tiên dùng ?replacementFor=, nếu không mọi tab sẽ điền cùng một đơn trả. */}
+          <OrderDraftForm sales={sales} withReplacement={index === 0} tabs={strip} />
+        </div>
+      ))}
+    </div>
+  );
+}

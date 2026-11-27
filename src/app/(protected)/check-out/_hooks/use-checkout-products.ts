@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react'
 import { productApi } from '@/lib/api/product'
-import type { Product } from '@/types/product'
+import type { Product, ProductSearchParams } from '@/types/product'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/store/auth-store'
 import { getCachedUser } from '@/lib/auth'
 
-export function useCheckoutProducts(searchQuery: string) {
+export type CheckoutLocation = { id: string; type: 'BRANCH' | 'WAREHOUSE' }
+
+/** Nơi đọc tồn: undefined là chi nhánh bán, null là không đọc. */
+export function useCheckoutProducts(searchQuery: string, location?: CheckoutLocation | null) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const locationKey = useAuthStore((state) => state.locationKey)
 
   useEffect(() => {
-    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+    if (!searchQuery.trim()) {
       setProducts([])
       return
     }
@@ -33,10 +36,15 @@ export function useCheckoutProducts(searchQuery: string) {
       setLoading(true)
       try {
         const branchId = resolveBranchId()
-        const params: any = { q: searchQuery, limit: 20, status: 'ACTIVE' }
-        if (branchId) {
+        const params: ProductSearchParams = { q: searchQuery, limit: 20, status: 'ACTIVE' }
+        if (location !== undefined) {
+          if (location) {
+            params.locationId = location.id
+            params.locationType = location.type
+          }
+        } else if (branchId) {
           params.locationId = branchId
-          params.locationType = 'branch'
+          params.locationType = 'BRANCH'
         }
         const res = await productApi.search(params)
         setProducts(res.data)
@@ -49,7 +57,7 @@ export function useCheckoutProducts(searchQuery: string) {
     }, 300)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [searchQuery, locationKey])
+  }, [searchQuery, locationKey, location?.id, location?.type])
 
   return { products, loading }
 }

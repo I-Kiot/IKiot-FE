@@ -14,13 +14,12 @@ import {
   workingScheduleApi,
 } from "@/lib/api/schedule";
 import { holidayApi } from "@/lib/api/holiday";
-import { leaveRequestApi } from "@/lib/api/leave-request";
 import {
   mapShiftTemplatesToOptions,
   scheduleMatchesUserFilter,
 } from "@/lib/api/schedule-mapper";
 import { staffApi } from "@/lib/api/staff";
-import { getSessionRole, getSessionUserId } from "@/lib/auth";
+import { getSessionRole } from "@/lib/auth";
 import {
   getApiErrorMessage,
 } from "@/lib/api/staff-mapper";
@@ -29,12 +28,14 @@ import {
   canManageShiftTemplates,
   canViewSchedule,
 } from "@/app/(protected)/staffs/shared/schedule-permissions";
-import { canCreatePersonalLeave } from "@/components/sidebar/constants/role-permissions";
 import { buildHolidayNamesByDate } from "@/app/(protected)/staffs/shared/schedule-day-meta";
+import { overlapDatesOf } from "@/app/(protected)/staffs/shared/schedule-series";
+import { formatVietnamWorkDate } from "@/app/(protected)/staffs/shared/vietnam-datetime";
 import type { Holiday } from "@/types/holiday";
-import type { LeaveRequestPerDay } from "@/types/leave-request";
 import type {
+  CreateScheduleSeriesPayload,
   CreateWorkingSchedulePayload,
+  ScheduleSeriesRef,
   ScheduleCalendarFilters,
   ScheduleStatus,
   ShiftTemplate,
@@ -47,7 +48,31 @@ import type { ScheduleStaffOption } from "./schedule-staff-picker";
 const EMPTY_SCHEDULES: WorkingSchedule[] = [];
 const EMPTY_STAFF_OPTIONS: ScheduleStaffOption[] = [];
 
-type ScheduleDialogType = "add" | "edit" | "delete" | "shiftTemplate";
+type ScheduleDialogType =
+  | "add"
+  | "edit"
+  | "delete"
+  | "shiftTemplate"
+  | "stopSeries";
+
+/** Lịch lặp đang được dừng: của ai, từ ngày nào (mặc định ngày ca đang xem). */
+export type StopSeriesTarget = {
+  series: ScheduleSeriesRef;
+  staffName: string;
+  defaultFromDate: string;
+};
+
+/** Toast lỗi; chồng ca thì nêu luôn các ngày bị chồng (BE trả trong `errors`). */
+function toastScheduleError(error: unknown) {
+  const dates = overlapDatesOf(error);
+  if (dates.length === 0) {
+    toast.error(getApiErrorMessage(error));
+    return;
+  }
+  const shown = dates.slice(0, 5).map(formatVietnamWorkDate).join(", ");
+  const more = dates.length > 5 ? ` và ${dates.length - 5} ngày khác` : "";
+  toast.error(`${getApiErrorMessage(error)}: ${shown}${more}`);
+}
 
 function getMonthRange(date: Date) {
   return {
@@ -82,8 +107,6 @@ type ScheduleContextType = {
   schedules: WorkingSchedule[];
   /** YYYY-MM-DD → tên ngày lễ thật (từ /holidays, bổ sung dayInfo). */
   holidaysByDate: Map<string, string>;
-  /** YYYY-MM-DD → đơn nghỉ phép cá nhân (GET /leave-requests/me/per-day). */
-  leaveByDate: Map<string, LeaveRequestPerDay[]>;
   isInitialLoading: boolean;
   isFetching: boolean;
   filters: ScheduleCalendarFilters;
@@ -98,6 +121,10 @@ type ScheduleContextType = {
     userId?: string | null,
   ) => Promise<WorkingSchedule | null>;
   handleAdd: (payload: CreateWorkingSchedulePayload) => Promise<void>;
+  handleAddSeries: (payload: CreateScheduleSeriesPayload) => Promise<void>;
+  stopSeriesTarget: StopSeriesTarget | null;
+  openStopSeries: (target: StopSeriesTarget) => void;
+  handleStopSeries: (seriesId: string, fromDate: string) => Promise<void>;
   handleEdit: (
     scheduleId: string,
     payload: CreateWorkingSchedulePayload,
@@ -154,6 +181,8 @@ export function ScheduleProvider({
   );
   const [open, setOpen] = useState<ScheduleDialogType | null>(null);
   const [currentRow, setCurrentRow] = useState<WorkingSchedule | null>(null);
+  const [stopSeriesTarget, setStopSeriesTarget] =
+    useState<StopSeriesTarget | null>(null);
   const [shiftTemplates, setShiftTemplates] = useState<ShiftTemplate[]>([]);
   const [shiftTemplateOptions, setShiftTemplateOptions] = useState<
     ShiftTemplateOption[]
@@ -171,10 +200,7 @@ export function ScheduleProvider({
   const [currentSchedule, setCurrentSchedule] =
     useState<WorkingSchedule | null>(null);
   const [monthHolidays, setMonthHolidays] = useState<Holiday[]>([]);
-  const [myLeaveDays, setMyLeaveDays] = useState<LeaveRequestPerDay[]>([]);
   const holidayYear = calendarMonth.getFullYear();
-  const sessionUserId = getSessionUserId();
-  const canFetchPersonalLeave = canCreatePersonalLeave(userRole);
 
   // Có /holidays thì không scan lại schedules mỗi lần list ca đổi.
   const holidayScheduleFallback = monthHolidays.length > 0 ? EMPTY_SCHEDULES : schedules;
@@ -182,25 +208,6 @@ export function ScheduleProvider({
     () => buildHolidayNamesByDate(monthHolidays, holidayScheduleFallback),
     [monthHolidays, holidayScheduleFallback],
   );
-
-  const leaveByDate = useMemo(() => {
-    const map = new Map<string, LeaveRequestPerDay[]>();
-    // Chỉ hiện nghỉ của chính mình; khi filter nhân viên khác thì ẩn.
-    const showMine =
-      filters.userId === "all" ||
-      (!!sessionUserId && filters.userId === sessionUserId);
-    if (!showMine) return map;
-
-    for (const item of myLeaveDays) {
-      if (item.status !== "APPROVED" && item.status !== "PENDING") continue;
-      const key = item.date.slice(0, 10);
-      if (!key) continue;
-      const list = map.get(key);
-      if (list) list.push(item);
-      else map.set(key, [item]);
-    }
-    return map;
-  }, [myLeaveDays, filters.userId, sessionUserId]);
 
   const visibleSchedules = useMemo(() => {
     return schedules.filter((schedule) => {
@@ -302,29 +309,6 @@ export function ScheduleProvider({
     userRole,
   ]);
 
-  const fetchMyLeaveDays = useCallback(async () => {
-    if (!canFetch || !canFetchPersonalLeave) {
-      setMyLeaveDays([]);
-      return;
-    }
-
-    try {
-      const days = await leaveRequestApi.getMinePerDay({
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-      });
-      setMyLeaveDays(days);
-    } catch {
-      // TO không có read_mine; role khác lỗi thì bỏ qua để lịch ca vẫn dùng được.
-      setMyLeaveDays([]);
-    }
-  }, [
-    canFetch,
-    canFetchPersonalLeave,
-    filters.endDate,
-    filters.startDate,
-  ]);
-
   const fetchScheduleById = useCallback(async (id: string) => {
     try {
       return await workingScheduleApi.getById(id);
@@ -365,10 +349,6 @@ export function ScheduleProvider({
   useEffect(() => {
     fetchSchedules();
   }, [fetchSchedules]);
-
-  useEffect(() => {
-    void fetchMyLeaveDays();
-  }, [fetchMyLeaveDays]);
 
   useEffect(() => {
     if (!canFetch) {
@@ -430,6 +410,46 @@ export function ScheduleProvider({
       toast.success("Đã thêm lịch làm việc");
       await Promise.all([fetchSchedules(), fetchCurrentSchedule()]);
     } catch (error) {
+      toastScheduleError(error);
+      throw error;
+    }
+  }
+
+  async function handleAddSeries(payload: CreateScheduleSeriesPayload) {
+    try {
+      const result = await workingScheduleApi.createSeries(payload);
+      const skipped = result.skipped.length;
+      toast.success(
+        `Đã tạo lịch lặp lại: ${result.createdCount} lượt ca`,
+        skipped > 0
+          ? {
+              description: `Bỏ qua ${skipped} lượt vì nhân viên đã có đúng ca đó trong ngày.`,
+            }
+          : undefined,
+      );
+      await Promise.all([fetchSchedules(), fetchCurrentSchedule()]);
+    } catch (error) {
+      toastScheduleError(error);
+      throw error;
+    }
+  }
+
+  const openStopSeries = useCallback((target: StopSeriesTarget) => {
+    setStopSeriesTarget(target);
+    setOpen("stopSeries");
+  }, []);
+
+  async function handleStopSeries(seriesId: string, fromDate: string) {
+    try {
+      const result = await workingScheduleApi.removeSeries(seriesId, fromDate);
+      toast.success(
+        `Đã dừng lịch lặp lại, gỡ ${result.removedCount} lượt ca từ ${formatVietnamWorkDate(fromDate)}`,
+      );
+      setSelectedSchedule(null);
+      setSelectedAssigneeUserId(null);
+      setStopSeriesTarget(null);
+      await Promise.all([fetchSchedules(), fetchCurrentSchedule()]);
+    } catch (error) {
       toast.error(getApiErrorMessage(error));
       throw error;
     }
@@ -440,15 +460,14 @@ export function ScheduleProvider({
     payload: CreateWorkingSchedulePayload,
   ) {
     try {
-      await workingScheduleApi.remove(scheduleId);
-      await workingScheduleApi.create(payload);
+      await workingScheduleApi.update(scheduleId, payload);
       toast.success("Đã cập nhật lịch làm việc");
       setSelectedSchedule((prev) => (prev?.id === scheduleId ? null : prev));
       setSelectedAssigneeUserId(null);
       setCurrentRow((prev) => (prev?.id === scheduleId ? null : prev));
       await Promise.all([fetchSchedules(), fetchCurrentSchedule()]);
     } catch (error) {
-      toast.error(getApiErrorMessage(error));
+      toastScheduleError(error);
       throw error;
     }
   }
@@ -584,7 +603,6 @@ export function ScheduleProvider({
       value={{
         schedules: visibleSchedules,
         holidaysByDate,
-        leaveByDate,
         isInitialLoading,
         isFetching,
         filters,
@@ -596,6 +614,10 @@ export function ScheduleProvider({
         fetchScheduleById,
         fetchScheduleDetail,
         handleAdd,
+        handleAddSeries,
+        stopSeriesTarget,
+        openStopSeries,
+        handleStopSeries,
         handleEdit,
         handleDelete,
         handleCreateShiftTemplate,

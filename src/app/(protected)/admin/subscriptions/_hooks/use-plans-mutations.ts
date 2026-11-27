@@ -32,8 +32,7 @@ export function usePlansMutations() {
     }
   }, []);
 
-  // Initial load. setState only happens in async callbacks, not synchronously
-  // in the effect body.
+  // Load ban đầu: setState chỉ gọi trong callback async, không gọi đồng bộ trong thân effect.
   useEffect(() => {
     let active = true;
     listAllPlans()
@@ -69,7 +68,7 @@ export function usePlansMutations() {
 
   const toggleActive = useCallback(
     async (id: string, isActive: boolean): Promise<void> => {
-      // Optimistic; revert on failure.
+      // Cập nhật lạc quan; hoàn tác nếu lỗi.
       setPlans((prev) =>
         prev.map((p) => (p.id === id ? { ...p, isActive } : p)),
       );

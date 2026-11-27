@@ -1,9 +1,8 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Clock, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getAttendanceStatusDisplay } from "@/app/(protected)/staffs/shared/attendance-status";
 import { SCHEDULE_STATUS_MAP } from "@/app/(protected)/staffs/shared/schedule-status";
 import { formatShiftTimeRange } from "@/app/(protected)/staffs/shared/schedule-utils";
 import type { CalendarScheduleEntry } from "@/app/(protected)/staffs/shared/schedule-utils";
@@ -20,9 +19,8 @@ export function ScheduleDayListItem({
   isActive?: boolean;
   onSelect: () => void;
 }) {
-  const { schedule, displayName, displayAvatarUrl, displayAttendance } = entry;
+  const { schedule, displayName, displayAvatarUrl } = entry;
   const status = SCHEDULE_STATUS_MAP[schedule.status];
-  const attendance = getAttendanceStatusDisplay(displayAttendance?.status);
 
   return (
     <button
@@ -47,12 +45,10 @@ export function ScheduleDayListItem({
           <Badge variant={status.variant} className="text-[10px] px-1.5 py-0">
             {status.label}
           </Badge>
-          <Badge variant={attendance.variant} className="text-[10px] px-1.5 py-0">
-            {attendance.label}
-          </Badge>
-          {schedule.scheduleType === "OVERTIME" && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-              Tăng ca
+          {entry.assignee?.series && (
+            <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0">
+              <Repeat className="size-2.5" />
+              Lặp lại
             </Badge>
           )}
         </div>

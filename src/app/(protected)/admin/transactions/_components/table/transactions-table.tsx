@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { TransactionsToolbar } from "./transactions-toolbar"
 import { TransactionsPagination } from "./transactions-pagination"
-import { listAllInvoices, type AdminInvoice } from "@/lib/api/subscription"
+import { basePlanTier, listAllInvoices, type AdminInvoice } from "@/lib/api/subscription"
 import { toast } from "sonner"
 
 export function TransactionsTable() {
@@ -23,7 +23,6 @@ export function TransactionsTable() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [planFilter, setPlanFilter] = useState("all")
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -62,9 +61,9 @@ export function TransactionsTable() {
         });
 
         toast.info(
-          `Cập nhật giao dịch: ${updatedInvoice.tenantId?.name || "Cửa hàng"}`,
+          `Cập nhật giao dịch: ${updatedInvoice.tenant?.name || "Cửa hàng"}`,
           {
-            description: `Gói: ${updatedInvoice.planId?.planName || ""} &bull; Trạng thái: ${updatedInvoice.status}`,
+            description: `Gói: ${updatedInvoice.plan?.planName || ""} &bull; Trạng thái: ${updatedInvoice.status}`,
           }
         );
       };
@@ -78,7 +77,6 @@ export function TransactionsTable() {
     }
   }, [])
 
-  // Reset page index when search or filter values change
   React.useEffect(() => {
     setCurrentPage(1)
   }, [globalFilter, statusFilter, planFilter])
@@ -108,24 +106,23 @@ export function TransactionsTable() {
     }
   }
 
-  const getPlanBadge = (plan?: string) => {
-    switch (plan?.toUpperCase()) {
+  const getPlanBadge = (planCode?: string) => {
+    if (!planCode) return <Badge variant="outline" className="text-2xs">-</Badge>
+    const suffix = planCode.toUpperCase().endsWith("_YEARLY") ? " · Năm" : ""
+    switch (basePlanTier(planCode.toUpperCase())) {
       case "PRO":
-      case "ENTERPRISE":
         return (
-          <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/20 font-semibold text-2xs animate-pulse" variant="outline">
-            Doanh nghiệp (PRO)
+          <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/20 font-semibold text-2xs" variant="outline">
+            Doanh nghiệp (PRO){suffix}
           </Badge>
         )
       case "PLUS":
-      case "PROFESSIONAL":
         return (
           <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 font-medium text-2xs" variant="outline">
-            Chuyên nghiệp (PLUS)
+            Chuyên nghiệp (PLUS){suffix}
           </Badge>
         )
       case "TRIAL":
-      case "BASIC":
         return (
           <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-2xs" variant="outline">
             Dùng thử (TRIAL)
@@ -134,7 +131,7 @@ export function TransactionsTable() {
       default:
         return (
           <Badge variant="outline" className="text-2xs">
-            {plan || "Dùng thử"}
+            {planCode}
           </Badge>
         )
     }
@@ -142,8 +139,8 @@ export function TransactionsTable() {
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
-      const storeName = inv.tenantId?.name || ""
-      const searchStr = `${inv.id} ${storeName} ${inv.paymentReference || ""} ${inv.tenantId?.phoneNumber || ""}`.toLowerCase()
+      const storeName = inv.tenant?.name || ""
+      const searchStr = `${inv.id} ${storeName} ${inv.paymentReference || ""} ${inv.tenant?.phoneNumber || ""}`.toLowerCase()
       if (globalFilter && !searchStr.includes(globalFilter.toLowerCase())) {
         return false
       }
@@ -152,8 +149,8 @@ export function TransactionsTable() {
         return false
       }
 
-      const planCode = inv.planId?.planCode || "TRIAL"
-      if (planFilter !== "all" && planCode !== planFilter) {
+      // Lọc theo hạng: gói năm (PLUS_YEARLY) tính vào cùng hạng với gói tháng.
+      if (planFilter !== "all" && basePlanTier(inv.plan?.planCode ?? "") !== planFilter) {
         return false
       }
 
@@ -215,9 +212,9 @@ export function TransactionsTable() {
               paginatedInvoices.map((inv) => (
                 <TableRow key={inv.id} className="text-sm hover:bg-muted/30">
                   <TableCell className="font-semibold text-xs font-mono">{inv.id}</TableCell>
-                  <TableCell className="font-medium text-foreground">{inv.tenantId?.name || "N/A"}</TableCell>
-                  <TableCell className="text-muted-foreground">{inv.tenantId?.phoneNumber || "-"}</TableCell>
-                  <TableCell>{getPlanBadge(inv.planId?.planCode)}</TableCell>
+                  <TableCell className="font-medium text-foreground">{inv.tenant?.name || "N/A"}</TableCell>
+                  <TableCell className="text-muted-foreground">{inv.tenant?.phoneNumber || "-"}</TableCell>
+                  <TableCell>{getPlanBadge(inv.plan?.planCode)}</TableCell>
                   <TableCell className="font-bold text-primary">{inv.amount.toLocaleString()}đ</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{inv.paymentReference || "-"}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">

@@ -1,4 +1,3 @@
-// [Dialog – Orchestrator Customer]
 'use client'
 
 import { useCustomers } from '../../_context/customers-provider'

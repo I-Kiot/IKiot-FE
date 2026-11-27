@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { getSessionRole } from "@/lib/auth";
 import {
   canCreateSchedule,
@@ -15,12 +15,11 @@ export function ScheduleButtonGroup() {
   const canCreate = canCreateSchedule(userRole);
   const canManageTemplates = canManageShiftTemplates(userRole);
 
-  if (!canCreate && !canManageTemplates) return null;
-
   return (
     <div className="flex items-center gap-2">
-      {canManageTemplates && (
-        <Button
+      <PermissionButton
+          allowed={canManageTemplates}
+          permission="schedules:update"
           size="sm"
           variant="outline"
           className="cursor-pointer"
@@ -28,18 +27,17 @@ export function ScheduleButtonGroup() {
         >
           <Clock className="mr-2 size-4" />
           Ca mẫu
-        </Button>
-      )}
-      {canCreate && (
-        <Button
+        </PermissionButton>
+        <PermissionButton
+          allowed={canCreate}
+          permission="schedules:create"
           size="sm"
           className="cursor-pointer"
           onClick={() => setOpen("add")}
         >
           <Plus className="mr-2 size-4" />
           Phân ca mới
-        </Button>
-      )}
+        </PermissionButton>
     </div>
   );
 }

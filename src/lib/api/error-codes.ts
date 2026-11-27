@@ -1,50 +1,19 @@
 import { AxiosError } from "axios";
 
-/**
- * Mã lỗi của backend → câu tiếng Việt hiển thị cho người dùng.
- *
- * Backend trả về `{ success: false, statusCode, code, message, ... }`. `message` là câu chữ
- * cho người đọc: nó đang là tiếng Việt, sẽ đổi sang tiếng Anh, và bị viết lại mỗi khi ai đó
- * sửa câu. `code` là nửa hợp đồng **không đổi** — nên frontend rẽ nhánh theo `code` và tự
- * dựng câu tiếng Việt ở đây, thay vì so khớp `message` như trước
- * (`message.includes("phân công quản lý")` là một dòng có thật trong `staff-mapper.ts`).
- *
- * Danh sách này phải khớp với `Ikiot_BE/src/common/errors/error-codes.ts`. Mã ở đó là
- * **append-only**, nên bảng này chỉ thêm chứ không đổi khoá.
- *
- * **Một số câu ở đây cố tình chung chung hơn `message` của backend**, vì message gốc có chèn
- * số liệu chạy thật (`Không đủ tồn kho cho X: cần 5, còn 2`) mà bảng tĩnh không tái tạo
- * được. Khi cần đúng con số, backend phải trả thêm dữ liệu có cấu trúc trong `errors` —
- * hiện chưa làm.
- */
+/** Mã lỗi backend → câu tiếng Việt; phải khớp `IKiot-BE/src/common/errors/error-codes.ts`. */
 export const ERROR_MESSAGES = {
   ACCOUNT_HAS_NO_BRANCH: "Tài khoản chưa được phân về chi nhánh nào",
   ACCOUNT_HAS_NO_LOCATION: "Tài khoản chưa được phân về chi nhánh hoặc kho nào",
   ACCOUNT_HAS_NO_TENANT: "Tài khoản không thuộc cửa hàng nào",
+  ACCOUNT_EMAIL_MISSING: "Tài khoản chưa có email nên chưa thể gửi mã xác minh. Vui lòng nhờ quản lý cập nhật email cho tài khoản",
   ACCOUNT_INACTIVE: "Tài khoản đã bị khóa hoặc chưa kích hoạt",
   ACCOUNT_NOT_FOUND_OR_LOCKED: "Tài khoản không tồn tại hoặc đã bị khóa",
   ACCOUNT_NOT_REGISTERED: "Email này chưa được đăng ký trong hệ thống",
   ADMIN_ONLY: "Chỉ quản trị viên hệ thống mới thực hiện được thao tác này",
   AI_CONVERSATION_NOT_FOUND: "Không tìm thấy cuộc hội thoại",
   AI_NOT_CONFIGURED: "Trợ lý AI chưa được cấu hình trên máy chủ",
-  ATTENDANCE_ALREADY_EXISTS: "Nhân viên đã điểm danh cho ca làm việc này",
-  ATTENDANCE_CHECKIN_IN_FUTURE: "Giờ check-in không thể ở tương lai",
-  ATTENDANCE_CHECKIN_REQUIRED: "Thiếu giờ check-in",
-  ATTENDANCE_CHECKIN_TOO_EARLY: "Giờ check-in sớm hơn thời gian cho phép của ca",
-  ATTENDANCE_CHECKOUT_BEFORE_CHECKIN: "Thời gian check-out không thể trước check-in",
-  ATTENDANCE_CHECKOUT_INVALID: "Giờ check-out phải sau check-in và không được ở tương lai",
-  ATTENDANCE_CHECKOUT_IN_FUTURE: "Giờ check-out không thể ở tương lai",
-  ATTENDANCE_CHECKOUT_REQUIRED: "Thiếu giờ check-out",
-  ATTENDANCE_FILTER_CONFLICT: "Không thể lọc thiếu checkout cùng với khoảng ngày checkout",
-  ATTENDANCE_NOT_CHECKED_IN: "Chấm công không ở trạng thái CHECKED_IN",
-  ATTENDANCE_NOT_FOUND: "Không tìm thấy chấm công",
-  ATTENDANCE_OUTSIDE_CHECKIN_WINDOW: "Nhân viên chỉ được check-in trong khoảng thời gian của ca làm và trước ca làm 30 phút",
-  ATTENDANCE_PAYROLL_LOCKED: "Không thể sửa chấm công vì kỳ lương đã được chốt",
-  ATTENDANCE_READ_DENIED: "Bạn không có quyền xem chấm công này",
-  ATTENDANCE_SCHEDULE_NOT_FOUND: "Không tìm thấy ca làm việc để check-in",
-  ATTENDANCE_SELF_CORRECTION_DENIED: "Quản lý không thể tự sửa chấm công của chính mình",
-  ATTENDANCE_SHIFT_NOT_ENDED: "Chỉ được đánh dấu vắng sau khi ca kết thúc",
-  ATTENDANCE_WRITE_DENIED: "Bạn không có quyền sửa chấm công này",
+  BARCODE_DUPLICATE_IN_REQUEST: "Mã vạch bị trùng trong cùng một yêu cầu",
+  BARCODE_TAKEN: "Mã vạch đã tồn tại trong cửa hàng",
   BAD_REQUEST: "Yêu cầu không hợp lệ",
   BRANCH_ID_REQUIRED: "Cần chỉ rõ branchId",
   BRANCH_NOT_FOUND: "Không tìm thấy chi nhánh đang hoạt động",
@@ -54,14 +23,19 @@ export const ERROR_MESSAGES = {
   CASH_DRAWER_ALREADY_OPEN: "Chi nhánh này đã có ca quầy cho hôm nay hoặc đang có ca chưa đóng",
   CASH_DRAWER_BRANCH_DENIED: "Bạn không thao tác được với quầy của chi nhánh khác",
   CASH_DRAWER_CLOSED: "Ca quầy đã đóng",
+  CASH_DRAWER_CLOSED_TODAY: "Chi nhánh đã chốt két hôm nay. Mỗi chi nhánh chỉ mở một két mỗi ngày",
   CASH_DRAWER_CONFLICT: "Ca quầy vừa thay đổi, vui lòng tải lại và thử lại",
   CASH_DRAWER_END_LOG_REQUIRED: "Nhân viên đang giữ quầy phải ghi phiếu kết ca cuối cùng trước khi chốt",
   CASH_DRAWER_NONE_OPEN: "Không có ca quầy nào đang mở",
   CASH_DRAWER_NOT_FOUND: "Không tìm thấy ca quầy",
   CASH_DRAWER_NOT_HOLDER: "Chỉ nhân viên đang giữ quầy mới ghi được phiếu ca",
+  CASH_DRAWER_NOT_CLOSED: "Két chưa chốt nên không mở lại được",
+  CASH_DRAWER_REOPEN_NOT_TODAY: "Chỉ mở lại được két đã chốt trong hôm nay",
+  CASH_DRAWER_WITHDRAW_EXCEEDS_COUNT: "Số tiền rút về không được lớn hơn số tiền đếm được trong két",
   CASH_FLOW_NOT_FOUND: "Không tìm thấy giao dịch",
   CATEGORY_HAS_CHILDREN: "Không thể xoá danh mục vì vẫn còn danh mục con",
   CATEGORY_IN_USE: "Không thể xoá danh mục vì vẫn còn sản phẩm sử dụng",
+  CATEGORY_NAME_TAKEN: "Đã có danh mục cùng tên trong cùng nhóm cha",
   CATEGORY_NOT_FOUND: "Không tìm thấy danh mục",
   CATEGORY_PARENT_CYCLE: "Không thể đặt danh mục con làm danh mục cha",
   CATEGORY_PARENT_NOT_FOUND: "Danh mục cha không tồn tại",
@@ -69,12 +43,11 @@ export const ERROR_MESSAGES = {
   CURRENT_PASSWORD_INCORRECT: "Mật khẩu hiện tại không đúng",
   CUSTOMER_CODE_TAKEN: "Mã khách hàng đã tồn tại",
   CUSTOMER_NOT_FOUND: "Không tìm thấy khách hàng",
+  CUSTOMER_PHONE_TAKEN: "Số điện thoại này đã thuộc về một khách hàng khác",
   DATE_RANGE_INVALID: "fromDate phải trước hoặc bằng toDate",
   EMAIL_ALREADY_IN_USE: "Email đã được sử dụng",
+  EMAIL_NOT_CONFIGURED: "Dịch vụ gửi email chưa được cấu hình trên máy chủ",
   FOREIGN_KEY_VIOLATION: "Dữ liệu liên kết không tồn tại hoặc đang được sử dụng",
-  GEOFENCE_LOW_ACCURACY: "Độ chính xác của vị trí không đủ để chấm công. Vui lòng thử lại ở nơi thoáng hơn.",
-  GEOFENCE_NOT_CONFIGURED: "Địa điểm chấm công chưa được cấu hình",
-  GEOFENCE_OUT_OF_RANGE: "Bạn đang ở ngoài khu vực chấm công cho phép",
   GOOGLE_CALENDAR_NOT_CONFIGURED: "Chưa cấu hình GOOGLE_CALENDAR_API_KEY trên máy chủ",
   GOOGLE_CALENDAR_SYNC_FAILED: "Đồng bộ Google Calendar thất bại",
   GOOGLE_EMAIL_MISSING: "Tài khoản Google không có địa chỉ email",
@@ -95,37 +68,15 @@ export const ERROR_MESSAGES = {
   IDENTIFICATION_YEAR_MISMATCH: "Năm sinh trên số căn cước không khớp với ngày sinh của nhân viên",
   IMPORT_PRICE_ABOVE_RETAIL: "Đơn giá nhập không được lớn hơn giá bán lẻ",
   IMPORT_PRICE_MUST_BE_POSITIVE: "Đơn giá nhập phải lớn hơn 0",
-  INSUFFICIENT_STOCK: "Không đủ tồn kho",
+  INSUFFICIENT_STOCK: "Hàng trên kệ không đủ", // tồn kho bán được = hàng trên kệ (stock − đã khoá)
   INTERNAL_ERROR: "Đã có lỗi xảy ra, vui lòng thử lại sau",
   INVALID_CREDENTIALS: "Số điện thoại hoặc mật khẩu không đúng",
   INVENTORY_ALREADY_AT_LOCATION: "Mặt hàng đã có tại địa điểm này",
   INVENTORY_NOT_FOUND: "Không tìm thấy dòng tồn kho",
-  INVENTORY_STILL_HAS_STOCK: "Không thể gỡ mặt hàng khỏi địa điểm khi vẫn còn tồn kho. Hãy chuyển hoặc bán hết trước.",
+  INVENTORY_STILL_HAS_STOCK: "Không thể gỡ mặt hàng khỏi địa điểm khi vẫn còn hàng (kể cả hàng hỏng). Hãy chuyển, bán, sửa hoặc huỷ hết trước.",
   INVOICE_NOT_FOUND: "Không tìm thấy hoá đơn",
-  LEAVE_BALANCE_ALREADY_USED: "Nhân viên đã sử dụng ngày phép; dùng PATCH để đổi hạn mức mà không mất lịch sử",
-  LEAVE_BALANCE_BELOW_USED: "Số ngày phép năm không được nhỏ hơn số ngày đã sử dụng",
-  LEAVE_BALANCE_CONFLICT: "Số dư ngày phép vừa thay đổi; vui lòng tải lại và thử lại",
-  LEAVE_BALANCE_INCONSISTENT: "Dữ liệu ngày phép hiện tại không hợp lệ: số ngày còn lại lớn hơn tổng số ngày phép",
-  LEAVE_BALANCE_INSUFFICIENT: "Số ngày nghỉ phép có lương còn lại không đủ",
-  LEAVE_CANCEL_ALREADY_STARTED: "Không thể hủy yêu cầu nghỉ phép khi ngày nghỉ đã bắt đầu",
-  LEAVE_CANCEL_NOT_OWNER: "Bạn chỉ có thể hủy yêu cầu nghỉ phép của chính mình",
-  LEAVE_CANCEL_STATUS_INVALID: "Chỉ có thể hủy yêu cầu đang chờ xử lý hoặc đã được duyệt",
-  LEAVE_DAY_SPLIT_EXCEEDS_REQUEST: "Tổng số ngày nghỉ có lương và không lương không được vượt quá số ngày xin nghỉ",
-  LEAVE_DAY_SPLIT_INVALID: "Tổng số ngày nghỉ được duyệt phải lớn hơn 0",
-  LEAVE_DAY_SPLIT_REQUIRED: "Cần nhập số ngày nghỉ có lương và không lương khi duyệt",
-  LEAVE_EMERGENCY_LOCATION_DENIED: "Bạn chỉ có thể tạo yêu cầu nghỉ phép cho nhân viên cùng địa điểm làm việc",
-  LEAVE_HANDOVER_REQUIRED: "Cần chọn nhân viên nhận bàn giao vì có lịch làm việc trong thời gian nghỉ",
-  LEAVE_HANDOVER_SELF: "Không thể bàn giao lịch cho chính mình",
-  LEAVE_HANDOVER_TARGET_LOCATION: "Nhân viên nhận bàn giao phải làm việc cùng địa điểm",
-  LEAVE_HANDOVER_TARGET_NOT_FOUND: "Không tìm thấy nhân viên nhận bàn giao hoặc tài khoản không hoạt động",
-  LEAVE_NOT_PENDING: "Chỉ có thể duyệt yêu cầu đang chờ xử lý",
-  LEAVE_NO_HANDOVER_NEEDED: "Không có lịch làm việc nào cần bàn giao trong khoảng thời gian này",
-  LEAVE_OVERLAPPING_REQUEST: "Tìm thấy yêu cầu nghỉ phép trùng lặp với khoảng thời gian đã chọn",
-  LEAVE_READ_DENIED: "Bạn không có quyền xem yêu cầu nghỉ phép này",
-  LEAVE_REQUEST_NOT_FOUND: "Không tìm thấy yêu cầu nghỉ phép",
-  LEAVE_REVIEW_NOTE_REQUIRED: "Cần nhập ghi chú khi từ chối yêu cầu nghỉ phép",
-  LEAVE_SELF_REVIEW_DENIED: "Bạn không thể tự duyệt hoặc từ chối yêu cầu nghỉ phép của chính mình",
   LOCATION_ALREADY_DELETED: "Địa điểm đã bị xoá",
+  LOCATION_NAME_TAKEN: "Đã có địa điểm cùng loại dùng tên này",
   LOCATION_NOT_FOUND: "Không tìm thấy địa điểm",
   LOCATION_REQUIRED: "Điều chỉnh tồn kho phải chỉ rõ chi nhánh hoặc kho",
   LOCATION_STAFF_NOT_ELIGIBLE: "Nhân viên không đủ điều kiện làm quản lý địa điểm này",
@@ -140,44 +91,24 @@ export const ERROR_MESSAGES = {
   ORDER_DISCOUNT_VALUE_REQUIRED: "Giảm giá cả đơn cần discountValue lớn hơn 0",
   ORDER_LINE_DISCOUNT_EXCEEDS_TOTAL: "Giảm giá vượt quá giá trị dòng hàng",
   ORDER_NOT_FOUND: "Không tìm thấy đơn hàng",
-  ORDER_NOT_PENDING_SEPAY: "Đơn hàng không còn ở trạng thái chờ thanh toán SePay",
+  ORDER_NOT_PENDING_SEPAY: "Đơn không còn chờ thanh toán QR",
   ORDER_PAYMENT_CONFLICT: "Đơn hàng vừa được thanh toán hoặc đã bị hủy, vui lòng tải lại",
   ORDER_PROMOTION_ALLOCATION_MISMATCH: "Không khớp được giảm giá với dòng hàng trong đơn",
   ORDER_STATUS_CONFLICT: "Trạng thái đơn hàng vừa thay đổi, vui lòng tải lại",
   ORDER_STATUS_TRANSITION_INVALID: "Không thể chuyển đơn hàng sang trạng thái này",
   ORDER_TRANSFER_AMOUNT_SHORT: "Số tiền chuyển khoản nhỏ hơn số phải trả",
   OTP_EXPIRED: "Mã OTP đã hết hạn hoặc chưa được yêu cầu. Vui lòng lấy mã mới.",
+  OTP_CHALLENGE_INVALID: "Phiên xác minh không còn hợp lệ. Vui lòng đăng nhập hoặc thử lại từ đầu",
   OTP_INVALID: "Mã OTP không đúng",
-  OTP_SEND_FAILED: "Không gửi được mã OTP qua SMS. Vui lòng thử lại sau ít phút.",
+  OTP_RESEND_TOO_SOON: "Bạn vừa yêu cầu mã, vui lòng đợi một lúc rồi gửi lại",
+  OTP_TOO_MANY_ATTEMPTS: "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới",
+  OTP_SEND_FAILED: "Không gửi được mã OTP qua email. Vui lòng thử lại sau ít phút.",
   PASSWORD_CONFIRMATION_MISMATCH: "Mật khẩu nhập lại không khớp",
   PASSWORD_NOT_SET: "Tài khoản này chưa đặt mật khẩu",
-  PAYROLL_ACTION_REASON_REQUIRED: "Cần nhập lý do cho thao tác này",
-  PAYROLL_ACTION_STATUS_INVALID: "Kỳ lương không ở trạng thái cho phép thao tác này",
-  PAYROLL_ATTENDANCE_STALE: "Attendance đã thay đổi sau khi tạo kỳ lương. Hãy hủy và tạo lại kỳ lương trước khi gửi duyệt",
-  PAYROLL_CASHFLOW_EXISTS: "CashFlow của kỳ lương này đã được ghi nhận",
-  PAYROLL_NO_ELIGIBLE_PAYSLIP: "Không có phiếu lương hợp lệ để tạo kỳ lương",
-  PAYROLL_PERIOD_EMPTY: "Kỳ lương chưa có phiếu lương để gửi duyệt",
-  PAYROLL_PERIOD_EXISTS: "Kỳ lương đã tồn tại",
-  PAYROLL_PERIOD_NOT_DRAFT: "Chỉ được sửa phiếu lương khi kỳ lương ở trạng thái DRAFT",
-  PAYROLL_PERIOD_NOT_ENDED: "Chỉ có thể tạo bảng lương sau khi kỳ lương đã kết thúc",
-  PAYROLL_PERIOD_NOT_FOUND: "Không tìm thấy kỳ lương",
-  PAYROLL_PERIOD_OVERLAPS: "Kỳ lương bị trùng với kỳ lương đã tồn tại",
-  PAYROLL_SETTING_EXISTS: "Cấu hình lương đã tồn tại",
-  PAYROLL_SETTING_NOT_FOUND: "Không tìm thấy cấu hình lương",
-  PAYROLL_SETTING_UPDATE_EMPTY: "Không có dữ liệu cập nhật",
-  PAYROLL_STAFF_UNCONFIGURED: "Chưa thể tạo kỳ lương vì còn nhân viên thiếu cấu hình",
-  PAYROLL_TOTAL_ZERO: "Không thể thanh toán kỳ lương có tổng chi bằng 0",
-  PAYSHEET_NOT_FOUND: "Không tìm thấy bảng lương",
-  PAYSHEET_PAY_AMOUNT_REQUIRED: "Cấu hình lương cần một mức lương lớn hơn 0",
-  PAYSLIP_ADJUSTMENT_ZERO: "Số tiền điều chỉnh phải khác 0",
-  PAYSLIP_NET_NEGATIVE: "Tổng điều chỉnh làm lương thực nhận nhỏ hơn 0",
-  PAYSLIP_NOT_FOUND: "Không tìm thấy phiếu lương",
-  PAYSLIP_NOT_IN_PERIOD: "Không tìm thấy phiếu lương trong kỳ này",
-  PAYSLIP_UPDATE_EMPTY: "Phải cung cấp note hoặc manualAdjustments",
   PERMISSION_DENIED: "Bạn không có quyền thực hiện thao tác này",
   PHONE_ALREADY_REGISTERED: "Số điện thoại đã được đăng ký",
   PHONE_LENGTH_INVALID: "Số điện thoại phải gồm đúng 10 chữ số",
-  PHONE_NOT_REGISTERED: "Số điện thoại chưa được đăng ký trong hệ thống hoặc tài khoản đã bị khóa.",
+  PHONE_NOT_REGISTERED: "Số điện thoại hoặc email chưa được đăng ký trong hệ thống hoặc tài khoản đã bị khóa.",
   PHONE_PREFIX_INVALID: "Đầu số điện thoại di động Việt Nam không hợp lệ",
   PHONE_REQUIRED: "Số điện thoại là bắt buộc",
   PHONE_RESERVED_RANGE: "Số điện thoại này không dùng làm số nhân viên được",
@@ -185,6 +116,8 @@ export const ERROR_MESSAGES = {
   PLAN_NOT_FOUND: "Không tìm thấy gói dịch vụ hoặc gói đã ngừng bán",
   PLAN_QUOTA_EXCEEDED: "Đã đạt giới hạn của gói dịch vụ. Vui lòng nâng cấp gói.",
   PLAN_UPDATE_EMPTY: "Không có trường nào để cập nhật",
+  PRODUCT_CODE_DUPLICATE_IN_REQUEST: "Mã hàng bị trùng trong cùng một yêu cầu",
+  PRODUCT_CODE_TAKEN: "Mã hàng đã tồn tại trong cửa hàng",
   PRODUCT_DISCONTINUED: "Sản phẩm đã ngừng kinh doanh",
   PRODUCT_HAS_STOCK: "Không thể ngừng kinh doanh: sản phẩm vẫn còn tồn kho.",
   PRODUCT_IN_STOCK_MOVEMENT: "Không thể ngừng kinh doanh: sản phẩm đang nằm trong phiếu chuyển kho chưa hoàn tất.",
@@ -195,6 +128,8 @@ export const ERROR_MESSAGES = {
   PRODUCT_ITEM_NOT_FOUND: "Không tìm thấy mặt hàng",
   PRODUCT_NOT_FOUND: "Không tìm thấy sản phẩm",
   PROMOTION_BRANCH_DENIED: "Khuyến mãi này không áp dụng cho chi nhánh của bạn",
+  PROMOTION_CUSTOMER_REQUIRED:
+    "Khuyến mãi này giới hạn lượt theo từng khách - không áp dụng cho khách vãng lai, hãy chọn hoặc tạo khách hàng",
   PROMOTION_CUSTOMER_USAGE_EXHAUSTED: "Khách hàng đã hết lượt sử dụng khuyến mãi này",
   PROMOTION_MAX_DISCOUNT_INVALID: "maxDiscountAmount chỉ dùng được khi giảm theo phần trăm",
   PROMOTION_NOT_APPLICABLE: "Một khuyến mãi đã chọn không còn tồn tại hoặc không áp dụng cho đơn này",
@@ -211,20 +146,27 @@ export const ERROR_MESSAGES = {
   REPORT_RANGE_TOO_LONG: "Khoảng thời gian báo cáo vượt quá giới hạn cho phép",
   REQUIRED_FIELD_MISSING: "Thiếu trường bắt buộc",
   RESET_TOKEN_INVALID: "Mã xác thực đặt lại mật khẩu không hợp lệ hoặc đã hết hạn",
-  RESET_TOKEN_WRONG_TYPE: "Token không hợp lệ cho thao tác đặt lại mật khẩu",
+  RESET_TOKEN_USED: "Mã đặt lại mật khẩu đã được sử dụng. Vui lòng yêu cầu mã mới",
+  RESET_TOKEN_WRONG_TYPE: "Mã xác thực không dùng được để đặt lại mật khẩu. Vui lòng yêu cầu mã mới",
   ROLE_BEYOND_GRANT: "Không thể gán vai trò có quyền vượt quá quyền của bạn",
   ROLE_IN_USE: "Không thể xoá vai trò đang được gán cho nhân viên. Hãy chuyển họ sang vai trò khác trước.",
+  ROLE_NAME_TAKEN: "Tên vai trò đã tồn tại",
   ROLE_NOT_FOUND: "Không tìm thấy vai trò",
   ROLE_NOT_IN_TENANT: "Vai trò không thuộc cửa hàng của bạn",
   SCHEDULE_COMPLETED_CANNOT_DELETE: "Không thể xóa lịch làm việc đã hoàn thành",
-  SCHEDULE_HAS_ATTENDANCE: "Không thể sửa lịch làm việc đã có chấm công",
   SCHEDULE_LOCATION_REQUIRED: "Thiếu thông tin chi nhánh hoặc kho",
   SCHEDULE_NOT_EDITABLE: "Không tìm thấy lịch làm việc có thể sửa",
   SCHEDULE_NOT_FOUND: "Không tìm thấy lịch làm việc",
   SCHEDULE_OVERLAP: "Nhân viên bị trùng ca làm việc",
+  SCHEDULE_SERIES_EMPTY: "Không có ngày nào trong khoảng đã chọn rơi vào các thứ đã chọn",
+  SCHEDULE_SERIES_NOT_FOUND: "Không tìm thấy lịch lặp lại",
+  SCHEDULE_SERIES_RANGE_INVALID: "Khoảng ngày không hợp lệ (ngày kết thúc phải sau ngày bắt đầu, tối đa 366 ngày)",
+  SCHEDULE_ALREADY_ASSIGNED: "Nhân viên đã được phân vào ca này",
   SCHEDULE_STAFF_INVALID: "Một hoặc nhiều nhân viên không hợp lệ",
   SCHEDULE_USER_NOT_ASSIGNED: "Nhân viên không thuộc lịch làm việc này",
   SCOPE_FILTER_DENIED: "Bạn chỉ xem được dữ liệu thuộc phạm vi của mình",
+  SEPAY_API_FAILED: "Không đọc được danh sách tài khoản từ SePay. Vui lòng thử lại sau.",
+  SEPAY_API_NOT_CONFIGURED: "Máy chủ chưa cấu hình API token SePay (SEPAY_API_KEY)",
   SESSION_EXPIRED: "Phiên đăng nhập đã hết hạn hoặc bị thu hồi, vui lòng đăng nhập lại",
   SHIFT_LOG_HANDOVER_INVALID: "Ca hiện tại đã bắt đầu, hoặc bạn không được bàn giao ca này",
   SHIFT_LOG_NEXT_STAFF_INVALID: "nextStaffId chỉ dùng được với phiếu kết ca (END)",
@@ -239,12 +181,12 @@ export const ERROR_MESSAGES = {
   STAFF_ACCOUNT_EXISTS: "Nhân viên đã có tài khoản đăng nhập",
   STAFF_ACCOUNT_NOT_ACTIVATED: "Tài khoản nhân viên chưa được kích hoạt",
   STAFF_ACCOUNT_ONLY: "Chỉ tài khoản nhân viên mới thao tác được qua endpoint này",
-  STAFF_HOLDS_LEAVE_HANDOVER: "Không thể vô hiệu hóa hoặc xóa nhân viên đang được chỉ định nhận bàn giao trong đơn nghỉ còn hiệu lực",
   STAFF_IS_LOCATION_MANAGER: "Nhân viên này đang là quản lý của một chi nhánh hoặc kho. Hãy bổ nhiệm người khác trước.",
   STAFF_NOT_AT_BRANCH: "Không tìm thấy nhân viên đang hoạt động tại chi nhánh này",
   STAFF_NOT_FOUND: "Không tìm thấy nhân viên",
   STAFF_SELF_EDIT_DENIED: "Không thể tự sửa hồ sơ của mình ở đây - dùng /auth/me",
   STAFF_SINGLE_LOCATION_REQUIRED: "Nhân viên chỉ được trực thuộc một chi nhánh hoặc một kho",
+  STAFF_WORKPLACE_REQUIRED: "Nhân viên phải thuộc một chi nhánh hoặc một kho",
   STATS_LOCATION_DENIED: "Bạn chỉ xem được báo cáo của địa điểm mình",
   STOCK_MOVEMENT_ADJUST_HAS_DESTINATION: "Phiếu kiểm kê không có địa điểm nhận",
   STOCK_MOVEMENT_ADJUST_NEGATIVE: "Điều chỉnh làm tồn kho xuống dưới 0",
@@ -278,7 +220,11 @@ export const ERROR_MESSAGES = {
   SUPPLIER_HAS_TRANSACTIONS: "Không thể xoá nhà cung cấp đã phát sinh hàng hoá hoặc giao dịch. Bạn có thể ngừng sử dụng thay vì xoá.",
   SUPPLIER_NOT_FOUND: "Không tìm thấy nhà cung cấp",
   SUPPLIER_PAYMENT_EXCEEDS_DEBT: "Số tiền thanh toán vượt quá công nợ hiện tại",
+  TENANT_BANKING_ACCOUNT_TAKEN: "Số tài khoản này đã được một cửa hàng khác dùng để nhận tiền",
+  TENANT_BANKING_INCOMPLETE: "Cần điền đủ số tài khoản, ngân hàng và chủ tài khoản, hoặc để trống cả ba",
+  TENANT_BANKING_HAS_PENDING_SEPAY: "Còn đơn đang chờ khách chuyển khoản vào tài khoản hiện tại. Hãy hoàn tất hoặc huỷ các đơn đó trước khi đổi tài khoản.",
   TENANT_BANKING_NOT_CONFIGURED: "Cửa hàng chưa cấu hình thông tin ngân hàng để nhận thanh toán SePay",
+  TENANT_SEPAY_NOT_LINKED: "Tài khoản ngân hàng của cửa hàng chưa liên kết SePay nên chưa thể thu tiền bằng mã QR",
   TENANT_ID_REQUIRED: "Thao tác này cần chỉ rõ cửa hàng",
   TENANT_MISMATCH: "Không thể truy cập dữ liệu của cửa hàng khác",
   TENANT_NAME_TAKEN: "Tên cửa hàng đã được sử dụng",
@@ -302,15 +248,173 @@ export const ERROR_MESSAGES = {
   WAREHOUSE_NOT_FOUND: "Không tìm thấy kho",
   WAREHOUSE_NOT_IN_TENANT: "Kho không thuộc cửa hàng của bạn",
   WEBHOOK_API_KEY_INVALID: "API key không hợp lệ",
+
+  // Giữ hàng, lô hàng, kho hàng hỏng
+  INSUFFICIENT_AVAILABLE_STOCK: "Không đủ hàng có thể bán (một phần đã được giữ cho đơn khác)",
+  INVENTORY_LOT_SHORTAGE: "Số liệu lô hàng không khớp tồn kho, vui lòng báo quản trị",
+  INVENTORY_CUSTOM_LOT_NOT_FOUND: "Không tìm thấy lô hàng làm riêng cho dòng đơn này tại kho",
+  // Ba mã dưới không còn được BE ném (bỏ kho hàng hỏng riêng 2026-11-26), giữ vì mã chỉ thêm, không xoá.
+  LOCATION_NOT_SELLABLE: "Không thể giữ hoặc bán hàng ở kho hàng hỏng",
+  LOCATION_DAMAGED_INVALID: "Kho hàng hỏng phải là một kho hàng hỏng khác của cửa hàng",
+  LOCATION_DAMAGED_REQUIRED: "Kho này chưa có kho hàng hỏng mặc định",
+  INSUFFICIENT_DAMAGED_STOCK: "Không đủ hàng hỏng tại đây để sửa hoặc huỷ",
+  INVENTORY_LOCATION_DENIED: "Bạn chỉ xử lý được hàng hỏng tại nơi mình làm việc",
+  RESERVATION_NOT_ACTIVE: "Dòng đơn chưa được giữ đủ hàng tại kho này",
+  RESERVATION_NOT_FOUND: "Không tìm thấy phần hàng đã giữ",
+  // Nhập hàng 2 luồng
+  IMPORT_SOURCE_REQUIRED: "Cần chọn luồng nhập: từ nhà cung cấp hay từ xưởng",
+  IMPORT_SOURCE_SUPPLIER_MISMATCH: "Loại nhà cung cấp không khớp với luồng nhập đã chọn",
+  IMPORT_PRODUCTION_ITEM_REQUIRED: "Mỗi dòng nhập từ xưởng phải gắn với một dòng yêu cầu sản xuất",
+  IMPORT_PRODUCTION_ITEM_MISMATCH: "Dòng yêu cầu sản xuất không khớp xưởng, sản phẩm hoặc đã đóng",
+  IMPORT_PRODUCTION_QTY_EXCEEDS: "Số nhận vượt quá số còn lại của yêu cầu sản xuất",
+  STOCK_MOVEMENT_DEFECT_QTY_EXCEEDS: "Số hàng lỗi không được vượt quá số thực nhận",
+  // Đơn hàng
+  ORDER_ASSIGNEE_REQUIRED: "Đơn đã xác nhận phải có người phụ trách",
+  ORDER_ASSIGNEE_INVALID: "Người phụ trách không hợp lệ hoặc đã ngừng hoạt động",
+  ORDER_ASSIGNEE_WRONG_LOCATION: "Người phụ trách phải làm việc tại nơi bán của đơn",
+  ORDER_SELLER_INVALID: "Nhân viên bán hàng không hợp lệ hoặc đã ngừng hoạt động",
+  ORDER_CANCEL_NOT_ALLOWED: "Đơn đã bàn giao, không huỷ được - hãy tạo đơn hoàn",
+  ORDER_COMBO_INVALID: "Combo không hợp lệ",
+  ORDER_EMPTY: "Đơn hàng chưa có sản phẩm",
+  ORDER_ITEM_CUSTOM_LOCKED: "Thông số hàng làm riêng đã khoá vì đã gửi xưởng",
+  ORDER_ITEM_NOT_CUSTOMIZABLE: "Sản phẩm này không nhận làm theo yêu cầu",
+  ORDER_ITEM_NOT_MANUFACTURABLE:
+    "Sản phẩm chưa bật \"Có thể sản xuất\" nên không làm riêng theo yêu cầu được",
+  ORDER_ITEM_NOT_FOUND: "Không tìm thấy dòng đơn",
+  ORDER_NOT_CONFIRMABLE: "Chỉ xác nhận được đơn nháp hoặc đơn chờ xác nhận",
+  ORDER_NOT_DRAFT: "Chỉ sửa được đơn nháp",
+  ORDER_SOURCE_LOCATION_INVALID: "Kho xuất không hợp lệ",
+  ORDER_NOT_EDITABLE: "Đơn này không sửa được nữa (đã đóng gói thì không đổi hàng, đã giao đi thì không sửa)",
+  ORDER_ITEM_IN_PRODUCTION: "Dòng hàng này đã nằm trong yêu cầu sản xuất - gỡ khỏi yêu cầu trước khi bỏ",
+  ORDER_DEPOSIT_CHANGED: "Tiền cọc sau khi sửa sẽ khác số đã thu - hãy giữ nguyên số tiền cọc",
+  ORDER_DEPOSIT_EXCEEDS_TOTAL: "Tiền cọc vượt quá tổng tiền đơn",
+  ORDER_DELIVERY_INFO_REQUIRED: "Đơn giao tận nơi phải có tên người nhận, SĐT và địa chỉ giao hàng",
+  ORDER_REFUND_AMOUNT_REQUIRED: "Đơn đã thu tiền - hãy nhập số tiền hoàn cho khách (0 nếu giữ lại)",
+  ORDER_REFUND_EXCEEDS_DEPOSIT: "Số tiền hoàn vượt quá số tiền shop đang giữ",
+  ORDER_REMITTANCE_AMOUNT_MISMATCH: "Số tiền nhận không khớp với số shipper đã thu",
+  ORDER_REMITTANCE_NOT_PENDING: "Đơn này không có tiền mặt nào đang chờ shipper nộp lại",
+  ORDER_SHIP_INSUFFICIENT_STOCK: "Không đủ hàng để chuyển đơn sang đang vận chuyển",
+  // Yêu cầu sản xuất
+  PRODUCTION_REQUEST_CUSTOM_LINE_REQUIRED: "Hàng làm riêng phải gắn với dòng đơn tương ứng",
+  PRODUCTION_REQUEST_EMPTY: "Yêu cầu sản xuất chưa có dòng nào",
+  PRODUCTION_REQUEST_ITEM_NOT_FOUND: "Không tìm thấy dòng yêu cầu sản xuất",
+  PRODUCTION_REQUEST_LOCKED: "Yêu cầu đã gửi xưởng, không sửa được nữa",
+  PRODUCTION_REQUEST_NOT_FOUND: "Không tìm thấy yêu cầu sản xuất",
+  PRODUCTION_REQUEST_STATUS_INVALID: "Không chuyển được yêu cầu sản xuất sang trạng thái này",
+  SUPPLIER_NOT_WORKSHOP: "Nhà cung cấp được chọn không phải xưởng",
+  SUPPLIER_TYPE_LOCKED: "Không đổi được loại nhà cung cấp đã có phiếu nhập hoặc yêu cầu sản xuất",
+  IMPORT_WORKSHOP_VIA_PRODUCTION_REQUEST: "Hàng của xưởng nhập qua yêu cầu sản xuất, không nhập bằng phiếu nhập thường",
+  PRODUCTION_REQUEST_DUPLICATE_ITEM: "Mặt hàng này đã có trong yêu cầu sản xuất",
+  PRODUCTION_EXCEEDS_ORDER_SHORTAGE: "Số lượng đặt xưởng vượt quá phần còn thiếu (đã tính YCSX gắn dòng đơn và YCSX đặt chung cùng mặt hàng tại nơi xuất)",
+  PRODUCTION_REQUEST_ORDER_ITEM_INVALID: "Dòng đơn không hợp lệ: khác mặt hàng, không thuộc cửa hàng hoặc đã giao đi",
+  PRODUCTION_REQUEST_LOCATION_DENIED: "Bạn chỉ thao tác được yêu cầu sản xuất giao về nơi mình làm việc",
+  PRODUCTION_REQUEST_HAS_RECEIPTS: "Yêu cầu đã nhận hàng, không huỷ được",
+  PRODUCTION_REQUEST_RECEIVE_EMPTY: "Phải nhận ít nhất một dòng với số lượng lớn hơn 0",
+  PRODUCTION_REQUEST_CODE_UNAVAILABLE: "Không tạo được mã yêu cầu sản xuất, vui lòng thử lại",
+  PRODUCTION_REQUEST_ITEM_NOT_PRODUCIBLE: "Chỉ đặt xưởng được sản phẩm thường (không phải combo hay dịch vụ)",
+  PRODUCTION_REQUEST_LINE_FIXED_BY_ORDER: "Dòng làm cho đơn hàng đi theo yêu cầu của dòng đơn - không đổi thuộc tính hay giá ở YCSX",
+  PRODUCT_ATTRIBUTE_DUPLICATE: "Hai thuộc tính của hàng hoá trùng tên",
+  PRODUCT_ATTRIBUTE_NOT_FOUND: "Thuộc tính không thuộc hàng hoá này - tải lại trang rồi thử lại",
+  PRODUCT_ATTRIBUTE_VALUE_REQUIRED: "Giá trị thuộc tính không được để trống",
+  PRODUCT_COMBO_INVALID:
+    "Thành phần combo không hợp lệ: cần ít nhất một món, không trùng món, không chứa chính nó (kể cả qua combo khác), không lồng quá 5 tầng và không dùng hàng đã ngừng kinh doanh",
+  PRODUCT_ITEM_IN_COMBO: "Mặt hàng đang là thành phần của một combo còn bán - gỡ khỏi combo trước",
+  // Nhập hàng hoá từ Excel; chi tiết từng dòng đọc qua `importErrorsOf`.
+  PRODUCT_IMPORT_FILE_INVALID: "File không đúng mẫu nhập hàng hóa",
+  PRODUCT_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có hàng hóa nào được tạo",
+  ORDER_IMPORT_FILE_INVALID: "File không đúng mẫu nhập đơn hàng",
+  ORDER_IMPORT_ROWS_INVALID: "File có dòng chưa hợp lệ - chưa có đơn nào được tạo",
+  EXCEL_EXPORT_TOO_LARGE: "Quá nhiều dòng để xuất một lần - lọc hẹp lại hoặc chọn bớt rồi xuất",
+  PRODUCT_COMBO_COMPONENT_DISCONTINUED:
+    "Combo có món thuộc hàng hoá đã ngừng kinh doanh - bỏ món đó khỏi combo (hoặc kinh doanh lại hàng hoá) trước",
+  PRODUCT_ITEM_NOT_STOCKABLE: "Combo và dịch vụ không có tồn kho riêng - hãy nhập / chuyển từng món của combo",
+  PRODUCT_ITEM_TYPE_MISMATCH: "Phiên bản phải cùng loại với sản phẩm (hàng hoá / combo / dịch vụ)",
+  PRODUCTION_REQUEST_ITEM_NOT_MANUFACTURABLE: "Mặt hàng này không sản xuất được, hãy tạo đơn nhập hàng từ nhà cung cấp",
+  PRODUCTION_REQUEST_CLOSE_REASON_REQUIRED: "Đóng yêu cầu khi chưa nhận đủ phải ghi lý do",
+  PRODUCTION_REQUEST_IN_PRODUCTION: "Xưởng đã xác nhận đang làm yêu cầu này, chỉ xưởng mới huỷ được",
+  PRODUCTION_REQUEST_NOT_ACCEPTABLE: "Yêu cầu này không còn chờ xác nhận (đã có người nhận làm hoặc shop đã huỷ)",
+  // Nhân viên xưởng & phiếu giao xưởng (2026-10-09)
+  WORKSHOP_STAFF_NOT_LINKED: "Tài khoản chưa được gắn với xưởng nào",
+  USER_WORKSHOP_INVALID: "Xưởng đã chọn không phải xưởng của cửa hàng",
+  PRODUCTION_DELIVERY_NOT_FOUND: "Không tìm thấy phiếu giao",
+  PRODUCTION_DELIVERY_STATUS_INVALID: "Phiếu giao không còn ở trạng thái chờ nhận, hoặc yêu cầu còn phiếu giao chờ nhận",
+  PRODUCTION_DELIVERY_EMPTY: "Phiếu giao phải có ít nhất một mặt hàng",
+  PRODUCTION_DELIVERY_QTY_EXCEEDS: "Số giao vượt số còn lại của yêu cầu (đã tính các phiếu đang chờ nhận)",
+  PRODUCTION_DELIVERY_RECEIVE_EXCEEDS: "Số nhận vượt số xưởng ghi trên phiếu giao",
+  PRODUCTION_DELIVERY_ITEM_MISMATCH: "Mặt hàng không có trên phiếu giao này",
+  PRODUCTION_DELIVERY_CODE_UNAVAILABLE: "Không tạo được mã phiếu giao, vui lòng thử lại",
+  // Đóng hàng & giao hàng
+  FULFILLMENT_ALREADY_EXISTS: "Đơn này đã có phiếu đóng hàng",
+  FULFILLMENT_LOCATION_DENIED: "Bạn không thao tác được ở kho này",
+  FULFILLMENT_NOT_FOUND: "Không tìm thấy phiếu đóng hàng",
+  FULFILLMENT_ORDER_NOT_READY: "Đơn chưa sẵn sàng để đóng hàng",
+  FULFILLMENT_MULTIPLE_SOURCES: "Hàng của đơn nằm ở nhiều kho - chuyển kho về một nơi rồi đóng hàng",
+  FULFILLMENT_LINE_NO_SOURCE: "Có dòng hàng chưa có kho xuất - bổ sung kho xuất trước khi đóng hàng",
+  FULFILLMENT_NOTHING_TO_PACK: "Đơn không có mặt hàng nào cần đóng gói",
+  FULFILLMENT_PACKAGES_INCOMPLETE: "Chưa đóng đủ số kiện",
+  FULFILLMENT_QTY_EXCEEDS: "Số lượng vượt quá số trên đơn",
+  FULFILLMENT_STATUS_INVALID: "Phiếu đóng hàng không ở trạng thái phù hợp",
+  FULFILLMENT_VERIFY_DENIED: "Chỉ người phụ trách đơn mới xác nhận được hàng đã đóng",
+  CARRIER_WEBHOOK_INVALID: "Dữ liệu từ hãng vận chuyển không hợp lệ",
+  SHIPMENT_FULFILLMENT_NOT_HANDED_OVER: "Hàng chưa được bàn giao",
+  SHIPMENT_NOT_ASSIGNED: "Bạn không phải người giao đơn này",
+  SHIPMENT_NOT_FOUND: "Không tìm thấy lần giao hàng",
+  SHIPMENT_PROOF_REQUIRED: "Cần ít nhất một ảnh bằng chứng giao hàng",
+  SHIPMENT_STATUS_INVALID: "Lần giao không ở trạng thái phù hợp",
+  SHIPMENT_TRACKING_TAKEN: "Mã vận đơn đã tồn tại",
+  SHIPMENT_ALREADY_OPEN: "Đơn đã được giao cho shipper / đơn vị vận chuyển rồi",
+  SHIPMENT_ORDER_NOT_PACKED: "Đơn chưa đóng gói nên chưa giao cho đơn vị vận chuyển được",
+  SHIPMENT_DRIVER_REQUIRED: "Giao nội bộ cần chọn shipper",
+  SHIPMENT_DRIVER_INVALID: "Shipper phải là chủ shop, người phụ trách đơn, hoặc nhân viên có quyền giao hàng",
+  SHIPMENT_DRIVER_NOT_ALLOWED: "Đơn giao qua đơn vị vận chuyển ngoài không gán shipper của shop",
+  INVENTORY_LOCK_MISMATCH: "Số hàng đã khoá cho đơn không khớp - liên hệ quản lý kho để kiểm tra",
+  ORDER_NOT_STORE_PICKUP: "Chỉ đơn khách tới lấy mới thu tiền và giao hàng tại quầy",
+  SHIPMENT_NOT_FOR_PICKUP: "Đơn khách tới lấy được giao tại quầy, không giao cho vận chuyển",
+  ORDER_PICKUP_NO_SHIPPING_FEE: "Đơn khách tới lấy không có phí giao hàng",
+  ORDER_PICKUP_BALANCE_DUE: "Còn tiền chưa thu - thu đủ rồi mới giao hàng cho khách",
+  ORDER_PICKUP_NOT_READY: "Đơn chưa đóng gói xong hoặc đã được giao, nên chưa thao tác được",
+  ORDER_FULFILLMENT_TYPE_LOCKED: "Đơn đã có lần giao, không đổi được giữa khách tới lấy và giao tận nơi",
+  ORDER_PICKUP_ALREADY_COLLECTED: "Đơn đã thu tiền tại quầy, không đổi sang giao tận nơi được - hãy huỷ đơn rồi tạo lại",
+  ORDER_STEP_DENIED: "Chỉ chủ shop, người phụ trách đơn, hoặc người có quyền tại kho này mới làm được bước này",
+  SHIPMENT_DELIVER_INTERNAL_ONLY: "Đơn giao qua đơn vị vận chuyển ngoài sẽ được hãng cập nhật, không xác nhận tay được",
+  SHIPMENT_ORDER_NOT_SHIPPING: "Đơn chưa ở trạng thái Đang vận chuyển",
+  ORDER_USE_PAY_OFFLINE: "Không chuyển đơn sang Hoàn thành bằng tay - hãy dùng nút thu tiền (thanh toán tại quầy)",
+  ORDER_EDIT_LOCKED_BY_PAYMENT: "Đơn đã thanh toán đủ nên không sửa hàng hay giá được nữa - muốn đổi thì hoàn tiền / tạo đơn hoàn",
+  ORDER_TOTAL_BELOW_PAID: "Tổng tiền sau khi sửa thấp hơn số khách đã trả",
+  STOCK_MOVEMENT_CONFLICT: "Phiếu vừa được người khác cập nhật, đã tải lại dữ liệu mới",
+  ORDER_REFUND_EXCEEDS_PAID: "Số tiền hoàn vượt quá số shop đang giữ",
+  ORDER_RETURN_REFUND_REQUIRED: "Đơn đang giữ tiền của khách - hãy nhập số tiền hoàn (nhập 0 nếu shop giữ lại)",
+  ORDER_NO_HELD_MONEY: "Đơn này không còn tiền giữ treo cần quyết định - có thể vừa được xử lý, đã tải lại",
+  ORDER_COLLECTION_AMOUNT_MISMATCH: "Số tiền thu phải đúng bằng số còn phải thu",
+  SEPAY_TRANSACTION_NOT_FOUND: "Không tìm thấy giao dịch SePay này",
+  SEPAY_TRANSACTION_ALREADY_RESOLVED: "Giao dịch này đã được xử lý trước đó - đã tải lại danh sách",
+  SEPAY_TRANSACTION_NOT_REFUNDABLE: "Giao dịch này không có khoản thu chưa gắn đơn để hoàn - hãy chọn \"Đã đối chiếu với đơn\" hoặc \"Bỏ qua\"; phần khách trả dư của đơn đã chốt thì hoàn tại đơn đó",
+  QR_PAYMENT_EXPIRED: "Mã QR đã hết hạn - tạo mã mới hoặc thu tiền mặt",
+  ORDER_QR_PAYMENT_NOT_PENDING: "Khoản chuyển khoản QR không còn chờ - có thể khách vừa chuyển xong",
+  // Hoàn hàng
+  ORDER_RETURN_CONDITION_REQUIRED: "Cần chọn tình trạng cho từng dòng hàng hoàn",
+  ORDER_RETURN_DENIED: "Chỉ người phụ trách đơn hoặc người có quyền mới tạo được đơn hoàn",
+  ORDER_RETURN_EMPTY: "Đơn hoàn chưa có dòng nào",
+  ORDER_RETURN_NOT_FOUND: "Không tìm thấy đơn hoàn",
+  ORDER_RETURN_ORDER_NOT_RETURNABLE: "Hàng chưa rời cửa hàng - hãy huỷ đơn thay vì tạo đơn hoàn",
+  ORDER_RETURN_QTY_EXCEEDS: "Số lượng hoàn vượt quá số đã bán",
+  ORDER_RETURN_STATUS_INVALID: "Đơn hoàn không ở trạng thái phù hợp",
+  // Kênh bán & thanh toán (Phase 2)
+  CHANNEL_MAPPING_DUPLICATE: "Sản phẩm trên sàn này đã được nối với một SKU",
+  CHANNEL_MAPPING_NOT_FOUND: "Không tìm thấy liên kết sản phẩm",
+  PAYMENT_AMOUNT_EXCEEDS_DUE: "Số tiền vượt quá số còn phải thu",
+  PAYMENT_NOT_FOUND: "Không tìm thấy khoản thanh toán",
+  PAYMENT_REFUND_EXCEEDS_PAID: "Số tiền hoàn vượt quá số đã thu",
+  PAYMENT_STATUS_INVALID: "Khoản thanh toán không ở trạng thái phù hợp",
+  SALES_CHANNEL_ALREADY_CONNECTED: "Shop này đã được kết nối",
+  SALES_CHANNEL_AUTH_FAILED: "Kết nối với sàn thất bại",
+  SALES_CHANNEL_NOT_CONFIGURED: "Kết nối sàn chưa được cấu hình trên máy chủ",
+  SALES_CHANNEL_NOT_FOUND: "Không tìm thấy kênh bán",
 } as const;
 
 export type ApiErrorCode = keyof typeof ERROR_MESSAGES;
 
-/**
- * Các mã nghĩa là "phiên đăng nhập không dùng được nữa" — dùng cho interceptor quyết định
- * có thử refresh token hay không. Trước đây chỗ đó so khớp đúng chuỗi
- * `"Invalid or expired token."`, tức là đổi một câu chữ là vòng refresh chết.
- */
+/** Các mã báo phiên không dùng được nữa. */
 export const TOKEN_EXPIRED_CODES: ReadonlySet<string> = new Set<ApiErrorCode>([
   "SESSION_EXPIRED",
   "REFRESH_TOKEN_INVALID",
@@ -321,6 +425,12 @@ interface ApiErrorBody {
   code?: string;
   message?: string;
   error?: string;
+  /** Chi tiết đi kèm, hình dạng tuỳ mã lỗi - chỉ đọc qua type guard (vd. `shortStockLinesOf`). */
+  errors?: unknown;
+  /** `OTP_INVALID`: số lần nhập còn lại. */
+  attemptsLeft?: number;
+  /** `OTP_RESEND_TOO_SOON`: số giây phải đợi để gửi lại. */
+  retryAfterSeconds?: number;
 }
 
 /** Lấy thân lỗi ra khỏi một lỗi axios bất kỳ. */
@@ -336,4 +446,98 @@ export function getApiErrorBody(error: unknown): ApiErrorBody | undefined {
 export function messageForCode(code: string | undefined): string | undefined {
   if (!code) return undefined;
   return ERROR_MESSAGES[code as ApiErrorCode];
+}
+
+/** Một mặt hàng thiếu khi đóng gói. */
+export interface ShortStockLine {
+  label: string;
+  needed: number;
+  onShelf: number;
+}
+
+/** Kiểm tra một phần tử `errors` có đúng hình dạng `ShortStockLine` không. */
+function isShortStockLine(value: unknown): value is ShortStockLine {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.label === "string" && typeof v.needed === "number" && typeof v.onShelf === "number";
+}
+
+/** Danh sách hàng thiếu trong lỗi `INSUFFICIENT_STOCK` khi đóng gói. */
+export function shortStockLinesOf(error: unknown): ShortStockLine[] {
+  const body = getApiErrorBody(error);
+  if (body?.code !== "INSUFFICIENT_STOCK" || !Array.isArray(body.errors)) return [];
+  return body.errors.filter(isShortStockLine);
+}
+
+/** `STOCK_MOVEMENT_CONFLICT`: hai người thao tác cùng lúc trên một phiếu; màn hình nên tải lại. */
+export function isStockMovementConflict(error: unknown): boolean {
+  return getApiErrorBody(error)?.code === "STOCK_MOVEMENT_CONFLICT";
+}
+
+/** Đọc `paid` và `grandTotal` từ lỗi `ORDER_TOTAL_BELOW_PAID`. */
+export function totalBelowPaidOf(error: unknown): { paid: number; grandTotal: number } | null {
+  const body = getApiErrorBody(error) as (ApiErrorBody & Record<string, unknown>) | undefined;
+  if (body?.code !== "ORDER_TOTAL_BELOW_PAID") return null;
+  const { paid, grandTotal } = body;
+  if (typeof paid !== "number" || typeof grandTotal !== "number") return null;
+  return { paid, grandTotal };
+}
+
+/** Chênh lệch tiền backend trả kèm mã lỗi: `{ held, amount, difference }`. */
+export interface MoneyGap {
+  held: number;
+  amount: number;
+  difference: number;
+}
+
+function moneyGapAt(error: unknown, code: ApiErrorCode, key: string): MoneyGap | null {
+  const body = getApiErrorBody(error) as (ApiErrorBody & Record<string, unknown>) | undefined;
+  if (body?.code !== code) return null;
+  const gap = body[key] as Partial<MoneyGap> | undefined;
+  if (typeof gap?.held !== "number" || typeof gap.amount !== "number") return null;
+  return { held: gap.held, amount: gap.amount, difference: gap.amount - gap.held };
+}
+
+/** `ORDER_DEPOSIT_CHANGED` (A-8): sửa đổi làm tiền cọc lệch khỏi số tiền đã thu. */
+export function depositChangeOf(error: unknown): MoneyGap | null {
+  return moneyGapAt(error, "ORDER_DEPOSIT_CHANGED", "deposit");
+}
+
+/** `ORDER_REMITTANCE_AMOUNT_MISMATCH` (A-10): số chủ shop đếm không khớp số shipper đã thu. */
+export function remittanceGapOf(error: unknown): MoneyGap | null {
+  return moneyGapAt(error, "ORDER_REMITTANCE_AMOUNT_MISMATCH", "remittance");
+}
+
+/** Một lỗi của file nhập hàng hoá; `row` null là lỗi của cả file. */
+export interface ImportRowError {
+  row: number | null;
+  column: string | null;
+  message: string;
+}
+
+function isImportRowError(value: unknown): value is ImportRowError {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.message === "string" && (v.row === null || typeof v.row === "number");
+}
+
+/** Các lỗi theo dòng của `POST /products/import` và `POST /orders/import`; rỗng nếu không phải lỗi của file import. */
+const IMPORT_ERROR_CODES: ReadonlySet<string> = new Set([
+  "PRODUCT_IMPORT_FILE_INVALID",
+  "PRODUCT_IMPORT_ROWS_INVALID",
+  "ORDER_IMPORT_FILE_INVALID",
+  "ORDER_IMPORT_ROWS_INVALID",
+]);
+
+export function importErrorsOf(error: unknown): { errors: ImportRowError[]; total: number } {
+  const body = getApiErrorBody(error) as (ApiErrorBody & { errorCount?: number }) | undefined;
+  if (
+    !body?.code ||
+    !IMPORT_ERROR_CODES.has(body.code) ||
+    !Array.isArray(body.errors)
+  ) {
+    return { errors: [], total: 0 };
+  }
+  const errors = body.errors.filter(isImportRowError);
+  return { errors, total: body.errorCount ?? errors.length };
 }

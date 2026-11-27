@@ -78,14 +78,10 @@ export function AssignWarehouseManagerDialog({
 
   const currentManager = useMemo(() => {
     if (!selectedWarehouseId) return null;
-    return (
-      allStaff.find(
-        (staff) =>
-          staff.status === "ACTIVE" &&
-          staff.warehouseId === selectedWarehouseId,
-      ) ?? null
-    );
-  }, [allStaff, selectedWarehouseId]);
+    const managerId = warehouses.find((l) => l.id === selectedWarehouseId)?.managerId;
+    if (!managerId) return null;
+    return allStaff.find((staff) => staff.id === managerId) ?? null;
+  }, [allStaff, warehouses, selectedWarehouseId]);
 
   const staffCandidates = useMemo(
     () =>

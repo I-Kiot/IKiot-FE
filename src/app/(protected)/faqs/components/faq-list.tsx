@@ -30,7 +30,6 @@ export function FAQList({ faqs, categories }: FAQListProps) {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Filter FAQs based on selected category and search query
   const filteredFaqs = faqs.filter(faq => {
     const matchesCategory = selectedCategory === "All" || faq.category === selectedCategory
     const matchesSearch = searchQuery === "" || 
@@ -41,7 +40,6 @@ export function FAQList({ faqs, categories }: FAQListProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-6 xl:grid-cols-4 gap-6">
-      {/* Categories Sidebar */}
       <Card className="lg:col-span-2 xl:col-span-1">
         <CardHeader>
           <CardTitle className="text-lg">Categories</CardTitle>
@@ -80,7 +78,6 @@ export function FAQList({ faqs, categories }: FAQListProps) {
         </CardContent>
       </Card>
 
-      {/* FAQs List */}
       <div className="lg:col-span-4 xl:col-span-3">
         <Card>
           <CardHeader>

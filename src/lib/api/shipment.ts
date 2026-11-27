@@ -1,0 +1,105 @@
+// Track C. Hợp đồng: Ikiot_BE/docs/api-contract-order-flow.md §4.
+import client from '@/lib/api/client';
+import type {
+  CreateShipmentPayload,
+  DeliverShipmentPayload,
+  DriverOption,
+  Paginated,
+  Shipment,
+  ShipmentEventPayload,
+  ShipmentHistoryPage,
+  ShipmentHistoryQuery,
+  ShipmentQuery,
+  ShipmentSummary,
+} from '@/types/order-flow';
+
+type Envelope<T> = { success: boolean; data: T };
+
+/** Số lần giao mỗi trang mặc định của màn Giao hàng. */
+export const SHIPMENT_PAGE_SIZE = 10;
+
+export const shipmentApi = {
+  /** Các lần giao người gọi được xem. */
+  getList: async (params?: ShipmentQuery): Promise<Paginated<ShipmentSummary>> => {
+    const res = await client.get<Paginated<ShipmentSummary>>('/shipments', { params });
+    return { data: res.data.data, pagination: res.data.pagination };
+  },
+
+  /** Các lần giao đang mở mà mình là shipper. */
+  getMine: async (): Promise<ShipmentSummary[]> => {
+    const res = await client.get<Envelope<ShipmentSummary[]>>('/shipments/mine');
+    return res.data.data;
+  },
+
+  /** Lịch sử giao của tôi: mọi trạng thái, lọc theo ngày giao, kèm số liệu các thẻ và tiền đã thu. */
+  getMyHistory: async (params?: ShipmentHistoryQuery): Promise<ShipmentHistoryPage> => {
+    const res = await client.get<ShipmentHistoryPage>('/shipments/mine/history', { params });
+    return { data: res.data.data, pagination: res.data.pagination, summary: res.data.summary };
+  },
+
+  getById: async (id: string): Promise<Shipment> => {
+    const res = await client.get<Envelope<Shipment>>(`/shipments/${id}`);
+    return res.data.data;
+  },
+
+  /** Người chọn được làm shipper cho đơn: chủ shop, người phụ trách, nhân viên có quyền giao hàng. */
+  getDrivers: async (orderId: string): Promise<DriverOption[]> => {
+    const res = await client.get<Envelope<DriverOption[]>>('/shipments/drivers', {
+      params: { orderId },
+    });
+    return res.data.data;
+  },
+
+  /** Giao cho vận chuyển. */
+  create: async (payload: CreateShipmentPayload): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>('/shipments', payload);
+    return res.data.data;
+  },
+
+  /** Shipper xác nhận đã lấy hàng. */
+  pickUp: async (id: string, note?: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(
+      `/shipments/${id}/pick-up`,
+      note ? { note } : {},
+    );
+    return res.data.data;
+  },
+
+  changeDriver: async (id: string, driverId: string): Promise<Shipment> => {
+    const res = await client.patch<Envelope<Shipment>>(`/shipments/${id}/driver`, { driverId });
+    return res.data.data;
+  },
+
+  /** Nhật trình "Đang đi giao". */
+  addEvent: async (id: string, payload: ShipmentEventPayload): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(`/shipments/${id}/events`, payload);
+    return res.data.data;
+  },
+
+  /** Giao thành công: ảnh bằng chứng + thu tiền. Thu QR thì kết quả có `payment.qrUrl` để khách quét. */
+  deliver: async (id: string, payload: DeliverShipmentPayload): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(`/shipments/${id}/deliver`, payload);
+    return res.data.data;
+  },
+
+  /** Đã giao với QR nhưng khách không chuyển khoản: thu tiền mặt thay. */
+  payCash: async (id: string, note?: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(
+      `/shipments/${id}/pay-cash`,
+      note ? { note } : {},
+    );
+    return res.data.data;
+  },
+
+  /** Mã QR hết hạn: tạo mã mới (mã chưa hết hạn thì giữ nguyên). */
+  reissueQr: async (id: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(`/shipments/${id}/reissue-qr`);
+    return res.data.data;
+  },
+
+  /** Giao không thành: shipment FAILED, đơn giữ Đang vận chuyển. */
+  fail: async (id: string, note: string): Promise<Shipment> => {
+    const res = await client.post<Envelope<Shipment>>(`/shipments/${id}/fail`, { note });
+    return res.data.data;
+  },
+};

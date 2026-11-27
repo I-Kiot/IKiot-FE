@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Search, Sparkles, AlertCircle, ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useCheckoutProducts } from "../_hooks/use-checkout-products";
+import { useCheckoutProducts, type CheckoutLocation } from "../_hooks/use-checkout-products";
 import { productApi } from "@/lib/api/product";
+import type { MadeToOrderComponent, ProductSearchParams } from "@/types/product";
 import { useAuthStore } from "@/store/auth-store";
 import { getCachedUser } from "@/lib/auth";
 
@@ -20,13 +22,28 @@ interface Product {
   retailPrice: number;
   costPrice: number;
   vat: number;
+  /** Tồn tại chi nhánh đang bán (hoặc toàn hệ thống khi chưa chọn chi nhánh). */
   stock: number;
+  /** Tổng tồn ở mọi kho/chi nhánh. */
+  stockAllLocations: number;
+  /** Số bán được ngay (tồn trên kệ; combo = số bộ). Quầy chặn thêm giỏ theo số này. */
+  availableStock: number;
   status: string;
   imageUrl?: string;
+  /** Sản phẩm bật "Có thể sản xuất" (đơn tay dùng để cho phép làm riêng). */
+  isManufacturable: boolean;
+  /** Combo: các món làm riêng được. */
+  madeToOrderComponents?: MadeToOrderComponent[];
 }
 
 interface ProductSearchProps {
   onProductSelect: (product: Product) => void;
+  /** Xem `useCheckoutProducts`: undefined giữ chi nhánh của đơn bán. */
+  location?: CheckoutLocation | null;
+  /** Đơn tay vẫn nhận hàng dù không có trên kệ. */
+  allowOutOfStock?: boolean;
+  /** Ẩn các chip "Mua nhanh". */
+  hideQuickItems?: boolean;
 }
 
 const formatVND = (value: number) =>
@@ -34,7 +51,46 @@ const formatVND = (value: number) =>
     value,
   );
 
-export function ProductSearch({ onProductSelect }: ProductSearchProps) {
+function normalizeSearchText(value: string): string {
+  return value.normalize("NFC").toLocaleLowerCase("vi").trim();
+}
+
+/** Mức khớp với từ khoá, nhỏ hơn là sát hơn. */
+function matchRank(
+  p: { productName: string; productCode: string; sku: string; barcode: string },
+  q: string,
+): number {
+  if (!q) return 0;
+  const codes = [p.productCode, p.sku, p.barcode].map((c) => normalizeSearchText(c || "")).filter(Boolean);
+  const name = normalizeSearchText(p.productName || "");
+  if (codes.some((c) => c === q)) return 0;
+  if (name === q) return 1;
+  if (codes.some((c) => c.startsWith(q))) return 2;
+  if (name.startsWith(q)) return 3;
+  if (name.includes(q)) return 4;
+  return 5;
+}
+
+/** Chi nhánh phạm vi bán: chi nhánh gán cho tài khoản, nếu không thì theo switcher sidebar. */
+function resolveBranchId(): string {
+  const cachedUser = getCachedUser() as { branchId?: string } | null;
+  if (cachedUser?.branchId) return cachedUser.branchId;
+  if (typeof window !== "undefined") {
+    const activeSwitcherItemId = localStorage.getItem("activeSwitcherItemId");
+    const activeSwitcherItemType = localStorage.getItem("activeSwitcherItemType");
+    if (activeSwitcherItemId && activeSwitcherItemType === "branch" && activeSwitcherItemId !== "all-branches") {
+      return activeSwitcherItemId;
+    }
+  }
+  return "";
+}
+
+export function ProductSearch({
+  onProductSelect,
+  location,
+  allowOutOfStock = false,
+  hideQuickItems = false,
+}: ProductSearchProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -42,30 +98,28 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [quickItems, setQuickItems] = useState<Product[]>([]);
 
-  // Fetch search results from the custom API hook
-  const { products, loading } = useCheckoutProducts(query);
+  const { products, loading } = useCheckoutProducts(query, location);
   const locationKey = useAuthStore((state) => state.locationKey);
+  // `stock` là tồn của một chi nhánh hay của toàn shop; quyết định cách ghi nhãn tồn trên badge.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const hasBranchScope = useMemo(
+    () => (location !== undefined ? Boolean(location) : Boolean(resolveBranchId())),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locationKey, location?.id],
+  );
 
-  // Fetch initial active products for quick purchase on mount or location changes
   useEffect(() => {
-    const resolveBranchId = (): string => {
-      const cachedUser = getCachedUser() as any;
-      if (cachedUser?.branchId) return cachedUser.branchId;
-      if (typeof window !== "undefined") {
-        const activeSwitcherItemId = localStorage.getItem("activeSwitcherItemId");
-        const activeSwitcherItemType = localStorage.getItem("activeSwitcherItemType");
-        if (activeSwitcherItemId && activeSwitcherItemType === "branch" && activeSwitcherItemId !== "all-branches") {
-          return activeSwitcherItemId;
-        }
-      }
-      return "";
-    };
-
+    if (hideQuickItems) return;
     const branchId = resolveBranchId();
-    const params: any = { limit: 10, status: "ACTIVE" };
-    if (branchId) {
+    const params: ProductSearchParams = { limit: 10, status: "ACTIVE" };
+    if (location !== undefined) {
+      if (location) {
+        params.locationId = location.id;
+        params.locationType = location.type;
+      }
+    } else if (branchId) {
       params.locationId = branchId;
-      params.locationType = "branch";
+      params.locationType = "BRANCH";
     }
 
     productApi
@@ -84,7 +138,11 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
             costPrice: item.costPrice,
             vat: item.vat || 0,
             stock: item.stock || 0,
+            stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
+            availableStock: item.availableStock ?? item.stock ?? 0,
             status: product.status,
+            isManufacturable: product.isManufacturable ?? false,
+            madeToOrderComponents: item.madeToOrderComponents,
             imageUrl: (
               item.images?.find((img) => img.isThumbnail) ||
               item.images?.[0] ||
@@ -98,12 +156,12 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
       .catch((err) => {
         console.error("Failed to load quick items:", err);
       });
-  }, [locationKey]);
+  }, [locationKey, location?.id, location?.type, hideQuickItems]);
 
-  // Map API products response to flat list of variants (ProductItems)
   const results = useMemo(() => {
-    return products.flatMap((product) =>
+    const flattened = products.flatMap((product) =>
       (product.items || []).map((item) => ({
+        productName: product.name,
         id: item.id,
         productCode: item.productCode,
         sku: item.sku,
@@ -115,7 +173,11 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
         costPrice: item.costPrice,
         vat: item.vat || 0,
         stock: item.stock || 0,
+        stockAllLocations: item.stockAllLocations ?? item.stock ?? 0,
+        availableStock: item.availableStock ?? item.stock ?? 0,
         status: product.status,
+        isManufacturable: product.isManufacturable ?? false,
+        madeToOrderComponents: item.madeToOrderComponents,
         imageUrl: (
           item.images?.find((img) => img.isThumbnail) ||
           item.images?.[0] ||
@@ -124,9 +186,14 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
         )?.url,
       })),
     );
-  }, [products]);
+    // Sắp lại: khớp sát trước, hàng bán được lên trên.
+    const q = normalizeSearchText(query);
+    return flattened
+      .map((p) => ({ p, rank: matchRank(p, q), sellable: p.status === "ACTIVE" && p.availableStock > 0 }))
+      .sort((a, b) => a.rank - b.rank || Number(b.sellable) - Number(a.sellable))
+      .map(({ p }) => p);
+  }, [products, query]);
 
-  // Focus search input on F2
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "F2") {
@@ -138,7 +205,6 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Automatically open dropdown when query starts, and reset index
   useEffect(() => {
     if (query.trim()) {
       setIsOpen(true);
@@ -148,7 +214,7 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
     }
   }, [query]);
 
-  // Barcode auto-add feature: if there's an exact barcode/code match, select it immediately
+  // Quét mã vạch: nếu khớp đúng barcode/mã thì thêm ngay, không cần chọn.
   useEffect(() => {
     if (!query.trim()) return;
 
@@ -160,14 +226,13 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
         p.sku.toLowerCase() === lowerQuery,
     );
 
-    if (exactMatch && exactMatch.status === "ACTIVE" && exactMatch.stock > 0) {
+    if (exactMatch && exactMatch.status === "ACTIVE" && (allowOutOfStock || exactMatch.availableStock > 0)) {
       onProductSelect(exactMatch);
       setQuery("");
       setIsOpen(false);
     }
   }, [results, query, onProductSelect]);
 
-  // Click outside listener to close dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -183,7 +248,6 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Keyboard navigation inside dropdown
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen) return;
 
@@ -207,7 +271,12 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
 
   const handleSelect = (product: Product) => {
     if (product.status !== "ACTIVE") {
-      return; // Do not add inactive products
+      return;
+    }
+    // Chỉ thêm hàng có trên kệ vào giỏ.
+    if (!allowOutOfStock && product.availableStock <= 0) {
+      toast.warning(`${product.name} đã hết hàng`);
+      return;
     }
     onProductSelect(product);
     setQuery("");
@@ -216,7 +285,6 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
 
   return (
     <div className="space-y-3 w-full">
-      {/* Search Input Box */}
       <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -229,7 +297,6 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
           className="pl-9 h-12 w-full text-lg font-bold border-primary/20 focus-visible:ring-primary shadow-xs"
         />
 
-        {/* Floating Autocomplete Dropdown */}
         {isOpen && query.trim() !== "" && (
           <div
             ref={dropdownRef}
@@ -243,7 +310,7 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
             ) : results.length > 0 ? (
               results.map((product, index) => {
                 const isSelected = index === selectedIndex;
-                const isOutOfStock = product.stock <= 0;
+                const isOutOfStock = product.availableStock <= 0;
                 const isInactive = product.status !== "ACTIVE";
 
                 return (
@@ -253,14 +320,13 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
                     className={cn(
                       "flex items-center gap-3 p-2.5 cursor-pointer text-base transition-colors duration-150",
                       isSelected && "bg-primary/10 dark:bg-primary/20",
-                      (isOutOfStock || isInactive) &&
+                      ((isOutOfStock && !allowOutOfStock) || isInactive) &&
                         "opacity-60 cursor-not-allowed",
-                      product.status === "ACTIVE" &&
+                      product.status === "ACTIVE" && (allowOutOfStock || !isOutOfStock) &&
                         !isOutOfStock &&
                         "hover:bg-muted/60",
                     )}
                   >
-                    {/* Thumbnail */}
                     <div className="size-10 rounded border overflow-hidden bg-muted flex items-center justify-center shrink-0">
                       {product.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -274,7 +340,6 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
                       )}
                     </div>
 
-                    {/* Info details */}
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-foreground text-base truncate">
                         {product.name}
@@ -286,7 +351,6 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
                       </div>
                     </div>
 
-                    {/* Price and Stock status */}
                     <div className="text-right shrink-0 space-y-1">
                       <div className="font-bold text-foreground text-lg">
                         {formatVND(product.retailPrice)}
@@ -299,10 +363,17 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
                         ) : isOutOfStock ? (
                           <span className="text-sm px-2 py-0.5 bg-red-100 text-red-700 rounded font-medium">
                             Hết hàng
+                            {hasBranchScope && product.stockAllLocations > 0 && (
+                              <span className="ml-1 text-xs font-normal">
+                                (tổng: {product.stockAllLocations})
+                              </span>
+                            )}
                           </span>
                         ) : (
                           <span className="text-sm px-2 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 rounded font-medium">
-                            Tồn: {product.stock}
+                            {hasBranchScope
+                              ? `Tồn CN: ${product.availableStock} / Tổng: ${product.stockAllLocations}`
+                              : `Tồn: ${product.stockAllLocations}`}
                           </span>
                         )}
                       </div>
@@ -322,8 +393,7 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
         )}
       </div>
 
-      {/* Quick Click Items Grid */}
-      {quickItems.length > 0 && (
+      {!hideQuickItems && quickItems.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold text-muted-foreground flex items-center gap-1">
             <Sparkles className="size-3 text-primary" /> Mua nhanh:

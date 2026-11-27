@@ -1,9 +1,10 @@
-// [Table – Columns Supplier]
 import { type ColumnDef } from '@tanstack/react-table'
 import { ChevronDown, ChevronRight, ChevronUp, ChevronsUpDown } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import type { Supplier } from '@/types/supplier'
+import { SUPPLIER_TYPE_LABELS } from '../../_constants/supplier.constants'
 
 function SortableHeader({
   label,
@@ -73,6 +74,19 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
     ),
   },
   {
+    accessorKey: 'type',
+    header: 'Loại',
+    cell: ({ row }) => {
+      const type = row.original.type ?? 'GOODS'
+      return (
+        <Badge variant={type === 'WORKSHOP' ? 'default' : 'secondary'}>
+          {SUPPLIER_TYPE_LABELS[type]}
+        </Badge>
+      )
+    },
+    filterFn: (row, _columnId, value: string) => (row.original.type ?? 'GOODS') === value,
+  },
+  {
     accessorKey: 'contactName',
     header: 'Người liên hệ',
     cell: ({ row }) => (
@@ -90,7 +104,7 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
     accessorKey: 'outstandingDebt',
     header: ({ column }) => <SortableHeader label="Công nợ" column={column} />,
     cell: ({ row }) => {
-      const debt = row.getValue('outstandingDebt') as number
+      const debt = Number(row.getValue('outstandingDebt')) || 0
       return (
         <span
           className={cn(
@@ -99,6 +113,7 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
           )}
         >
           {formatVND(debt)}
+          
         </span>
       )
     },
@@ -112,7 +127,7 @@ export const suppliersColumns: ColumnDef<Supplier>[] = [
     accessorKey: 'creditLimit',
     header: ({ column }) => <SortableHeader label="Hạn mức" column={column} />,
     cell: ({ row }) => (
-      <span className="tabular-nums text-sm">{formatVND(row.getValue('creditLimit') as number)}</span>
+      <span className="tabular-nums text-sm">{formatVND(Number(row.getValue('creditLimit')) || 0)}</span>
     ),
   },
   {

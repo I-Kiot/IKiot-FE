@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Pencil, Trash2 } from "lucide-react";
+import { History, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import {
   Sheet,
   SheetContent,
@@ -24,19 +25,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { DamagedAction } from "@/lib/api/inventory";
+import { DamagedStockDialog } from "./damaged-stock-dialog";
+import { ImageGalleryDialog } from "../image-gallery-dialog";
+import { ProductsPriceHistoryDialog } from "./products-price-history-dialog";
+import { ComboComponentsTree } from "../combo-components-tree";
 import {
   formatVND,
   safeImageSrc,
   STATUS_MAP,
 } from "../../_constants/product.constants";
-import { useProducts } from "../../_context/products-provider";
 import type { Product, ProductItem, StockDetail } from "@/types/product";
 import { getCachedUser } from "@/lib/auth";
 import {
+  allows,
   canUpdateProduct,
   canDeleteProduct,
   canRemoveInventoryLocation,
+  canManageDamaged,
 } from "@/components/sidebar/constants/role-permissions";
 
 const formatDate = (iso?: string) => {
@@ -54,6 +68,8 @@ type Props = {
   onEdit?: () => void;
   onDelete?: () => void;
   onRemoveLocation?: (inventoryId: string) => void;
+  /** Sau khi đánh dấu hỏng / sửa xong / huỷ: nạp lại tồn của phiên bản. */
+  onDamagedChanged?: () => void;
   isSubDialogOpen?: boolean;
 };
 
@@ -99,24 +115,24 @@ export function ProductsItemDetailSheet({
   onEdit,
   onDelete,
   onRemoveLocation,
+  onDamagedChanged,
   isSubDialogOpen,
 }: Props) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [priceHistoryOpen, setPriceHistoryOpen] = useState(false);
   const [removingLocation, setRemovingLocation] = useState<StockDetail | null>(
     null,
   );
-  const { branchOptions, warehouseOptions, ensureLocationOptionsLoaded } =
-    useProducts();
   const role = getCachedUser()?.role;
   const canEdit = canUpdateProduct(role);
   const canDelete = canDeleteProduct(role);
   const canRemoveLocation = canRemoveInventoryLocation(role);
-
-  useEffect(() => {
-    if (!open) return;
-    ensureLocationOptionsLoaded();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const canDamaged = canManageDamaged(role);
+  const [damagedTask, setDamagedTask] = useState<{
+    action: DamagedAction;
+    detail: StockDetail;
+  } | null>(null);
 
   if (!item) return null;
 
@@ -125,23 +141,16 @@ export function ProductsItemDetailSheet({
       ? item.suppliers.map((s) => s.supplierName).join(", ")
       : "-";
 
-  function resolveLocationName(
-    locationType: string,
-    locationId: string,
-  ): string {
-    const opts = locationType === "branch" ? branchOptions : warehouseOptions;
-    return opts.find((o) => o.value === locationId)?.label ?? locationId;
-  }
-
   const hasLocations = (item.stockDetails?.length ?? 0) > 0;
 
   const profit = item.retailPrice - item.costPrice;
   const profitPositive = profit >= 0;
-  const thumbnail =
-    item.images?.find((i) => i.isThumbnail) ??
-    item.images?.[0] ??
-    product.images?.find((i) => i.isThumbnail) ??
-    product.images?.[0];
+  // Phiên bản chưa có ảnh riêng thì dùng ảnh của hàng hóa; ảnh đầu tiên là ảnh đại diện.
+  const itemImages = item.images ?? [];
+  const galleryImages =
+    itemImages.length > 0 ? itemImages : (product.images ?? []);
+  const hasImages = galleryImages.length > 0;
+  const extraImageCount = galleryImages.length - 1;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -149,10 +158,10 @@ export function ProductsItemDetailSheet({
         side="right"
         className="w-[36vw] sm:max-w-[36vw] p-0 flex flex-col overflow-hidden"
         onInteractOutside={(e) => {
-          if (confirmDeleteOpen || isSubDialogOpen) e.preventDefault();
+          if (confirmDeleteOpen || isSubDialogOpen || galleryOpen || priceHistoryOpen) e.preventDefault();
         }}
         onEscapeKeyDown={(e) => {
-          if (confirmDeleteOpen || isSubDialogOpen) e.preventDefault();
+          if (confirmDeleteOpen || isSubDialogOpen || galleryOpen || priceHistoryOpen) e.preventDefault();
         }}
       >
         <SheetHeader className="px-6 pt-2 pb-4 border-b shrink-0">
@@ -165,14 +174,28 @@ export function ProductsItemDetailSheet({
         <ScrollArea className="flex-1 min-h-0">
           <div className="px-6 py-5 space-y-5">
             <div className="grid grid-cols-[3fr_7fr] gap-4">
-              <div className="relative rounded-xl overflow-hidden border shadow-sm">
+              <button
+                type="button"
+                disabled={!hasImages}
+                onClick={() => setGalleryOpen(true)}
+                aria-label="Xem ảnh phiên bản"
+                className={cn(
+                  "relative rounded-xl overflow-hidden border shadow-sm",
+                  hasImages && "cursor-zoom-in hover:opacity-90",
+                )}
+              >
                 <Image
-                  src={safeImageSrc(thumbnail?.url)}
+                  src={safeImageSrc(galleryImages[0]?.url)}
                   alt={product.name}
                   fill
                   className="object-contain"
                 />
-              </div>
+                {extraImageCount > 0 && (
+                  <span className="absolute bottom-2 right-2 rounded bg-background/90 px-1.5 text-xs font-medium shadow">
+                    +{extraImageCount}
+                  </span>
+                )}
+              </button>
               <div className="flex flex-col">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-1.5">
                   Thông tin cơ bản
@@ -266,8 +289,34 @@ export function ProductsItemDetailSheet({
               <div className="px-4">
                 <InfoRow label="VAT">{item.vat ?? 0}%</InfoRow>
               </div>
+              {allows(role, "products", "read") && (
+                <div className="px-4 py-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    onClick={() => setPriceHistoryOpen(true)}
+                  >
+                    <History className="size-4" />
+                    Lịch sử giá
+                  </Button>
+                </div>
+              )}
             </Section>
 
+            {/* Combo không có tồn riêng - đơn tách thành từng món và trừ kho theo món. */}
+            {item.itemType === "COMBO" ? (
+            <Section title="Thành phần combo">
+              <div className="px-3 py-2">
+                {item.comboComponents?.length ? (
+                  <ComboComponentsTree components={item.comboComponents} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Chưa có thành phần</p>
+                )}
+              </div>
+            </Section>
+            ) : (
             <Section title="Tồn kho">
               <div className="px-4">
                 <InfoRow label="Tổng tồn kho">
@@ -285,9 +334,7 @@ export function ProductsItemDetailSheet({
                   </span>
                 </InfoRow>
               </div>
-              {/* Khi đang xem theo một chi nhánh/kho, "Tổng tồn kho" ở trên là tồn TẠI ĐÓ và
-                  có thể là 0 vì nơi đó chưa nhập hàng về. Số toàn chuỗi trả lời câu khác:
-                  cửa hàng có mặt hàng này không, để còn đề nghị chuyển kho. */}
+              {/* Tồn tại nơi đang xem và toàn chuỗi. */}
               {item.stockAllLocations !== undefined &&
                 item.stockAllLocations !== (item.stock ?? 0) && (
                   <div className="px-4">
@@ -310,21 +357,80 @@ export function ProductsItemDetailSheet({
                         className="flex items-center justify-between text-sm rounded-md bg-muted/40 px-3 py-1.5"
                       >
                         <span className="text-muted-foreground">
-                          {resolveLocationName(sd.locationType, sd.locationId)}
+                          {sd.location.name}
                         </span>
                         <div className="flex items-center gap-1.5">
                           <span className="font-semibold tabular-nums">
                             {sd.stock}
                           </span>
-                          {canRemoveLocation && sd.stock === 0 && (
-                            <Button
+                          {(sd.damagedQuantity ?? 0) > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="border-destructive/40 text-destructive tabular-nums"
+                              title="Hàng hỏng tại đây, không tính vào tồn bán được"
+                            >
+                              Hỏng {sd.damagedQuantity}
+                            </Badge>
+                          )}
+                          {!canDamaged ? (
+                            // Thấy nhưng không làm được: bấm thì báo thiếu quyền nào, không mở menu.
+                            <PermissionButton
+                              allowed={false}
+                              permission="inventory:manage_damaged"
+                              size="icon"
+                              variant="ghost"
+                              className="size-6 cursor-pointer text-muted-foreground"
+                              aria-label={`Xử lý hàng hỏng tại ${sd.location.name}`}
+                            >
+                              <MoreHorizontal className="size-3.5" />
+                            </PermissionButton>
+                          ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-6 cursor-pointer text-muted-foreground"
+                                aria-label={`Xử lý hàng hỏng tại ${sd.location.name}`}
+                              >
+                                <MoreHorizontal className="size-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                disabled={(sd.shelf ?? sd.stock) === 0}
+                                onSelect={() => setDamagedTask({ action: "mark", detail: sd })}
+                              >
+                                Đánh dấu hỏng
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={(sd.damagedQuantity ?? 0) === 0}
+                                onSelect={() => setDamagedTask({ action: "repair", detail: sd })}
+                              >
+                                Sửa xong
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                disabled={(sd.damagedQuantity ?? 0) === 0}
+                                onSelect={() => setDamagedTask({ action: "writeOff", detail: sd })}
+                              >
+                                Huỷ hàng hỏng
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          )}
+                          {sd.stock === 0 && (sd.damagedQuantity ?? 0) === 0 && (
+                            <PermissionButton
+                              allowed={canRemoveLocation}
+                              permission="inventory:delete"
                               size="icon"
                               variant="ghost"
                               className="size-6 cursor-pointer text-muted-foreground hover:text-destructive"
                               onClick={() => setRemovingLocation(sd)}
                             >
                               <Trash2 className="size-3.5" />
-                            </Button>
+                            </PermissionButton>
                           )}
                         </div>
                       </div>
@@ -333,6 +439,7 @@ export function ProductsItemDetailSheet({
                 </div>
               )}
             </Section>
+            )}
 
             {item.description && (
               <Section title="Mô tả">
@@ -368,8 +475,9 @@ export function ProductsItemDetailSheet({
         </ScrollArea>
 
         <SheetFooter className="px-6 py-4 border-t shrink-0 grid grid-cols-[auto_0.5fr_auto] items-center">
-          {canDelete ? (
-            <Button
+          <PermissionButton
+              allowed={canDelete}
+              permission="products:delete"
               variant="destructive"
               onClick={() => {
                 if (hasLocations) {
@@ -383,17 +491,12 @@ export function ProductsItemDetailSheet({
             >
               <Trash2 className=" size-4" />
               Xóa phiên bản
-            </Button>
-          ) : (
-            <span />
-          )}
+            </PermissionButton>
           <div />
-          {canEdit && (
-            <Button variant="outline" onClick={onEdit}>
+          <PermissionButton allowed={canEdit} permission="products:update" variant="outline" onClick={onEdit}>
               <Pencil className=" size-4" />
               Chỉnh sửa
-            </Button>
-          )}
+            </PermissionButton>
         </SheetFooter>
 
         {canDelete && (
@@ -439,11 +542,7 @@ export function ProductsItemDetailSheet({
               <DialogDescription>
                 Bạn có chắc muốn gỡ{" "}
                 <strong className="text-foreground">
-                  {removingLocation &&
-                    resolveLocationName(
-                      removingLocation.locationType,
-                      removingLocation.locationId,
-                    )}
+                  {removingLocation?.location.name}
                 </strong>{" "}
                 khỏi phiên bản này? Tồn kho tại vị trí này đang bằng 0.
               </DialogDescription>
@@ -470,6 +569,35 @@ export function ProductsItemDetailSheet({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {damagedTask && (
+          <DamagedStockDialog
+            open
+            onOpenChange={(v) => !v && setDamagedTask(null)}
+            action={damagedTask.action}
+            detail={damagedTask.detail}
+            itemLabel={item.sku || item.productName || product.name}
+            onDone={() => onDamagedChanged?.()}
+          />
+        )}
+
+        {priceHistoryOpen && (
+          <ProductsPriceHistoryDialog
+            itemId={item.id}
+            sku={item.sku}
+            open
+            onOpenChange={setPriceHistoryOpen}
+          />
+        )}
+
+        {galleryOpen && (
+          <ImageGalleryDialog
+            images={galleryImages}
+            open
+            onOpenChange={setGalleryOpen}
+            alt={item.productName || product.name}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );

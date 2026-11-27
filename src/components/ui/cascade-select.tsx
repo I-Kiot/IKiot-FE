@@ -32,7 +32,7 @@ function MenuColumn({
   onSelect,
 }: MenuColumnProps) {
   return (
-    <div className={cn('min-w-[180px] max-h-60 overflow-y-auto py-1', depth > 0 && 'border-l')}>
+    <div className={cn('min-w-[180px] flex-1 max-h-60 overflow-y-auto py-1', depth > 0 && 'border-l')}>
       {items.map((item) => {
         const isActive = openPath[depth] === item.id
         const isSelected = value === item.id
@@ -142,7 +142,7 @@ function CascadeSelect({
       </PopoverTrigger>
 
       <PopoverContent
-        className="p-0 w-auto min-w-[200px]"
+        className="p-0 w-auto min-w-(--radix-popover-trigger-width)"
         align="start"
         onMouseLeave={() => setOpenPath([])}
       >

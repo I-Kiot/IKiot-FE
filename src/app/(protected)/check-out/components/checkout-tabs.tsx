@@ -15,6 +15,7 @@ interface CheckoutTabsProps {
   onTabChange: (id: string) => void;
   onTabAdd: () => void;
   onTabClose: (id: string) => void;
+  addTitle?: string;
 }
 
 export function CheckoutTabs({
@@ -23,6 +24,7 @@ export function CheckoutTabs({
   onTabChange,
   onTabAdd,
   onTabClose,
+  addTitle = "Thêm hóa đơn mới (Ctrl+I)",
 }: CheckoutTabsProps) {
   return (
     <div className="flex items-center gap-2 border-b pb-1 overflow-x-auto select-none no-scrollbar">
@@ -69,7 +71,7 @@ export function CheckoutTabs({
         size="icon"
         onClick={onTabAdd}
         className="size-7 rounded-md cursor-pointer text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-        title="Thêm hóa đơn mới (Ctrl+I)"
+        title={addTitle}
       >
         <Plus className="size-4" />
       </Button>

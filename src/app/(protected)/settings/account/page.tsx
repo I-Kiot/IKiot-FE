@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
+import { PermissionButton } from "@/components/permission-button"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -26,21 +27,17 @@ import { Switch } from "@/components/ui/switch"
 import { Upload, Loader2, Key, Shield, Info } from "lucide-react"
 
 import { useAccountSettings } from "./hooks/use-account-settings"
-import { AvatarCropDialog } from "./components/avatar-crop-dialog"
+import { ImageCropDialog } from "@/components/image-crop/image-crop-dialog"
 import { ChangePasswordDialog } from "./components/change-password-dialog"
+
+const WHO_OWNER = "Chỉ chủ shop mới làm được. Nhân viên nhờ chủ shop đổi giúp ở màn Nhân viên."
 
 export default function AccountSettings() {
   const {
     user,
     form,
     profileImage,
-    selectedImageSrc,
-    isCropDialogOpen,
-    setIsCropDialogOpen,
-    imageState,
-    setImageState,
-    isDragging,
-    dimensions,
+    crop,
     isUploading,
     isSaving,
     isPasswordDialogOpen,
@@ -52,11 +49,6 @@ export default function AccountSettings() {
     handleFileUploadClick,
     handleFileChange,
     handleResetAvatar,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-    handleTouchStart,
-    handleTouchMove,
     handleApplyCrop,
     onSubmit,
   } = useAccountSettings()
@@ -84,7 +76,6 @@ export default function AccountSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               
-              {/* Profile Picture Section */}
               <div className="flex flex-col sm:flex-row items-center gap-6 pb-2">
                 <Avatar className="h-24 w-24 rounded-full border-4 border-background shadow-md">
                   <AvatarImage src={profileImage || undefined} alt="Avatar" />
@@ -133,7 +124,6 @@ export default function AccountSettings() {
 
               <Separator className="my-4" />
 
-              {/* Form Input fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -177,8 +167,7 @@ export default function AccountSettings() {
                     <FormItem>
                       <FormLabel>Địa chỉ email</FormLabel>
                       <FormControl>
-                        {/* Editable by every role: this email is the key used
-                            to sign in with Google. */}
+                        {/* Mọi vai trò đều sửa được: email này là khoá đăng nhập Google. */}
                         <Input
                           type="email"
                           placeholder="Nhập địa chỉ email"
@@ -325,8 +314,7 @@ export default function AccountSettings() {
             </CardContent>
           </Card>
 
-          {/* Đăng nhập và bảo mật Card - Only visible for Tenant Owner */}
-          {isTenantOwner && (
+          {/* Chỉ chủ shop thao tác được; nhân viên vẫn thấy, nút mờ và báo lý do. */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base font-semibold">
@@ -334,7 +322,6 @@ export default function AccountSettings() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="divide-y divide-border pt-0">
-                {/* Mật khẩu Row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
                   <div className="flex gap-4 items-start">
                     <Key className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
@@ -348,6 +335,7 @@ export default function AccountSettings() {
                       </p>
                     </div>
                   </div>
+                  {/* Ai cũng tự đổi được mật khẩu của mình (`/auth/change-password` không gắn quyền). */}
                   <Button
                     type="button"
                     variant="outline"
@@ -359,7 +347,6 @@ export default function AccountSettings() {
                   </Button>
                 </div>
 
-                {/* Xác thực 2 lớp Row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 last:pb-0">
                   <div className="flex gap-4 items-start">
                     <Shield className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
@@ -378,6 +365,7 @@ export default function AccountSettings() {
                   <div className="flex items-center self-start sm:self-center">
                     <Switch
                       id="two-factor"
+                      disabled={!isTenantOwner}
                       checked={twoFactorEnabled}
                       onCheckedChange={setTwoFactorEnabled}
                     />
@@ -385,10 +373,8 @@ export default function AccountSettings() {
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Danger Zone Card - Only visible for Tenant Owner */}
-          {isTenantOwner && (
+          {/* Chỉ chủ shop thao tác được; nhân viên vẫn thấy, nút mờ và báo lý do. */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-destructive">
@@ -407,19 +393,19 @@ export default function AccountSettings() {
                       Xóa vĩnh viễn tài khoản của bạn và toàn bộ dữ liệu đi kèm.
                     </p>
                   </div>
-                  <Button
+                  <PermissionButton
+                    allowed={isTenantOwner}
+                    who={WHO_OWNER}
                     variant="destructive"
                     type="button"
                     className="cursor-pointer"
                   >
                     Xóa tài khoản
-                  </Button>
+                  </PermissionButton>
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Action buttons at the bottom - Always visible */}
           <div className="flex space-x-2 pt-2">
             <Button
               type="submit"
@@ -448,28 +434,18 @@ export default function AccountSettings() {
         </form>
       </Form>
 
-      {/* Cropper Modal Dialog */}
-      <AvatarCropDialog
-        open={isCropDialogOpen}
-        onOpenChange={setIsCropDialogOpen}
-        selectedImageSrc={selectedImageSrc}
-        imageState={imageState}
-        setImageState={setImageState}
-        isDragging={isDragging}
-        dimensions={dimensions}
-        handleMouseDown={handleMouseDown}
-        handleMouseMove={handleMouseMove}
-        handleMouseUp={handleMouseUp}
-        handleTouchStart={handleTouchStart}
-        handleTouchMove={handleTouchMove}
-        handleApplyCrop={handleApplyCrop}
-        isUploading={isUploading}
+      <ImageCropDialog
+        crop={crop}
+        title="Chỉnh sửa ảnh đại diện"
+        shape="circle"
+        busy={isUploading}
+        busyLabel="Đang xử lý..."
+        onConfirm={handleApplyCrop}
       />
 
       <ChangePasswordDialog
         open={isPasswordDialogOpen}
         onOpenChange={setIsPasswordDialogOpen}
-        userId={user?.id || ""}
       />
     </div>
   )

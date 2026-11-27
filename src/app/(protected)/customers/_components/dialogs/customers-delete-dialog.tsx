@@ -1,4 +1,3 @@
-// [Dialog – Delete Customer]
 'use client'
 
 import { Trash2 } from 'lucide-react'

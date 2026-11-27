@@ -1,3 +1,7 @@
+import type { LocationType } from "./location";
+
+export type { LocationType } from "./location";
+
 export type MovementType = "IMPORT" | "EXPORT" | "RETURN" | "ADJUST";
 
 export type MovementStatus =
@@ -10,8 +14,6 @@ export type MovementStatus =
   | "CANCELLED"
   | "COMPLETED";
 
-export type LocationType = "branch" | "warehouse";
-
 export interface StockMovementDetail {
   productItemId: string;
   productName: string;
@@ -19,14 +21,21 @@ export interface StockMovementDetail {
   quantity: number;
   importPrice: number;
   receivedQuantity: number;
+  /** Số lỗi trong số nhận; phiếu xưởng chỉ tính tiền phần đạt. */
+  defectQuantity: number;
   note?: string;
 }
+
+/** Nguồn của phiếu IMPORT: mua từ nhà cung cấp, hoặc hàng xưởng giao theo yêu cầu sản xuất. */
+export type ImportSource = "SUPPLIER" | "WORKSHOP";
 
 export interface StockMovement {
   id: string;
   tenantId: string;
   movementType: MovementType;
   status: MovementStatus;
+  /** Tổng tiền backend đã tính; dùng khi cần số khớp công nợ thay vì tự nhân lại. */
+  totalPrice: number;
   fromSupplierId?: string;
   supplierName?: string;
   fromLocationId?: string;
@@ -37,8 +46,18 @@ export interface StockMovement {
   toLocationType: LocationType;
   requestedBy: string;
   requestedByName: string;
+  requestedByPhone: string;
   note?: string;
   details: StockMovementDetail[];
+  /** Ai giao / nhận / duyệt / huỷ phiếu và lúc nào (rỗng nếu bước đó chưa xảy ra hoặc phiếu cũ). */
+  shippedByName?: string;
+  shippedAt?: string;
+  receivedByName?: string;
+  receivedAt?: string;
+  approvedByName?: string;
+  approvedAt?: string;
+  cancelledByName?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -77,12 +96,8 @@ export interface CreateExportPayload {
 
 export interface CreateAdjustPayload {
   movementType: "ADJUST";
-  /** Kho/chi nhánh cần điều chỉnh tồn kho */
   fromLocationId: string;
   fromLocationType: LocationType;
-  /** BE schema yêu cầu toLocationId – truyền cùng giá trị fromLocationId */
-  toLocationId: string;
-  toLocationType: LocationType;
   note?: string;
   details: {
     productItemId: string;
@@ -122,11 +137,14 @@ export interface StockMovementQueryParams {
   limit?: number;
   status?: MovementStatus;
   movementType?: MovementType;
+  importSource?: ImportSource;
 }
 
 export interface StockMovementSupplierOption {
   id: string;
   name: string;
+  /** Hàng của XƯỞNG chỉ về qua YCSX (B-5), không bao giờ nhập thường. */
+  type?: "GOODS" | "WORKSHOP";
 }
 
 export interface StockMovementLocationOption {
@@ -139,7 +157,7 @@ export interface StockMovementProductItemOption {
   id: string;
   name: string;
   sku: string;
-  /** Product parent id - dùng để tải suppliers khi cần */
+  /** Id sản phẩm cha - dùng để tải suppliers khi cần. */
   productId?: string;
   costPrice?: number;
   retailPrice?: number;

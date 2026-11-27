@@ -19,6 +19,8 @@ import { isDeletedScheduleStatus } from "@/app/(protected)/staffs/shared/schedul
 import type {
   ApiScheduleUser,
   ApiWorkingSchedule,
+  CreateScheduleSeriesPayload,
+  CreateScheduleSeriesResult,
   CreateWorkingSchedulePayload,
   CurrentWorkingScheduleResponse,
   ShiftTemplate,
@@ -178,9 +180,7 @@ export const workingScheduleApi = {
     scheduleId: string,
     userId: string,
   ): Promise<WorkingSchedule> => {
-    // This endpoint answers one person's slice of the shift: `user` instead of
-    // `assignedUsers`. The mapper reads either, so there is nothing to reshape here -
-    // there used to be a block that moved `user` into the (never-sent) `userId` key.
+    // Ca của một người.
     const response = await client.get<ApiWorkingSchedule>(
       `/working-schedules/${scheduleId}/users/${userId}`,
     );
@@ -219,7 +219,6 @@ export const workingScheduleApi = {
           userId: normalizeBulkUserId(schedule.userId),
           shiftTemplateId: schedule.shiftTemplateId,
           workDate: schedule.workDate,
-          scheduleType: schedule.scheduleType ?? "NORMAL",
         })),
       },
     );
@@ -232,7 +231,46 @@ export const workingScheduleApi = {
     return workingScheduleApi.createBulk([payload]);
   },
 
+  /** Thay toàn bộ người / ca / ngày của một ca (BE giữ liên kết lịch lặp nếu ca + ngày không đổi). */
+  update: async (
+    id: string,
+    payload: CreateWorkingSchedulePayload,
+  ): Promise<WorkingSchedule> => {
+    const response = await client.patch<{ data: ApiWorkingSchedule }>(
+      `/working-schedules/${id}`,
+      {
+        userId: normalizeBulkUserId(payload.userId),
+        shiftTemplateId: payload.shiftTemplateId,
+        workDate: payload.workDate,
+      },
+    );
+    return mapScheduleFromApi(response.data.data);
+  },
+
   remove: async (id: string): Promise<void> => {
     await client.delete(`/working-schedules/${id}`);
+  },
+
+  /** Lịch lặp lại: BE sinh sẵn từng ngày khớp thành ca. */
+  createSeries: async (
+    payload: CreateScheduleSeriesPayload,
+  ): Promise<CreateScheduleSeriesResult> => {
+    const response = await client.post<{ data: CreateScheduleSeriesResult }>(
+      "/working-schedules/series",
+      payload,
+    );
+    return response.data.data;
+  },
+
+  /** Dừng lịch lặp từ `fromDate` (YYYY-MM-DD); ca đã qua giữ nguyên. */
+  removeSeries: async (
+    seriesId: string,
+    fromDate: string,
+  ): Promise<{ removedCount: number }> => {
+    const response = await client.delete<{ data: { removedCount: number } }>(
+      `/working-schedules/series/${seriesId}`,
+      { params: { fromDate } },
+    );
+    return response.data.data;
   },
 };

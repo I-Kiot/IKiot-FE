@@ -1,4 +1,3 @@
-// [Mutations – Product]
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -8,24 +7,40 @@ import type { ProductFormValues } from '../_types/product.types'
 import { productApi } from '@/lib/api/product'
 import { parsePriceAmount, getDeleteProductErrorMessage } from '../_constants/product.constants'
 import { useAuthStore } from '@/store/auth-store'
+import { getApiErrorBody, messageForCode } from '@/lib/api/error-codes'
+import { toItemImagePayload } from '../_components/product-item-images-field'
+import { toComboPayload } from '../_components/combo-components-field'
+import type { ProductScreen } from '../_constants/product-screen'
 
 function extractErrorMessage(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message
 }
 
-export function useProductsMutations() {
+export function useProductsMutations(screen: ProductScreen) {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const locationKey = useAuthStore((state) => state.locationKey)
 
   useEffect(() => {
     productApi
-      .getList()
+      .getList({ productType: screen.listTypes })
       .then((res) => setProducts(res.data))
-      .catch(() => toast.error('Tải danh sách hàng hóa thất bại'))
-  }, [locationKey])
+      .catch(() => toast.error(`Tải danh sách ${screen.noun} thất bại`))
+  }, [locationKey, screen])
 
-  async function handleAdd(data: ProductFormValues): Promise<boolean> {
+  // Sau khi nhập file: hàng mới không đi qua handleAdd nên phải tải lại cả danh sách.
+  async function reload(): Promise<void> {
+    try {
+      setProducts((await productApi.getList({ productType: screen.listTypes })).data)
+    } catch {
+      toast.error(`Tải danh sách ${screen.noun} thất bại`)
+    }
+  }
+
+  async function handleAdd(
+    data: ProductFormValues,
+    onDuplicateCode?: (message: string) => void,
+  ): Promise<boolean> {
     setIsLoading(true)
     try {
       const itemProductName = data.useParentNameForItem
@@ -36,20 +51,34 @@ export function useProductsMutations() {
         brandId: data.brandId ?? undefined,
         categoryId: data.categoryId ?? undefined,
         status: data.status,
+        // Combo và dịch vụ không đặt xưởng được - YCSX chỉ nhận hàng có tồn.
+        isManufacturable: data.productType === 'PRODUCT' && data.isManufacturable,
+        productType: data.productType,
         images: data.images,
+        // Mỗi dòng thuộc tính của phiên bản đầu tiên định nghĩa luôn thuộc tính của sản phẩm (kèm đơn vị).
+        attributes: data.productDetails
+          ?.filter((d) => d.name.trim() && d.value.trim())
+          .map((d) => ({ name: d.name.trim(), unit: d.unit?.trim() || undefined })),
         items: [
           {
             productName: itemProductName,
-            productCode: data.productCode!,
-            sku: data.sku!,
+            productCode: data.productCode?.trim() || undefined,
+            sku: data.sku?.trim() || undefined,
             barcode: data.barcode,
             retailPrice: parsePriceAmount(data.retailPrice),
-            costPrice: parsePriceAmount(data.costPrice),
+            // Combo: BE tự tính giá vốn từ các món.
+            costPrice: data.productType === 'COMBO' ? undefined : parsePriceAmount(data.costPrice),
             vat: data.vat ? Math.min(Number(data.vat), 100) : undefined,
             warrantyPeriod: data.warrantyPeriod,
             description: data.description,
-            images: data.itemImages?.length ? data.itemImages : data.images,
-            productDetails: data.productDetails?.filter((d) => d.name.trim() && d.value.trim()),
+            // Phiên bản không có ảnh riêng thì dùng ảnh hàng hóa; ảnh đầu tiên là ảnh đại diện.
+            images: toItemImagePayload(data.itemImages?.length ? data.itemImages : data.images),
+            productDetails: data.productDetails
+              ?.filter((d) => d.name.trim() && d.value.trim())
+              .map((d) => ({ name: d.name.trim(), value: d.value.trim() })),
+            // itemType do BE gán theo productType.
+            comboComponents:
+              data.productType === 'COMBO' ? toComboPayload(data.comboComponents ?? []) : undefined,
           },
         ],
       })
@@ -58,17 +87,24 @@ export function useProductsMutations() {
         { ...product, totalStock: 0, totalStockAllLocations: 0 },
         ...prev,
       ])
-      toast.success('Thêm hàng hóa thành công')
+      toast.success(`Thêm ${screen.noun} thành công`)
       return true
-    } catch {
-      toast.error('Thêm hàng hóa thất bại')
+    } catch (err) {
+      const code = getApiErrorBody(err)?.code
+      const message = messageForCode(code) ?? `Thêm ${screen.noun} thất bại`
+      if (code === 'UNIQUE_VIOLATION') onDuplicateCode?.(message)
+      toast.error(message)
       return false
     } finally {
       setIsLoading(false)
     }
   }
 
-  async function handleEdit(id: string, data: ProductFormValues): Promise<boolean> {
+  async function handleEdit(
+    id: string,
+    data: ProductFormValues,
+    onDuplicateCode?: (message: string) => void,
+  ): Promise<boolean> {
     setIsLoading(true)
     try {
       const product = await productApi.update(id, {
@@ -76,13 +112,21 @@ export function useProductsMutations() {
         brandId: data.brandId ?? undefined,
         categoryId: data.categoryId ?? undefined,
         status: data.status,
+        isManufacturable: data.isManufacturable,
         images: data.images,
+        // Chỉ gửi khi form đã nạp danh sách thuộc tính - gửi mảng rỗng sẽ xoá hết thuộc tính.
+        attributes: data.attributes
+          ?.filter((a) => a.name.trim())
+          .map((a) => ({ id: a.id, name: a.name.trim(), unit: a.unit?.trim() || undefined })),
       })
       setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...product } : p)))
       toast.success('Cập nhật hàng hóa thành công')
       return true
-    } catch {
-      toast.error('Cập nhật hàng hóa thất bại')
+    } catch (err) {
+      const code = getApiErrorBody(err)?.code
+      const message = messageForCode(code) ?? 'Cập nhật hàng hóa thất bại'
+      if (code === 'UNIQUE_VIOLATION') onDuplicateCode?.(message)
+      toast.error(message)
       return false
     } finally {
       setIsLoading(false)
@@ -121,9 +165,7 @@ export function useProductsMutations() {
 
     setIsLoading(true)
     try {
-      // allSettled: mỗi hàng hóa giờ được BE kiểm tra riêng (tồn kho / phiếu
-      // chuyển kho / đơn hàng chờ xử lý), nên một mục thất bại không được phép
-      // làm rollback các mục còn lại đã xóa thành công.
+      // Xoá từng hàng hoá độc lập.
       const results = await Promise.allSettled(
         eligibleIds.map((id) => productApi.remove(id)),
       )
@@ -164,5 +206,5 @@ export function useProductsMutations() {
     }
   }
 
-  return { products, isLoading, handleAdd, handleEdit, handleDelete, handleDeleteMany }
+  return { products, isLoading, reload, handleAdd, handleEdit, handleDelete, handleDeleteMany }
 }

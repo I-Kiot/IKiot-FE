@@ -1,12 +1,15 @@
-// [UI Types – Supplier]
 import { z } from 'zod'
 
-export type SuppliersDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'payDebt'
+export type SuppliersDialogType = 'add' | 'edit' | 'delete' | 'deleteMany' | 'payDebt' | 'ledger'
 
 export const supplierFormSchema = z.object({
   supplierName: z.string().min(1, 'Tên nhà cung cấp là bắt buộc'),
   contactName: z.string().optional(),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(1, 'Số điện thoại là bắt buộc')
+    .regex(/^0\d{9}$/, 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0'),
   email: z
     .string()
     .optional()
@@ -15,6 +18,7 @@ export const supplierFormSchema = z.object({
     }),
   address: z.string().optional(),
   creditLimit: z.number().min(0, 'Hạn mức tín dụng không được âm'),
+  type: z.enum(['GOODS', 'WORKSHOP']),
 })
 
 export type SupplierFormValues = z.infer<typeof supplierFormSchema>

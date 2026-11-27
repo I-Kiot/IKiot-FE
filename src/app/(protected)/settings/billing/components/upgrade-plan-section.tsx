@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PermissionButton } from "@/components/permission-button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   initiateUpgrade,
@@ -26,13 +26,16 @@ const formatVnd = (amount: number) => `${amount.toLocaleString("vi-VN")}đ`;
 
 interface UpgradePlanSectionProps {
   subscription: CurrentSubscription | null;
-  /** Reloads the plan and invoices once a payment is confirmed. */
+  /** Tải lại gói và hoá đơn khi thanh toán được xác nhận. */
   onActivated: () => void | Promise<void>;
+  /** Có quyền trả tiền nâng cấp / gia hạn gói không. Không có thì vẫn xem được các gói, nút mờ đi. */
+  canManage: boolean;
 }
 
 export function UpgradePlanSection({
   subscription,
   onActivated,
+  canManage,
 }: UpgradePlanSectionProps) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
@@ -138,7 +141,7 @@ export function UpgradePlanSection({
               onValueChange={(value) =>
                 value && setIsYearly(value === "yearly")
               }
-              className="bg-secondary text-secondary-foreground rounded-full p-1 shadow-none"
+              className=" bg-muted text-muted-foreground rounded-full p-1 shadow-none"
             >
               <ToggleGroupItem
                 value="monthly"
@@ -183,7 +186,6 @@ export function UpgradePlanSection({
                 const isElevated =
                   isExactCurrent || (!!selected.isPopular && isUpgradeTier);
 
-                // Xác định hành động + nhãn nút
                 let label: string;
                 let action: "renew" | "upgrade" | null = null;
                 if (isExactCurrent) {
@@ -218,7 +220,6 @@ export function UpgradePlanSection({
                         : ""
                     }`}
                   >
-                    {/* Header */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-lg font-medium tracking-tight">
@@ -242,7 +243,6 @@ export function UpgradePlanSection({
                       </div>
                     </div>
 
-                    {/* Price */}
                     <div>
                       <div className="text-4xl font-bold mb-1">
                         {isFree ? "Miễn phí" : formatVnd(selected.price)}
@@ -256,9 +256,10 @@ export function UpgradePlanSection({
                       </div>
                     </div>
 
-                    {/* CTA */}
                     <div>
-                      <Button
+                      <PermissionButton
+                        allowed={canManage || disabled}
+                        permission="subscriptions:manage"
                         className={`w-full cursor-pointer my-2 ${
                           isExactCurrent
                             ? ""
@@ -282,10 +283,9 @@ export function UpgradePlanSection({
                           <Loader2 className="size-4 animate-spin mr-2" />
                         )}
                         {label}
-                      </Button>
+                      </PermissionButton>
                     </div>
 
-                    {/* Features */}
                     <div>
                       <ul role="list" className="space-y-3 text-sm">
                         {features.map((feature) => (

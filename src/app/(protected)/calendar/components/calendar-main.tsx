@@ -38,7 +38,6 @@ import {
 import { cn } from "@/lib/utils"
 import { type CalendarEvent } from "../types"
 
-// Import data
 import eventsData from "../data/events.json"
 
 interface CalendarMainProps {
@@ -50,7 +49,7 @@ interface CalendarMainProps {
 }
 
 export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, onEventClick }: CalendarMainProps) {
-  // Convert JSON events to CalendarEvent objects with proper Date objects, fallback to imported data
+  // Không có events từ props thì dùng dữ liệu mẫu.
   const sampleEvents: CalendarEvent[] = events || eventsData.map(event => ({
     ...event,
     date: new Date(event.date),
@@ -65,7 +64,6 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
 
-  // Extend to show full weeks (including previous/next month days)
   const calendarStart = new Date(monthStart)
   calendarStart.setDate(calendarStart.getDate() - monthStart.getDay())
 
@@ -100,7 +98,6 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
 
     return (
       <div className="flex-1 bg-background">
-        {/* Calendar Header */}
         <div className="grid grid-cols-7 border-b">
           {weekDays.map(day => (
             <div key={day} className="p-4 text-center font-medium text-sm text-muted-foreground border-r last:border-r-0">
@@ -109,7 +106,6 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
           ))}
         </div>
 
-        {/* Calendar Body */}
         <div className="grid grid-cols-7 flex-1">
           {calendarDays.map(day => {
             const dayEvents = getEventsForDay(day)
@@ -225,10 +221,8 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="flex flex-col flex-wrap gap-4 p-6 border-b md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4 flex-wrap">
-          {/* Mobile Menu Button */}
           <Button
             variant="outline"
             size="sm"
@@ -256,13 +250,11 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          {/* Search */}
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search events..." className="pl-10 w-64" />
           </div>
 
-          {/* View Mode Toggle */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="cursor-pointer">
@@ -286,10 +278,8 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
         </div>
       </div>
 
-      {/* Calendar Content */}
       {viewMode === "month" ? renderCalendarGrid() : renderListView()}
 
-      {/* Event Detail Dialog */}
       <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>

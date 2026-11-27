@@ -1,4 +1,5 @@
 import client from "./client";
+import type { HistoryPage, HistoryPerson } from "@/types/history";
 
 export interface TenantOwnerProfile {
   firstName?: string;
@@ -13,19 +14,19 @@ export interface TenantOwnerProfile {
 
 export interface TenantOwner {
   id: string;
-  email: string;
+  email: string | null;
   phoneNumber: string;
-  role: string;
   status: string;
   profile?: TenantOwnerProfile;
   createdAt: string;
 }
 
+/** Gói rút gọn đi kèm subscription / hoá đơn trong `GET /tenants`. */
 export interface Plan {
   id: string;
   planName: string;
   planCode: string;
-  price: number;
+  billingCycle: "MONTHLY" | "YEARLY" | "NONE";
 }
 
 export interface Subscription {
@@ -33,7 +34,8 @@ export interface Subscription {
   status: "TRIAL" | "ACTIVE" | "EXPIRED" | "PAST_DUE" | "CANCELLED";
   startDate: string;
   endDate: string;
-  planId?: Plan;
+  trialEndDate?: string | null;
+  plan: Plan | null;
 }
 
 export interface Invoice {
@@ -43,59 +45,100 @@ export interface Invoice {
   status: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
   billingPeriodStart: string;
   billingPeriodEnd: string;
-  paidAt?: string;
-  paymentReference?: string;
-  paymentMethod?: string;
-  planId?: Plan;
+  paidAt?: string | null;
+  paymentReference?: string | null;
+  paymentMethod?: string | null;
+  plan: Plan | null;
   createdAt: string;
 }
 
 export interface Tenant {
   id: string;
   name: string;
-  tenantOwnerId?: TenantOwner;
+  tenantOwnerId?: string | null;
+  /** Chủ shop, chỉ có ở `listTenants()` (admin). */
+  tenantOwner?: TenantOwner | null;
   status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   phoneNumber?: string;
   mainAddress?: string;
   taxNumber?: string;
+  /** URL ảnh logo (từ `POST /uploads`), `null` khi chưa đặt. */
+  logoUrl?: string | null;
   banking?: {
     accountNumber?: string;
     bankName?: string;
     accountName?: string;
   };
   createdAt: string;
-  activeSubscription?: Subscription;
+  /** Gói hiện tại (mỗi shop một bản ghi), chỉ có ở `listTenants()`; null khi shop chưa nhận gói nào. */
+  subscription?: Subscription | null;
+  /** Hoá đơn gói, mới nhất trước, chỉ có ở `listTenants()`. */
   invoices?: Invoice[];
-  /** True when a SePay webhook key has been saved for this tenant (key itself is never exposed). */
+  /** Đã liên kết SePay, qua webhook key hoặc qua đồng bộ. Key không bao giờ được trả ra. */
   hasSepayKey?: boolean;
 }
 
-/**
- * Every shop on the platform - **admin only** (`GET /tenants`, `AdminOnlyGuard`).
- *
- * This used to call `GET /tenant/me`, which answers the caller's *own* shop as a single
- * object. The three admin screens that use this then mapped over it as though it were an
- * array, so the tenant pickers on `/admin/notifications`, `/admin/sepay` and
- * `/admin/users` have been empty. `/tenant/me` is `getMyTenant()` below.
- */
+/** Mọi shop trên nền tảng, chỉ ADMIN. */
 export async function listTenants(): Promise<Tenant[]> {
   const response = await client.get<{ data: Tenant[] }>("/tenants");
   return response.data.data ?? [];
 }
 
-/** The signed-in account's own shop (`GET /tenant/me`). */
+/** Shop của tài khoản đang đăng nhập (`GET /tenant/me`). */
 export async function getMyTenant(): Promise<Tenant> {
   const response = await client.get<{ data: Tenant }>("/tenant/me");
   return response.data.data;
 }
 
-/**
- * ADMIN: save the SePay webhook API key for a tenant after manually
- * linking their bank account in the SePay dashboard. Marks the tenant as linked.
- */
+/** Đặt hoặc gỡ logo của shop. */
+export async function updateMyTenantLogo(logoUrl: string | null): Promise<void> {
+  await client.put("/tenant/me", { logoUrl });
+}
+
+/** ADMIN: lưu SePay webhook key riêng cho từng shop. */
 export async function setSepayKey(
   tenantId: string,
   sepayWebhookApiKey: string,
 ): Promise<void> {
   await client.put(`/tenant/${tenantId}/sepay-key`, { sepayWebhookApiKey });
+}
+
+export interface SepaySyncResult {
+  accounts: number;
+  linked: string[];
+  unlinked: string[];
+}
+
+/** ADMIN: đọc lại tài khoản SePay của nền tảng ngay bây giờ. */
+export async function syncSepayAccounts(): Promise<SepaySyncResult> {
+  const response = await client.post<{ data: SepaySyncResult }>(
+    "/tenants/sepay-sync",
+  );
+  return response.data.data;
+}
+
+export type BankingChangeSource = "OWNER" | "ADMIN" | "SEPAY_SYNC";
+
+/** Một trường đổi. Webhook key chỉ báo `keyChanged`, không bao giờ có giá trị. */
+export interface BankingFieldChange {
+  from?: string | null;
+  to?: string | null;
+  keyChanged?: boolean;
+}
+
+export interface BankingChange {
+  id: string;
+  source: BankingChangeSource;
+  changes: Record<string, BankingFieldChange>;
+  changedBy: HistoryPerson | null;
+  createdAt: string;
+}
+
+/** Lịch sử đổi thông tin nhận tiền. */
+export async function getBankingHistory(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<HistoryPage<BankingChange>> {
+  const response = await client.get<HistoryPage<BankingChange>>("/tenant/banking/history", { params });
+  return response.data;
 }

@@ -1,4 +1,3 @@
-// [API – Promotion]
 import client from '@/lib/api/client'
 import type {
   Promotion,
@@ -15,9 +14,7 @@ import type {
   PromotionCandidatesResponse,
 } from '@/types/promotion'
 
-// Kiểu phản hồi của API. Bản Express cũ trả document Mongo khoá `_id`; bản NestJS
-// trả `id`, nên phép ánh xạ dưới đây giờ là đồng nhất - giữ lại làm chỗ duy nhất phải
-// sửa nếu hình dạng phản hồi đổi lần nữa.
+// Ánh xạ khuyến mãi từ response.
 type PromotionDoc = Omit<Promotion, 'id'> & { id: string }
 type PromotionLogDoc = Omit<PromotionLog, 'id'> & { id: string }
 

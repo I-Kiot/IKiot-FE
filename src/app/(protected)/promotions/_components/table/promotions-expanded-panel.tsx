@@ -1,10 +1,9 @@
-// [Table – Expanded Panel Promotion]
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Power, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { PermissionButton } from "@/components/permission-button";
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -44,7 +43,7 @@ export function PromotionsExpandedPanel({
   isExpanded,
   isLastRow,
 }: PromotionsExpandedPanelProps) {
-  const { setOpen, setCurrentRow } = usePromotions()
+  const { setOpen, setCurrentRow, handleActivate, isLoading } = usePromotions()
   const role = getCachedUser()?.role
   const canEdit = canUpdatePromotion(role)
   const canDelete = canDeletePromotion(role)
@@ -76,7 +75,7 @@ export function PromotionsExpandedPanel({
           <TabsTrigger value="history" className="cursor-pointer">
             Lịch sử sử dụng
             <Badge variant="secondary" className="ml-1.5 text-xs">
-              {promotion.usedCount}
+              {promotion.usedCount.toLocaleString('vi-VN')}
             </Badge>
           </TabsTrigger>
         </TabsList>
@@ -124,14 +123,16 @@ export function PromotionsExpandedPanel({
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-muted-foreground">Giới hạn lượt dùng</span>
               <span className="tabular-nums">
-                {promotion.usageLimit != null ? promotion.usageLimit : 'Không giới hạn'}
+                {promotion.usageLimit != null
+                  ? promotion.usageLimit.toLocaleString('vi-VN')
+                  : 'Không giới hạn'}
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-muted-foreground">Giới hạn / khách hàng</span>
               <span className="tabular-nums">
                 {promotion.usageLimitPerCustomer != null
-                  ? promotion.usageLimitPerCustomer
+                  ? promotion.usageLimitPerCustomer.toLocaleString('vi-VN')
                   : 'Không giới hạn'}
               </span>
             </div>
@@ -142,12 +143,29 @@ export function PromotionsExpandedPanel({
               </div>
             )}
           </div>
-          {(canEdit || canDelete) && (
-            <>
+          <>
               <Separator className="mt-4" />
               <div className="flex items-center justify-between mt-3">
-                {canDelete ? (
-                  <Button
+                {promotion.status === 'INACTIVE' ? (
+                  <PermissionButton
+                    allowed={canEdit}
+                    permission="promotions:update"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    disabled={isLoading}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handleActivate(promotion.id)
+                    }}
+                  >
+                    <Power className="mr-2 size-4" />
+                    Bật lại
+                  </PermissionButton>
+                ) : promotion.status === 'ACTIVE' ? (
+                  <PermissionButton
+                    allowed={canDelete}
+                    permission="promotions:delete"
                     variant="destructive"
                     size="sm"
                     className="cursor-pointer"
@@ -159,12 +177,13 @@ export function PromotionsExpandedPanel({
                   >
                     <Trash2 className="mr-2 size-4" />
                     Tắt
-                  </Button>
+                  </PermissionButton>
                 ) : (
                   <span />
                 )}
-                {canEdit && (
-                  <Button
+                <PermissionButton
+                    allowed={canEdit}
+                    permission="promotions:update"
                     size="sm"
                     className="cursor-pointer"
                     onClick={(e) => {
@@ -175,11 +194,9 @@ export function PromotionsExpandedPanel({
                   >
                     <Pencil className="mr-2 size-4" />
                     Chỉnh sửa
-                  </Button>
-                )}
+                  </PermissionButton>
               </div>
             </>
-          )}
         </TabsContent>
 
         <TabsContent value="history">

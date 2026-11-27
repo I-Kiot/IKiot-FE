@@ -1,21 +1,62 @@
-import { PageHeader } from "@/components/page-header";
-import { QuickActions } from "./components/quick-actions";
-import { DashboardProvider } from "./components/dashboard-provider";
-import { DashboardGrid } from "./components/dashboard-grid";
+"use client";
 
-export default function Dashboard2() {
+// Dashboard tổng quan.
+
+import { allows } from "@/components/sidebar/constants/role-permissions";
+import { getSessionRole } from "@/lib/auth";
+import { OverviewProvider } from "./components/overview-provider";
+import { DashboardHeader } from "./components/dashboard-header";
+import { KpiCards } from "./components/kpi-cards";
+import { RevenueChart } from "./components/revenue-chart";
+import { OrderPipelineCard } from "./components/order-pipeline-card";
+import { StockAlertsCard } from "./components/stock-alerts-card";
+import { ProductPerformanceCard } from "./components/product-performance-card";
+import { QuickActionsCard } from "./components/quick-actions-card";
+import { NotificationsCard } from "./components/notifications-card";
+import { StorePerformanceCard } from "./components/store-performance-card";
+
+/** Từ xl trở lên vừa một màn hình. */
+function SalesLayout() {
+  const canSeeOrders = allows(getSessionRole(), "orders", "read");
+
   return (
-    <DashboardProvider>
-      <div className="flex-1 space-y-6 px-6 pt-0">
-        <PageHeader
-          breadcrumbs={[{ label: "Trang chủ" }]}
-          title="Tổng quan kinh doanh"
-          description="Theo dõi hiệu suất và các chỉ số kinh doanh theo thời gian thực"
-          actions={<QuickActions />}
-        />
+    <div className="flex flex-col gap-4 xl:min-h-0 xl:flex-1">
+      <KpiCards />
 
-        <DashboardGrid />
+      <div className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-3 xl:grid-rows-[minmax(0,1fr)]">
+        {/* Trái (2/3): xu hướng ở trên, ba thẻ vận hành ở dưới. */}
+        <div className="flex min-w-0 flex-col gap-4 xl:col-span-2 xl:min-h-0">
+          <div className="h-[340px] min-w-0 xl:h-auto xl:min-h-0 xl:flex-[4]">
+            <RevenueChart showOrdersTab={canSeeOrders} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3 xl:min-h-0 xl:flex-[3] *:min-h-0">
+            <OrderPipelineCard />
+            <StockAlertsCard />
+            <ProductPerformanceCard />
+          </div>
+        </div>
+
+        {/* Phải (1/3): lối tắt, hiệu suất, thông báo lấp phần còn lại. */}
+        <div className="flex min-w-0 flex-col gap-4 xl:min-h-0">
+          <QuickActionsCard />
+          <StorePerformanceCard />
+          <div className="flex min-h-0 flex-col xl:flex-1 *:flex-1">
+            <NotificationsCard />
+          </div>
+        </div>
       </div>
-    </DashboardProvider>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <OverviewProvider>
+      {/* xl: cao bằng màn hình trừ header (3rem là py-6 của khung ngoài), giống trang chat. */}
+      <div className="@container/main flex flex-1 flex-col gap-4 px-4 pb-8 lg:px-6 xl:h-[calc(100dvh-var(--header-height)-3rem)] xl:flex-none xl:overflow-y-auto xl:pb-0">
+        <DashboardHeader />
+        <SalesLayout />
+      </div>
+    </OverviewProvider>
   );
 }
