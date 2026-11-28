@@ -81,6 +81,22 @@ export const productApi = {
     };
   },
 
+  /**
+   * Mọi hàng hoá khớp bộ lọc, gom đủ các trang (BE trả tối đa 100 mỗi trang).
+   * Màn danh sách lọc, tìm và phân trang ở client, nên phải có cả danh sách:
+   * gọi `getList` không kèm `limit` chỉ nhận 10 hàng mới nhất (mặc định của BE).
+   */
+  getAll: async (params?: ProductQueryParams): Promise<Product[]> => {
+    const limit = 100;
+    const first = await productApi.getList({ ...params, page: 1, limit });
+    const rest = await Promise.all(
+      Array.from({ length: Math.max(0, first.pagination.totalPages - 1) }, (_, i) =>
+        productApi.getList({ ...params, page: i + 2, limit }),
+      ),
+    );
+    return [first, ...rest].flatMap((res) => res.data);
+  },
+
   // Danh sách SKU phẳng.
   listItems: async (
     params?: ProductItemListParams,
@@ -208,17 +224,25 @@ export const productApi = {
     return res.data;
   },
 
-  // POST /products/import - cả file hợp lệ mới tạo; lỗi 400 kèm `errors` theo dòng (xem importErrorsOf).
+  // POST /products/import - cả file hợp lệ mới tạo; cột "Tồn kho - <địa điểm>" sinh phiếu điều chỉnh đã hoàn tất; lỗi 400 kèm `errors` theo dòng (xem importErrorsOf).
   importFile: async (
     file: File,
-  ): Promise<{ productCount: number; itemCount: number; productIds: string[] }> => {
+  ): Promise<ProductImportResult> => {
     const formData = new FormData();
     formData.append("file", file);
     const res = await client.post<{
-      data: { productCount: number; itemCount: number; productIds: string[] };
+      data: ProductImportResult;
     }>("/products/import", formData, {
       headers: { "Content-Type": undefined },
     });
     return res.data.data;
   },
 };
+
+/** Kết quả `POST /products/import`; `stockMovementIds` = phiếu điều chỉnh tồn đầu kỳ, mỗi địa điểm một phiếu. */
+export interface ProductImportResult {
+  productCount: number;
+  itemCount: number;
+  productIds: string[];
+  stockMovementIds: string[];
+}
