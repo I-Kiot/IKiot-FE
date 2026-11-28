@@ -11,7 +11,7 @@ import { RevenueBreakdown } from "./components/revenue-breakdown";
 export default function Dashboard2() {
   return (
     <AdminDashboardProvider>
-      <div className="flex-1 space-y-6 px-6 pt-0">
+      <div className="flex-1 space-y-6 px-4 lg:px-6">
         <PageHeader
           breadcrumbs={[{ label: "Trang chủ" }]}
           title="Tổng quan nền tảng"

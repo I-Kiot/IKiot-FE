@@ -1227,9 +1227,18 @@ export default function SettingsPage() {
   ];
 
   if (isLoading) {
+    // Giữ header khi đang tải để tiêu đề không nhảy vị trí lúc chuyển trang.
     return (
-      <div className="flex h-[450px] items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col gap-6 px-4 lg:px-6">
+        <PageHeader
+          breadcrumbs={[
+            { label: "Trang chủ", href: "/dashboard" },
+            { label: "Cấu hình cửa hàng và hệ thống" },
+          ]}
+          title="Cấu hình cửa hàng và hệ thống"
+          description="Quản lý các thiết lập và tùy chỉnh hệ thống."
+        />
+        <div className="flex h-[450px] flex-col items-center justify-center gap-2">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
           <p className="text-sm text-muted-foreground">
             Đang tải dữ liệu cài đặt...

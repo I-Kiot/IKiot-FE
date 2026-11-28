@@ -15,7 +15,7 @@ function CreateOrderContent() {
   const canCreate = allows(getSessionRole(), "orders", "create");
 
   return (
-    <div className="flex flex-col gap-4 p-4 lg:p-6">
+    <div className="flex flex-col gap-6 px-4 lg:px-6">
       <PageHeader
         breadcrumbs={[
           { label: "Trang chủ", href: "/dashboard" },
